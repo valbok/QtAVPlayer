@@ -1,0 +1,73 @@
+{
+    "module": "avplayer",
+    "depends": [
+        "multimedia"
+    ],
+    "condition": "module.multimedia",
+
+    "libraries": {
+        "ffmpeg": {
+            "label": "FFmpeg",
+            "export": "ffmpeg",
+            "test":  {
+                "include": "libavcodec/avcodec.h"
+            },
+            "sources": [
+                { "type": "pkgConfig",
+                  "args": "libavcodec libavformat libavutil libswresample" },
+                { "libs": "-lavcodec -lavformat -lswscale -lavutil -lswresample" }
+            ]
+        },
+        "va_x11": {
+            "label": "va_x11",
+            "export": "va_x11",
+            "test":  {
+                "include": "va/va_x11.h"
+            },
+            "sources": [
+                { "type": "pkgConfig",
+                  "args": "libva-x11" }
+            ]
+        },
+        "va_drm": {
+            "label": "va_drm",
+            "export": "va_drm",
+            "test":  {
+                "include": "va/va_drm.h"
+            },
+            "sources": [
+                { "type": "pkgConfig",
+                  "args": "libva-drm" }
+            ]
+        }
+    },
+
+    "features": {
+        "ffmpeg": {
+            "label": "FFmpeg",
+            "condition": "libs.ffmpeg",
+            "output": [ "privateFeature" ]
+        },
+        "va_x11": {
+            "label": "va_x11",
+            "condition": "libs.va_x11",
+            "output": [ "privateFeature" ]
+        },
+        "va_drm": {
+            "label": "va_drm",
+            "condition": "libs.va_drm",
+            "output": [ "privateFeature" ]
+        }
+    },
+
+    "summary": [
+        {
+            "section": "Qt AVPlayer",
+            "entries": [
+                "ffmpeg",
+                "va_x11",
+                "va_drm"
+            ]
+        }
+    ]
+}

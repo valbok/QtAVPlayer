@@ -1,0 +1,210 @@
+/****************************************************************************
+**
+** Copyright (C) 2020 The Qt Company Ltd.
+** Contact: https://www.qt.io/licensing/
+**
+** This file is part of the Qt Toolkit.
+**
+** $QT_BEGIN_LICENSE:LGPL$
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and The Qt Company. For licensing terms
+** and conditions see https://www.qt.io/terms-conditions. For further
+** information use the contact form at https://www.qt.io/contact-us.
+**
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 3 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL3 included in the
+** packaging of this file. Please review the following information to
+** ensure the GNU Lesser General Public License version 3 requirements
+** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
+**
+** GNU General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 2.0 or (at your option) the GNU General
+** Public license version 3 or any later version approved by the KDE Free
+** Qt Foundation. The licenses are as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
+** included in the packaging of this file. Please review the following
+** information to ensure the GNU General Public License requirements will
+** be met: https://www.gnu.org/licenses/gpl-2.0.html and
+** https://www.gnu.org/licenses/gpl-3.0.html.
+**
+** $QT_END_LICENSE$
+**
+****************************************************************************/
+
+#include "qavhwdevice_vaapi_x11_glx_p.h"
+#include "qavvideocodec_p.h"
+#include "qavplanarvideobuffer_gpu_p.h"
+#include <QVideoFrame>
+#include <QDebug>
+
+#include <GL/glx.h>
+#include <va/va_x11.h>
+
+extern "C" {
+#include <libavutil/hwcontext_vaapi.h>
+}
+
+typedef void (*glXBindTexImageEXT_)(Display *dpy, GLXDrawable drawable, int buffer, const int *attrib_list);
+typedef void (*glXReleaseTexImageEXT_)(Display *dpy, GLXDrawable draw, int buffer);
+static glXBindTexImageEXT_ s_glXBindTexImageEXT = nullptr;
+static glXReleaseTexImageEXT_ s_glXReleaseTexImageEXT = nullptr;
+
+QT_BEGIN_NAMESPACE
+
+class QAVHWDevice_VAAPI_X11_GLXPrivate
+{
+public:
+    Pixmap pixmap = 0;
+    GLXPixmap glxpixmap = 0;
+    Display *display = nullptr;
+    GLuint texture = 0;
+};
+
+QAVHWDevice_VAAPI_X11_GLX::QAVHWDevice_VAAPI_X11_GLX(QObject *parent)
+    : QObject(parent)
+    , d_ptr(new QAVHWDevice_VAAPI_X11_GLXPrivate)
+{
+}
+
+QAVHWDevice_VAAPI_X11_GLX::~QAVHWDevice_VAAPI_X11_GLX()
+{
+    Q_D(QAVHWDevice_VAAPI_X11_GLX);
+
+    if (d->glxpixmap) {
+        s_glXReleaseTexImageEXT(d->display, d->glxpixmap, GLX_FRONT_EXT);
+        glXDestroyPixmap(d->display, d->glxpixmap);
+    }
+    if (d->pixmap)
+        XFreePixmap(d->display, d->pixmap);
+
+    glDeleteTextures(1, &d->texture);
+}
+
+AVPixelFormat QAVHWDevice_VAAPI_X11_GLX::format() const
+{
+    return AV_PIX_FMT_VAAPI;
+}
+
+bool QAVHWDevice_VAAPI_X11_GLX::supportsVideoSurface(QAbstractVideoSurface *surface) const
+{
+    if (!surface)
+        return false;
+
+    auto list = surface->supportedPixelFormats(QAbstractVideoBuffer::GLTextureHandle);
+    return list.contains(QVideoFrame::Format_ABGR32);
+}
+
+class VideoBuffer_GLX : public QAVPlanarVideoBuffer_GPU
+{
+public:
+    VideoBuffer_GLX(QAVHWDevice_VAAPI_X11_GLXPrivate *hw, const QAVVideoFrame &frame)
+        : QAVPlanarVideoBuffer_GPU(frame, GLTextureHandle)
+        , m_hw(hw)
+    {
+        if (!s_glXBindTexImageEXT) {
+            s_glXBindTexImageEXT = (glXBindTexImageEXT_) glXGetProcAddressARB((const GLubyte *)"glXBindTexImageEXT");
+            s_glXReleaseTexImageEXT = (glXReleaseTexImageEXT_) glXGetProcAddressARB((const GLubyte *)"glXReleaseTexImageEXT");
+        }
+    }
+
+    QVariant handle() const override
+    {
+        if (!s_glXBindTexImageEXT) {
+            qWarning() << "Could not get proc address: s_glXBindTexImageEXT";
+            return 0;
+        }
+
+        auto av_frame = frame().frame();
+        AVHWDeviceContext *hwctx = (AVHWDeviceContext *)frame().codec()->avctx()->hw_device_ctx->data;
+        AVVAAPIDeviceContext *vactx = (AVVAAPIDeviceContext *)hwctx->hwctx;
+        VADisplay va_display = vactx->display;
+        VASurfaceID va_surface = (VASurfaceID)(uintptr_t)av_frame->data[3];
+
+        int w = av_frame->width;
+        int h = av_frame->height;
+
+        if (!m_hw->display) {
+            glGenTextures(1, &m_hw->texture);
+            auto display = (Display *)glXGetCurrentDisplay();
+            m_hw->display = display;
+            int xscr = DefaultScreen(display);
+            const char *glxext = glXQueryExtensionsString(display, xscr);
+            if (!glxext || !strstr(glxext, "GLX_EXT_texture_from_pixmap")) {
+                qWarning() << "GLX_EXT_texture_from_pixmap is not supported";
+                return 0;
+            }
+
+            int attribs[] = {
+                GLX_RENDER_TYPE, GLX_RGBA_BIT,
+                GLX_X_RENDERABLE, True,
+                GLX_BIND_TO_TEXTURE_RGBA_EXT, True,
+                GLX_DRAWABLE_TYPE, GLX_PIXMAP_BIT,
+                GLX_BIND_TO_TEXTURE_TARGETS_EXT, GLX_TEXTURE_2D_BIT_EXT,
+                GLX_Y_INVERTED_EXT, True,
+                GLX_DOUBLEBUFFER, False,
+                GLX_RED_SIZE, 8,
+                GLX_GREEN_SIZE, 8,
+                GLX_BLUE_SIZE, 8,
+                GLX_ALPHA_SIZE, 8,
+                None
+            };
+
+            int fbcount;
+            GLXFBConfig *fbcs = glXChooseFBConfig(display, xscr, attribs, &fbcount);
+            if (!fbcount) {
+                XFree(fbcs);
+                qWarning() << "No texture-from-pixmap support";
+                return 0;
+            }
+
+            GLXFBConfig fbc = fbcs[0];
+            XFree(fbcs);
+
+            XWindowAttributes xwa;
+            XGetWindowAttributes(display, DefaultRootWindow(display), &xwa);
+
+            m_hw->pixmap = XCreatePixmap(display, DefaultRootWindow(display), w, h, xwa.depth);
+
+            const int attribs_pixmap[] = {
+                GLX_TEXTURE_TARGET_EXT, GLX_TEXTURE_2D_EXT,
+                GLX_TEXTURE_FORMAT_EXT, xwa.depth == 32 ? GLX_TEXTURE_FORMAT_RGBA_EXT : GLX_TEXTURE_FORMAT_RGB_EXT,
+                GLX_MIPMAP_TEXTURE_EXT, False,
+                None,
+            };
+
+            m_hw->glxpixmap = glXCreatePixmap(display, fbc, m_hw->pixmap, attribs_pixmap);
+        }
+
+        vaSyncSurface(va_display, va_surface);
+        auto status = vaPutSurface(va_display, va_surface, m_hw->pixmap,
+                                   0, 0, w, h,
+                                   0, 0, w, h,
+                                   NULL, 0, VA_FRAME_PICTURE | VA_SRC_BT709);
+        if (status != VA_STATUS_SUCCESS) {
+            qWarning() << "vaPutSurface failed" << status;
+            return 0;
+        }
+
+        XSync(m_hw->display, False);
+        glBindTexture(GL_TEXTURE_2D, m_hw->texture);
+        s_glXBindTexImageEXT(m_hw->display, m_hw->glxpixmap, GLX_FRONT_EXT, NULL);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        return m_hw->texture;
+    }
+
+    QAVHWDevice_VAAPI_X11_GLXPrivate *m_hw = nullptr;
+};
+
+QVideoFrame QAVHWDevice_VAAPI_X11_GLX::decode(const QAVVideoFrame &frame) const
+{
+    return {new VideoBuffer_GLX(d_ptr.data(), frame), frame.size(), QVideoFrame::Format_ABGR32};
+}
+
+QT_END_NAMESPACE

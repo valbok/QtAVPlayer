@@ -1,0 +1,49 @@
+Makefile*
+*.pch
+*.pdb
+*.exe
+*.dll
+*.ilk
+*.obj
+*.lib
+*.res
+*.exp
+*.manifest
+*_resource.rc
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+*.moc
+.qmake.cache
+config.log
+*.pro.user*
+tmp
+*.o
+*.app
+*.dylib
+*.framework
+*_wrapper.*
+*-config.*
+*-config_p.h
+*.version*
+
+#
+# Includes
+#
+
+#
+# Snippets
+#
+*.so
+*.so.*
+
+#
+# Tests
+#
+tst_*
+!tst_*.cpp
+!tst_*.qml
+tests/auto/cmake/build
+
+# Generated static plugin import sources
+*_plugin_import.cpp
