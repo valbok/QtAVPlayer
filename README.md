@@ -21,8 +21,28 @@ which helps to render the video and avoid downloading data from GPU to CPU memor
 QAudioOutput is used to play audio.
 
 # Example:
+
+The video surface must provide a list of supported pixel formats from QAbstractVideoSurface::supportedPixelFormats.
+One of them will be used when QVideoFrame is sent to QAbstractVideoSurface::present.
+QVideoWidget, QGraphicsVideoItem and QML VideoOutput provide the video surface.
+
+    struct Surface : public QAbstractVideoSurface
+    {
+        QList<QVideoFrame::PixelFormat> supportedPixelFormats(
+            QAbstractVideoBuffer::HandleType) const override
+        {
+            return QList<QVideoFrame::PixelFormat>() << QVideoFrame::Format_YUV420P;
+        }
+
+        bool present(const QVideoFrame &f) override
+        {
+            // Handle frame here...
+            return true;
+        }
+    } s;
+    
     QAVPlayer p;
-    p.setVideoSurface(VideoOutput->videoSurface());
+    p.setVideoSurface(&s);
     p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
     p.play();
 
