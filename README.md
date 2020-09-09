@@ -26,16 +26,12 @@ The video surface must provide a list of supported pixel formats from QAbstractV
 One of them will be used when QVideoFrame is sent to QAbstractVideoSurface::present().
 QVideoWidget::videoSurface(), QGraphicsVideoItem::videoSurface() and QML VideoOutput::videoSurface() provide the video surfaces.
 
-    struct Surface : public QAbstractVideoSurface
-    {
-        QList<QVideoFrame::PixelFormat> supportedPixelFormats(
-            QAbstractVideoBuffer::HandleType) const override
-        {
+    struct Surface : QAbstractVideoSurface {
+        QList<QVideoFrame::PixelFormat> supportedPixelFormats(QAbstractVideoBuffer::HandleType) const override {
             return QList<QVideoFrame::PixelFormat>() << QVideoFrame::Format_YUV420P;
         }
 
-        bool present(const QVideoFrame &f) override
-        {
+        bool present(const QVideoFrame &f) override {
             // Handle frame here...
             return true;
         }
