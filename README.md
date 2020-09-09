@@ -40,7 +40,7 @@ QVideoWidget::videoSurface(), QGraphicsVideoItem::videoSurface() and QML VideoOu
     QAVPlayer p;
     p.setVideoSurface(&s);
     p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
-    p.setVolunme(50);
+    p.setVolume(50);
     p.setSpeed(1);
     p.play();
 
