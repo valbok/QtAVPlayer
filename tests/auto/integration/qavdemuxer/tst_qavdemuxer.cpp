@@ -11,7 +11,6 @@
 #include "private/qavvideocodec_p.h"
 #include "private/qavaudiocodec_p.h"
 
-#include <QtMultimedia/private/qtmultimedia-config_p.h>
 #include <QDebug>
 #include <QtTest/QtTest>
 

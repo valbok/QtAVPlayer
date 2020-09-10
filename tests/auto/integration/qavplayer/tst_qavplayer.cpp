@@ -6,8 +6,8 @@
  *********************************************************/
 
 #include "qavplayer.h"
+
 #include <qabstractvideosurface.h>
-#include <QtMultimedia/private/qtmultimedia-config_p.h>
 #include <QDebug>
 #include <QtTest/QtTest>
 
