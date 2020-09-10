@@ -20,7 +20,6 @@
 //
 
 #include "qavhwdevice_p.h"
-#include <QtAVPlayer/private/qtavplayerglobal_p.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -31,6 +30,7 @@ public:
     ~QAVHWDevice_D3D11() = default;
 
     AVPixelFormat format() const override;
+    AVHWDeviceType type() const override;
     bool supportsVideoSurface(QAbstractVideoSurface *surface) const override;
     QVideoFrame decode(const QAVVideoFrame &frame) const override;
 

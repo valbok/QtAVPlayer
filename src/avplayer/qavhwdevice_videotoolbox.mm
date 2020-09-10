@@ -46,6 +46,11 @@ AVPixelFormat QAVHWDevice_VideoToolbox::format() const
     return AV_PIX_FMT_VIDEOTOOLBOX;
 }
 
+AVHWDeviceType QAVHWDevice_VideoToolbox::type() const
+{
+    return AV_HWDEVICE_TYPE_VIDEOTOOLBOX;
+}
+
 bool QAVHWDevice_VideoToolbox::supportsVideoSurface(QAbstractVideoSurface *surface) const
 {
     if (!surface)

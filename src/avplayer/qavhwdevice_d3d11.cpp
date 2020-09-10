@@ -23,6 +23,11 @@ AVPixelFormat QAVHWDevice_D3D11::format() const
     return AV_PIX_FMT_D3D11;
 }
 
+AVHWDeviceType QAVHWDevice_D3D11::type() const
+{
+    return AV_HWDEVICE_TYPE_D3D11VA;
+}
+
 bool QAVHWDevice_D3D11::supportsVideoSurface(QAbstractVideoSurface *surface) const
 {
     if (!surface)

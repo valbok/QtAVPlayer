@@ -31,6 +31,7 @@ public:
     ~QAVHWDevice_VideoToolbox();
 
     AVPixelFormat format() const override;
+    AVHWDeviceType type() const override;
     bool supportsVideoSurface(QAbstractVideoSurface *surface) const override;
     QVideoFrame decode(const QAVVideoFrame &frame) const override;
 

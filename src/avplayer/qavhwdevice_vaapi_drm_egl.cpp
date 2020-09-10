@@ -51,6 +51,11 @@ AVPixelFormat QAVHWDevice_VAAPI_DRM_EGL::format() const
     return AV_PIX_FMT_VAAPI;
 }
 
+AVHWDeviceType QAVHWDevice_VAAPI_DRM_EGL::type() const
+{
+    return AV_HWDEVICE_TYPE_VAAPI;
+}
+
 bool QAVHWDevice_VAAPI_DRM_EGL::supportsVideoSurface(QAbstractVideoSurface *surface) const
 {
     if (!surface)

@@ -38,6 +38,7 @@ public:
     virtual ~QAVHWDevice() = default;
 
     virtual AVPixelFormat format() const = 0;
+    virtual AVHWDeviceType type() const = 0;
     virtual bool supportsVideoSurface(QAbstractVideoSurface *surface) const = 0;
     virtual QVideoFrame decode(const QAVVideoFrame &frame) const = 0;
 

@@ -1,9 +1,9 @@
-/***************************************************
- * Copyright (C) Val Doroshchuk <valbok@gmail.com> *
- *                                                 *
- * This file is part of QtAVPlayer.                *
- * Free Qt multimedia framework based on FFmpeg    *
- ***************************************************/
+/*********************************************************
+ * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
+ *                                                       *
+ * This file is part of QtAVPlayer.                      *
+ * Free Qt Media Player based on FFmpeg.                 *
+ *********************************************************/
 
 #include "qavdemuxer_p.h"
 #include "qavvideocodec_p.h"
@@ -97,12 +97,11 @@ void QAVDemuxer::abort(bool stop)
     d->abortRequest = stop;
 }
 
-static bool create_device(QAVVideoCodec *codec)
+static void create_device(QAVVideoCodec *codec)
 {
     if (qEnvironmentVariableIsSet("QT_AVPLAYER_NO_HWDEVICE"))
-        return true;
+        return;
 
-    const char *hw_device = nullptr;
     AVDictionary *opts = NULL;
     QScopedPointer<QAVHWDevice> device;
     auto name = QGuiApplication::platformName();
@@ -110,71 +109,54 @@ static bool create_device(QAVVideoCodec *codec)
     if (name == QLatin1String("xcb")) {
         device.reset(new QAVHWDevice_VAAPI_X11_GLX);
         av_dict_set(&opts, "connection_type", "x11", 0);
-        hw_device = "vaapi";
     }
 #endif
 #if QT_CONFIG(va_drm) && QT_CONFIG(egl)
-    if (name == QLatin1String("eglfs")) {
+    if (name == QLatin1String("eglfs"))
         device.reset(new QAVHWDevice_VAAPI_DRM_EGL);
-        hw_device = "vaapi";
-    }
 #endif
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
-    if (name == QLatin1String("cocoa") || name == QLatin1String("ios")) {
+    if (name == QLatin1String("cocoa") || name == QLatin1String("ios"))
         device.reset(new QAVHWDevice_VideoToolbox);
-        hw_device = "videotoolbox";
-    }
 #endif
 #if defined(Q_OS_WIN)
-    if (name == QLatin1String("windows")) {
+    if (name == QLatin1String("windows"))
         device.reset(new QAVHWDevice_D3D11);
-        hw_device = "d3d11va";
-    }
 #endif
 
-    if (!hw_device)
-        return true;
+    if (!device)
+        return;
 
-    auto type = av_hwdevice_find_type_by_name(hw_device);
-    if (type == AV_HWDEVICE_TYPE_NONE) {
-        qWarning() << "Device type is not supported.";
-        qWarning() << "Available device types:";
-        while((type = av_hwdevice_iterate_types(type)) != AV_HWDEVICE_TYPE_NONE)
-            qWarning() << av_hwdevice_get_type_name(type);
-    }
-
-    if (type == AV_HWDEVICE_TYPE_NONE)
-        return false;
-
-    AVPixelFormat hw_format = AV_PIX_FMT_NONE;
+    QList<AVHWDeviceType> supported;
     for (int i = 0;; ++i) {
         const AVCodecHWConfig *config = avcodec_get_hw_config(codec->codec(), i);
         if (!config)
             break;
 
-        if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX
-            && config->device_type == type)
-        {
-            hw_format = config->pix_fmt;
-            break;
-        }
+        if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX)
+            supported.append(config->device_type);
     }
 
-    if (hw_format == AV_PIX_FMT_NONE) {
-        qWarning("Decoder %s does not support device type %s.",
-                 codec->codec()->name, av_hwdevice_get_type_name(type));
-        return false;
+    if (supported.isEmpty()) {
+        qWarning() << "The video decoder" << codec->codec()->name << "does not support any devices";
+        return;
+    }
+
+    if (!supported.contains(device->type())) {
+        qWarning() << "The video decoder" << codec->codec()->name << "does not support device:"
+            << av_hwdevice_get_type_name(device->type());
+        qWarning() << "Supported devices:";
+        for (auto &a: supported)
+            qWarning() << "   " << av_hwdevice_get_type_name(a);
+        return;
     }
 
     AVBufferRef *hw_device_ctx = nullptr;
-    if (device && av_hwdevice_ctx_create(&hw_device_ctx, type, nullptr, opts, 0) >= 0) {
-        qDebug() << "Using hardware device context:" << av_hwdevice_get_type_name(type);
+    if (av_hwdevice_ctx_create(&hw_device_ctx, device->type(), nullptr, opts, 0) >= 0) {
+        qDebug() << "Using hardware device context:" << av_hwdevice_get_type_name(device->type());
         codec->avctx()->hw_device_ctx = hw_device_ctx;
         codec->setDevice(device.take());
-        return true;
     }
-
-    return false;
 }
 
 int QAVDemuxer::load(const QUrl &url)
@@ -230,8 +212,7 @@ int QAVDemuxer::load(const QUrl &url)
         if (!d->videoCodec)
             d->videoCodec.reset(new QAVVideoCodec);
         if (d->videoCodec->open(d->ctx->streams[d->videoStream])) {
-            if (!create_device(d->videoCodec.data()))
-                qWarning() << "Could not create hardware device";
+            create_device(d->videoCodec.data());
         } else {
             qWarning() << "Could not open the video codec";
             d->videoCodec.reset();
