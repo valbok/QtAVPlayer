@@ -2,14 +2,12 @@ TARGET = QtAVPlayer
 MODULE = avplayer
 
 QT = multimedia concurrent multimedia-private
-CONFIG += internal_module
 QT_PRIVATE += gui-private
 
 QMAKE_USE += ffmpeg
 
 PRIVATE_HEADERS += \
     qavplayerglobal_p.h \
-    qavplayer_p.h \
     qavcodec_p.h \
     qavcodec_p_p.h \
     qavaudiocodec_p.h \
@@ -26,7 +24,8 @@ PRIVATE_HEADERS += \
     qavplanarvideobuffer_gpu_p.h
 
 PUBLIC_HEADERS += \
-    qtavplayerglobal.h
+    qtavplayerglobal.h \
+    qavplayer.h
 
 SOURCES += \
     qavplayer.cpp \

@@ -2,7 +2,7 @@ TEMPLATE = app
 TARGET = qml_video
 INCLUDEPATH += .
 
-QT += gui multimedia qtmultimediaquicktools-private avplayer-private
+QT += gui multimedia qtmultimediaquicktools-private avplayer
 
 SOURCES += main.cpp
 RESOURCES += qml.qrc
