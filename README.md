@@ -5,10 +5,10 @@ Requires QtMultimedia 6.0 with Qt Rendering Hardware Interface support.
 
 Currently implemented:
 * Software decoding everywhere.
-* VAAPI decoding for Linux:
-  DRM with EGL or X11 with GLX.
+* VAAPI decoding for Linux: DRM with EGL or X11 with GLX.
 * Video Toolbox for macOS and iOS.
 * D3D11 for Windows. 
+* MediaCodec for Android. 
 
 QT_AVPLAYER_NO_HWDEVICE can be used to force using software decoding.
 The video codec is negotiated automatically.
