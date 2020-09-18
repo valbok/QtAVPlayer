@@ -21,17 +21,17 @@ class QAVPacketPrivate
 {
 public:
     const QAVCodec *codec = nullptr;
-    AVPacket pkt;
-    QAVFrame frame;
+    AVPacket *pkt = nullptr;
 };
 
 QAVPacket::QAVPacket(QObject *parent)
     : QObject(parent)
     , d_ptr(new QAVPacketPrivate)
 {
-    av_init_packet(&d_ptr->pkt);
-    d_ptr->pkt.size = 0;
-    d_ptr->pkt.stream_index = -1;
+    d_ptr->pkt = av_packet_alloc();
+    av_init_packet(d_ptr->pkt);
+    d_ptr->pkt->size = 0;
+    d_ptr->pkt->stream_index = -1;
 }
 
 QAVPacket::QAVPacket(const QAVPacket &other)
@@ -42,28 +42,29 @@ QAVPacket::QAVPacket(const QAVPacket &other)
 
 QAVPacket &QAVPacket::operator=(const QAVPacket &other)
 {
-    av_packet_unref(&d_ptr->pkt);
-    av_packet_ref(&d_ptr->pkt, &other.d_ptr->pkt);
+    av_packet_unref(d_ptr->pkt);
+    av_packet_ref(d_ptr->pkt, other.d_ptr->pkt);
+
     d_ptr->codec = other.d_ptr->codec;
-    d_ptr->frame = other.d_ptr->frame;
+
     return *this;
 }
 
 QAVPacket::operator bool() const
 {
     Q_D(const QAVPacket);
-    return d->pkt.size;
+    return d->pkt->size;
 }
 
 QAVPacket::~QAVPacket()
 {
     Q_D(QAVPacket);
-    av_packet_unref(&d->pkt);
+    av_packet_free(&d->pkt);
 }
 
 AVPacket *QAVPacket::packet()
 {
-    return &d_func()->pkt;
+    return d_func()->pkt;
 }
 
 double QAVPacket::duration() const
@@ -72,17 +73,26 @@ double QAVPacket::duration() const
     if (!d->codec || !d->codec->stream())
         return 0;
 
-    return d->pkt.duration * av_q2d(d->codec->stream()->time_base);
+    return d->pkt->duration * av_q2d(d->codec->stream()->time_base);
+}
+
+double QAVPacket::pts() const
+{
+    Q_D(const QAVPacket);
+    if (!d->codec || !d->codec->stream())
+        return 0;
+
+    return d->pkt->pts * av_q2d(d->codec->stream()->time_base);
 }
 
 int QAVPacket::bytes() const
 {
-    return d_func()->pkt.size;
+    return d_func()->pkt->size;
 }
 
 int QAVPacket::streamIndex() const
 {
-    return d_func()->pkt.stream_index;
+    return d_func()->pkt->stream_index;
 }
 
 void QAVPacket::setCodec(const QAVCodec *c)
@@ -97,11 +107,7 @@ QAVFrame QAVPacket::decode()
     if (!d->codec)
         return {};
 
-    if (d->frame)
-        return d->frame;
-
-    d->frame = d->codec->decode(&d->pkt);
-    return d->frame;
+    return d->codec->decode(d->pkt);
 }
 
 QT_END_NAMESPACE

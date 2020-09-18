@@ -27,6 +27,14 @@
 #include "qavhwdevice_d3d11_p.h"
 #endif
 
+#if defined(Q_OS_ANDROID)
+#include "qavhwdevice_mediacodec_p.h"
+#include <QtCore/private/qjnihelpers_p.h>
+extern "C" {
+#include "libavcodec/jni.h"
+}
+#endif
+
 #include <QAtomicInt>
 #include <QDebug>
 
@@ -97,14 +105,13 @@ void QAVDemuxer::abort(bool stop)
     d->abortRequest = stop;
 }
 
-static void create_device(QAVVideoCodec *codec)
+static QAVVideoCodec *create_video_codec(AVStream *stream)
 {
-    if (qEnvironmentVariableIsSet("QT_AVPLAYER_NO_HWDEVICE"))
-        return;
-
-    AVDictionary *opts = NULL;
+    QScopedPointer<QAVVideoCodec> codec(new QAVVideoCodec);
     QScopedPointer<QAVHWDevice> device;
+    AVDictionary *opts = NULL;
     auto name = QGuiApplication::platformName();
+
 #if QT_CONFIG(va_x11) && QT_CONFIG(opengl)
     if (name == QLatin1String("xcb")) {
         device.reset(new QAVHWDevice_VAAPI_X11_GLX);
@@ -123,9 +130,20 @@ static void create_device(QAVVideoCodec *codec)
     if (name == QLatin1String("windows"))
         device.reset(new QAVHWDevice_D3D11);
 #endif
+#if defined(Q_OS_ANDROID)
+    if (name == QLatin1String("android")) {
+        device.reset(new QAVHWDevice_MediaCodec);
+        codec->setCodec(avcodec_find_decoder_by_name("h264_mediacodec"));
+        auto vm = QtAndroidPrivate::javaVM();
+        av_jni_set_java_vm(vm, NULL);
+    }
+#endif
 
-    if (!device)
-        return;
+    if (!codec->open(stream))
+        return nullptr;
+
+    if (qEnvironmentVariableIsSet("QT_AVPLAYER_NO_HWDEVICE"))
+        return codec.take();
 
     QList<AVHWDeviceType> supported;
     for (int i = 0;; ++i) {
@@ -137,26 +155,41 @@ static void create_device(QAVVideoCodec *codec)
             supported.append(config->device_type);
     }
 
-    if (supported.isEmpty()) {
-        qWarning() << "The video decoder" << codec->codec()->name << "does not support any devices";
-        return;
-    }
+    qDebug() << codec->codec()->name << ": supported hardware device contexts:";
+    for (auto a: supported)
+        qDebug() << "   " << av_hwdevice_get_type_name(a);
 
-    if (!supported.contains(device->type())) {
-        qWarning() << "The video decoder" << codec->codec()->name << "does not support device:"
-            << av_hwdevice_get_type_name(device->type());
-        qWarning() << "Supported devices:";
-        for (auto &a: supported)
-            qWarning() << "   " << av_hwdevice_get_type_name(a);
-        return;
+    if (!device) {
+        if (!supported.isEmpty())
+            qWarning() << "None of the hardware accelerations was implemented";
+        return codec.take();
     }
 
     AVBufferRef *hw_device_ctx = nullptr;
     if (av_hwdevice_ctx_create(&hw_device_ctx, device->type(), nullptr, opts, 0) >= 0) {
         qDebug() << "Using hardware device context:" << av_hwdevice_get_type_name(device->type());
         codec->avctx()->hw_device_ctx = hw_device_ctx;
+        codec->avctx()->pix_fmt = device->format();
         codec->setDevice(device.take());
     }
+
+    return codec.take();
+}
+
+static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
+{
+    if (level > av_log_get_level())
+        return;
+
+    va_list vl2;
+    char line[1024];
+    static int print_prefix = 1;
+
+    va_copy(vl2, vl);
+    av_log_format_line(ptr, level, fmt, vl2, line, sizeof(line), &print_prefix);
+    va_end(vl2);
+
+    qDebug() << "FFmpeg:" << line;
 }
 
 int QAVDemuxer::load(const QUrl &url)
@@ -208,15 +241,11 @@ int QAVDemuxer::load(const QUrl &url)
             qWarning() << "Could not open audio codec";
     }
 
+    av_log_set_callback(log_callback);
+
     if (d->videoStream >= 0) {
         if (!d->videoCodec)
-            d->videoCodec.reset(new QAVVideoCodec);
-        if (d->videoCodec->open(d->ctx->streams[d->videoStream])) {
-            create_device(d->videoCodec.data());
-        } else {
-            qWarning() << "Could not open the video codec";
-            d->videoCodec.reset();
-        }
+            d->videoCodec.reset(create_video_codec(d->ctx->streams[d->videoStream]));
     }
 
     d->seekable = d->ctx->iformat->read_seek || d->ctx->iformat->read_seek2;

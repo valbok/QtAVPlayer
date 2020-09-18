@@ -32,12 +32,6 @@ QAVVideoCodec::QAVVideoCodec(QObject *parent)
 {
 }
 
-QAVVideoCodec::QAVVideoCodec(AVCodec *c, QObject *parent)
-    : QAVVideoCodec(parent)
-{
-    d_ptr->codec = c;
-}
-
 void QAVVideoCodec::setDevice(QAVHWDevice *d)
 {
     d_func()->hw_device.reset(d);

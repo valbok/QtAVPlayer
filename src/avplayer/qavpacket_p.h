@@ -38,6 +38,7 @@ public:
 
     AVPacket *packet();
     double duration() const;
+    double pts() const;
     int bytes() const;
     int streamIndex() const;
 

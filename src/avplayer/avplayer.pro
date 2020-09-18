@@ -7,7 +7,6 @@ QT_PRIVATE += gui-private
 QMAKE_USE += ffmpeg
 
 PRIVATE_HEADERS += \
-    qavplayerglobal_p.h \
     qavcodec_p.h \
     qavcodec_p_p.h \
     qavaudiocodec_p.h \
@@ -61,6 +60,25 @@ macos|darwin {
 win32 {
     PRIVATE_HEADERS += qavhwdevice_d3d11_p.h
     SOURCES += qavhwdevice_d3d11.cpp
+}
+
+android {
+    PRIVATE_HEADERS += qavhwdevice_mediacodec_p.h
+    SOURCES += qavhwdevice_mediacodec.cpp
+
+    LIBS += -lavcodec -lavformat -lswscale -lavutil -lswresample
+    equals(ANDROID_TARGET_ARCH, armeabi-v7a) {
+        LIBS += -L/opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib
+    }
+    equals(ANDROID_TARGET_ARCH, arm64-v8a) {
+        LIBS += -L/opt/mobile-ffmpeg/prebuilt/android-arm64/ffmpeg/lib
+    }
+    equals(ANDROID_TARGET_ARCH, x86) {
+        LIBS += -L/opt/mobile-ffmpeg/prebuilt/android-x86/ffmpeg/lib
+    }
+    equals(ANDROID_TARGET_ARCH, x86_64) {
+        LIBS += -L/opt/mobile-ffmpeg/prebuilt/android-x86_64/ffmpeg/lib
+    }
 }
 
 HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS

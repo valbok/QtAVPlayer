@@ -37,6 +37,7 @@ public:
 
     bool open(AVStream *stream);
     AVCodecContext *avctx() const;
+    void setCodec(AVCodec *c);
     AVCodec *codec() const;
     AVStream *stream() const;
 

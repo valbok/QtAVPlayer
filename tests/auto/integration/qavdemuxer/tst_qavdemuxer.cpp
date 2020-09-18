@@ -93,6 +93,7 @@ void tst_QAVDemuxer::loadAudio()
         QVERIFY(p);
         QVERIFY(p.packet());
         QVERIFY(p.duration() > 0);
+        QVERIFY(p.pts() >= 0);
         QVERIFY(p.bytes() > 0);
         QCOMPARE(p.streamIndex(), d.audioStream());
 

@@ -1,6 +1,6 @@
 TARGET = tst_qavdemuxer
 
-QT += multimedia-private testlib multimediaavplayer-private
+QT += multimedia-private testlib avplayer-private
 
 CONFIG += testcase
 
