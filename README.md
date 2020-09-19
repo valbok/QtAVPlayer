@@ -94,3 +94,25 @@ Set vars that point to libraries in armeabi-v7a, arm64-v8a, x86 and x86_64 targe
     $ export AVPLAYER_ANDROID_LIB_X86_64=/opt/mobile-ffmpeg/prebuilt/android-x86_64/ffmpeg/lib
     $ export CPLUS_INCLUDE_PATH=/opt/mobile-ffmpeg/prebuilt/android-arm64/ffmpeg/include:$CPLUS_INCLUDE_PATH
     $ cd QtAVPlayer && qmake && make -j8
+
+* Windows and MSVC:
+
+Install ffmpeg libs and includes, open terminal:
+
+    SET FFMPEG=C:\ffmpeg
+    SET PATH=%FFMPEG%\lib;%PATH%
+    SET INCLUDE=%FFMPEG%\include;%INCLUDE%
+    SET LIB=%FFMPEG%\lib;%LIB%
+    cd QtAVPlayer && qmake && nmake
+
+- Limitations:
+
+Since QtAVPlayer uses QRHI to render the video frames, there are some limitations.
+
+* Windows:
+Even if D3D11 is used, array texture ID3D11Texture2D in NV12 format is not yet implemented in QRHI, thus decided to download memory from GPU to CPU.
+
+* Android:
+MediaCodec provides possibility to use android.view.Surface which currently is not implemented, thus copying from GPU to CPU is performed.
+
+
