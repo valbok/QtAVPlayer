@@ -67,18 +67,17 @@ android {
     SOURCES += qavhwdevice_mediacodec.cpp
 
     LIBS += -lavcodec -lavformat -lswscale -lavutil -lswresample
-    equals(ANDROID_TARGET_ARCH, armeabi-v7a) {
-        LIBS += -L/opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib
-    }
-    equals(ANDROID_TARGET_ARCH, arm64-v8a) {
-        LIBS += -L/opt/mobile-ffmpeg/prebuilt/android-arm64/ffmpeg/lib
-    }
-    equals(ANDROID_TARGET_ARCH, x86) {
-        LIBS += -L/opt/mobile-ffmpeg/prebuilt/android-x86/ffmpeg/lib
-    }
-    equals(ANDROID_TARGET_ARCH, x86_64) {
-        LIBS += -L/opt/mobile-ffmpeg/prebuilt/android-x86_64/ffmpeg/lib
-    }
+    equals(ANDROID_TARGET_ARCH, armeabi-v7a): \
+        LIBS += -L$$(AVPLAYER_ANDROID_LIB_ARMEABI_V7A)
+
+    equals(ANDROID_TARGET_ARCH, arm64-v8a): \
+        LIBS += -L$$(AVPLAYER_ANDROID_LIB_ARMEABI_V8A)
+
+    equals(ANDROID_TARGET_ARCH, x86): \
+        LIBS += -L$$(AVPLAYER_ANDROID_LIB_X86)
+
+    equals(ANDROID_TARGET_ARCH, x86_64): \
+        LIBS += -L$$(AVPLAYER_ANDROID_LIB_X86_64)
 }
 
 HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS

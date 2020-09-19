@@ -3,9 +3,8 @@
 Free Qt Media Player based on FFmpeg.
 Requires QtMultimedia 6.0 with Qt Rendering Hardware Interface support.
 
-Currently implemented:
-* Software decoding everywhere.
-* VAAPI decoding for Linux: DRM with EGL or X11 with GLX.
+Currently implemented software decoding everywhere and following hardware accelerations:
+* VA-API decoding for Linux: DRM with EGL or X11 with GLX.
 * Video Toolbox for macOS and iOS.
 * D3D11 for Windows. 
 * MediaCodec for Android. 
@@ -44,3 +43,54 @@ QVideoWidget::videoSurface(), QGraphicsVideoItem::videoSurface() and QML VideoOu
     p.setSpeed(1);
     p.play();
 
+# Build
+
+* Linux:
+
+Install ffmpeg visible with pkg-config and run qmake and make:
+
+    $ cd QtAVPlayer && qmake && make -j8
+    Info: creating stash file QtAVPlayer/.qmake.stash
+    Info: creating cache file QtAVPlayer/.qmake.cache
+
+    Running configuration tests...
+    Checking for FFmpeg... yes
+    Checking for va_drm... yes
+    Checking for va_x11... yes
+    Done running configuration tests.
+
+    Configure summary:
+
+    Qt AVPlayer:
+    FFmpeg ................................. yes
+    va_x11 ................................. yes
+    va_drm ................................. yes
+
+    Qt is now configured for building. Just run 'make'.
+    Once everything is built, Qt is installed.
+    You should NOT run 'make install'.
+    Note that this build cannot be deployed to other machines or devices.
+
+    Prior to reconfiguration, make sure you remove any leftovers from
+    the previous build.
+
+* macOS and iOS:
+
+Install ffmpeg libs and includes and:
+
+    $ export FFMPEG_ROOT=/usr/local/Cellar/ffmpeg/4.3_1
+    $ export LIBRARY_PATH=$FFMPEG_ROOT/lib:$LIBRARY_PATH
+    $ export CPLUS_INCLUDE_PATH=$FFMPEG_ROOT/include:$CPLUS_INCLUDE_PATH
+    $ cd QtAVPlayer && qmake && make -j8
+
+* Android:
+
+Install ffmpeg libs and includes.
+Set vars that point to libraries in armeabi-v7a, arm64-v8a, x86 and x86_64 target arch.
+
+    $ export AVPLAYER_ANDROID_LIB_ARMEABI_V7A=/opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib
+    $ export AVPLAYER_ANDROID_LIB_ARMEABI_V8A=/opt/mobile-ffmpeg/prebuilt/android-arm64/ffmpeg/lib
+    $ export AVPLAYER_ANDROID_LIB_X86=/opt/mobile-ffmpeg/prebuilt/android-x86/ffmpeg/lib
+    $ export AVPLAYER_ANDROID_LIB_X86_64=/opt/mobile-ffmpeg/prebuilt/android-x86_64/ffmpeg/lib
+    $ export CPLUS_INCLUDE_PATH=/opt/mobile-ffmpeg/prebuilt/android-arm64/ffmpeg/include:$CPLUS_INCLUDE_PATH
+    $ cd QtAVPlayer && qmake && make -j8
