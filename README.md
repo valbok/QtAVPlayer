@@ -74,7 +74,7 @@ Install ffmpeg visible with pkg-config.
     Prior to reconfiguration, make sure you remove any leftovers from
     the previous build.
 
-MacOS and iOS:
+macOS and iOS:
 
     $ export FFMPEG_ROOT=/usr/local/Cellar/ffmpeg/4.3_1
     $ export LIBRARY_PATH=$FFMPEG_ROOT/lib:$LIBRARY_PATH
