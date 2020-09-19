@@ -45,7 +45,7 @@ QVideoWidget::videoSurface(), QGraphicsVideoItem::videoSurface() and QML VideoOu
 
 # Build
 
-* Linux:
+Linux:
 
 Install ffmpeg visible with pkg-config.
 
@@ -74,14 +74,14 @@ Install ffmpeg visible with pkg-config.
     Prior to reconfiguration, make sure you remove any leftovers from
     the previous build.
 
-* macOS and iOS:
+MacOS and iOS:
 
     $ export FFMPEG_ROOT=/usr/local/Cellar/ffmpeg/4.3_1
     $ export LIBRARY_PATH=$FFMPEG_ROOT/lib:$LIBRARY_PATH
     $ export CPLUS_INCLUDE_PATH=$FFMPEG_ROOT/include:$CPLUS_INCLUDE_PATH
-    $ cd QtAVPlayer && qmake && make -j8
+    $ cd QtAVPlayer && qmake && make -j8    
 
-* Android:
+Android:
 
 Set vars that point to libraries in armeabi-v7a, arm64-v8a, x86 and x86_64 target arch.
 
@@ -92,7 +92,7 @@ Set vars that point to libraries in armeabi-v7a, arm64-v8a, x86 and x86_64 targe
     $ export CPLUS_INCLUDE_PATH=/opt/mobile-ffmpeg/prebuilt/android-arm64/ffmpeg/include:$CPLUS_INCLUDE_PATH
     $ cd QtAVPlayer && qmake && make -j8
 
-* Windows and MSVC:
+Windows and MSVC:
 
 Install ffmpeg libs and includes, open terminal:
 
