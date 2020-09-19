@@ -105,14 +105,16 @@ Install ffmpeg libs and includes, open terminal:
     SET LIB=%FFMPEG%\lib;%LIB%
     cd QtAVPlayer && qmake && nmake
 
-- Limitations:
+# BTW:
 
 Since QtAVPlayer uses QRHI to render the video frames, there are some limitations.
 
 * Windows:
+
 Even if D3D11 is used, array texture ID3D11Texture2D in NV12 format is not yet implemented in QRHI, thus decided to download memory from GPU to CPU.
 
 * Android:
+
 MediaCodec provides possibility to use android.view.Surface which currently is not implemented, thus copying from GPU to CPU is performed.
 
 
