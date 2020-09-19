@@ -83,7 +83,7 @@ MacOS and iOS:
 
 Android:
 
-Set vars that point to libraries in armeabi-v7a, arm64-v8a, x86 and x86_64 target arch.
+Set vars that point to libraries in armeabi-v7a, arm64-v8a, x86 and x86_64 target archs.
 
     $ export AVPLAYER_ANDROID_LIB_ARMEABI_V7A=/opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib
     $ export AVPLAYER_ANDROID_LIB_ARMEABI_V8A=/opt/mobile-ffmpeg/prebuilt/android-arm64/ffmpeg/lib
@@ -93,8 +93,6 @@ Set vars that point to libraries in armeabi-v7a, arm64-v8a, x86 and x86_64 targe
     $ cd QtAVPlayer && qmake && make -j8
 
 Windows and MSVC:
-
-Install ffmpeg libs and includes, open terminal:
 
     SET FFMPEG=C:\ffmpeg
     SET PATH=%FFMPEG%\lib;%PATH%
@@ -106,11 +104,11 @@ Install ffmpeg libs and includes, open terminal:
 
 Since QtAVPlayer uses QRHI to render the video frames (also means available only in QML), there are some limitations.
 
-* Windows:
+Windows:
 
 Even if D3D11 is used, array texture ID3D11Texture2D in NV12 format is not yet implemented in QRHI, thus decided to download memory from GPU to CPU.
 
-* Android:
+Android:
 
 MediaCodec provides possibility to use android.view.Surface which currently is not implemented, thus copying from GPU to CPU is performed.
 
