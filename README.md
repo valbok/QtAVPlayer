@@ -47,7 +47,7 @@ QVideoWidget::videoSurface(), QGraphicsVideoItem::videoSurface() and QML VideoOu
 
 * Linux:
 
-Install ffmpeg visible with pkg-config and run qmake and make:
+Install ffmpeg visible with pkg-config.
 
     $ cd QtAVPlayer && qmake && make -j8
     Info: creating stash file QtAVPlayer/.qmake.stash
@@ -76,8 +76,6 @@ Install ffmpeg visible with pkg-config and run qmake and make:
 
 * macOS and iOS:
 
-Install ffmpeg libs and includes and:
-
     $ export FFMPEG_ROOT=/usr/local/Cellar/ffmpeg/4.3_1
     $ export LIBRARY_PATH=$FFMPEG_ROOT/lib:$LIBRARY_PATH
     $ export CPLUS_INCLUDE_PATH=$FFMPEG_ROOT/include:$CPLUS_INCLUDE_PATH
@@ -85,7 +83,6 @@ Install ffmpeg libs and includes and:
 
 * Android:
 
-Install ffmpeg libs and includes.
 Set vars that point to libraries in armeabi-v7a, arm64-v8a, x86 and x86_64 target arch.
 
     $ export AVPLAYER_ANDROID_LIB_ARMEABI_V7A=/opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib
@@ -105,9 +102,9 @@ Install ffmpeg libs and includes, open terminal:
     SET LIB=%FFMPEG%\lib;%LIB%
     cd QtAVPlayer && qmake && nmake
 
-# BTW:
+# btw:
 
-Since QtAVPlayer uses QRHI to render the video frames, there are some limitations.
+Since QtAVPlayer uses QRHI to render the video frames (also means available only in QML), there are some limitations.
 
 * Windows:
 
