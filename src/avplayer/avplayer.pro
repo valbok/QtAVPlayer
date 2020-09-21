@@ -40,7 +40,7 @@ SOURCES += \
     qavplanarvideobuffer_gpu.cpp
 
 qtConfig(va_x11):qtConfig(opengl): {
-    QMAKE_USE += va_x11
+    QMAKE_USE += va_x11 x11
     PRIVATE_HEADERS += qavhwdevice_vaapi_x11_glx_p.h
     SOURCES += qavhwdevice_vaapi_x11_glx.cpp
 }
