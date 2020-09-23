@@ -1,6 +1,6 @@
 # Qt AVPlayer
 
-Free Qt Media Player based on FFmpeg.
+Free and open-source Qt Media Player based on FFmpeg.
 Requires QtMultimedia 6.0 with Qt Rendering Hardware Interface support.
 
 Currently implemented software decoding everywhere and following hardware accelerations:
