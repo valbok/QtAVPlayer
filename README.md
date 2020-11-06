@@ -21,9 +21,9 @@ QAudioOutput is used to play audio.
 
 # Example:
 
-The video surface must provide a list of supported pixel formats from QAbstractVideoSurface::supportedPixelFormats().
-One of them will be used when QVideoFrame is sent to QAbstractVideoSurface::present().
-QVideoWidget::videoSurface(), QGraphicsVideoItem::videoSurface() and QML VideoOutput::videoSurface() provide the video surfaces.
+The video surface must provide a list of supported pixel formats from `QAbstractVideoSurface::supportedPixelFormats()`.
+One of them will be used when `QVideoFrame` is sent to `QAbstractVideoSurface::present()`.
+`QVideoWidget::videoSurface()`, `QGraphicsVideoItem::videoSurface()` and QML `VideoOutput::videoSurface()` provide the video surfaces.
 
     struct Surface : QAbstractVideoSurface {
         QList<QVideoFrame::PixelFormat> supportedPixelFormats(QAbstractVideoBuffer::HandleType) const override {
@@ -31,7 +31,7 @@ QVideoWidget::videoSurface(), QGraphicsVideoItem::videoSurface() and QML VideoOu
         }
 
         bool present(const QVideoFrame &f) override {
-            // Handle frame here...
+            // Handle the frame here...
             return true;
         }
     } s;
