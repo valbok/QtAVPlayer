@@ -232,9 +232,9 @@ void QAVPlayerPrivate::doLoad(const QUrl &url)
         setMediaStatus(QMediaPlayer::LoadedMedia);
     });
 
-    demuxerFuture = QtConcurrent::run(&QAVPlayerPrivate::doDemux, this);
-    videoPlayFuture = QtConcurrent::run(&QAVPlayerPrivate::doPlayVideo, this);
-    audioPlayFuture = QtConcurrent::run(&QAVPlayerPrivate::doPlayAudio, this);
+    demuxerFuture = QtConcurrent::run(this, &QAVPlayerPrivate::doDemux);
+    videoPlayFuture = QtConcurrent::run(this, &QAVPlayerPrivate::doPlayVideo);
+    audioPlayFuture = QtConcurrent::run(this, &QAVPlayerPrivate::doPlayAudio);
 }
 
 void QAVPlayerPrivate::doDemux()
@@ -407,7 +407,7 @@ void QAVPlayer::setSource(const QUrl &url)
 
     d->quit = false;
     d->setMediaStatus(QMediaPlayer::LoadingMedia);
-    d->loaderFuture = QtConcurrent::run(&QAVPlayerPrivate::doLoad, d, d->url);
+    d->loaderFuture = QtConcurrent::run(d, &QAVPlayerPrivate::doLoad, d->url);
     QMutexLocker locker(&d->waitMutex);
     d->wait = true;
 }
