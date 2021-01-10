@@ -4,7 +4,7 @@ MODULE = avplayer
 QT = multimedia concurrent multimedia-private
 QT_PRIVATE += gui-private
 
-QMAKE_USE += ffmpeg
+#QMAKE_USE += ffmpeg
 
 PRIVATE_HEADERS += \
     qavcodec_p.h \
