@@ -8,7 +8,7 @@
 #ifndef QAVPLAYER_H
 #define QAVPLAYER_H
 
-#include <QtAVPlayer/qtavplayerglobal.h>
+#include <qtavplayerglobal.h>
 #include <QMediaPlayer>
 #include <QUrl>
 #include <QScopedPointer>

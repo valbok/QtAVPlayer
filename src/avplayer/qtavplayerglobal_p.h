@@ -20,7 +20,7 @@
 //
 
 #include <QtGui/private/qtguiglobal_p.h>
-#include <QtAVPlayer/private/qtavplayer-config_p.h>
-#include <QtAVPlayer/qtavplayerglobal.h>
+#include "qtavplayer-config_p.h"
+#include <qtavplayerglobal.h>
 
 #endif

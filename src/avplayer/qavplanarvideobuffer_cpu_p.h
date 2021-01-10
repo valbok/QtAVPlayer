@@ -20,7 +20,7 @@
 //
 
 #include "qavvideoframe_p.h"
-#include <QtAVPlayer/private/qtavplayerglobal_p.h>
+#include "qtavplayerglobal_p.h"
 #include <QAbstractPlanarVideoBuffer>
 
 QT_BEGIN_NAMESPACE

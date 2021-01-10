@@ -21,6 +21,7 @@
 
 #include "qavpacket_p.h"
 #include <QMutex>
+#include <QWaitCondition>
 #include <QList>
 
 extern "C" {

@@ -9,6 +9,7 @@
 #include "qavvideocodec_p.h"
 #include "qavplanarvideobuffer_gpu_p.h"
 #include <QVideoFrame>
+#include <QAbstractVideoSurface>
 #include <QDebug>
 
 QT_BEGIN_NAMESPACE

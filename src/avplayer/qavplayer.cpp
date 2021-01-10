@@ -13,6 +13,8 @@
 #include "qavaudioframe_p.h"
 #include "qavpacketqueue_p.h"
 
+#include <QAudioOutput>
+#include <QVideoSurfaceFormat>
 #include <QAbstractVideoSurface>
 #include <qtconcurrentrun.h>
 
