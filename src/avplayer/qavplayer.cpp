@@ -345,6 +345,11 @@ void QAVPlayerPrivate::doPlayAudio()
             audioOutput.reset(new QAudioOutput(format));
             if (!device)
                 device = audioOutput->start();
+
+            if(!device) {
+                qDebug() << "no audio device, aborting audio playback...";
+                break;
+            }
         }
 
         if (!muted) {
