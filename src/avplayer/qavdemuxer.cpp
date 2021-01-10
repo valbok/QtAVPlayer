@@ -35,8 +35,11 @@ extern "C" {
 }
 #endif
 
+#include <QGuiApplication>
 #include <QAtomicInt>
 #include <QDebug>
+#include <QUrl>
+#include <QDir>
 
 extern "C" {
 #include <libavformat/avformat.h>
