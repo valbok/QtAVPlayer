@@ -1,7 +1,5 @@
 requires(qtHaveModule(multimedia))
 
-cache()
-
 load(qt_configure)
 
 load(qt_build_config)
