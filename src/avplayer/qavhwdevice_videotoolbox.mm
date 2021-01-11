@@ -8,6 +8,7 @@
 #include "qavhwdevice_videotoolbox_p.h"
 #include "qavvideocodec_p.h"
 #include "qavplanarvideobuffer_gpu_p.h"
+#include <QAbstractVideoSurface>
 #include <QVideoFrame>
 #include <QDebug>
 
@@ -56,7 +57,7 @@ bool QAVHWDevice_VideoToolbox::supportsVideoSurface(QAbstractVideoSurface *surfa
     if (!surface)
         return false;
 
-    auto list = surface->supportedPixelFormats(QAbstractVideoBuffer::MTLTextureHandle);
+    auto list = surface->supportedPixelFormats(QAbstractVideoBuffer::GLTextureHandle);
     return list.contains(QVideoFrame::Format_NV12);
 }
 
@@ -64,7 +65,7 @@ class VideoBuffer_MTL : public QAVPlanarVideoBuffer_GPU
 {
 public:
     VideoBuffer_MTL(QAVHWDevice_VideoToolboxPrivate *hw, const QAVVideoFrame &frame)
-        : QAVPlanarVideoBuffer_GPU(frame, MTLTextureHandle)
+        : QAVPlanarVideoBuffer_GPU(frame, GLTextureHandle)
         , m_hw(hw)
     {
     }
@@ -74,7 +75,9 @@ public:
         CVPixelBufferRelease(m_hw->pbuf);
         m_hw->pbuf = (CVPixelBufferRef)frame().frame()->data[3];
         CVPixelBufferRetain(m_hw->pbuf);
-        QList<QVariant> textures(2);
+        QList<QVariant> textures;
+        textures.append(QVariant());
+        textures.append(QVariant());
 
         if (!m_hw->pbuf)
             return textures;
