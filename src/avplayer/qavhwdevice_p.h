@@ -24,6 +24,7 @@
 
 extern "C" {
 #include <libavformat/avformat.h>
+#include <libavutil/hwcontext.h>
 }
 
 QT_BEGIN_NAMESPACE

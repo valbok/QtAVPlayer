@@ -110,6 +110,7 @@ static QAVVideoCodec *create_video_codec(AVStream *stream)
     QScopedPointer<QAVVideoCodec> codec(new QAVVideoCodec);
     QScopedPointer<QAVHWDevice> device;
     AVDictionary *opts = NULL;
+    Q_UNUSED(opts);
     auto name = QGuiApplication::platformName();
 
 #if QT_CONFIG(va_x11) && QT_CONFIG(opengl)
@@ -146,6 +147,7 @@ static QAVVideoCodec *create_video_codec(AVStream *stream)
         return codec.take();
 
     QList<AVHWDeviceType> supported;
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(58, 0, 0)
     for (int i = 0;; ++i) {
         const AVCodecHWConfig *config = avcodec_get_hw_config(codec->codec(), i);
         if (!config)
@@ -158,6 +160,7 @@ static QAVVideoCodec *create_video_codec(AVStream *stream)
     qDebug() << codec->codec()->name << ": supported hardware device contexts:";
     for (auto a: supported)
         qDebug() << "   " << av_hwdevice_get_type_name(a);
+#endif
 
     if (!device) {
         if (!supported.isEmpty())

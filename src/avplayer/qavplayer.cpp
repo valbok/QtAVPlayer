@@ -232,9 +232,15 @@ void QAVPlayerPrivate::doLoad(const QUrl &url)
         setMediaStatus(QMediaPlayer::LoadedMedia);
     });
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    demuxerFuture = QtConcurrent::run(this, &QAVPlayerPrivate::doDemux);
+    videoPlayFuture = QtConcurrent::run(this, &QAVPlayerPrivate::doPlayVideo);
+    audioPlayFuture = QtConcurrent::run(this, &QAVPlayerPrivate::doPlayAudio);
+#else
     demuxerFuture = QtConcurrent::run(&QAVPlayerPrivate::doDemux, this);
     videoPlayFuture = QtConcurrent::run(&QAVPlayerPrivate::doPlayVideo, this);
     audioPlayFuture = QtConcurrent::run(&QAVPlayerPrivate::doPlayAudio, this);
+#endif
 }
 
 void QAVPlayerPrivate::doDemux()
@@ -343,6 +349,11 @@ void QAVPlayerPrivate::doPlayAudio()
             audioOutput.reset(new QAudioOutput(format));
             if (!device)
                 device = audioOutput->start();
+
+            if (!device) {
+                qWarning() << "Could not start audio device:" << format;
+                break;
+            }
         }
 
         if (!muted) {
@@ -407,7 +418,11 @@ void QAVPlayer::setSource(const QUrl &url)
 
     d->quit = false;
     d->setMediaStatus(QMediaPlayer::LoadingMedia);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    d->loaderFuture = QtConcurrent::run(d, &QAVPlayerPrivate::doLoad, d->url);
+#else
     d->loaderFuture = QtConcurrent::run(&QAVPlayerPrivate::doLoad, d, d->url);
+#endif
     QMutexLocker locker(&d->waitMutex);
     d->wait = true;
 }

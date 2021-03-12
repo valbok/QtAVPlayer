@@ -51,7 +51,8 @@ QAVHWDevice_VAAPI_X11_GLX::~QAVHWDevice_VAAPI_X11_GLX()
     if (d->pixmap)
         XFreePixmap(d->display, d->pixmap);
 
-    glDeleteTextures(1, &d->texture);
+    if (d->texture)
+        glDeleteTextures(1, &d->texture);
 }
 
 AVPixelFormat QAVHWDevice_VAAPI_X11_GLX::format() const

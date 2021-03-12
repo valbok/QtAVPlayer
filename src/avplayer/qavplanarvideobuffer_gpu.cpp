@@ -9,6 +9,11 @@
 #include "qavvideoframe_p.h"
 #include <QDebug>
 
+
+extern "C" {
+#include <libavutil/hwcontext.h>
+}
+
 QT_BEGIN_NAMESPACE
 
 QAVPlanarVideoBuffer_GPU::QAVPlanarVideoBuffer_GPU(const QAVVideoFrame &frame, HandleType type)
