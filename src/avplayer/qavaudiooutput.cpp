@@ -20,7 +20,7 @@ class QAVAudioOutputPrivate
 public:
     QScopedPointer<QAudioOutput> audioOutput;
     QAudioFormat format;
-    qreal volume = 0.0;
+    qreal volume = 1.0;
     QIODevice *device = nullptr;
 };
 
