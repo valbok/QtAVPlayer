@@ -37,6 +37,7 @@ private slots:
     void speedVideo();
     void surfaceVideo();
     void surfaceVideoUnsupported();
+    void vo();
 };
 
 void tst_QAVPlayer::construction()
@@ -622,7 +623,7 @@ void tst_QAVPlayer::surfaceVideo()
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
 
     Surface s({QVideoFrame::Format_YUV420P});
-    p.setVideoSurface(&s);
+    p.vo(&s);
 
     QCOMPARE(p.state(), QMediaPlayer::StoppedState);
 
@@ -640,11 +641,26 @@ void tst_QAVPlayer::surfaceVideoUnsupported()
     p.play();
 
     Surface s({QVideoFrame::Format_Invalid});
-    p.setVideoSurface(&s);
+    p.vo(&s);
 
     QCOMPARE(p.state(), QMediaPlayer::PlayingState);
     QTRY_COMPARE(p.mediaStatus(), QMediaPlayer::LoadedMedia);
     QVERIFY(s.frames == 0);
+}
+
+void tst_QAVPlayer::vo()
+{
+    QAVPlayer p;
+
+    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.play();
+
+    QVideoFrame frame;
+    p.vo([&frame](const QVideoFrame &f) { frame = f; });
+
+    QTRY_COMPARE(p.mediaStatus(), QMediaPlayer::LoadedMedia);
+    QVERIFY(frame.isValid());
 }
 
 QTEST_MAIN(tst_QAVPlayer)

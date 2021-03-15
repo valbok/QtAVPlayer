@@ -24,7 +24,15 @@ int main(int argc, char *argv[])
     auto vo = rootObject->findChild<QDeclarativeVideoOutput *>("videoOutput");
 
     QAVPlayer p;
-    p.setVideoSurface(vo->videoSurface());
+    p.vo(vo->videoSurface());
+    /*QAVAudioOutput audioOutput;
+    p.ao([&audioOutput](const QAudioBuffer &buf) {  audioOutput.play(buf); });
+    p.vo([vo](const QVideoFrame &videoFrame) {
+        if (!vo->videoSurface()->isActive())
+            vo->videoSurface()->start({videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType()});
+        if (vo->videoSurface()->isActive())
+            vo->videoSurface()->present(videoFrame);
+    });*/
     p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
     p.play();
 

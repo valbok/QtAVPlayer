@@ -88,6 +88,7 @@ public:
     QWaitCondition waitCond;
     mutable QMutex positionMutex;
 
+    std::function<void(const QVideoFrame &data)> vo;
     std::function<void(const QAudioBuffer &data)> ao;
 };
 
@@ -314,6 +315,11 @@ void QAVPlayerPrivate::doPlayVideo()
 
         QVideoFrame videoFrame = frame;
         call([this, videoFrame] {
+            if (vo) {
+                vo(videoFrame);
+                return;
+            }
+
             if (!surface)
                 return;
             if (!surface->isActive())
@@ -357,7 +363,7 @@ void QAVPlayerPrivate::doPlayAudio()
             auto data = frame.data(format);
             QAudioBuffer buf(data, format);
             if (ao) {
-                ao(buf);
+                call([this, buf] { ao(buf); });
             } else {
                 audioOutput->setVolume(volume / 100.0);
                 audioOutput->play(buf);
@@ -427,9 +433,18 @@ bool QAVPlayer::isVideoAvailable() const
     return d_func()->isVideoAvailable();
 }
 
-void QAVPlayer::setVideoSurface(QAbstractVideoSurface *surface)
+void QAVPlayer::vo(QAbstractVideoSurface *surface)
 {
-    d_func()->surface = surface;
+    Q_D(QAVPlayer);
+    d->surface = surface;
+    d->vo = nullptr;
+}
+
+void QAVPlayer::vo(std::function<void(const QVideoFrame &data)> f)
+{
+    Q_D(QAVPlayer);
+    d->surface = nullptr;
+    d->vo = f;
 }
 
 void QAVPlayer::ao(std::function<void(const QAudioBuffer &buf)> f)

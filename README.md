@@ -37,17 +37,23 @@ One of them will be used when `QVideoFrame` is sent to `QAbstractVideoSurface::p
     } s;
     
     QAVPlayer p;
-    p.setVideoSurface(&s);
+    p.vo(&s);
     p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
     p.setVolume(50);
     p.setSpeed(1);
     p.play();
 
-Extracting audio frames:
+Extracting and play audio frames:
 
     QAVAudioOutput audioOutput;
     p.ao([&audioOutput](const QAudioBuffer &buf) {
         audioOutput.play(buf);
+    });
+
+Extracting video frames:
+
+    p.vo([](const QVideoFrame &frame) {
+        qDebug() << frame;
     });
 
 # Build

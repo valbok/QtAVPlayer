@@ -10,6 +10,7 @@
 
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QAudioBuffer>
+#include <QVideoFrame>
 #include <QMediaPlayer>
 #include <QUrl>
 #include <QScopedPointer>
@@ -31,8 +32,8 @@ public:
     bool isAudioAvailable() const;
     bool isVideoAvailable() const;
 
-    void setVideoSurface(QAbstractVideoSurface *surface);
-
+    void vo(QAbstractVideoSurface *surface);
+    void vo(std::function<void(const QVideoFrame &data)>);
     void ao(std::function<void(const QAudioBuffer &data)>);
 
     QMediaPlayer::State state() const;
