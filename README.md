@@ -43,6 +43,13 @@ One of them will be used when `QVideoFrame` is sent to `QAbstractVideoSurface::p
     p.setSpeed(1);
     p.play();
 
+Extracting audio frames:
+
+    QAVAudioOutput audioOutput;
+    p.ao([&audioOutput](const QAudioBuffer &buf) {
+        audioOutput.play(buf);
+    });
+
 # Build
 
 Linux:
