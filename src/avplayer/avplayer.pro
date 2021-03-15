@@ -24,9 +24,11 @@ PRIVATE_HEADERS += \
 
 PUBLIC_HEADERS += \
     qtavplayerglobal.h \
+    qavaudiooutput.h \
     qavplayer.h
 
 SOURCES += \
+    qavaudiooutput.cpp \
     qavplayer.cpp \
     qavcodec.cpp \
     qavaudiocodec.cpp \

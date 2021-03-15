@@ -25,6 +25,7 @@ private slots:
     void quitAudio();
     void playIncorrectSource();
     void playAudio();
+    void playAudioOutput();
     void pauseAudio();
     void volumeAudio();
     void stopAudio();
@@ -242,6 +243,27 @@ void tst_QAVPlayer::playAudio()
 
     QTRY_COMPARE(p.mediaStatus(), QMediaPlayer::LoadedMedia);
     QCOMPARE(p.state(), QMediaPlayer::StoppedState);
+}
+
+void tst_QAVPlayer::playAudioOutput()
+{
+    QAVPlayer p;
+    QSignalSpy spyState(&p, &QAVPlayer::stateChanged);
+    QSignalSpy spyMediaStatus(&p, &QAVPlayer::mediaStatusChanged);
+    QSignalSpy spyDuration(&p, &QAVPlayer::durationChanged);
+
+    QFileInfo file(QLatin1String("../testdata/test.wav"));
+    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    QAudioBuffer buffer;
+    p.ao([&buffer](const QAudioBuffer &b) { buffer = b; });
+    p.play();
+
+    QTRY_VERIFY(p.position() != 0);
+    QVERIFY(buffer.format().isValid());
+
+    QTRY_COMPARE(p.mediaStatus(), QMediaPlayer::EndOfMedia);
+    QCOMPARE(p.state(), QMediaPlayer::StoppedState);
+    QCOMPARE(p.position(), p.duration());
 }
 
 void tst_QAVPlayer::pauseAudio()

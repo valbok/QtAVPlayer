@@ -6,6 +6,7 @@
  *********************************************************/
 
 #include "qavplayer.h"
+#include "qavaudiooutput.h"
 #include "qavdemuxer_p.h"
 #include "qavvideocodec_p.h"
 #include "qavaudiocodec_p.h"
@@ -79,13 +80,15 @@ public:
     QAVPacketQueue audioQueue;
     double audioPts = 0;
 
-    QScopedPointer<QAudioOutput> audioOutput;
+    QScopedPointer<QAVAudioOutput> audioOutput;
 
     bool quit = 0;
     bool wait = false;
     QMutex waitMutex;
     QWaitCondition waitCond;
     mutable QMutex positionMutex;
+
+    std::function<void(const QAudioBuffer &data)> ao;
 };
 
 static QString err_str(int err)
@@ -330,7 +333,6 @@ void QAVPlayerPrivate::doPlayVideo()
 void QAVPlayerPrivate::doPlayAudio()
 {
     QAVAudioFrame frame;
-    QIODevice *device = nullptr;
     QAudioFormat format;
 
     while (!quit) {
@@ -346,36 +348,19 @@ void QAVPlayerPrivate::doPlayAudio()
                 format.setSampleType(QAudioFormat::SignedInt);
             }
 
-            audioOutput.reset(new QAudioOutput(format));
-            if (!device)
-                device = audioOutput->start();
-
-            if (!device) {
-                qWarning() << "Could not start audio device:" << format;
-                break;
-            }
+            if (!ao)
+                audioOutput.reset(new QAVAudioOutput);
         }
 
         if (!muted) {
-            audioOutput->setVolume(volume / 100.0);
-            int pos = 0;
             frame.frame()->sample_rate *= speed;
             auto data = frame.data(format);
-            int size = data.size();
-            while (size && !quit) {
-                if (audioOutput->bytesFree() < audioOutput->periodSize()) {
-                    const double refreshRate = 0.01;
-                    av_usleep((int64_t)(refreshRate * 1000000.0));
-                    continue;
-                }
-
-                int chunk = qMin(size, audioOutput->periodSize());
-                QByteArray decodedChunk = QByteArray::fromRawData(data.constData() + pos, chunk);
-                int wrote = device->write(decodedChunk);
-                if (wrote > 0) {
-                    pos += chunk;
-                    size -= chunk;
-                }
+            QAudioBuffer buf(data, format);
+            if (ao) {
+                ao(buf);
+            } else {
+                audioOutput->setVolume(volume / 100.0);
+                audioOutput->play(buf);
             }
         }
 
@@ -445,6 +430,11 @@ bool QAVPlayer::isVideoAvailable() const
 void QAVPlayer::setVideoSurface(QAbstractVideoSurface *surface)
 {
     d_func()->surface = surface;
+}
+
+void QAVPlayer::ao(std::function<void(const QAudioBuffer &buf)> f)
+{
+    d_func()->ao = f;
 }
 
 QMediaPlayer::State QAVPlayer::state() const
