@@ -23,6 +23,12 @@ typedef void (*glXReleaseTexImageEXT_)(Display *dpy, GLXDrawable draw, int buffe
 static glXBindTexImageEXT_ s_glXBindTexImageEXT = nullptr;
 static glXReleaseTexImageEXT_ s_glXReleaseTexImageEXT = nullptr;
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+static const QVideoFrame::PixelFormat s_pixelFormat = QVideoFrame::Format_BGR32;
+#else
+static const QVideoFrame::PixelFormat s_pixelFormat = QVideoFrame::Format_ABGR32;
+#endif
+
 QT_BEGIN_NAMESPACE
 
 class QAVHWDevice_VAAPI_X11_GLXPrivate
@@ -71,7 +77,7 @@ bool QAVHWDevice_VAAPI_X11_GLX::supportsVideoSurface(QAbstractVideoSurface *surf
         return false;
 
     auto list = surface->supportedPixelFormats(QAbstractVideoBuffer::GLTextureHandle);
-    return list.contains(QVideoFrame::Format_ABGR32);
+    return list.contains(s_pixelFormat);
 }
 
 class VideoBuffer_GLX : public QAVPlanarVideoBuffer_GPU
@@ -178,7 +184,7 @@ public:
 
 QVideoFrame QAVHWDevice_VAAPI_X11_GLX::decode(const QAVVideoFrame &frame) const
 {
-    return {new VideoBuffer_GLX(d_ptr.data(), frame), frame.size(), QVideoFrame::Format_ABGR32};
+    return {new VideoBuffer_GLX(d_ptr.data(), frame), frame.size(), s_pixelFormat};
 }
 
 QT_END_NAMESPACE

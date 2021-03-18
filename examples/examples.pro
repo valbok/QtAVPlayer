@@ -1,2 +1,3 @@
 TEMPLATE = subdirs
-SUBDIRS += qml_video
+versionAtLeast(QT_VERSION, 5.15.0): SUBDIRS += qml_video
+SUBDIRS += extract_frames
