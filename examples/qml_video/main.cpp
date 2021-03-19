@@ -11,6 +11,25 @@
 #include <QtQml/QQmlEngine>
 #include <QGuiApplication>
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+class Source : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(QAbstractVideoSurface *videoSurface READ videoSurface WRITE setVideoSurface)
+public:
+    explicit Source(QObject *parent = 0) : QObject(parent) { }
+    virtual ~Source() { }
+
+    QAbstractVideoSurface* videoSurface() const { return m_surface; }
+    void setVideoSurface(QAbstractVideoSurface *surface)
+    {
+        m_surface = surface;
+    }
+
+    QAbstractVideoSurface *m_surface = nullptr;
+};
+#endif
+
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
@@ -24,7 +43,15 @@ int main(int argc, char *argv[])
     auto vo = rootObject->findChild<QDeclarativeVideoOutput *>("videoOutput");
 
     QAVPlayer p;
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+    Source src;
+    vo->setSource(&src);
+    if (src.m_surface)
+        p.vo(src.m_surface);
+#else
     p.vo(vo->videoSurface());
+#endif
+
     /*QAVAudioOutput audioOutput;
     p.ao([&audioOutput](const QAudioBuffer &buf) {  audioOutput.play(buf); });
     p.vo([vo](const QVideoFrame &videoFrame) {
@@ -53,3 +80,6 @@ int main(int argc, char *argv[])
     return app.exec();
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+#include "main.moc"
+#endif
