@@ -7,9 +7,7 @@
 
 #include "qavhwdevice_vaapi_x11_glx_p.h"
 #include "qavvideocodec_p.h"
-#include "qavplanarvideobuffer_gpu_p.h"
-#include <QVideoFrame>
-#include <QDebug>
+#include "qavvideobuffer_gpu_p.h"
 
 #include <GL/glx.h>
 #include <va/va_x11.h>
@@ -22,12 +20,6 @@ typedef void (*glXBindTexImageEXT_)(Display *dpy, GLXDrawable drawable, int buff
 typedef void (*glXReleaseTexImageEXT_)(Display *dpy, GLXDrawable draw, int buffer);
 static glXBindTexImageEXT_ s_glXBindTexImageEXT = nullptr;
 static glXReleaseTexImageEXT_ s_glXReleaseTexImageEXT = nullptr;
-
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-static const QVideoFrame::PixelFormat s_pixelFormat = QVideoFrame::Format_BGR32;
-#else
-static const QVideoFrame::PixelFormat s_pixelFormat = QVideoFrame::Format_ABGR32;
-#endif
 
 QT_BEGIN_NAMESPACE
 
@@ -71,20 +63,11 @@ AVHWDeviceType QAVHWDevice_VAAPI_X11_GLX::type() const
     return AV_HWDEVICE_TYPE_VAAPI;
 }
 
-bool QAVHWDevice_VAAPI_X11_GLX::supportsVideoSurface(QAbstractVideoSurface *surface) const
-{
-    if (!surface)
-        return false;
-
-    auto list = surface->supportedPixelFormats(QAbstractVideoBuffer::GLTextureHandle);
-    return list.contains(s_pixelFormat);
-}
-
-class VideoBuffer_GLX : public QAVPlanarVideoBuffer_GPU
+class VideoBuffer_GLX : public QAVVideoBuffer_GPU
 {
 public:
     VideoBuffer_GLX(QAVHWDevice_VAAPI_X11_GLXPrivate *hw, const QAVVideoFrame &frame)
-        : QAVPlanarVideoBuffer_GPU(frame, GLTextureHandle)
+        : QAVVideoBuffer_GPU(frame)
         , m_hw(hw)
     {
         if (!s_glXBindTexImageEXT) {
@@ -182,9 +165,19 @@ public:
     QAVHWDevice_VAAPI_X11_GLXPrivate *m_hw = nullptr;
 };
 
-QVideoFrame QAVHWDevice_VAAPI_X11_GLX::decode(const QAVVideoFrame &frame) const
+QAVVideoFrame::MapData QAVHWDevice_VAAPI_X11_GLX::map(const QAVVideoFrame &frame) const
 {
-    return {new VideoBuffer_GLX(d_ptr.data(), frame), frame.size(), s_pixelFormat};
+    return VideoBuffer_GLX(d_ptr.data(), frame).map();
+}
+
+QAVVideoFrame::HandleType QAVHWDevice_VAAPI_X11_GLX::handleType() const
+{
+    return QAVVideoFrame::GLTextureHandle;
+}
+
+QVariant QAVHWDevice_VAAPI_X11_GLX::handle(const QAVVideoFrame &frame) const
+{
+    return VideoBuffer_GLX(d_ptr.data(), frame).handle();
 }
 
 QT_END_NAMESPACE

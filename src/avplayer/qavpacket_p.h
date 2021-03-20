@@ -19,7 +19,7 @@
 // We mean it.
 //
 
-#include "qavframe_p.h"
+#include "qavframe.h"
 #include <QObject>
 
 QT_BEGIN_NAMESPACE

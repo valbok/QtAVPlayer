@@ -6,6 +6,7 @@
  *********************************************************/
 
 #include <QtAVPlayer>
+#include <QVideoFrame>
 #include <private/qdeclarativevideooutput_p.h>
 #include <QtQuick/QQuickView>
 #include <QtQml/QQmlEngine>
@@ -30,6 +31,40 @@ public:
 };
 #endif
 
+class PlanarVideoBuffer : public QAbstractPlanarVideoBuffer
+{
+public:
+    PlanarVideoBuffer(const QAVVideoFrame &frame, HandleType type = NoHandle)
+        : QAbstractPlanarVideoBuffer(type), m_frame(frame)
+    {
+    }
+
+    MapMode mapMode() const override { return m_mode; }
+    int map(MapMode mode, int *numBytes, int bytesPerLine[4], uchar *data[4]) override
+    {        
+        if (m_mode != NotMapped || mode == NotMapped)
+            return 0;
+
+        auto mapData = m_frame.map();
+        m_mode = mode;
+        if (numBytes)
+            *numBytes = mapData.size;
+
+        int i = 0;
+        for (; i < 4; ++i) {
+            bytesPerLine[i] = mapData.bytesPerLine[i];
+            data[i] = mapData.data[i];
+        }
+
+        return i;        
+    }
+    void unmap() override { m_mode = NotMapped; }
+
+private:
+    QAVVideoFrame m_frame;
+    MapMode m_mode = NotMapped;
+};
+
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
@@ -43,35 +78,42 @@ int main(int argc, char *argv[])
     auto vo = rootObject->findChild<QDeclarativeVideoOutput *>("videoOutput");
 
     QAVPlayer p;
+
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
     Source src;
     vo->setSource(&src);
-    if (src.m_surface)
-        p.vo(src.m_surface);
-#else
-    p.vo(vo->videoSurface());
+    auto videoSurface = src.m_surface;
+#elif QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    auto videoSurface = vo->videoSurface();
 #endif
 
-    /*QAVAudioOutput audioOutput;
-    p.ao([&audioOutput](const QAudioBuffer &buf) {  audioOutput.play(buf); });
-    p.vo([vo](const QVideoFrame &videoFrame) {
-        if (!vo->videoSurface()->isActive())
-            vo->videoSurface()->start({videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType()});
-        if (vo->videoSurface()->isActive())
-            vo->videoSurface()->present(videoFrame);
-    });*/
+    p.vo([vo,&videoSurface](const QAVVideoFrame &frame) {
+        QVideoFrame::PixelFormat pf = QVideoFrame::Format_Invalid;
+        switch (frame.frame()->format)
+        {
+        case AV_PIX_FMT_YUV420P:
+            pf = QVideoFrame::Format_YUV420P;
+            break;
+        default:
+            pf = QVideoFrame::Format_NV12;
+            break;
+        }
+
+        QVideoFrame videoFrame(new PlanarVideoBuffer(frame), frame.size(), pf);
+        if (!videoSurface->isActive())
+            videoSurface->start({videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType()});
+        if (videoSurface->isActive())
+            videoSurface->present(videoFrame);
+    });
+
+    QAVAudioOutput audioOutput;
+    p.ao([&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); });
     p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
     p.play();
 
-    QObject::connect(&p, &QAVPlayer::stateChanged, [&](auto s) {
-        qDebug() << "stateChanged" << s << p.mediaStatus();
-    });
-    QObject::connect(&p, &QAVPlayer::mediaStatusChanged, [&](auto s){
-        qDebug() << "mediaStatusChanged"<< s << p.state();
-    });
-    QObject::connect(&p, &QAVPlayer::durationChanged, [&](auto d) {
-        qDebug() << "durationChanged" << d;
-    });
+    QObject::connect(&p, &QAVPlayer::stateChanged, [&](auto s) { qDebug() << "stateChanged" << s << p.mediaStatus(); });
+    QObject::connect(&p, &QAVPlayer::mediaStatusChanged, [&](auto s) { qDebug() << "mediaStatusChanged"<< s << p.state(); });
+    QObject::connect(&p, &QAVPlayer::durationChanged, [&](auto d) { qDebug() << "durationChanged" << d; });
 
     viewer.setMinimumSize(QSize(300, 360));
     viewer.resize(1960, 1086);

@@ -5,8 +5,8 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#ifndef QAVPLANARVIDEOBUFFER_CPU_P_H
-#define QAVPLANARVIDEOBUFFER_CPU_P_H
+#ifndef QAVVIDEOBUFFER_CPU_P_H
+#define QAVVIDEOBUFFER_CPU_P_H
 
 //
 //  W A R N I N G
@@ -19,27 +19,22 @@
 // We mean it.
 //
 
-#include "qavvideoframe_p.h"
-#include <QtAVPlayer/private/qtavplayerglobal_p.h>
-#include <QAbstractPlanarVideoBuffer>
+#include "qavvideoframe.h"
 
 QT_BEGIN_NAMESPACE
 
-class Q_AVPLAYER_EXPORT QAVPlanarVideoBuffer_CPU : public QAbstractPlanarVideoBuffer
+class Q_AVPLAYER_EXPORT QAVVideoBuffer_CPU
 {
 public:
-    QAVPlanarVideoBuffer_CPU(HandleType type = NoHandle);
-    QAVPlanarVideoBuffer_CPU(const QAVVideoFrame &frame, HandleType type = NoHandle);
+    QAVVideoBuffer_CPU();
+    QAVVideoBuffer_CPU(const QAVVideoFrame &frame);
 
-    MapMode mapMode() const override;
-    int map(MapMode mode, int *numBytes, int bytesPerLine[4], uchar *data[4]) override;
-    void unmap() override;
+    QAVVideoFrame::MapData map() const;
 
     const QAVVideoFrame &frame() const { return m_frame; }
 
 private:
     QAVVideoFrame m_frame;
-    MapMode m_mode = NotMapped;
 };
 
 QT_END_NAMESPACE

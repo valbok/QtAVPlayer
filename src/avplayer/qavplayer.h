@@ -8,21 +8,47 @@
 #ifndef QAVPLAYER_H
 #define QAVPLAYER_H
 
+#include <QtAVPlayer/qavvideoframe.h>
+#include <QtAVPlayer/qavaudioframe.h>
 #include <QtAVPlayer/qtavplayerglobal.h>
-#include <QAudioBuffer>
-#include <QVideoFrame>
-#include <QMediaPlayer>
 #include <QUrl>
 #include <QScopedPointer>
+#include <functional>
 
 QT_BEGIN_NAMESPACE
 
 class QAVPlayerPrivate;
-class QAbstractVideoSurface;
 class Q_AVPLAYER_EXPORT QAVPlayer : public QObject
 {
     Q_OBJECT
+    Q_ENUMS(State)
+    Q_ENUMS(MediaStatus)
+    Q_ENUMS(Error)
+
 public:
+    enum State
+    {
+        StoppedState,
+        PlayingState,
+        PausedState
+    };
+
+    enum MediaStatus
+    {
+        NoMedia,
+        LoadingMedia,
+        LoadedMedia,
+        EndOfMedia,
+        InvalidMedia
+    };
+
+    enum Error
+    {
+        NoError,
+        ResourceError
+    };
+
+
     QAVPlayer(QObject *parent = nullptr);
     ~QAVPlayer();
 
@@ -32,12 +58,11 @@ public:
     bool isAudioAvailable() const;
     bool isVideoAvailable() const;
 
-    void vo(QAbstractVideoSurface *surface);
-    void vo(std::function<void(const QVideoFrame &data)>);
-    void ao(std::function<void(const QAudioBuffer &data)>);
+    void vo(std::function<void(const QAVVideoFrame &frame)>);
+    void ao(std::function<void(const QAVAudioFrame &frame)>);
 
-    QMediaPlayer::State state() const;
-    QMediaPlayer::MediaStatus mediaStatus() const;
+    State state() const;
+    MediaStatus mediaStatus() const;
     qint64 duration() const;
     qint64 position() const;
     int volume() const;
@@ -45,7 +70,7 @@ public:
     qreal speed() const;
 
     bool isSeekable() const;
-    QMediaPlayer::Error error() const;
+    Error error() const;
     QString errorString() const;
 
 public Q_SLOTS:
@@ -59,9 +84,9 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     void sourceChanged(const QUrl &url);
-    void stateChanged(QMediaPlayer::State newState);
-    void mediaStatusChanged(QMediaPlayer::MediaStatus status);
-    void errorOccurred(QMediaPlayer::Error, const QString &str);
+    void stateChanged(QAVPlayer::State newState);
+    void mediaStatusChanged(QAVPlayer::MediaStatus status);
+    void errorOccurred(QAVPlayer::Error, const QString &str);
     void durationChanged(qint64 duration);
     void seekableChanged(bool seekable);
     void volumeChanged(int volume);
@@ -77,5 +102,9 @@ private:
 };
 
 QT_END_NAMESPACE
+
+Q_DECLARE_METATYPE(QAVPlayer::State)
+Q_DECLARE_METATYPE(QAVPlayer::MediaStatus)
+Q_DECLARE_METATYPE(QAVPlayer::Error)
 
 #endif

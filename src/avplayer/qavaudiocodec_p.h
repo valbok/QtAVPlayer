@@ -20,7 +20,7 @@
 //
 
 #include "qavcodec_p.h"
-#include "qavaudioframe_p.h"
+#include "qavaudioformat.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -29,7 +29,7 @@ class Q_AVPLAYER_EXPORT QAVAudioCodec : public QAVCodec
 {
 public:
     QAVAudioCodec(QObject *parent = nullptr);
-    QAudioFormat audioFormat() const;
+    QAVAudioFormat audioFormat() const;
 
 private:
     Q_DISABLE_COPY(QAVAudioCodec)

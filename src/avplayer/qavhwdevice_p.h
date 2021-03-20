@@ -19,8 +19,8 @@
 // We mean it.
 //
 
-#include <QtAVPlayer/private/qtavplayerglobal_p.h>
-#include <QVideoFrame>
+#include "qavvideoframe.h"
+#include "qtavplayerglobal.h"
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -29,7 +29,6 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-class QAVVideoFrame;
 class QAVCodec;
 class QAbstractVideoSurface;
 class Q_AVPLAYER_EXPORT QAVHWDevice
@@ -40,8 +39,9 @@ public:
 
     virtual AVPixelFormat format() const = 0;
     virtual AVHWDeviceType type() const = 0;
-    virtual bool supportsVideoSurface(QAbstractVideoSurface *surface) const = 0;
-    virtual QVideoFrame decode(const QAVVideoFrame &frame) const = 0;
+    virtual QAVVideoFrame::MapData map(const QAVVideoFrame &frame) const = 0;
+    virtual QAVVideoFrame::HandleType handleType() const = 0;
+    virtual QVariant handle(const QAVVideoFrame &frame) const = 0;
 
 private:
     Q_DISABLE_COPY(QAVHWDevice)

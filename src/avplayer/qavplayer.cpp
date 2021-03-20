@@ -10,11 +10,10 @@
 #include "qavdemuxer_p.h"
 #include "qavvideocodec_p.h"
 #include "qavaudiocodec_p.h"
-#include "qavvideoframe_p.h"
-#include "qavaudioframe_p.h"
+#include "qavvideoframe.h"
+#include "qavaudioframe.h"
 #include "qavpacketqueue_p.h"
 
-#include <QAbstractVideoSurface>
 #include <qtconcurrentrun.h>
 
 QT_BEGIN_NAMESPACE
@@ -28,10 +27,10 @@ public:
     {
     }
 
-    void setMediaStatus(QMediaPlayer::MediaStatus status);
-    void setState(QMediaPlayer::State s);
+    void setMediaStatus(QAVPlayer::MediaStatus status);
+    void setState(QAVPlayer::State s);
     void setSeekable(bool seekable);
-    void setError(QMediaPlayer::Error err, const QString &str);
+    void setError(QAVPlayer::Error err, const QString &str);
     void setDuration(double d);
     void updatePosition(double p);
 
@@ -44,7 +43,6 @@ public:
     void doLoad(const QUrl &url);
     void doDemux();
     void doPlayVideo();
-    void doFlushVideo();
     void doPlayAudio();
 
     template <class T>
@@ -52,15 +50,14 @@ public:
 
     QAVPlayer *q_ptr = nullptr;
     QUrl url;
-    QAbstractVideoSurface *surface = nullptr;
-    QMediaPlayer::MediaStatus mediaStatus = QMediaPlayer::NoMedia;
-    QMediaPlayer::State state = QMediaPlayer::StoppedState;
+    QAVPlayer::MediaStatus mediaStatus = QAVPlayer::NoMedia;
+    QAVPlayer::State state = QAVPlayer::StoppedState;
     bool seekable = false;
     int volume = 100;
     bool muted = false;
     qreal speed = 1.0;
 
-    QMediaPlayer::Error error = QMediaPlayer::NoError;
+    QAVPlayer::Error error = QAVPlayer::NoError;
     QString errorString;
 
     double duration = 0;
@@ -88,8 +85,8 @@ public:
     QWaitCondition waitCond;
     mutable QMutex positionMutex;
 
-    std::function<void(const QVideoFrame &data)> vo;
-    std::function<void(const QAudioBuffer &data)> ao;
+    std::function<void(const QAVVideoFrame &frame)> vo;
+    std::function<void(const QAVAudioFrame &frame)> ao;
 };
 
 static QString err_str(int err)
@@ -102,7 +99,7 @@ static QString err_str(int err)
     return QString::fromUtf8(errbuf_ptr);
 }
 
-void QAVPlayerPrivate::setMediaStatus(QMediaPlayer::MediaStatus status)
+void QAVPlayerPrivate::setMediaStatus(QAVPlayer::MediaStatus status)
 {
     Q_Q(QAVPlayer);
     if (mediaStatus == status)
@@ -110,11 +107,11 @@ void QAVPlayerPrivate::setMediaStatus(QMediaPlayer::MediaStatus status)
 
     mediaStatus = status;
     emit q->mediaStatusChanged(status);
-    if (pendingPlay && status == QMediaPlayer::LoadedMedia)
+    if (pendingPlay && status == QAVPlayer::LoadedMedia)
         q->play();
 }
 
-void QAVPlayerPrivate::setState(QMediaPlayer::State s)
+void QAVPlayerPrivate::setState(QAVPlayer::State s)
 {
     Q_Q(QAVPlayer);
     if (state == s)
@@ -156,7 +153,7 @@ void QAVPlayerPrivate::call(T fn)
     QMetaObject::invokeMethod(q_ptr, fn, nullptr);
 }
 
-void QAVPlayerPrivate::setError(QMediaPlayer::Error err, const QString &str)
+void QAVPlayerPrivate::setError(QAVPlayer::Error err, const QString &str)
 {
     Q_Q(QAVPlayer);
     if (error == err)
@@ -166,7 +163,7 @@ void QAVPlayerPrivate::setError(QMediaPlayer::Error err, const QString &str)
     error = err;
     errorString = str;
     emit q->errorOccurred(err, str);
-    setMediaStatus(QMediaPlayer::InvalidMedia);
+    setMediaStatus(QAVPlayer::InvalidMedia);
 }
 
 bool QAVPlayerPrivate::isAudioAvailable() const
@@ -181,7 +178,7 @@ bool QAVPlayerPrivate::isVideoAvailable() const
 
 void QAVPlayerPrivate::terminate()
 {
-    setState(QMediaPlayer::StoppedState);
+    setState(QAVPlayer::StoppedState);
     demuxer.abort();
     quit = true;
     pendingPlay = false;
@@ -204,36 +201,27 @@ void QAVPlayerPrivate::doWait()
         waitCond.wait(&waitMutex, 5000);
 }
 
-void QAVPlayerPrivate::doFlushVideo()
-{
-    call([this] { if (surface) surface->present({}); });
-}
-
 void QAVPlayerPrivate::doLoad(const QUrl &url)
 {
     demuxer.abort(false);
     demuxer.unload();
     int ret = demuxer.load(url);
     if (ret < 0) {
-        call([this, ret] { setError(QMediaPlayer::ResourceError, err_str(ret)); });
+        call([this, ret] { setError(QAVPlayer::ResourceError, err_str(ret)); });
         return;
     }
 
     if (demuxer.videoStream() < 0 && demuxer.audioStream() < 0) {
-        call([this] { setError(QMediaPlayer::ResourceError, QLatin1String("No codecs found")); });
+        call([this] { setError(QAVPlayer::ResourceError, QLatin1String("No codecs found")); });
         return;
     }
-
-    // Negotiate pixel formats here.
-    if (demuxer.videoCodec())
-        demuxer.videoCodec()->setVideoSurface(surface);
 
     double d = demuxer.duration();
     bool seekable = demuxer.seekable();
     call([this, seekable, d] {
         setSeekable(seekable);
         setDuration(d);
-        setMediaStatus(QMediaPlayer::LoadedMedia);
+        setMediaStatus(QAVPlayer::LoadedMedia);
     });
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -296,10 +284,9 @@ void QAVPlayerPrivate::doDemux()
 void QAVPlayerPrivate::doEndOfMedia()
 {
     Q_Q(QAVPlayer);
-    doFlushVideo();
     call([this, q] {
         q->stop();
-        setMediaStatus(QMediaPlayer::EndOfMedia);
+        setMediaStatus(QAVPlayer::EndOfMedia);
     });
 }
 
@@ -313,33 +300,19 @@ void QAVPlayerPrivate::doPlayVideo()
         if (!frame)
             continue;
 
-        QVideoFrame videoFrame = frame;
-        call([this, videoFrame] {
-            if (vo) {
-                vo(videoFrame);
-                return;
-            }
-
-            if (!surface)
-                return;
-            if (!surface->isActive())
-                surface->start({videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType()});
-            if (surface->isActive())
-                surface->present(videoFrame);
-        });
+        if (vo)
+            call([this, frame] { vo(frame); });
 
         videoQueue.pop();
         updatePosition(frame.pts());
     }
 
-    doFlushVideo();
     videoQueue.clear();
 }
 
 void QAVPlayerPrivate::doPlayAudio()
 {
     QAVAudioFrame frame;
-    QAudioFormat format;
 
     while (!quit) {
         doWait();
@@ -347,26 +320,16 @@ void QAVPlayerPrivate::doPlayAudio()
         if (!frame)
             continue;
 
-        if (!format.isValid()) {
-            format = frame.codec()->audioFormat();
-            if (format.sampleType() != QAudioFormat::SignedInt) {
-                format.setSampleSize(16);
-                format.setSampleType(QAudioFormat::SignedInt);
-            }
-
-            if (!ao)
-                audioOutput.reset(new QAVAudioOutput);
-        }
+        if (!audioOutput && !ao)
+            audioOutput.reset(new QAVAudioOutput);
 
         if (!muted) {
             frame.frame()->sample_rate *= speed;
-            auto data = frame.data(format);
-            QAudioBuffer buf(data, format);
             if (ao) {
-                call([this, buf] { ao(buf); });
+                call([this, frame] { ao(frame); });
             } else {
                 audioOutput->setVolume(volume / 100.0);
-                audioOutput->play(buf);
+                audioOutput->play(frame);
             }
         }
 
@@ -401,14 +364,14 @@ void QAVPlayer::setSource(const QUrl &url)
     d->url = url;
     emit sourceChanged(url);
     if (d->url.isEmpty()) {
-        d->setMediaStatus(QMediaPlayer::NoMedia);
+        d->setMediaStatus(QAVPlayer::NoMedia);
         d->setDuration(0);
         d->updatePosition(0);
         return;
     }
 
     d->quit = false;
-    d->setMediaStatus(QMediaPlayer::LoadingMedia);
+    d->setMediaStatus(QAVPlayer::LoadingMedia);
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     d->loaderFuture = QtConcurrent::run(d, &QAVPlayerPrivate::doLoad, d->url);
 #else
@@ -433,31 +396,23 @@ bool QAVPlayer::isVideoAvailable() const
     return d_func()->isVideoAvailable();
 }
 
-void QAVPlayer::vo(QAbstractVideoSurface *surface)
+void QAVPlayer::vo(std::function<void(const QAVVideoFrame &data)> f)
 {
     Q_D(QAVPlayer);
-    d->surface = surface;
-    d->vo = nullptr;
-}
-
-void QAVPlayer::vo(std::function<void(const QVideoFrame &data)> f)
-{
-    Q_D(QAVPlayer);
-    d->surface = nullptr;
     d->vo = f;
 }
 
-void QAVPlayer::ao(std::function<void(const QAudioBuffer &buf)> f)
+void QAVPlayer::ao(std::function<void(const QAVAudioFrame &buf)> f)
 {
     d_func()->ao = f;
 }
 
-QMediaPlayer::State QAVPlayer::state() const
+QAVPlayer::State QAVPlayer::state() const
 {
     return d_func()->state;
 }
 
-QMediaPlayer::MediaStatus QAVPlayer::mediaStatus() const
+QAVPlayer::MediaStatus QAVPlayer::mediaStatus() const
 {
     return d_func()->mediaStatus;
 }
@@ -465,18 +420,18 @@ QMediaPlayer::MediaStatus QAVPlayer::mediaStatus() const
 void QAVPlayer::play()
 {
     Q_D(QAVPlayer);
-    if (d->url.isEmpty() || d->mediaStatus == QMediaPlayer::InvalidMedia)
+    if (d->url.isEmpty() || d->mediaStatus == QAVPlayer::InvalidMedia)
         return;
 
-    d->setState(QMediaPlayer::PlayingState);
-    if (d->mediaStatus == QMediaPlayer::EndOfMedia) {
+    d->setState(QAVPlayer::PlayingState);
+    if (d->mediaStatus == QAVPlayer::EndOfMedia) {
         QMutexLocker locker(&d->positionMutex);
         if (d->pendingPosition < 0) {
             locker.unlock();
             seek(0);
         }
-        d->setMediaStatus(QMediaPlayer::LoadedMedia);
-    } else if (d->mediaStatus != QMediaPlayer::LoadedMedia) {
+        d->setMediaStatus(QAVPlayer::LoadedMedia);
+    } else if (d->mediaStatus != QAVPlayer::LoadedMedia) {
         d->pendingPlay = true;
         return;
     }
@@ -493,7 +448,7 @@ void QAVPlayer::play()
 void QAVPlayer::pause()
 {
     Q_D(QAVPlayer);
-    d->setState(QMediaPlayer::PausedState);
+    d->setState(QAVPlayer::PausedState);
     QMutexLocker locker(&d->waitMutex);
     d->wait = true;
 }
@@ -501,7 +456,7 @@ void QAVPlayer::pause()
 void QAVPlayer::stop()
 {
     Q_D(QAVPlayer);
-    d->setState(QMediaPlayer::StoppedState);
+    d->setState(QAVPlayer::StoppedState);
     QMutexLocker locker(&d->waitMutex);
     d->wait = true;
 }
@@ -532,7 +487,7 @@ qint64 QAVPlayer::position() const
     QMutexLocker lock(&d->positionMutex);
     if (d->pendingPosition >= 0)
         return d->pendingPosition * 1000;
-    if (d->mediaStatus == QMediaPlayer::EndOfMedia)
+    if (d->mediaStatus == QAVPlayer::EndOfMedia)
         return duration();
     return d->position * 1000;
 }
@@ -582,7 +537,7 @@ qreal QAVPlayer::speed() const
     return d_func()->speed;
 }
 
-QMediaPlayer::Error QAVPlayer::error() const
+QAVPlayer::Error QAVPlayer::error() const
 {
     return d_func()->error;
 }

@@ -5,8 +5,8 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
+#include "qavframe.h"
 #include "qavframe_p.h"
-#include "qavframe_p_p.h"
 #include "qavcodec_p.h"
 #include <QDebug>
 
@@ -38,6 +38,11 @@ QAVFrame::QAVFrame(QAVFramePrivate &d, QObject *parent)
     , d_ptr(&d)
 {
     d_ptr->frame = av_frame_alloc();
+}
+
+const QAVCodec *QAVFrame::codec() const
+{
+    return d_ptr->codec;
 }
 
 QAVFrame &QAVFrame::operator=(const QAVFrame &other)

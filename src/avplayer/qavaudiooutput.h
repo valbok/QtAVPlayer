@@ -8,8 +8,8 @@
 #ifndef QAVAUDIOOUTPUT_H
 #define QAVAUDIOOUTPUT_H
 
+#include <QtAVPlayer/qavaudioframe.h>
 #include <QtAVPlayer/qtavplayerglobal.h>
-#include <QAudioBuffer>
 #include <QScopedPointer>
 
 QT_BEGIN_NAMESPACE
@@ -23,7 +23,7 @@ public:
     ~QAVAudioOutput();
 
     void setVolume(qreal v);
-    bool play(const QAudioBuffer &data);
+    bool play(const QAVAudioFrame &frame);
 
 protected:
     QScopedPointer<QAVAudioOutputPrivate> d_ptr;

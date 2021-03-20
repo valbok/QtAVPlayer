@@ -5,9 +5,9 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#include "qavvideoframe_p.h"
-#include "qavplanarvideobuffer_cpu_p.h"
-#include "qavframe_p_p.h"
+#include "qavvideoframe.h"
+#include "qavvideobuffer_cpu_p.h"
+#include "qavframe_p.h"
 #include "qavvideocodec_p.h"
 #include "qavhwdevice_p.h"
 #include <QVideoFrame>
@@ -20,9 +20,9 @@ QAVVideoFrame::QAVVideoFrame(QObject *parent)
 {
 }
 
-const QAVVideoCodec *QAVVideoFrame::codec() const
+static const QAVVideoCodec *videoCodec(const QAVCodec *c)
 {
-    return reinterpret_cast<const QAVVideoCodec *>(d_func()->codec);
+    return reinterpret_cast<const QAVVideoCodec *>(c);
 }
 
 QAVVideoFrame::QAVVideoFrame(const QAVFrame &other, QObject *parent)
@@ -37,51 +37,40 @@ QAVVideoFrame &QAVVideoFrame::operator=(const QAVFrame &other)
     return *this;
 }
 
-QVideoFrame::PixelFormat QAVVideoFrame::pixelFormat(AVPixelFormat from)
-{
-    switch (from) {
-    case AV_PIX_FMT_YUV420P:
-        return QVideoFrame::Format_YUV420P;
-    case AV_PIX_FMT_NV12:
-        return QVideoFrame::Format_NV12;
-    case AV_PIX_FMT_BGRA:
-        return QVideoFrame::Format_BGRA32;
-    case AV_PIX_FMT_ARGB:
-        return QVideoFrame::Format_ARGB32;
-    default:
-        return QVideoFrame::Format_Invalid;
-    }
-}
-
-AVPixelFormat QAVVideoFrame::pixelFormat(QVideoFrame::PixelFormat from)
-{
-    switch (from) {
-    case QVideoFrame::Format_YUV420P:
-        return AV_PIX_FMT_YUV420P;
-    case QVideoFrame::Format_NV12:
-        return AV_PIX_FMT_NV12;
-    default:
-        return AV_PIX_FMT_NONE;
-    }
-}
-
 QSize QAVVideoFrame::size() const
 {
     Q_D(const QAVFrame);
     return {d->frame->width, d->frame->height};
 }
 
-QAVVideoFrame::operator QVideoFrame() const
+QAVVideoFrame::MapData QAVVideoFrame::map() const
 {
-    Q_D(const QAVFrame);
-    if (!codec())
+    auto c = videoCodec(codec());
+    if (!c)
         return {};
 
-    if (codec()->device())
-        return codec()->device()->decode(*this);
+    if (c->device())
+        return c->device()->map(*this);
 
-    auto format = pixelFormat(AVPixelFormat(d->frame->format));
-    return {new QAVPlanarVideoBuffer_CPU(*this), size(), format};
+    return QAVVideoBuffer_CPU(*this).map();
+}
+
+QAVVideoFrame::HandleType QAVVideoFrame::handleType() const
+{
+    auto c = videoCodec(codec());
+    if (c && c->device())
+        return c->device()->handleType();
+
+    return QAVVideoFrame::NoHandle;
+}
+
+QVariant QAVVideoFrame::handle() const
+{
+    auto c = videoCodec(codec());
+    if (c && c->device())
+        return c->device()->handle(*this);
+
+    return {};
 }
 
 QT_END_NAMESPACE
