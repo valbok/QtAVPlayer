@@ -9,6 +9,7 @@
 #define QAVFVIDEORAME_H
 
 #include <QtAVPlayer/qavframe.h>
+#include <QVariant>
 
 extern "C" {
 #include <libavformat/avformat.h>

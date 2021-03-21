@@ -7,9 +7,7 @@
 
 #include "qavhwdevice_d3d11_p.h"
 #include "qavvideocodec_p.h"
-#include "qavplanarvideobuffer_gpu_p.h"
-#include <QVideoFrame>
-#include <QDebug>
+#include "qqavvideobuffer_gpu_p.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -28,18 +26,19 @@ AVHWDeviceType QAVHWDevice_D3D11::type() const
     return AV_HWDEVICE_TYPE_D3D11VA;
 }
 
-bool QAVHWDevice_D3D11::supportsVideoSurface(QAbstractVideoSurface *surface) const
+QAVVideoFrame::MapData QAVHWDevice_D3D11::map(const QAVVideoFrame &frame) const
 {
-    if (!surface)
-        return false;
-
-    auto list = surface->supportedPixelFormats(QAbstractVideoBuffer::NoHandle);
-    return list.contains(QVideoFrame::Format_NV12);
+    return QAVVideoBuffer_GPU(frame).map();
 }
 
-QVideoFrame QAVHWDevice_D3D11::decode(const QAVVideoFrame &frame) const
+QAVVideoFrame::HandleType QAVHWDevice_D3D11::handleType() const
 {
-    return {new QAVPlanarVideoBuffer_GPU(frame), frame.size(), QVideoFrame::Format_NV12};
+    return QAVVideoFrame::NoHandle;
+}
+
+QVariant QAVHWDevice_D3D11::handle(const QAVVideoFrame &frame) const
+{
+    return QAVVideoBuffer_GPU(frame).handle();
 }
 
 QT_END_NAMESPACE
