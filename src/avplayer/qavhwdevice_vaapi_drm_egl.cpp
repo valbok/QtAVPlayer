@@ -58,7 +58,7 @@ class VideoBuffer_EGL : public QAVVideoBuffer_GPU
 {
 public:
     VideoBuffer_EGL(QAVHWDevice_VAAPI_DRM_EGLPrivate *hw, const QAVVideoFrame &frame)
-        : QAVPlanarVideoBuffer_GPU(frame)
+        : QAVVideoBuffer_GPU(frame)
         , m_hw(hw)
     {
         if (!s_eglCreateImageKHR) {
