@@ -65,7 +65,6 @@ public:
     MediaStatus mediaStatus() const;
     qint64 duration() const;
     qint64 position() const;
-    int volume() const;
     bool isMuted() const;
     qreal speed() const;
 
@@ -78,7 +77,6 @@ public Q_SLOTS:
     void pause();
     void stop();
     void seek(qint64 position);
-    void setVolume(int volume);
     void setMuted(bool muted);
     void setSpeed(qreal rate);
 
@@ -89,7 +87,6 @@ Q_SIGNALS:
     void errorOccurred(QAVPlayer::Error, const QString &str);
     void durationChanged(qint64 duration);
     void seekableChanged(bool seekable);
-    void volumeChanged(int volume);
     void mutedChanged(bool muted);
     void speedChanged(qreal rate);
 

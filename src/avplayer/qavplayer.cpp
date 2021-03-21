@@ -6,7 +6,6 @@
  *********************************************************/
 
 #include "qavplayer.h"
-#include "qavaudiooutput.h"
 #include "qavdemuxer_p.h"
 #include "qavvideocodec_p.h"
 #include "qavaudiocodec_p.h"
@@ -53,7 +52,6 @@ public:
     QAVPlayer::MediaStatus mediaStatus = QAVPlayer::NoMedia;
     QAVPlayer::State state = QAVPlayer::StoppedState;
     bool seekable = false;
-    int volume = 100;
     bool muted = false;
     qreal speed = 1.0;
 
@@ -76,8 +74,6 @@ public:
     QFuture<void> audioPlayFuture;
     QAVPacketQueue audioQueue;
     double audioPts = 0;
-
-    QScopedPointer<QAVAudioOutput> audioOutput;
 
     bool quit = 0;
     bool wait = false;
@@ -320,17 +316,10 @@ void QAVPlayerPrivate::doPlayAudio()
         if (!frame)
             continue;
 
-        if (!audioOutput && !ao)
-            audioOutput.reset(new QAVAudioOutput);
-
         if (!muted) {
             frame.frame()->sample_rate *= speed;
-            if (ao) {
+            if (ao)
                 call([this, frame] { ao(frame); });
-            } else {
-                audioOutput->setVolume(volume / 100.0);
-                audioOutput->play(frame);
-            }
         }
 
         audioQueue.pop();
@@ -338,7 +327,6 @@ void QAVPlayerPrivate::doPlayAudio()
             updatePosition(frame.pts());
     }
 
-    audioOutput.reset();
     audioQueue.clear();
 }
 
@@ -490,21 +478,6 @@ qint64 QAVPlayer::position() const
     if (d->mediaStatus == QAVPlayer::EndOfMedia)
         return duration();
     return d->position * 1000;
-}
-
-void QAVPlayer::setVolume(int volume)
-{
-    Q_D(QAVPlayer);
-    if (d->volume == volume || volume < 0 || volume > 100)
-        return;
-
-    d->volume = volume;
-    emit volumeChanged(volume);
-}
-
-int QAVPlayer::volume() const
-{
-    return d_func()->volume;
 }
 
 void QAVPlayer::setMuted(bool m)

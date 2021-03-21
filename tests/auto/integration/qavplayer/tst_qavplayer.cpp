@@ -18,7 +18,6 @@ class tst_QAVPlayer : public QObject
 private slots:
     void construction();
     void sourceChanged();
-    void volumeChanged();
     void mutedChanged();
     void speedChanged();
     void quitAudio();
@@ -26,7 +25,6 @@ private slots:
     void playAudio();
     void playAudioOutput();
     void pauseAudio();
-    void volumeAudio();
     void stopAudio();
     void seekAudio();
     void speedAudio();
@@ -47,7 +45,6 @@ void tst_QAVPlayer::construction()
     QCOMPARE(p.mediaStatus(), QAVPlayer::NoMedia);
     QCOMPARE(p.duration(), 0);
     QCOMPARE(p.position(), 0);
-    QCOMPARE(p.volume(), 100);
     QVERIFY(!p.isMuted());
     QCOMPARE(p.speed(), 1.0);
     QVERIFY(!p.isSeekable());
@@ -63,28 +60,6 @@ void tst_QAVPlayer::sourceChanged()
     QCOMPARE(spy.count(), 1);
     p.setSource(QUrl(QLatin1String("unknown.mp4")));
     QCOMPARE(spy.count(), 1);
-}
-
-void tst_QAVPlayer::volumeChanged()
-{
-    QAVPlayer p;
-    QSignalSpy spy(&p, &QAVPlayer::volumeChanged);
-    QCOMPARE(p.volume(), 100);
-    p.setVolume(10);
-    QCOMPARE(spy.count(), 1);
-    QCOMPARE(p.volume(), 10);
-    p.setVolume(0);
-    QCOMPARE(spy.count(), 2);
-    QCOMPARE(p.volume(), 0);
-    p.setVolume(-10);
-    QCOMPARE(spy.count(), 2);
-    QCOMPARE(p.volume(), 0);
-    p.setVolume(200);
-    QCOMPARE(spy.count(), 2);
-    QCOMPARE(p.volume(), 0);
-    p.setVolume(100);
-    QCOMPARE(spy.count(), 3);
-    QCOMPARE(p.volume(), 100);
 }
 
 void tst_QAVPlayer::mutedChanged()
@@ -287,29 +262,6 @@ void tst_QAVPlayer::pauseAudio()
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
-}
-
-void tst_QAVPlayer::volumeAudio()
-{
-    QAVPlayer p;
-
-    QFileInfo file(QLatin1String("../testdata/test.wav"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
-
-    p.setVolume(0);
-    p.play();
-
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
-    QCOMPARE(p.volume(), 0);
-
-    p.setVolume(50);
-    p.play();
-
-    QTest::qWait(500);
-    p.setVolume(100);
-
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
-    QCOMPARE(p.volume(), 100);
 }
 
 void tst_QAVPlayer::stopAudio()
