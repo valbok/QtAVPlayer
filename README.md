@@ -64,7 +64,7 @@ To render video QAbstractVideoSurface can be used:
         MapMode m_mode = NotMapped;
     };
 
-    p.vo([vo,&videoSurface](const QAVVideoFrame &frame) {
+    p.vo([&videoSurface](const QAVVideoFrame &frame) {
         QVideoFrame::PixelFormat pf = QVideoFrame::Format_Invalid;
         switch (frame.frame()->format)
         {
