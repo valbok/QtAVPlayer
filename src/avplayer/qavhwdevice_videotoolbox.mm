@@ -7,9 +7,7 @@
 
 #include "qavhwdevice_videotoolbox_p.h"
 #include "qavvideocodec_p.h"
-#include "qavplanarvideobuffer_gpu_p.h"
-#include <QVideoFrame>
-#include <QDebug>
+#include "qavvideobuffer_gpu_p.h"
 
 #import <CoreVideo/CoreVideo.h>
 #if defined(Q_OS_MACOS)
@@ -51,20 +49,11 @@ AVHWDeviceType QAVHWDevice_VideoToolbox::type() const
     return AV_HWDEVICE_TYPE_VIDEOTOOLBOX;
 }
 
-bool QAVHWDevice_VideoToolbox::supportsVideoSurface(QAbstractVideoSurface *surface) const
-{
-    if (!surface)
-        return false;
-
-    auto list = surface->supportedPixelFormats(QAbstractVideoBuffer::MTLTextureHandle);
-    return list.contains(QVideoFrame::Format_NV12);
-}
-
-class VideoBuffer_MTL : public QAVPlanarVideoBuffer_GPU
+class VideoBuffer_MTL : public QAVVideoBuffer_GPU
 {
 public:
     VideoBuffer_MTL(QAVHWDevice_VideoToolboxPrivate *hw, const QAVVideoFrame &frame)
-        : QAVPlanarVideoBuffer_GPU(frame, MTLTextureHandle)
+        : QAVVideoBuffer_GPU(frame)
         , m_hw(hw)
     {
     }
@@ -107,6 +96,21 @@ public:
 
     QAVHWDevice_VideoToolboxPrivate *m_hw = nullptr;
 };
+
+QAVVideoFrame::MapData QAVHWDevice_VideoToolbox::map(const QAVVideoFrame &frame) const
+{
+    return VideoBuffer_MTL(d_ptr.data(), frame).map();
+}
+
+QAVVideoFrame::HandleType QAVHWDevice_VideoToolbox::handleType() const
+{
+    return QAVVideoFrame::MTLTextureHandle;
+}
+
+QVariant QAVHWDevice_VideoToolbox::handle(const QAVVideoFrame &frame) const
+{
+    return VideoBuffer_MTL(d_ptr.data(), frame).handle();
+}
 
 QVideoFrame QAVHWDevice_VideoToolbox::decode(const QAVVideoFrame &frame) const
 {

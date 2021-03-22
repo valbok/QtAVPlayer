@@ -42,19 +42,53 @@ void QAVAudioOutput::setVolume(qreal v)
         d->audioOutput->setVolume(v);
 }
 
-bool QAVAudioOutput::play(const QAudioBuffer &data)
+static QAudioFormat format(const QAVAudioFormat &from)
+{
+    QAudioFormat out;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    out.setSampleRate(from.sampleRate());
+    out.setChannelCount(from.channelCount());
+    switch (from.sampleFormat()) {
+    case QAVAudioFormat::UInt8:
+        out.setSampleSize(8);
+        out.setSampleType(QAudioFormat::UnSignedInt);
+        break;
+    case QAVAudioFormat::Int16:
+        out.setSampleSize(16);
+        out.setSampleType(QAudioFormat::SignedInt);
+        break;
+    case QAVAudioFormat::Int32:
+        out.setSampleSize(32);
+        out.setSampleType(QAudioFormat::SignedInt);
+        break;
+    case QAVAudioFormat::Float:
+        out.setSampleSize(32);
+        out.setSampleType(QAudioFormat::Float);
+        break;
+    default:
+        qWarning() << "Could not negotiate output format";
+        return {};
+    }
+#endif
+
+    return out;
+}
+
+bool QAVAudioOutput::play(const QAVAudioFrame &frame)
 {
     Q_D(QAVAudioOutput);
     if (!d->audioOutput) {
-        d->audioOutput.reset(new QAudioOutput(data.format()));
+        d->audioOutput.reset(new QAudioOutput(format(frame.format())));
         d->device = d->audioOutput->start();
         if (!d->device)
             return false;
         d->audioOutput->setVolume(d->volume);
     }
 
+
+    auto data = frame.data();
     int pos = 0;
-    int size = data.byteCount();
+    int size = data.size();
     while (size) {
         if (d->audioOutput->bytesFree() < d->audioOutput->periodSize()) {
             const double refreshRate = 0.01;

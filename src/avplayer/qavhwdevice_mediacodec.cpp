@@ -7,9 +7,7 @@
 
 #include "qavhwdevice_mediacodec_p.h"
 #include "qavvideocodec_p.h"
-#include "qavplanarvideobuffer_gpu_p.h"
-#include <QVideoFrame>
-#include <QDebug>
+#include "qavvideobuffer_cpu_p.h"
 
 extern "C" {
 #include <libavutil/pixdesc.h>
@@ -32,18 +30,19 @@ AVHWDeviceType QAVHWDevice_MediaCodec::type() const
     return AV_HWDEVICE_TYPE_MEDIACODEC;
 }
 
-bool QAVHWDevice_MediaCodec::supportsVideoSurface(QAbstractVideoSurface *surface) const
+QAVVideoFrame::MapData QAVHWDevice_MediaCodec::map(const QAVVideoFrame &frame) const
 {
-    if (!surface)
-        return false;
-
-    auto list = surface->supportedPixelFormats(QAbstractVideoBuffer::NoHandle);
-    return list.contains(QVideoFrame::Format_NV12);
+    return QAVVideoBuffer_CPU(frame).map();
 }
 
-QVideoFrame QAVHWDevice_MediaCodec::decode(const QAVVideoFrame &frame) const
+QAVVideoFrame::HandleType QAVHWDevice_MediaCodec::handleType() const
 {
-    return {new QAVPlanarVideoBuffer_CPU(frame), frame.size(), QVideoFrame::Format_NV12};
+    return QAVVideoFrame::NoHandle;
+}
+
+QVariant QAVHWDevice_MediaCodec::handle(const QAVVideoFrame &frame) const
+{
+    return QAVVideoBuffer_CPU(frame).handle();
 }
 
 QT_END_NAMESPACE

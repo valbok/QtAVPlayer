@@ -8,20 +8,8 @@
 #ifndef QAVFVIDEORAME_H
 #define QAVFVIDEORAME_H
 
-//
-//  W A R N I N G
-//  -------------
-//
-// This file is not part of the Qt API. It exists purely as an
-// implementation detail. This header file may change from version to
-// version without notice, or even be removed.
-//
-// We mean it.
-//
-
-#include "qavframe_p.h"
-#include <QtAVPlayer/private/qtavplayerglobal_p.h>
-#include <QVideoFrame>
+#include <QtAVPlayer/qavframe.h>
+#include <QVariant>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -30,22 +18,34 @@ extern "C" {
 QT_BEGIN_NAMESPACE
 
 class QAVVideoFramePrivate;
-class QAVVideoCodec;
+class QAVCodec;
 class Q_AVPLAYER_EXPORT QAVVideoFrame : public QAVFrame
 {
 public:
+    enum HandleType
+    {
+        NoHandle,
+        GLTextureHandle,
+        MTLTextureHandle
+    };
+
     QAVVideoFrame(QObject *parent = nullptr);
     QAVVideoFrame(const QAVFrame &other, QObject *parent = nullptr);
 
     QAVVideoFrame &operator=(const QAVFrame &other);
 
-    const QAVVideoCodec *codec() const;
     QSize size() const;
 
-    operator QVideoFrame() const;
+    struct MapData
+    {
+        int size = 0;
+        int bytesPerLine[4] = {0};
+        uchar *data[4] = {nullptr};
+    };
 
-    static QVideoFrame::PixelFormat pixelFormat(AVPixelFormat from);
-    static AVPixelFormat pixelFormat(QVideoFrame::PixelFormat from);
+    MapData map() const;
+    HandleType handleType() const;
+    QVariant handle() const;
 };
 
 QT_END_NAMESPACE

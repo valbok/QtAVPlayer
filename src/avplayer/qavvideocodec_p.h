@@ -20,7 +20,6 @@
 //
 
 #include "qavcodec_p.h"
-#include "qavvideoframe_p.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -34,7 +33,6 @@ public:
 
     void setDevice(QAVHWDevice *d);
     QAVHWDevice *device() const;
-    void setVideoSurface(QAbstractVideoSurface *surface);
 
 private:
     Q_DISABLE_COPY(QAVVideoCodec)

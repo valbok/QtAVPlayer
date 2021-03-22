@@ -8,19 +8,8 @@
 #ifndef QAVFAUDIORAME_H
 #define QAVFAUDIORAME_H
 
-//
-//  W A R N I N G
-//  -------------
-//
-// This file is not part of the Qt API. It exists purely as an
-// implementation detail. This header file may change from version to
-// version without notice, or even be removed.
-//
-// We mean it.
-//
-
-#include "qavframe_p.h"
-#include <QAudioFormat>
+#include <QtAVPlayer/qavframe.h>
+#include <QtAVPlayer/qavaudioformat.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -32,10 +21,12 @@ public:
     QAVAudioFrame(QObject *parent = nullptr);
     ~QAVAudioFrame();
     QAVAudioFrame(const QAVFrame &other, QObject *parent = nullptr);
+    QAVAudioFrame(const QAVAudioFrame &other, QObject *parent = nullptr);
     QAVAudioFrame &operator=(const QAVFrame &other);
+    QAVAudioFrame &operator=(const QAVAudioFrame &other);
 
-    const QAVAudioCodec *codec() const;
-    QByteArray data(const QAudioFormat &format) const;
+    QAVAudioFormat format() const;
+    QByteArray data() const;
 
 private:
     Q_DECLARE_PRIVATE(QAVAudioFrame)

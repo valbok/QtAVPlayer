@@ -20,33 +20,25 @@ QAVAudioCodec::QAVAudioCodec(QObject *parent)
 {
 }
 
-QAudioFormat QAVAudioCodec::audioFormat() const
+QAVAudioFormat QAVAudioCodec::audioFormat() const
 {
     Q_D(const QAVCodec);
-    QAudioFormat format;
+    QAVAudioFormat format;
     if (!d->avctx)
         return format;
 
-    format.setSampleType(QAudioFormat::Unknown);
     auto fmt = AVSampleFormat(d->avctx->sample_fmt);
-    if (fmt == AV_SAMPLE_FMT_U8) {
-        format.setSampleSize(8);
-        format.setSampleType(QAudioFormat::UnSignedInt);
-    } else if (fmt == AV_SAMPLE_FMT_S16) {
-        format.setSampleSize(16);
-        format.setSampleType(QAudioFormat::SignedInt);
-    } else if (fmt == AV_SAMPLE_FMT_S32) {
-        format.setSampleSize(32);
-        format.setSampleType(QAudioFormat::SignedInt);
-    } else if (fmt == AV_SAMPLE_FMT_FLT) {
-        format.setSampleSize(32);
-        format.setSampleType(QAudioFormat::Float);
-    }
+    if (fmt == AV_SAMPLE_FMT_U8)
+        format.setSampleFormat(QAVAudioFormat::UInt8);
+    else if (fmt == AV_SAMPLE_FMT_S16)
+        format.setSampleFormat(QAVAudioFormat::Int16);
+    else if (fmt == AV_SAMPLE_FMT_S32)
+        format.setSampleFormat(QAVAudioFormat::Int32);
+    else if (fmt == AV_SAMPLE_FMT_FLT)
+        format.setSampleFormat(QAVAudioFormat::Float);
 
-    format.setCodec(QLatin1String("audio/pcm"));
     format.setSampleRate(d->avctx->sample_rate);
     format.setChannelCount(d->avctx->channels);
-    format.setByteOrder(QAudioFormat::LittleEndian);
 
     return format;
 }

@@ -31,8 +31,9 @@ public:
 
     AVPixelFormat format() const override;
     AVHWDeviceType type() const override;
-    bool supportsVideoSurface(QAbstractVideoSurface *surface) const override;
-    QVideoFrame decode(const QAVVideoFrame &frame) const override;
+    QAVVideoFrame::MapData map(const QAVVideoFrame &frame) const override;
+    QAVVideoFrame::HandleType handleType() const override;
+    QVariant handle(const QAVVideoFrame &frame) const override;
 
 private:
     Q_DISABLE_COPY(QAVHWDevice_MediaCodec)

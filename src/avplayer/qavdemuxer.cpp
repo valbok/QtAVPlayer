@@ -9,7 +9,7 @@
 #include "qavvideocodec_p.h"
 #include "qavaudiocodec_p.h"
 #include "qavhwdevice_p.h"
-#include <QtAVPlayer/private/qtavplayerglobal_p.h>
+#include <QtAVPlayer/qtavplayerglobal.h>
 
 #if QT_CONFIG(va_x11) && QT_CONFIG(opengl)
 #include "qavhwdevice_vaapi_x11_glx_p.h"

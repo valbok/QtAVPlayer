@@ -5,9 +5,9 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#include "qavaudioframe_p.h"
-#include "qavframe_p_p.h"
-#include "qavcodec_p.h"
+#include "qavaudioframe.h"
+#include "qavframe_p.h"
+#include "qavaudiocodec_p.h"
 #include <QDebug>
 
 extern "C" {
@@ -19,7 +19,7 @@ QT_BEGIN_NAMESPACE
 class QAVAudioFramePrivate : public QAVFramePrivate
 {
 public:
-    QAudioFormat outAudioFormat;
+    QAVAudioFormat outAudioFormat;
     int inSampleRate = 0;
     SwrContext *swr_ctx = nullptr;
     uint8_t *audioBuf = nullptr;
@@ -39,7 +39,13 @@ QAVAudioFrame::~QAVAudioFrame()
 }
 
 QAVAudioFrame::QAVAudioFrame(const QAVFrame &other, QObject *parent)
-    : QAVAudioFrame(parent)
+    : QAVFrame(*new QAVAudioFramePrivate, parent)
+{
+    operator=(other);
+}
+
+QAVAudioFrame::QAVAudioFrame(const QAVAudioFrame &other, QObject *parent)
+    : QAVFrame(*new QAVAudioFramePrivate, parent)
 {
     operator=(other);
 }
@@ -49,40 +55,67 @@ QAVAudioFrame &QAVAudioFrame::operator=(const QAVFrame &other)
     Q_D(QAVAudioFrame);
     QAVFrame::operator=(other);
     d->data.clear();
+
     return *this;
 }
 
-const QAVAudioCodec *QAVAudioFrame::codec() const
+QAVAudioFrame &QAVAudioFrame::operator=(const QAVAudioFrame &other)
 {
-    return reinterpret_cast<const QAVAudioCodec *>(d_func()->codec);
+    Q_D(QAVAudioFrame);
+    QAVFrame::operator=(other);
+    d->data.clear();
+
+    return *this;
 }
 
-QByteArray QAVAudioFrame::data(const QAudioFormat &format) const
+static const QAVAudioCodec *audioCodec(const QAVCodec *c)
+{
+    return reinterpret_cast<const QAVAudioCodec *>(c);
+}
+
+QAVAudioFormat QAVAudioFrame::format() const
+{
+    auto c = audioCodec(codec());
+    if (!c)
+        return {};
+
+    auto format = c->audioFormat();
+    if (format.sampleFormat() != QAVAudioFormat::Int32)
+        format.setSampleFormat(QAVAudioFormat::Int32);
+
+    return format;
+}
+
+QByteArray QAVAudioFrame::data() const
 {
     auto d = const_cast<QAVAudioFramePrivate *>(reinterpret_cast<QAVAudioFramePrivate *>(d_ptr.data()));
     auto frame = d->frame;
     if (!frame)
         return {};
 
-    if (d->outAudioFormat == format && !d->data.isEmpty())
+    auto fmt = format();
+    if (d->outAudioFormat == fmt && !d->data.isEmpty())
         return d->data;
 
     AVSampleFormat outFormat = AV_SAMPLE_FMT_NONE;
-    int64_t outChannelLayout = av_get_default_channel_layout(format.channelCount());
-    int outSampleRate = format.sampleRate();
+    int64_t outChannelLayout = av_get_default_channel_layout(fmt.channelCount());
+    int outSampleRate = fmt.sampleRate();
 
-    switch (format.sampleSize()) {
-    case 8:
+    switch (fmt.sampleFormat()) {
+    case QAVAudioFormat::UInt8:
         outFormat = AV_SAMPLE_FMT_U8;
         break;
-    case 16:
+    case QAVAudioFormat::Int16:
         outFormat = AV_SAMPLE_FMT_S16;
         break;
-    case 32:
-        outFormat = format.sampleType() == QAudioFormat::SignedInt ? AV_SAMPLE_FMT_S32 : AV_SAMPLE_FMT_FLT;
+    case QAVAudioFormat::Int32:
+        outFormat = AV_SAMPLE_FMT_S32;
+        break;
+    case QAVAudioFormat::Float:
+        outFormat = AV_SAMPLE_FMT_FLT;
         break;
     default:
-        qWarning() << "Could not negotiate output format from" << format;
+        qWarning() << "Could not negotiate output format";
         return {};
     }
 
@@ -91,12 +124,12 @@ QByteArray QAVAudioFrame::data(const QAudioFormat &format) const
         : av_get_default_channel_layout(frame->channels);
 
     bool needsConvert = frame->format != outFormat || channelLayout != outChannelLayout || frame->sample_rate != outSampleRate;
-    if (needsConvert && (format != d->outAudioFormat || frame->sample_rate != d->inSampleRate || !d->swr_ctx)) {
+    if (needsConvert && (fmt != d->outAudioFormat || frame->sample_rate != d->inSampleRate || !d->swr_ctx)) {
         swr_free(&d->swr_ctx);
-        d->swr_ctx = swr_alloc_set_opts(NULL,
+        d->swr_ctx = swr_alloc_set_opts(nullptr,
                                         outChannelLayout, outFormat, outSampleRate,
                                         channelLayout, AVSampleFormat(frame->format), frame->sample_rate,
-                                        0, NULL);
+                                        0, nullptr);
         int ret = swr_init(d->swr_ctx);
         if (!d->swr_ctx || ret < 0) {
             qWarning() << "Could not init SwrContext" << ret;
@@ -107,7 +140,7 @@ QByteArray QAVAudioFrame::data(const QAudioFormat &format) const
     if (d->swr_ctx) {
         const uint8_t **in = (const uint8_t **)frame->extended_data;
         int outCount = (int64_t)frame->nb_samples * outSampleRate / frame->sample_rate + 256;
-        int outSize = av_samples_get_buffer_size(NULL, format.channelCount(), outCount, outFormat, 0);
+        int outSize = av_samples_get_buffer_size(nullptr, fmt.channelCount(), outCount, outFormat, 0);
 
         av_freep(&d->audioBuf);
         uint8_t **out = &d->audioBuf;
@@ -120,7 +153,7 @@ QByteArray QAVAudioFrame::data(const QAudioFormat &format) const
             return {};
         }
 
-        int size = samples * format.channelCount() * av_get_bytes_per_sample(outFormat);
+        int size = samples * fmt.channelCount() * av_get_bytes_per_sample(outFormat);
         d->data = QByteArray::fromRawData((const char *)d->audioBuf, size);
     } else {
         int size = av_samples_get_buffer_size(NULL,
@@ -131,7 +164,7 @@ QByteArray QAVAudioFrame::data(const QAudioFormat &format) const
     }
 
     d->inSampleRate = frame->sample_rate;
-    d->outAudioFormat = format;
+    d->outAudioFormat = fmt;
     return d->data;
 }
 

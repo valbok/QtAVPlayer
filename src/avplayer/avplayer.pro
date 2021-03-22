@@ -1,7 +1,7 @@
 TARGET = QtAVPlayer
 MODULE = avplayer
 
-QT = multimedia concurrent multimedia-private
+QT = multimedia concurrent
 QT_PRIVATE += gui-private
 
 QMAKE_USE += ffmpeg
@@ -15,14 +15,15 @@ PRIVATE_HEADERS += \
     qavdemuxer_p.h \
     qavpacket_p.h \
     qavframe_p.h \
-    qavframe_p_p.h \
-    qavvideoframe_p.h \
-    qavaudioframe_p.h \
     qavpacketqueue_p.h \
-    qavplanarvideobuffer_cpu_p.h \
-    qavplanarvideobuffer_gpu_p.h
+    qavvideobuffer_cpu_p.h \
+    qavvideobuffer_gpu_p.h
 
 PUBLIC_HEADERS += \
+    qavaudioformat.h \
+    qavframe.h \
+    qavvideoframe.h \
+    qavaudioframe.h \    
     qtavplayerglobal.h \
     qavaudiooutput.h \
     qavplayer.h
@@ -38,8 +39,8 @@ SOURCES += \
     qavframe.cpp \
     qavvideoframe.cpp \
     qavaudioframe.cpp \
-    qavplanarvideobuffer_cpu.cpp \
-    qavplanarvideobuffer_gpu.cpp
+    qavvideobuffer_cpu.cpp \
+    qavvideobuffer_gpu.cpp
 
 qtConfig(va_x11):qtConfig(opengl): {
     QMAKE_USE += va_x11 x11

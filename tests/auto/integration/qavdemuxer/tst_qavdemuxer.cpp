@@ -6,8 +6,8 @@
  *********************************************************/
 
 #include "private/qavdemuxer_p.h"
-#include "private/qavaudioframe_p.h"
-#include "private/qavvideoframe_p.h"
+#include "qavaudioframe.h"
+#include "qavvideoframe.h"
 #include "private/qavvideocodec_p.h"
 #include "private/qavaudiocodec_p.h"
 
@@ -57,8 +57,6 @@ void tst_QAVDemuxer::construction()
 
     QAVVideoFrame vf;
     QVERIFY(!vf);
-    QVideoFrame vvf = vf;
-    QVERIFY(!vvf.isValid());
 }
 
 void tst_QAVDemuxer::loadIncorrect()
@@ -130,9 +128,9 @@ void tst_QAVDemuxer::loadAudio()
         QCOMPARE(af.pts(), f.pts());
         QVERIFY(af.codec());
 
-        auto format = af.codec()->audioFormat();
-        QVERIFY(format.isValid());
-        auto data = af.data(format);
+        auto format = af.format();
+        QCOMPARE(format.sampleFormat(), QAVAudioFormat::Int32);
+        auto data = af.data();
         QVERIFY(!data.isEmpty());
 
         QCOMPARE(d.eof(), false);
@@ -193,11 +191,6 @@ void tst_QAVDemuxer::loadVideo()
             QVERIFY(vf.frame());
             QCOMPARE(vf.pts(), f.pts());
             QVERIFY(vf.size().isValid());
-
-            QVideoFrame vvf = vf;
-            QVERIFY(vvf.isValid());
-            QCOMPARE(vvf.size(), vf.size());
-            QVERIFY(vvf.pixelFormat() != QVideoFrame::Format_Invalid);
         }
     }
 

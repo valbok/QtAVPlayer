@@ -7,9 +7,7 @@
 
 #include "qavhwdevice_vaapi_drm_egl_p.h"
 #include "qavvideocodec_p.h"
-#include "qavplanarvideobuffer_gpu_p.h"
-#include <QVideoFrame>
-#include <QDebug>
+#include "qavvideobuffer_gpu_p.h"
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -56,20 +54,11 @@ AVHWDeviceType QAVHWDevice_VAAPI_DRM_EGL::type() const
     return AV_HWDEVICE_TYPE_VAAPI;
 }
 
-bool QAVHWDevice_VAAPI_DRM_EGL::supportsVideoSurface(QAbstractVideoSurface *surface) const
-{
-    if (!surface)
-        return false;
-
-    auto list = surface->supportedPixelFormats(QAbstractVideoBuffer::GLTextureHandle);
-    return list.contains(QVideoFrame::Format_NV12);
-}
-
-class VideoBuffer_EGL : public QAVPlanarVideoBuffer_GPU
+class VideoBuffer_EGL : public QAVVideoBuffer_GPU
 {
 public:
     VideoBuffer_EGL(QAVHWDevice_VAAPI_DRM_EGLPrivate *hw, const QAVVideoFrame &frame)
-        : QAVPlanarVideoBuffer_GPU(frame, GLTextureHandle)
+        : QAVVideoBuffer_GPU(frame)
         , m_hw(hw)
     {
         if (!s_eglCreateImageKHR) {
@@ -157,9 +146,19 @@ public:
     QAVHWDevice_VAAPI_DRM_EGLPrivate *m_hw = nullptr;
 };
 
-QVideoFrame QAVHWDevice_VAAPI_DRM_EGL::decode(const QAVVideoFrame &frame) const
+QAVVideoFrame::MapData QAVHWDevice_VAAPI_DRM_EGL::map(const QAVVideoFrame &frame) const
 {
-    return {new VideoBuffer_EGL(d_ptr.data(), frame), frame.size(), QVideoFrame::Format_NV12};
+    return VideoBuffer_EGL(d_ptr.data(), frame).map();
+}
+
+QAVVideoFrame::HandleType QAVHWDevice_VAAPI_DRM_EGL::handleType() const
+{
+    return QAVVideoFrame::GLTextureHandle;
+}
+
+QVariant QAVHWDevice_VAAPI_DRM_EGL::handle(const QAVVideoFrame &frame) const
+{
+    return VideoBuffer_EGL(d_ptr.data(), frame).handle();
 }
 
 QT_END_NAMESPACE
