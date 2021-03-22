@@ -14,7 +14,7 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-QAVVideoBuffer_GPU::QAVVideoBuffer_GPU(const QAVVideoFrame &frame)    
+QAVVideoBuffer_GPU::QAVVideoBuffer_GPU(const QAVVideoFrame &frame)
     : m_frame(frame)
 {
 }
@@ -35,7 +35,7 @@ QAVVideoFrame::MapData QAVVideoBuffer_GPU::map() const
 
 QVariant QAVVideoBuffer_GPU::handle() const
 {
-	return {};
+    return {};
 }
 
 QT_END_NAMESPACE

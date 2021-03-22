@@ -42,7 +42,7 @@ QAVVideoFrame::HandleType QAVHWDevice_MediaCodec::handleType() const
 
 QVariant QAVHWDevice_MediaCodec::handle(const QAVVideoFrame &frame) const
 {
-    return QAVVideoBuffer_CPU(frame).handle();
+    return {};
 }
 
 QT_END_NAMESPACE
