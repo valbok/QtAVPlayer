@@ -1,7 +1,6 @@
 # Qt AVPlayer
 
 Free and open-source Qt Media Player based on FFmpeg.
-Requires QtMultimedia 6.0 with Qt Rendering Hardware Interface support.
 
 Currently implemented software decoding everywhere and following hardware accelerations:
 * VA-API decoding for Linux: DRM with EGL or X11 with GLX.
@@ -12,48 +11,78 @@ Currently implemented software decoding everywhere and following hardware accele
 QT_AVPLAYER_NO_HWDEVICE can be used to force using software decoding.
 The video codec is negotiated automatically.
 
-QtAVPlayer uses QAbstractVideoSurface interface to push QVideoFrame objects to it.
-The QVideoFrame can be used to extract the video frame data or/and to render it.
-Also such video frames can contain OpenGL, Direct3d, Vulkan or Metal textrures,
-which helps to render the video and avoid downloading data from GPU to CPU memory and uploading it back.
-
-QAudioOutput is used to play audio.
+QtAVPlayer decodes the audio and video streams and returns in `QAVPlayer::ao()` and `QAVPlayer::vo()`.
+Also the video frames can contain OpenGL, Direct3d, Vulkan or Metal textrures.
 
 # Example:
 
-The video surface must provide a list of supported pixel formats from `QAbstractVideoSurface::supportedPixelFormats()`.
-One of them will be used when `QVideoFrame` is sent to `QAbstractVideoSurface::present()`.
-`QVideoWidget::videoSurface()`, `QGraphicsVideoItem::videoSurface()` and QML `VideoOutput::videoSurface()` provide the video surfaces.
-
-    struct Surface : QAbstractVideoSurface {
-        QList<QVideoFrame::PixelFormat> supportedPixelFormats(QAbstractVideoBuffer::HandleType) const override {
-            return QList<QVideoFrame::PixelFormat>() << QVideoFrame::Format_YUV420P;
-        }
-
-        bool present(const QVideoFrame &f) override {
-            // Handle the frame here...
-            return true;
-        }
-    } s;
-    
     QAVPlayer p;
-    p.vo(&s);
+    p.ao([&](const QAVAudioFrame &frame) { qDebug() << "audioFrame" << frame; });
+    p.vo([&](const QAVVideoFrame &frame) { qDebug() << "videoFrame" << frame; });
     p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
-    p.setVolume(50);
     p.setSpeed(1);
     p.play();
 
-Extracting and play audio frames:
+To play audio `QAVAudioOutput` can be used:
 
     QAVAudioOutput audioOutput;
-    p.ao([&audioOutput](const QAudioBuffer &buf) {
-        audioOutput.play(buf);
-    });
+    audioOutput.play(audioFrame);
 
-Extracting video frames:
+To render video QAbstractVideoSurface can be used:
 
-    p.vo([](const QVideoFrame &frame) {
-        qDebug() << frame;
+    class PlanarVideoBuffer : public QAbstractPlanarVideoBuffer
+    {
+    public:
+        PlanarVideoBuffer(const QAVVideoFrame &frame, HandleType type = NoHandle)
+            : QAbstractPlanarVideoBuffer(type), m_frame(frame)
+        {
+        }
+
+        MapMode mapMode() const override { return m_mode; }
+        int map(MapMode mode, int *numBytes, int bytesPerLine[4], uchar *data[4]) override
+        {        
+            if (m_mode != NotMapped || mode == NotMapped)
+                return 0;
+
+            auto mapData = m_frame.map();
+            m_mode = mode;
+            if (numBytes)
+                *numBytes = mapData.size;
+
+            int i = 0;
+            for (; i < 4; ++i) {
+                bytesPerLine[i] = mapData.bytesPerLine[i];
+                data[i] = mapData.data[i];
+            }
+
+            return i;        
+        }
+        void unmap() override { m_mode = NotMapped; }
+
+    private:
+        QAVVideoFrame m_frame;
+        MapMode m_mode = NotMapped;
+    };
+
+    p.vo([vo,&videoSurface](const QAVVideoFrame &frame) {
+        QVideoFrame::PixelFormat pf = QVideoFrame::Format_Invalid;
+        switch (frame.frame()->format)
+        {
+        case AV_PIX_FMT_YUV420P:
+            pf = QVideoFrame::Format_YUV420P;
+            break;
+        case AV_PIX_FMT_NV12:
+            pf = QVideoFrame::Format_NV12;
+            break;
+        default:
+            break;
+        }
+
+        QVideoFrame videoFrame(new PlanarVideoBuffer(frame), frame.size(), pf);
+        if (!videoSurface->isActive())
+            videoSurface->start({videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType()});
+        if (videoSurface->isActive())
+            videoSurface->present(videoFrame);
     });
 
 # Build
@@ -112,17 +141,3 @@ Windows and MSVC:
     SET INCLUDE=%FFMPEG%\include;%INCLUDE%
     SET LIB=%FFMPEG%\lib;%LIB%
     cd QtAVPlayer && qmake && nmake
-
-# btw:
-
-Since QtAVPlayer uses QRHI to render the video frames (also means available only in QML), there are some limitations.
-
-Windows:
-
-Even if D3D11 is used, array texture ID3D11Texture2D in NV12 format is not yet implemented in QRHI, thus decided to download memory from GPU to CPU.
-
-Android:
-
-MediaCodec provides possibility to use android.view.Surface which currently is not implemented, thus copying from GPU to CPU is performed.
-
-
