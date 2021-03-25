@@ -14,8 +14,7 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     QAVPlayer p;
-    QAVAudioOutput audioOutput;
-    p.ao([&](const QAVAudioFrame &frame) { audioOutput.play(frame); qDebug() << "audioFrame" << frame; });
+    p.ao([&](const QAVAudioFrame &frame) { qDebug() << "audioFrame" << frame; });
     p.vo([&](const QAVVideoFrame &frame) { qDebug() << "videoFrame" << frame; });
     p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
     p.play();
