@@ -9,6 +9,7 @@
 
 extern "C" {
 #include <libavutil/imgutils.h>
+#include <libavutil/frame.h>
 }
 
 QT_BEGIN_NAMESPACE

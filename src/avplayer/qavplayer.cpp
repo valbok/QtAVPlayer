@@ -15,6 +15,10 @@
 
 #include <qtconcurrentrun.h>
 
+extern "C" {
+#include <libavformat/avformat.h>
+}
+
 QT_BEGIN_NAMESPACE
 
 class QAVPlayerPrivate

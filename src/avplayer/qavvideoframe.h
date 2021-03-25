@@ -11,10 +11,6 @@
 #include <QtAVPlayer/qavframe.h>
 #include <QVariant>
 
-extern "C" {
-#include <libavformat/avformat.h>
-}
-
 QT_BEGIN_NAMESPACE
 
 class QAVVideoFramePrivate;
