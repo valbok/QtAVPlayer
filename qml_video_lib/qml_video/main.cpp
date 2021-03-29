@@ -6,11 +6,71 @@
  *********************************************************/
 
 #include "qavplayer.h"
+#include <QVideoFrame>
 #include <private/qdeclarativevideooutput_p.h>
 #include <QTimer>
 #include <QtQuick/QQuickView>
 #include <QtQml/QQmlEngine>
 #include <QGuiApplication>
+#include <QAbstractVideoSurface>
+#include <qavaudiooutput.h>
+
+extern "C" {
+#include "libavcodec/avcodec.h"
+}
+
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+class Source : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(QAbstractVideoSurface *videoSurface READ videoSurface WRITE setVideoSurface)
+public:
+    explicit Source(QObject *parent = 0) : QObject(parent) { }
+    virtual ~Source() { }
+
+    QAbstractVideoSurface* videoSurface() const { return m_surface; }
+    void setVideoSurface(QAbstractVideoSurface *surface)
+    {
+        m_surface = surface;
+    }
+
+    QAbstractVideoSurface *m_surface = nullptr;
+};
+#endif
+
+class PlanarVideoBuffer : public QAbstractPlanarVideoBuffer
+{
+public:
+    PlanarVideoBuffer(const QAVVideoFrame &frame, HandleType type = NoHandle)
+        : QAbstractPlanarVideoBuffer(type), m_frame(frame)
+    {
+    }
+
+    MapMode mapMode() const override { return m_mode; }
+    int map(MapMode mode, int *numBytes, int bytesPerLine[4], uchar *data[4]) override
+    {        
+        if (m_mode != NotMapped || mode == NotMapped)
+            return 0;
+
+        auto mapData = m_frame.map();
+        m_mode = mode;
+        if (numBytes)
+            *numBytes = mapData.size;
+
+        int i = 0;
+        for (; i < 4; ++i) {
+            bytesPerLine[i] = mapData.bytesPerLine[i];
+            data[i] = mapData.data[i];
+        }
+
+        return i;        
+    }
+    void unmap() override { m_mode = NotMapped; }
+
+private:
+    QAVVideoFrame m_frame;
+    MapMode m_mode = NotMapped;
+};
 
 int main(int argc, char *argv[])
 {
@@ -24,37 +84,51 @@ int main(int argc, char *argv[])
     QQuickItem *rootObject = viewer.rootObject();
     auto vo = rootObject->findChild<QDeclarativeVideoOutput *>("videoOutput");
 
+    QAVPlayer p;
+
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+    Source src;
+    vo->setSource(&src);
+    auto videoSurface = src.m_surface;
+#elif QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    auto videoSurface = vo->videoSurface();
+#endif
+
+    p.vo([vo,&videoSurface](const QAVVideoFrame &frame) {
+        QVideoFrame::PixelFormat pf = QVideoFrame::Format_Invalid;
+        switch (frame.frame()->format)
+        {
+        case AV_PIX_FMT_YUV420P:
+            pf = QVideoFrame::Format_YUV420P;
+            break;
+        default:
+            pf = QVideoFrame::Format_NV12;
+            break;
+        }
+
+        QVideoFrame videoFrame(new PlanarVideoBuffer(frame), frame.size(), pf);
+        if (!videoSurface->isActive())
+            videoSurface->start({videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType()});
+        if (videoSurface->isActive())
+            videoSurface->present(videoFrame);
+    });
+
+    QAVAudioOutput audioOutput;
+    p.ao([&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); });
+    p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
+    p.play();
+
+    QObject::connect(&p, &QAVPlayer::stateChanged, [&](auto s) { qDebug() << "stateChanged" << s << p.mediaStatus(); });
+    QObject::connect(&p, &QAVPlayer::mediaStatusChanged, [&](auto s) { qDebug() << "mediaStatusChanged"<< s << p.state(); });
+    QObject::connect(&p, &QAVPlayer::durationChanged, [&](auto d) { qDebug() << "durationChanged" << d; });
+
     viewer.setMinimumSize(QSize(300, 360));
     viewer.resize(1960, 1086);
     viewer.show();
 
-    QAVPlayer p;
-    p.setVideoSurface(vo->videoSurface());
-    p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
-    p.play();
-
-    int i = 0;
-    QTimer t;
-    t.setInterval(1000);
-    QObject::connect(&t, &QTimer::timeout, [&]() {
-        p.seek(rand() % 10000);
-        ++i;
-        if(i == 3) {
-            p.pause();
-        }
-    });
-    t.start();
-
-    QObject::connect(&p, &QAVPlayer::stateChanged, [&](auto s) {
-        qDebug() << "stateChanged" << s << p.mediaStatus();
-    });
-    QObject::connect(&p, &QAVPlayer::mediaStatusChanged, [&](auto s){
-        qDebug() << "mediaStatusChanged"<< s << p.state();
-    });
-    QObject::connect(&p, &QAVPlayer::durationChanged, [&](auto d) {
-        qDebug() << "durationChanged" << d;
-    });
-
     return app.exec();
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+#include "main.moc"
+#endif

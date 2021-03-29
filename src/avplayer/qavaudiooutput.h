@@ -8,8 +8,8 @@
 #ifndef QAVAUDIOOUTPUT_H
 #define QAVAUDIOOUTPUT_H
 
-#include <QtAVPlayer/qavaudioframe.h>
-#include <QtAVPlayer/qtavplayerglobal.h>
+#include <qavaudioframe.h>
+#include <qtavplayerglobal.h>
 #include <QScopedPointer>
 
 QT_BEGIN_NAMESPACE

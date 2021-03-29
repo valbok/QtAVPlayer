@@ -11,6 +11,7 @@
 #include "qavpacket_p.h"
 #include "qavframe.h"
 #include "qavvideoframe.h"
+#include <QDebug>
 
 extern "C" {
 #include <libavutil/pixdesc.h>

@@ -8,7 +8,7 @@
 #ifndef QAVFVIDEORAME_H
 #define QAVFVIDEORAME_H
 
-#include <QtAVPlayer/qavframe.h>
+#include <qavframe.h>
 #include <QVariant>
 
 QT_BEGIN_NAMESPACE

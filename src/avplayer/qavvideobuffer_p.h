@@ -19,7 +19,7 @@
 // We mean it.
 //
 
-#include <QtAVPlayer/qavvideoframe.h>
+#include <qavvideoframe.h>
 #include <QVariant>
 
 QT_BEGIN_NAMESPACE
