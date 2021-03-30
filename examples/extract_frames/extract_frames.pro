@@ -2,7 +2,7 @@ TEMPLATE = app
 TARGET = extract_frames
 INCLUDEPATH += .
 
-QT += gui multimedia avplayer
+QT += gui multimedia QtAVPlayer
 
 SOURCES += main.cpp
 

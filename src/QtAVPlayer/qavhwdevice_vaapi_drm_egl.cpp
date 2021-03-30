@@ -8,10 +8,11 @@
 #include "qavhwdevice_vaapi_drm_egl_p.h"
 #include "qavvideocodec_p.h"
 #include "qavvideobuffer_gpu_p.h"
+#include <QDebug>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-
+#include <QtGui/qopengl.h>
 #include <va/va_drmcommon.h>
 #include <drm/drm_fourcc.h>
 

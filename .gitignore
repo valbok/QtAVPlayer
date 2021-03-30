@@ -23,8 +23,9 @@ tmp
 *.dylib
 *.framework
 *_wrapper.*
-*-config.*
 *-config_p.h
+*-config.h
+*-config.pri
 *.version*
 
 #
