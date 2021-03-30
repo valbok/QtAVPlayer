@@ -48,6 +48,8 @@ static QAudioFormat format(const QAVAudioFormat &from)
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     out.setSampleRate(from.sampleRate());
     out.setChannelCount(from.channelCount());
+    out.setByteOrder(QAudioFormat::LittleEndian);
+    out.setCodec(QLatin1String("audio/pcm"));
     switch (from.sampleFormat()) {
     case QAVAudioFormat::UInt8:
         out.setSampleSize(8);
@@ -84,7 +86,6 @@ bool QAVAudioOutput::play(const QAVAudioFrame &frame)
             return false;
         d->audioOutput->setVolume(d->volume);
     }
-
 
     auto data = frame.data();
     int pos = 0;
