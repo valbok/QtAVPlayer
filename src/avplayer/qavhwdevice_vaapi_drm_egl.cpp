@@ -68,6 +68,11 @@ public:
         }
     }
 
+    QAVVideoFrame::HandleType handleType() const
+    {
+        return QAVVideoFrame::GLTextureHandle;
+    }
+
     QVariant textures() const
     {
         return QList<QVariant>() << m_hw->textures[0] << m_hw->textures[1];
@@ -146,19 +151,9 @@ public:
     QAVHWDevice_VAAPI_DRM_EGLPrivate *m_hw = nullptr;
 };
 
-QAVVideoFrame::MapData QAVHWDevice_VAAPI_DRM_EGL::map(const QAVVideoFrame &frame) const
+QAVVideoBuffer *QAVHWDevice_VAAPI_DRM_EGL::videoBuffer(const QAVVideoFrame &frame) const
 {
-    return VideoBuffer_EGL(d_ptr.data(), frame).map();
-}
-
-QAVVideoFrame::HandleType QAVHWDevice_VAAPI_DRM_EGL::handleType() const
-{
-    return QAVVideoFrame::GLTextureHandle;
-}
-
-QVariant QAVHWDevice_VAAPI_DRM_EGL::handle(const QAVVideoFrame &frame) const
-{
-    return VideoBuffer_EGL(d_ptr.data(), frame).handle();
+    return new VideoBuffer_EGL(d_ptr.data(), frame);
 }
 
 QT_END_NAMESPACE

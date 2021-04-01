@@ -10,18 +10,10 @@
 
 extern "C" {
 #include <libavutil/hwcontext.h>
+#include <libavutil/pixdesc.h>
 }
 
 QT_BEGIN_NAMESPACE
-
-QAVVideoBuffer_GPU::QAVVideoBuffer_GPU(const QAVVideoFrame &frame)
-    : m_frame(frame)
-{
-}
-
-QAVVideoBuffer_GPU::~QAVVideoBuffer_GPU()
-{
-}
 
 QAVVideoFrame::MapData QAVVideoBuffer_GPU::map() const
 {
@@ -31,11 +23,6 @@ QAVVideoFrame::MapData QAVVideoBuffer_GPU::map() const
 
     const_cast<QAVVideoBuffer_GPU*>(this)->m_frame = QAVVideoFrame();
     return m_cpu.map();
-}
-
-QVariant QAVVideoBuffer_GPU::handle() const
-{
-    return {};
 }
 
 QT_END_NAMESPACE

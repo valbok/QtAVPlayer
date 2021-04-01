@@ -32,9 +32,7 @@ public:
 
     AVPixelFormat format() const override;
     AVHWDeviceType type() const override;
-    QAVVideoFrame::MapData map(const QAVVideoFrame &frame) const override;
-    QAVVideoFrame::HandleType handleType() const override;
-    QVariant handle(const QAVVideoFrame &frame) const override;
+    QAVVideoBuffer *videoBuffer(const QAVVideoFrame &frame) const override;
 
 private:
     QScopedPointer<QAVHWDevice_VAAPI_X11_GLXPrivate> d_ptr;

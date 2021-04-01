@@ -13,7 +13,10 @@
 
 QT_BEGIN_NAMESPACE
 
-struct AVFrame;
+extern "C" {
+#include <libavutil/frame.h>
+}
+
 class QAVFramePrivate;
 class QAVCodec;
 class Q_AVPLAYER_EXPORT QAVFrame : public QObject

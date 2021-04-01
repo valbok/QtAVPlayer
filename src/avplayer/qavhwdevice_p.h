@@ -29,8 +29,7 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-class QAVCodec;
-class QAbstractVideoSurface;
+class QAVVideoBuffer;
 class Q_AVPLAYER_EXPORT QAVHWDevice
 {
 public:
@@ -39,9 +38,7 @@ public:
 
     virtual AVPixelFormat format() const = 0;
     virtual AVHWDeviceType type() const = 0;
-    virtual QAVVideoFrame::MapData map(const QAVVideoFrame &frame) const = 0;
-    virtual QAVVideoFrame::HandleType handleType() const = 0;
-    virtual QVariant handle(const QAVVideoFrame &frame) const = 0;
+    virtual QAVVideoBuffer *videoBuffer(const QAVVideoFrame &frame) const = 0;
 
 private:
     Q_DISABLE_COPY(QAVHWDevice)

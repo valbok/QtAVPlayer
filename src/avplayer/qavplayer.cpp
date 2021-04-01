@@ -300,8 +300,7 @@ void QAVPlayerPrivate::doPlayVideo()
         if (!frame)
             continue;
 
-        if (vo)
-            call([this, frame] { vo(frame); });
+        call([this, frame] { if (vo) vo(frame); });
 
         videoQueue.pop();
         updatePosition(frame.pts());
@@ -322,8 +321,7 @@ void QAVPlayerPrivate::doPlayAudio()
 
         if (!muted) {
             frame.frame()->sample_rate *= speed;
-            if (ao)
-                call([this, frame] { ao(frame); });
+            call([this, frame] { if (ao) ao(frame); });
         }
 
         audioQueue.pop();
@@ -396,7 +394,8 @@ void QAVPlayer::vo(std::function<void(const QAVVideoFrame &data)> f)
 
 void QAVPlayer::ao(std::function<void(const QAVAudioFrame &buf)> f)
 {
-    d_func()->ao = f;
+    Q_D(QAVPlayer);
+    d->ao = f;
 }
 
 QAVPlayer::State QAVPlayer::state() const

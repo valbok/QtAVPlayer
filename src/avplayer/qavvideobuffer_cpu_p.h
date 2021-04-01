@@ -19,22 +19,20 @@
 // We mean it.
 //
 
-#include "qavvideoframe.h"
+#include "qavvideobuffer_p.h"
 
 QT_BEGIN_NAMESPACE
 
-class Q_AVPLAYER_EXPORT QAVVideoBuffer_CPU
+class Q_AVPLAYER_EXPORT QAVVideoBuffer_CPU : public QAVVideoBuffer
 {
 public:
-    QAVVideoBuffer_CPU();
-    QAVVideoBuffer_CPU(const QAVVideoFrame &frame);
+    QAVVideoBuffer_CPU() = default;
+    ~QAVVideoBuffer_CPU() = default;
+    explicit QAVVideoBuffer_CPU(const QAVVideoFrame &frame) : QAVVideoBuffer(frame) { }
 
-    QAVVideoFrame::MapData map() const;
-
-    const QAVVideoFrame &frame() const { return m_frame; }
-
-private:
-    QAVVideoFrame m_frame;
+    QAVVideoFrame::MapData map() const override;
+    QAVVideoFrame::HandleType handleType() const override { return QAVVideoFrame::NoHandle; }
+    QVariant handle() const override { return {}; }
 };
 
 QT_END_NAMESPACE
