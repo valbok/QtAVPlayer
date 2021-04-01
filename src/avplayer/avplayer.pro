@@ -16,6 +16,7 @@ PRIVATE_HEADERS += \
     qavpacket_p.h \
     qavframe_p.h \
     qavpacketqueue_p.h \
+    qavvideobuffer_p.h \
     qavvideobuffer_cpu_p.h \
     qavvideobuffer_gpu_p.h
 

@@ -26,19 +26,9 @@ AVHWDeviceType QAVHWDevice_D3D11::type() const
     return AV_HWDEVICE_TYPE_D3D11VA;
 }
 
-QAVVideoFrame::MapData QAVHWDevice_D3D11::map(const QAVVideoFrame &frame) const
+QAVVideoBuffer *QAVHWDevice_D3D11::videoBuffer(const QAVVideoFrame &frame) const
 {
-    return QAVVideoBuffer_GPU(frame).map();
-}
-
-QAVVideoFrame::HandleType QAVHWDevice_D3D11::handleType() const
-{
-    return QAVVideoFrame::NoHandle;
-}
-
-QVariant QAVHWDevice_D3D11::handle(const QAVVideoFrame &frame) const
-{
-    return QAVVideoBuffer_GPU(frame).handle();
+    return new QAVVideoBuffer_GPU(frame);
 }
 
 QT_END_NAMESPACE

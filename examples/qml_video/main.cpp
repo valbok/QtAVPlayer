@@ -6,11 +6,16 @@
  *********************************************************/
 
 #include <QtAVPlayer>
+#include <QtAVPlayer/qavvideoframe.h>
 #include <QVideoFrame>
 #include <private/qdeclarativevideooutput_p.h>
 #include <QtQuick/QQuickView>
 #include <QtQml/QQmlEngine>
 #include <QGuiApplication>
+
+extern "C" {
+#include <libavformat/avformat.h>
+}
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
 class Source : public QObject
@@ -52,6 +57,9 @@ public:
 
         int i = 0;
         for (; i < 4; ++i) {
+            if (!mapData.bytesPerLine[i])
+                break;
+
             bytesPerLine[i] = mapData.bytesPerLine[i];
             data[i] = mapData.data[i];
         }
@@ -77,6 +85,7 @@ int main(int argc, char *argv[])
     QQuickItem *rootObject = viewer.rootObject();
     auto vo = rootObject->findChild<QDeclarativeVideoOutput *>("videoOutput");
 
+    QAVAudioOutput audioOutput;
     QAVPlayer p;
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
@@ -87,7 +96,7 @@ int main(int argc, char *argv[])
     auto videoSurface = vo->videoSurface();
 #endif
 
-    p.vo([vo,&videoSurface](const QAVVideoFrame &frame) {
+    p.vo([&videoSurface](const QAVVideoFrame &frame) {
         QVideoFrame::PixelFormat pf = QVideoFrame::Format_Invalid;
         switch (frame.frame()->format)
         {
@@ -106,7 +115,6 @@ int main(int argc, char *argv[])
             videoSurface->present(videoFrame);
     });
 
-    QAVAudioOutput audioOutput;
     p.ao([&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); });
     p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
     p.play();

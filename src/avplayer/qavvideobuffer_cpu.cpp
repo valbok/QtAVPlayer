@@ -14,15 +14,6 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-QAVVideoBuffer_CPU::QAVVideoBuffer_CPU()
-{
-}
-
-QAVVideoBuffer_CPU::QAVVideoBuffer_CPU(const QAVVideoFrame &frame)
-    : m_frame(frame)
-{
-}
-
 QAVVideoFrame::MapData QAVVideoBuffer_CPU::map() const
 {
     QAVVideoFrame::MapData mapData;

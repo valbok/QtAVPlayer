@@ -27,8 +27,10 @@ public:
 
     QAVVideoFrame(QObject *parent = nullptr);
     QAVVideoFrame(const QAVFrame &other, QObject *parent = nullptr);
+    QAVVideoFrame(const QAVVideoFrame &other, QObject *parent = nullptr);
 
     QAVVideoFrame &operator=(const QAVFrame &other);
+    QAVVideoFrame &operator=(const QAVVideoFrame &other);
 
     QSize size() const;
 
@@ -42,6 +44,9 @@ public:
     MapData map() const;
     HandleType handleType() const;
     QVariant handle() const;
+
+protected:
+    Q_DECLARE_PRIVATE(QAVVideoFrame)
 };
 
 QT_END_NAMESPACE

@@ -76,6 +76,11 @@ public:
         }
     }
 
+    QAVVideoFrame::HandleType handleType() const
+    {
+        return QAVVideoFrame::GLTextureHandle;
+    }
+
     QVariant handle() const override
     {
         if (!s_glXBindTexImageEXT) {
@@ -165,19 +170,9 @@ public:
     QAVHWDevice_VAAPI_X11_GLXPrivate *m_hw = nullptr;
 };
 
-QAVVideoFrame::MapData QAVHWDevice_VAAPI_X11_GLX::map(const QAVVideoFrame &frame) const
+QAVVideoBuffer *QAVHWDevice_VAAPI_X11_GLX::videoBuffer(const QAVVideoFrame &frame) const
 {
-    return VideoBuffer_GLX(d_ptr.data(), frame).map();
-}
-
-QAVVideoFrame::HandleType QAVHWDevice_VAAPI_X11_GLX::handleType() const
-{
-    return QAVVideoFrame::GLTextureHandle;
-}
-
-QVariant QAVHWDevice_VAAPI_X11_GLX::handle(const QAVVideoFrame &frame) const
-{
-    return VideoBuffer_GLX(d_ptr.data(), frame).handle();
+    return new VideoBuffer_GLX(d_ptr.data(), frame);
 }
 
 QT_END_NAMESPACE
