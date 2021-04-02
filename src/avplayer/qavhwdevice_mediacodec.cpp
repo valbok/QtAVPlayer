@@ -30,19 +30,9 @@ AVHWDeviceType QAVHWDevice_MediaCodec::type() const
     return AV_HWDEVICE_TYPE_MEDIACODEC;
 }
 
-QAVVideoFrame::MapData QAVHWDevice_MediaCodec::map(const QAVVideoFrame &frame) const
+QAVVideoBuffer *QAVHWDevice_MediaCodec::videoBuffer(const QAVVideoFrame &frame) const
 {
-    return QAVVideoBuffer_CPU(frame).map();
-}
-
-QAVVideoFrame::HandleType QAVHWDevice_MediaCodec::handleType() const
-{
-    return QAVVideoFrame::NoHandle;
-}
-
-QVariant QAVHWDevice_MediaCodec::handle(const QAVVideoFrame &frame) const
-{
-    return {};
+    return new QAVVideoBuffer_CPU(frame);
 }
 
 QT_END_NAMESPACE

@@ -32,8 +32,6 @@ public:
     ~QAVVideoBuffer_GPU() = default;
 
     QAVVideoFrame::MapData map() const override;
-    QAVVideoFrame::HandleType handleType() const override { return QAVVideoFrame::NoHandle; }
-    QVariant handle() const override { return {}; }
 
 protected:
     QAVVideoBuffer_CPU m_cpu;

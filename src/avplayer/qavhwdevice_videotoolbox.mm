@@ -58,6 +58,11 @@ public:
     {
     }
 
+    QAVVideoFrame::HandleType handleType() const override
+    {
+        return QAVVideoFrame::MTLTextureHandle;
+    }
+
     QVariant handle() const override
     {
         CVPixelBufferRelease(m_hw->pbuf);
@@ -97,24 +102,9 @@ public:
     QAVHWDevice_VideoToolboxPrivate *m_hw = nullptr;
 };
 
-QAVVideoFrame::MapData QAVHWDevice_VideoToolbox::map(const QAVVideoFrame &frame) const
+QAVVideoBuffer *QAVHWDevice_VideoToolbox::videoBuffer(const QAVVideoFrame &frame) const
 {
-    return VideoBuffer_MTL(d_ptr.data(), frame).map();
-}
-
-QAVVideoFrame::HandleType QAVHWDevice_VideoToolbox::handleType() const
-{
-    return QAVVideoFrame::MTLTextureHandle;
-}
-
-QVariant QAVHWDevice_VideoToolbox::handle(const QAVVideoFrame &frame) const
-{
-    return VideoBuffer_MTL(d_ptr.data(), frame).handle();
-}
-
-QVideoFrame QAVHWDevice_VideoToolbox::decode(const QAVVideoFrame &frame) const
-{
-    return {new VideoBuffer_MTL(d_ptr.data(), frame), frame.size(), QVideoFrame::Format_NV12};
+    return new VideoBuffer_MTL(d_ptr.data(), frame);
 }
 
 QT_END_NAMESPACE

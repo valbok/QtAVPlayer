@@ -31,8 +31,6 @@ public:
     explicit QAVVideoBuffer_CPU(const QAVVideoFrame &frame) : QAVVideoBuffer(frame) { }
 
     QAVVideoFrame::MapData map() const override;
-    QAVVideoFrame::HandleType handleType() const override { return QAVVideoFrame::NoHandle; }
-    QVariant handle() const override { return {}; }
 };
 
 QT_END_NAMESPACE

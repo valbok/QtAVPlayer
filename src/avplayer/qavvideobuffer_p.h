@@ -33,8 +33,8 @@ public:
     const QAVVideoFrame &frame() const { return m_frame; }
 
     virtual QAVVideoFrame::MapData map() const = 0;
-    virtual QAVVideoFrame::HandleType handleType() const = 0;
-    virtual QVariant handle() const = 0;
+    virtual QAVVideoFrame::HandleType handleType() const { return QAVVideoFrame::NoHandle; }
+    virtual QVariant handle() const { return {}; }
 
 protected:
     QAVVideoFrame m_frame;
