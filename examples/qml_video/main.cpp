@@ -103,8 +103,10 @@ int main(int argc, char *argv[])
         case AV_PIX_FMT_YUV420P:
             pf = QVideoFrame::Format_YUV420P;
             break;
-        default:
+        case AV_PIX_FMT_NV12:
             pf = QVideoFrame::Format_NV12;
+            break;
+        default:
             break;
         }
 

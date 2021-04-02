@@ -14,6 +14,8 @@ The video codec is negotiated automatically.
 QtAVPlayer decodes the audio and video streams and returns in `QAVPlayer::ao()` and `QAVPlayer::vo()`.
 Also the video frames can contain OpenGL, Direct3d, Vulkan or Metal textrures.
 
+At least Qt 5.12 is supported.
+
 # Example:
 
     QAVPlayer p;
