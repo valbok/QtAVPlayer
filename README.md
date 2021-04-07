@@ -89,6 +89,10 @@ To render video QAbstractVideoSurface can be used:
 
 # Build
 
+cmake:
+
+    cd build; /opt/cmake-3.19.2/bin/cmake .. -DCMAKE_PREFIX_PATH=/opt/dev/qtbase/lib/cmake/Qt5 -DCMAKE_INSTALL_PREFIX=/opt/QtAVPlayer/install -DCMAKE_LIBRARY_PATH="/opt/dev/qtbase/lib;/opt/ffmpeg/install/lib" -DCMAKE_INCLUDE_PATH=/opt/ffmpeg/install/include
+
 Linux:
 
 Install ffmpeg visible with pkg-config.
@@ -144,8 +148,4 @@ Windows and MSVC:
     SET LIB=%FFMPEG%\lib;%LIB%
     cd QtAVPlayer && qmake && nmake
 
-
-cmake:
-
-    /opt/cmake-3.19.2/bin/cmake .. -DCMAKE_PREFIX_PATH=/opt/dev/qtbase/lib/cmake/Qt5 -DCMAKE_INSTALL_PREFIX=/opt/QtAVPlayer/install -DCMAKE_LIBRARY_PATH=/opt/dev/qtbase/lib
 
