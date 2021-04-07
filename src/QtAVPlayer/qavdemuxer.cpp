@@ -36,6 +36,8 @@ extern "C" {
 #endif
 
 #include <QAtomicInt>
+#include <QGuiApplication>
+#include <QDir>
 #include <QDebug>
 
 extern "C" {
@@ -113,13 +115,13 @@ static QAVVideoCodec *create_video_codec(AVStream *stream)
     Q_UNUSED(opts);
     auto name = QGuiApplication::platformName();
 
-#if QT_CONFIG(va_x11) && QT_CONFIG(opengl)
+#if defined(VA_X11) && QT_CONFIG(opengl)
     if (name == QLatin1String("xcb")) {
         device.reset(new QAVHWDevice_VAAPI_X11_GLX);
         av_dict_set(&opts, "connection_type", "x11", 0);
     }
 #endif
-#if QT_CONFIG(va_drm) && QT_CONFIG(egl)
+#if defined(VA_DRM) && QT_CONFIG(egl)
     if (name == QLatin1String("eglfs"))
         device.reset(new QAVHWDevice_VAAPI_DRM_EGL);
 #endif

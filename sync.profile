@@ -1,3 +1,3 @@
 %modules = (
-    "QtAVPlayer" => "$basedir/src/avplayer"
+    "QtAVPlayer" => "$basedir/src/QtAVPlayer"
 );

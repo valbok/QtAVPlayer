@@ -5,22 +5,34 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#ifndef QTAVPLAYERGLOBAL_P_H
-#define QTAVPLAYERGLOBAL_P_H
+#ifndef QAVFRAME_P_H
+#define QAVFRAME_P_H
 
 //
 //  W A R N I N G
 //  -------------
 //
-// This file is not part of the Qt API.  It exists purely as an
-// implementation detail.  This header file may change from version to
+// This file is not part of the Qt API. It exists purely as an
+// implementation detail. This header file may change from version to
 // version without notice, or even be removed.
 //
 // We mean it.
 //
 
-#include <QtGui/private/qtguiglobal_p.h>
-#include <QtAVPlayer/private/qtavplayer-config_p.h>
-#include <QtAVPlayer/qtavplayerglobal.h>
+QT_BEGIN_NAMESPACE
+
+struct AVFrame;
+class QAVFrame;
+class QAVCodec;
+class QAVFramePrivate
+{
+public:
+    virtual ~QAVFramePrivate() = default;
+
+    const QAVCodec *codec = nullptr;
+    AVFrame *frame = nullptr;
+};
+
+QT_END_NAMESPACE
 
 #endif

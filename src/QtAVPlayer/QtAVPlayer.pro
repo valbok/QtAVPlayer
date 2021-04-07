@@ -1,5 +1,5 @@
 TARGET = QtAVPlayer
-MODULE = avplayer
+MODULE = QtAVPlayer
 
 QT = multimedia concurrent
 QT_PRIVATE += gui-private

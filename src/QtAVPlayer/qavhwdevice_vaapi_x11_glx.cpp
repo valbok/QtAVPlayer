@@ -8,6 +8,7 @@
 #include "qavhwdevice_vaapi_x11_glx_p.h"
 #include "qavvideocodec_p.h"
 #include "qavvideobuffer_gpu_p.h"
+#include <QDebug>
 
 #include <GL/glx.h>
 #include <va/va_x11.h>

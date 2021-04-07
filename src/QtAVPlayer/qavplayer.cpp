@@ -12,8 +12,7 @@
 #include "qavvideoframe.h"
 #include "qavaudioframe.h"
 #include "qavpacketqueue_p.h"
-
-#include <qtconcurrentrun.h>
+#include <QtConcurrent/qtconcurrentrun.h>
 
 extern "C" {
 #include <libavformat/avformat.h>
