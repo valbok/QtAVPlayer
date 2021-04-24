@@ -274,9 +274,17 @@ void QAVPlayerPrivate::doDemux()
         }
 
         if (packet.streamIndex() == demuxer.videoStream())
+        {
             videoQueue.enqueue(packet);
+            if(state == QAVPlayer::PausedState) {
+                QMutexLocker locker(&waitMutex);
+                wait = true;
+            }
+        }
         else if (packet.streamIndex() == demuxer.audioStream())
+        {
             audioQueue.enqueue(packet);
+        }
     }
 }
 
@@ -426,7 +434,6 @@ void QAVPlayer::play()
         return;
     }
 
-    QMutexLocker locker(&d->waitMutex);
     if (!d->wait)
         return;
 
@@ -439,8 +446,13 @@ void QAVPlayer::pause()
 {
     Q_D(QAVPlayer);
     d->setState(QAVPlayer::PausedState);
-    QMutexLocker locker(&d->waitMutex);
-    d->wait = true;
+
+    if(!isVideoAvailable()) {
+        QMutexLocker locker(&d->waitMutex);
+        d->wait = true;
+    } else {
+        // will wait on reaching first video frame
+    }
 }
 
 void QAVPlayer::stop()
@@ -464,6 +476,10 @@ void QAVPlayer::seek(qint64 pos)
 
     QMutexLocker lock(&d->positionMutex);
     d->pendingPosition = pos / 1000.0;
+    QMutexLocker locker(&d->waitMutex);
+    d->wait = false;
+
+    d->waitCond.wakeAll();
 }
 
 qint64 QAVPlayer::duration() const
