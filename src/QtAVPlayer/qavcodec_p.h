@@ -20,7 +20,7 @@
 //
 
 #include "qavframe.h"
-#include <qtavplayerglobal_p.h>
+#include <QtAVPlayer/qtavplayerglobal.h>
 #include <QObject>
 
 QT_BEGIN_NAMESPACE

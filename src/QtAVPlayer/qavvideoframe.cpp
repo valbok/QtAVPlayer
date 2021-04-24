@@ -10,7 +10,7 @@
 #include "qavframe_p.h"
 #include "qavvideocodec_p.h"
 #include "qavhwdevice_p.h"
-#include <QVideoFrame>
+#include <QSize>
 #include <QDebug>
 
 QT_BEGIN_NAMESPACE

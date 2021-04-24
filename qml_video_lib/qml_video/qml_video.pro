@@ -22,11 +22,11 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-INCLUDEPATH += ../../src/avplayer
+INCLUDEPATH += ../../src
 
 win32: {
-    LIBS += -L../../src/avplayer/debug -lQtAVPlayer
+    LIBS += -L../../src/QtAVPlayer/debug -lQtAVPlayer
 }
 !win32: {
-    LIBS += -L../../src/avplayer -lQtAVPlayer
+    LIBS += -L../../src/QtAVPlayer -lQtAVPlayer
 }

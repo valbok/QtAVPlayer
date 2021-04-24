@@ -8,7 +8,7 @@
 #ifndef QAVAUDIOFORMAT_H
 #define QAVAUDIOFORMAT_H
 
-#include <qtavplayerglobal.h>
+#include <QtAVPlayer/qtavplayerglobal.h>
 
 QT_BEGIN_NAMESPACE
 

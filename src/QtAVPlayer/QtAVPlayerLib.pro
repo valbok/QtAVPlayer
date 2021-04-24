@@ -1,8 +1,11 @@
 TARGET = QtAVPlayer
-MODULE = avplayer
+MODULE = QtAVPlayer
 
 QT = multimedia concurrent
 QT_PRIVATE += gui-private
+
+INCLUDEPATH += $$absolute_path($$PWD/..)
+message ("INCLUDEPATH: " $$INCLUDEPATH)
 
 #QMAKE_USE += ffmpeg
 
@@ -16,6 +19,7 @@ PRIVATE_HEADERS += \
     qavpacket_p.h \
     qavframe_p.h \
     qavpacketqueue_p.h \
+    qavvideobuffer_p.h \
     qavvideobuffer_cpu_p.h \
     qavvideobuffer_gpu_p.h
 

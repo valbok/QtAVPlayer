@@ -5,18 +5,19 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#include "qavplayer.h"
+#include <QtAVPlayer/qavplayer.h>
+#include <QtAVPlayer/qavvideoframe.h>
+#include <QtAVPlayer/qavaudiooutput.h>
+
 #include <QVideoFrame>
+#include <QAbstractVideoSurface>
 #include <private/qdeclarativevideooutput_p.h>
-#include <QTimer>
 #include <QtQuick/QQuickView>
 #include <QtQml/QQmlEngine>
 #include <QGuiApplication>
-#include <QAbstractVideoSurface>
-#include <qavaudiooutput.h>
 
 extern "C" {
-#include "libavcodec/avcodec.h"
+#include <libavformat/avformat.h>
 }
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
@@ -59,6 +60,9 @@ public:
 
         int i = 0;
         for (; i < 4; ++i) {
+            if (!mapData.bytesPerLine[i])
+                break;
+
             bytesPerLine[i] = mapData.bytesPerLine[i];
             data[i] = mapData.data[i];
         }
@@ -84,6 +88,7 @@ int main(int argc, char *argv[])
     QQuickItem *rootObject = viewer.rootObject();
     auto vo = rootObject->findChild<QDeclarativeVideoOutput *>("videoOutput");
 
+    QAVAudioOutput audioOutput;
     QAVPlayer p;
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
@@ -94,15 +99,17 @@ int main(int argc, char *argv[])
     auto videoSurface = vo->videoSurface();
 #endif
 
-    p.vo([vo,&videoSurface](const QAVVideoFrame &frame) {
+    p.vo([&videoSurface](const QAVVideoFrame &frame) {
         QVideoFrame::PixelFormat pf = QVideoFrame::Format_Invalid;
         switch (frame.frame()->format)
         {
         case AV_PIX_FMT_YUV420P:
             pf = QVideoFrame::Format_YUV420P;
             break;
-        default:
+        case AV_PIX_FMT_NV12:
             pf = QVideoFrame::Format_NV12;
+            break;
+        default:
             break;
         }
 
@@ -113,7 +120,6 @@ int main(int argc, char *argv[])
             videoSurface->present(videoFrame);
     });
 
-    QAVAudioOutput audioOutput;
     p.ao([&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); });
     p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
     p.play();

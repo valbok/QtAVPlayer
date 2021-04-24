@@ -5,8 +5,8 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#ifndef QAVVIDEOBUFFER_P_H
-#define QAVVIDEOBUFFER_P_H
+#ifndef QAVFRAME_P_H
+#define QAVFRAME_P_H
 
 //
 //  W A R N I N G
@@ -19,25 +19,18 @@
 // We mean it.
 //
 
-#include <qavvideoframe.h>
-#include <QVariant>
-
 QT_BEGIN_NAMESPACE
 
-class Q_AVPLAYER_EXPORT QAVVideoBuffer
+struct AVFrame;
+class QAVFrame;
+class QAVCodec;
+class QAVFramePrivate
 {
 public:
-    QAVVideoBuffer() = default;
-    explicit QAVVideoBuffer(const QAVVideoFrame &frame) : m_frame(frame) { }
-    virtual ~QAVVideoBuffer() = default;
-    const QAVVideoFrame &frame() const { return m_frame; }
+    virtual ~QAVFramePrivate() = default;
 
-    virtual QAVVideoFrame::MapData map() const = 0;
-    virtual QAVVideoFrame::HandleType handleType() const { return QAVVideoFrame::NoHandle; }
-    virtual QVariant handle() const { return {}; }
-
-protected:
-    QAVVideoFrame m_frame;
+    const QAVCodec *codec = nullptr;
+    AVFrame *frame = nullptr;
 };
 
 QT_END_NAMESPACE

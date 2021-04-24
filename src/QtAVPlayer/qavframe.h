@@ -9,7 +9,7 @@
 #define QAVFRAME_H
 
 #include <QObject>
-#include <qtavplayerglobal.h>
+#include <QtAVPlayer/qtavplayerglobal.h>
 
 QT_BEGIN_NAMESPACE
 

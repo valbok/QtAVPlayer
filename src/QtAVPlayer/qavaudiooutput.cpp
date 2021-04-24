@@ -8,9 +8,9 @@
 #include "qavaudiooutput.h"
 #include <QAudioOutput>
 #include <QDebug>
-#include <QWaitCondition>
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <QFuture>
+#include <QWaitCondition>
 
 extern "C" {
 #include "libavutil/time.h"
