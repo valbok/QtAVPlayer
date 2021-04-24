@@ -109,7 +109,8 @@ int main(int argc, char *argv[])
         case AV_PIX_FMT_NV12:
             pf = QVideoFrame::Format_NV12;
             break;
-        default:
+        default: // resolves 'white window' on windows
+            pf = QVideoFrame::Format_NV12;
             break;
         }
 
