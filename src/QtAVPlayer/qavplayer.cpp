@@ -274,9 +274,15 @@ void QAVPlayerPrivate::doDemux()
         }
 
         if (packet.streamIndex() == demuxer.videoStream())
+        {
             videoQueue.enqueue(packet);
+            if(state == QAVPlayer::PausedState)
+                wait = true;
+        }
         else if (packet.streamIndex() == demuxer.audioStream())
+        {
             audioQueue.enqueue(packet);
+        }
     }
 }
 
@@ -440,7 +446,11 @@ void QAVPlayer::pause()
     Q_D(QAVPlayer);
     d->setState(QAVPlayer::PausedState);
     QMutexLocker locker(&d->waitMutex);
-    d->wait = true;
+
+    // will wait on reaching first video frame
+    // todo: need to fallback to existing behaviour if no video stream
+    // Q: how to query what streams are available using current API?
+    // d->wait = true;
 }
 
 void QAVPlayer::stop()
@@ -464,6 +474,10 @@ void QAVPlayer::seek(qint64 pos)
 
     QMutexLocker lock(&d->positionMutex);
     d->pendingPosition = pos / 1000.0;
+    QMutexLocker locker(&d->waitMutex);
+    d->wait = false;
+
+    d->waitCond.wakeAll();
 }
 
 qint64 QAVPlayer::duration() const
