@@ -260,6 +260,7 @@ void QAVPlayerPrivate::doDemux()
                 qWarning() << "Could not seek:" << err_str(ret);
             }
             pendingPosition = -1;
+            setMediaStatus(QAVPlayer::LoadedMedia);
         }
         positionMutex.unlock();
 
@@ -461,6 +462,12 @@ void QAVPlayer::seek(qint64 pos)
     Q_D(QAVPlayer);
     if (pos < 0 || (duration() > 0 && pos > duration()))
         return;
+
+    // allow to seek only if media loaded / valid
+    if(d->mediaStatus != QAVPlayer::LoadedMedia && d->mediaStatus != QAVPlayer::EndOfMedia && d->mediaStatus != QAVPlayer::SeekingMedia)
+        return;
+
+    d->setMediaStatus(QAVPlayer::SeekingMedia);
 
     QMutexLocker lock(&d->positionMutex);
     d->pendingPosition = pos / 1000.0;

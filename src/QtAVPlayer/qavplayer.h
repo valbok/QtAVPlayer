@@ -38,6 +38,7 @@ public:
         NoMedia,
         LoadingMedia,
         LoadedMedia,
+        SeekingMedia,
         EndOfMedia,
         InvalidMedia
     };
