@@ -110,6 +110,7 @@ int main(int argc, char *argv[])
             pf = QVideoFrame::Format_NV12;
             break;
         default:
+            pf = QVideoFrame::Format_NV12;
             break;
         }
 
