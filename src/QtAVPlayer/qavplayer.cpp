@@ -39,9 +39,10 @@ public:
     bool isAudioAvailable() const;
     bool isVideoAvailable() const;
     void terminate();
-    void doWait();
-    void doEndOfMedia();
 
+    void doWait();
+    void setWait(bool v);
+    void doEndOfMedia();
     void doLoad(const QUrl &url);
     void doDemux();
     void doPlayVideo();
@@ -200,6 +201,12 @@ void QAVPlayerPrivate::doWait()
         waitCond.wait(&waitMutex, 5000);
 }
 
+void QAVPlayerPrivate::setWait(bool v)
+{
+    QMutexLocker locker(&waitMutex);
+    wait = v;
+}
+
 void QAVPlayerPrivate::doLoad(const QUrl &url)
 {
     demuxer.abort(false);
@@ -273,16 +280,14 @@ void QAVPlayerPrivate::doDemux()
             continue;
         }
 
-        if (packet.streamIndex() == demuxer.videoStream())
-        {
+        if (packet.streamIndex() == demuxer.videoStream()) {
             videoQueue.enqueue(packet);
-            if(state == QAVPlayer::PausedState) {
-                QMutexLocker locker(&waitMutex);
-                wait = true;
+            if (state == QAVPlayer::PausedState
+                || state == QAVPlayer::StoppedState)
+            {
+                setWait(true);
             }
-        }
-        else if (packet.streamIndex() == demuxer.audioStream())
-        {
+        } else if (packet.streamIndex() == demuxer.audioStream()) {
             audioQueue.enqueue(packet);
         }
     }
@@ -374,8 +379,7 @@ void QAVPlayer::setSource(const QUrl &url)
 #else
     d->loaderFuture = QtConcurrent::run(&QAVPlayerPrivate::doLoad, d, d->url);
 #endif
-    QMutexLocker locker(&d->waitMutex);
-    d->wait = true;
+    d->setWait(true);
 }
 
 QUrl QAVPlayer::source() const
@@ -434,6 +438,7 @@ void QAVPlayer::play()
         return;
     }
 
+    QMutexLocker locker(&d->waitMutex);
     if (!d->wait)
         return;
 
@@ -447,20 +452,14 @@ void QAVPlayer::pause()
     Q_D(QAVPlayer);
     d->setState(QAVPlayer::PausedState);
 
-    if(!isVideoAvailable()) {
-        QMutexLocker locker(&d->waitMutex);
-        d->wait = true;
-    } else {
-        // will wait on reaching first video frame
-    }
+    d->setWait(!isVideoAvailable());
 }
 
 void QAVPlayer::stop()
 {
     Q_D(QAVPlayer);
     d->setState(QAVPlayer::StoppedState);
-    QMutexLocker locker(&d->waitMutex);
-    d->wait = true;
+    d->setWait(true);
 }
 
 bool QAVPlayer::isSeekable() const
@@ -476,9 +475,7 @@ void QAVPlayer::seek(qint64 pos)
 
     QMutexLocker lock(&d->positionMutex);
     d->pendingPosition = pos / 1000.0;
-    QMutexLocker locker(&d->waitMutex);
-    d->wait = false;
-
+    d->setWait(false);
     d->waitCond.wakeAll();
 }
 
