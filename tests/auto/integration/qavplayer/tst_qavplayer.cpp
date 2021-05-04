@@ -615,13 +615,25 @@ void tst_QAVPlayer::pauseSeekVideo()
     QTRY_VERIFY(!frame.size().isEmpty());
     QCOMPARE(p.state(), QAVPlayer::PlayingState);
 
-    int c = count;
+    count = 0;
     p.stop();
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     frame = QAVVideoFrame();
     p.seek(1);
     QTRY_VERIFY(!frame.size().isEmpty());
-    QCOMPARE(count, c + 1);
+    QTest::qWait(100);
+    QCOMPARE(count, 1);
+
+    frame = QAVVideoFrame();
+    p.pause();
+    QTRY_VERIFY(!frame.size().isEmpty());
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QCOMPARE(count, 2);
+
+    frame = QAVVideoFrame();
+    p.seek(1);
+    QTRY_VERIFY(!frame.size().isEmpty());
+    QCOMPARE(count, 3);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
