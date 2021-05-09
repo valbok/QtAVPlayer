@@ -154,6 +154,7 @@ cmake:
 
 
 qmake:
+
     SET FFMPEG=C:\ffmpeg
     SET PATH=%FFMPEG%\lib;%PATH%
     SET INCLUDE=%FFMPEG%\include;%INCLUDE%
