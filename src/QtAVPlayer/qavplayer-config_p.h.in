@@ -6,11 +6,11 @@
 #if defined(va_x11)
 #define QT_FEATURE_va_x11 1
 #else
-#define QT_FEATURE_va_x11 0
+#define QT_FEATURE_va_x11 -1
 #endif
 
 #if defined(va_drm)
 #define QT_FEATURE_va_drm 1
 #else
-#define QT_FEATURE_va_drm 0
+#define QT_FEATURE_va_drm -1
 #endif
