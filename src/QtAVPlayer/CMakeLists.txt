@@ -47,7 +47,7 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
 
 target_link_libraries(${PROJECT_NAME} ${LIBS} ${LIBAV} Qt5::Core Qt5::Gui Qt5::Multimedia)
-target_compile_definitions(${PROJECT_NAME} PUBLIC QT_BUILD_AVPLAYER_LIB)
+target_compile_definitions(${PROJECT_NAME} PRIVATE QT_BUILD_AVPLAYER_LIB)
 
 install(TARGETS ${PROJECT_NAME}
  	LIBRARY DESTINATION lib
