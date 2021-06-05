@@ -260,7 +260,7 @@ void QAVPlayerPrivate::doDemux()
                 qWarning() << "Could not seek:" << err_str(ret);
             }
             pendingPosition = -1;
-            setMediaStatus(QAVPlayer::LoadedMedia);
+            call([this]{ setMediaStatus(QAVPlayer::LoadedMedia); });
         }
         positionMutex.unlock();
 
