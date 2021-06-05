@@ -15,6 +15,7 @@
 #include <QtQuick/QQuickView>
 #include <QtQml/QQmlEngine>
 #include <QGuiApplication>
+#include <QDebug>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -109,9 +110,11 @@ int main(int argc, char *argv[])
         case AV_PIX_FMT_NV12:
             pf = QVideoFrame::Format_NV12;
             break;
-        default:
+        case AV_PIX_FMT_D3D11:
             pf = QVideoFrame::Format_NV12;
             break;
+        default:
+            qDebug() << "format not supported: " << frame.frame()->format;
         }
 
         QVideoFrame videoFrame(new PlanarVideoBuffer(frame), frame.size(), pf);
