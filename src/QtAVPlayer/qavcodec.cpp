@@ -85,7 +85,7 @@ AVCodecContext *QAVCodec::avctx() const
     return d_func()->avctx;
 }
 
-AVCodec *QAVCodec::codec() const
+const AVCodec *QAVCodec::codec() const
 {
     return d_func()->codec;
 }

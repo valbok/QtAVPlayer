@@ -32,7 +32,7 @@ public:
     virtual ~QAVCodecPrivate() = default;
 
     AVCodecContext *avctx = nullptr;
-    AVCodec *codec = nullptr;
+    const AVCodec *codec = nullptr;
     AVStream *stream = nullptr;
 };
 

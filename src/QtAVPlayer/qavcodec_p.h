@@ -38,7 +38,7 @@ public:
     bool open(AVStream *stream);
     AVCodecContext *avctx() const;
     void setCodec(AVCodec *c);
-    AVCodec *codec() const;
+    const AVCodec *codec() const;
     AVStream *stream() const;
 
     QAVFrame decode(const AVPacket *pkt) const;
