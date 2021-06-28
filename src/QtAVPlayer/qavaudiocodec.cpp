@@ -9,10 +9,6 @@
 #include "qavcodec_p_p.h"
 #include <QDebug>
 
-extern "C" {
-#include <libavformat/avformat.h>
-}
-
 QT_BEGIN_NAMESPACE
 
 QAVAudioCodec::QAVAudioCodec(QObject *parent)

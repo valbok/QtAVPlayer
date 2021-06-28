@@ -25,10 +25,11 @@
 
 QT_BEGIN_NAMESPACE
 
-struct AVStream;
-struct AVPacket;
-struct AVCodec;
-struct AVCodecContext;
+extern "C" {
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+}
+
 class QAVCodecPrivate;
 class Q_AVPLAYER_EXPORT QAVCodec : public QObject
 {

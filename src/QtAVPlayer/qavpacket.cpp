@@ -29,7 +29,6 @@ QAVPacket::QAVPacket(QObject *parent)
     , d_ptr(new QAVPacketPrivate)
 {
     d_ptr->pkt = av_packet_alloc();
-    av_init_packet(d_ptr->pkt);
     d_ptr->pkt->size = 0;
     d_ptr->pkt->stream_index = -1;
 }
