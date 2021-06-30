@@ -76,8 +76,7 @@ void tst_QAVDemuxer::loadAudio()
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
 
-    const int err = d.load(QUrl::fromLocalFile(file.absoluteFilePath()));
-    QVERIFY(err >= 0);
+    QVERIFY(d.load(QUrl::fromLocalFile(file.absoluteFilePath())) >= 0);
     QVERIFY(d.videoStream() < 0);
     QVERIFY(d.audioStream() >= 0);
     QVERIFY(d.subtitleStream() < 0);
@@ -157,8 +156,7 @@ void tst_QAVDemuxer::loadVideo()
 
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
 
-    const int err = d.load(QUrl::fromLocalFile(file.absoluteFilePath()));
-    QVERIFY(err >= 0);
+    QVERIFY(d.load(QUrl::fromLocalFile(file.absoluteFilePath())) >= 0);
     QVERIFY(d.videoStream() >= 0);
     QVERIFY(d.audioStream() >= 0);
     QVERIFY(d.subtitleStream() < 0);
