@@ -353,6 +353,9 @@ QAVPlayer::QAVPlayer(QObject *parent)
     : QObject(parent)
     , d_ptr(new QAVPlayerPrivate(this))
 {
+    const int maxThreadCount = QThreadPool::globalInstance()->maxThreadCount();
+    if (maxThreadCount < 4)
+        qWarning() << "Max thread count is to low:" << maxThreadCount;
 }
 
 QAVPlayer::~QAVPlayer()
