@@ -17,6 +17,9 @@
 #endif
 #import <Metal/Metal.h>
 
+#include <QList>
+#include <QVariant>
+
 QT_BEGIN_NAMESPACE
 
 class QAVHWDevice_VideoToolboxPrivate
