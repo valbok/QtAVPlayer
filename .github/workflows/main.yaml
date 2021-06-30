@@ -51,5 +51,5 @@ jobs:
           qmake
           make -j12
           cd auto/integration
-          qavdemuxer/tst_qavdemuxer
-          qavplayer/tst_qavplayer
+          qavdemuxer/tst_qavdemuxer --platform minimal
+          qavplayer/tst_qavplayer --platform minimal
