@@ -214,16 +214,12 @@ int QAVDemuxer::load(const QUrl &url)
                       : url.toString();
 
     int ret = avformat_open_input(&d->ctx, urlString.toUtf8().constData(), nullptr, nullptr);
-    if (ret < 0) {
-        qWarning() << "avformat_open_input:" << urlString << "returned:" << ret;
+    if (ret < 0)
         return ret;
-    }
 
     ret = avformat_find_stream_info(d->ctx, NULL);
-    if (ret < 0) {
-        qWarning() << "avformat_find_stream_info:" << urlString << "returned:" << ret;
+    if (ret < 0)
         return ret;
-    }
 
     for (unsigned int i = 0; i < d->ctx->nb_streams; ++i) {
         enum AVMediaType type = d->ctx->streams[i]->codecpar->codec_type;

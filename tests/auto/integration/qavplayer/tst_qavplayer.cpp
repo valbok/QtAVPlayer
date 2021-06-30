@@ -15,6 +15,9 @@ QT_USE_NAMESPACE
 class tst_QAVPlayer : public QObject
 {
     Q_OBJECT
+public slots:
+    void initTestCase();
+
 private slots:
     void construction();
     void sourceChanged();
@@ -35,6 +38,11 @@ private slots:
     void vo();
     void pauseSeekVideo();
 };
+
+void tst_QAVPlayer::initTestCase()
+{
+    QThreadPool::globalInstance()->setMaxThreadCount(20);
+}
 
 void tst_QAVPlayer::construction()
 {
