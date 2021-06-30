@@ -49,14 +49,14 @@ jobs:
       - name: Building
         run: |
           qmake
-          make -j12
+          make -j12 CC=$CC CXX=$CXX
           make install
 
       - name: Tests
         run: |
           cd tests/
           qmake
-          make -j12
+          make -j12 CC=$CC CXX=$CXX
           cd auto/integration/qavdemuxer
           ./tst_qavdemuxer --platform minimal
           cd ../
