@@ -30,7 +30,9 @@ jobs:
                                   libavformat-dev \
                                   libavutil-dev \
                                   libswresample-dev \
-                                  libswscale-dev
+                                  libswscale-dev \
+                                  libva-x11 \
+                                  libva-drm
 
       - name: Install Qt 5.15
         uses: jurplel/install-qt-action@v2
@@ -41,11 +43,13 @@ jobs:
         run: |
           qmake
           make -j12
+          make install
 
       - name: Tests
         run: |
           cd tests/
           qmake
           make -j12
-          auto/integration/qavdemuxer/tst_qavdemuxer
-          auto/integration/qavplayer/tst_qavplayer
+          cd auto/integration
+          qavdemuxer/tst_qavdemuxer
+          qavplayer/tst_qavplayer
