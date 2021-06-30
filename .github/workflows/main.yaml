@@ -18,8 +18,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch: 1
 
       - name: Install compiler and FFmpeg dependencies
         run: |
@@ -39,7 +37,15 @@ jobs:
         with:
           version: 5.15.2
 
-      - name: Run a multi-line script
+      - name: Building
         run: |
           qmake
           make -j12
+
+      - name: Tests
+        run: |
+          cd tests/
+          qmake
+          make -j12
+          auto/integration/qavdemuxer/tst_qavdemuxer
+          auto/integration/qavplayer/tst_qavplayer
