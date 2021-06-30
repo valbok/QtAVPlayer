@@ -1,0 +1,45 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build-linux-qmake-default:
+    strategy:
+      matrix:
+        compiler: ['gcc-9']
+        include:
+          - compiler: gcc-9
+            packages: gcc-9 g++-9
+            env: { 'CC': 'gcc-9', 'CXX': 'g++-9' }
+
+    runs-on: ubuntu-latest
+
+    env: ${{ matrix.env }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch: 1
+
+      - name: Install compiler and FFmpeg dependencies
+        run: |
+          sudo apt-get update &&
+          sudo apt-get install -y ${{ matrix.packages }} \
+                                  libavcodec-dev \
+                                  libavformat-dev \
+                                  libavdevice-dev \
+                                  libavfilter-dev \
+                                  libavformat-dev \
+                                  libavutil-dev \
+                                  libswresample-dev \
+                                  libswscale-dev
+
+      - name: Install Qt 5.15
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: 5.15.2
+
+      - name: Run a multi-line script
+        run: |
+          qmake
+          make -j12
