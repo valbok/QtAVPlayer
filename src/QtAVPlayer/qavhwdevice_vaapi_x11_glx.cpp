@@ -77,7 +77,7 @@ public:
         }
     }
 
-    QAVVideoFrame::HandleType handleType() const
+    QAVVideoFrame::HandleType handleType() const override
     {
         return QAVVideoFrame::GLTextureHandle;
     }
