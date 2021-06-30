@@ -215,13 +215,13 @@ int QAVDemuxer::load(const QUrl &url)
 
     int ret = avformat_open_input(&d->ctx, urlString.toUtf8().constData(), nullptr, nullptr);
     if (ret < 0) {
-        qWarning() << "avformat_open_input:" << urlString << "returned:" <<ret;
+        qWarning() << "avformat_open_input:" << urlString << "returned:" << ret;
         return ret;
     }
 
     ret = avformat_find_stream_info(d->ctx, NULL);
     if (ret < 0) {
-        qWarning() << "avformat_find_stream_info:" << urlString << "returned:" <<ret;
+        qWarning() << "avformat_find_stream_info:" << urlString << "returned:" << ret;
         return ret;
     }
 

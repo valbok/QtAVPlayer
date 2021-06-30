@@ -50,6 +50,8 @@ jobs:
           cd tests/
           qmake
           make -j12
-          cd auto/integration
-          qavdemuxer/tst_qavdemuxer --platform minimal
-          qavplayer/tst_qavplayer --platform minimal
+          cd auto/integration/qavdemuxer
+          ./tst_qavdemuxer --platform minimal
+          cd ../
+          cd qavplayer
+          ./tst_qavplayer --platform minimal
