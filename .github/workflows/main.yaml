@@ -31,8 +31,8 @@ jobs:
                                   libavutil-dev \
                                   libswresample-dev \
                                   libswscale-dev \
-                                  libva-x11 \
-                                  libva-drm
+                                  libva-x11-2 \
+                                  libva-drm2
 
       - name: Install Qt 5.15
         uses: jurplel/install-qt-action@v2
