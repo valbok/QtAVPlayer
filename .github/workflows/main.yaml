@@ -102,3 +102,42 @@ jobs:
           cd qavplayer
           ./tst_qavplayer --platform minimal
 
+  build-windows-vs-qmake-default:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Qt 5.15
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: 5.15.2
+
+      - name: Install FFmpeg
+        shell: cmd
+        run: |
+          cd ..
+          xidel https://github.com/BtbN/FFmpeg-Builds/releases -e "//a[contains(@href, '-gpl-shared-4.4.zip')]/@href[1]" --silent > ffmpeg.url
+          xidel https://github.com/BtbN/FFmpeg-Builds/releases -e "(//a[contains(@href, '-gpl-shared-4.4.zip')])[1]/substring(., 0, string-length(.) - 3)" --silent > ffmpeg.name
+          set /P FFMPEG_URL=< ffmpeg.url
+          set /P FFMPEG_NAME=< ffmpeg.name
+          wget https://github.com%FFMPEG_URL%
+          unzip %FFMPEG_NAME%.zip
+          ren %FFMPEG_NAME% ffmpeg
+          dir ffmpeg
+
+      - name: Building
+        run: |
+          qmake
+          nmake
+
+      - name: Tests
+        run: |
+          cd tests/
+          qmake
+          nmake
+          cd auto/integration/qavdemuxer
+          Release/tst_qavdemuxer.exe --platform minimal
+          cd ../
+          cd qavplayer
+          Release/tst_qavplayer --platform minimal
