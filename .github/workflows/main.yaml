@@ -10,14 +10,11 @@ jobs:
   build-linux-qmake-default:
     strategy:
       matrix:
-        compiler: ['gcc-9', 'clang-9']
+        compiler: ['gcc-9']
         include:
           - compiler: gcc-9
             packages: gcc-9 g++-9
             env: { 'CC': 'gcc-9', 'CXX': 'g++-9' }
-          - compiler: clang-9
-            packages: 'clang-9'
-            env: { 'CC': 'clang-9', 'CXX': 'clang++-9' }
 
     runs-on: ubuntu-latest
 
@@ -62,3 +59,46 @@ jobs:
           cd ../
           cd qavplayer
           ./tst_qavplayer --platform minimal
+
+  build-macos-qmake-default:
+    strategy:
+      matrix:
+        compiler: ['clang-9']
+        include:
+          - compiler: clang-9
+            packages: llvm@9
+            env: { 'CC': 'clang', 'CXX': 'clang++' }
+
+    runs-on: macos-latest
+
+    env: ${{ matrix.env }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          brew install ${{ matrix.packages }} ffmpeg qt@5
+
+      - name: Set environment path
+        run: |
+          echo "/usr/local/opt/qt5/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/llvm@9/bin" >> $GITHUB_PATH
+
+      - name: Building
+        run: |
+          qmake
+          make -j12 CC=$CC CXX=$CXX
+          make install
+
+      - name: Tests
+        run: |
+          cd tests/
+          qmake
+          make -j12 CC=$CC CXX=$CXX
+          cd auto/integration/qavdemuxer
+          ./tst_qavdemuxer --platform minimal
+          cd ../
+          cd qavplayer
+          ./tst_qavplayer --platform minimal
+
