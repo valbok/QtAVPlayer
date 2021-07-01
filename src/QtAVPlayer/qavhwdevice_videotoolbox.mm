@@ -19,6 +19,7 @@
 
 #include <QList>
 #include <QVariant>
+#include <QDebug>
 
 QT_BEGIN_NAMESPACE
 
@@ -71,7 +72,7 @@ public:
         CVPixelBufferRelease(m_hw->pbuf);
         m_hw->pbuf = (CVPixelBufferRef)frame().frame()->data[3];
         CVPixelBufferRetain(m_hw->pbuf);
-        QList<QVariant> textures(2);
+        QList<QVariant> textures = { 0, 0 };
 
         if (!m_hw->pbuf)
             return textures;
