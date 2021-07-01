@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build-linux-qmake-default:
+  linux-qmake-default:
     strategy:
       matrix:
         compiler: ['gcc-9']
@@ -43,13 +43,13 @@ jobs:
         with:
           version: 5.15.2
 
-      - name: Building
+      - name: Build
         run: |
           qmake
           make -j12 CC=$CC CXX=$CXX
           make install
 
-      - name: Tests
+      - name: Test
         run: |
           cd tests/
           qmake
@@ -60,7 +60,7 @@ jobs:
           cd qavplayer
           ./tst_qavplayer --platform minimal
 
-  build-macos-qmake-default:
+  macos-qmake-default:
     strategy:
       matrix:
         compiler: ['clang-9']
@@ -85,13 +85,13 @@ jobs:
           echo "/usr/local/opt/qt5/bin" >> $GITHUB_PATH
           echo "/usr/local/opt/llvm@9/bin" >> $GITHUB_PATH
 
-      - name: Building
+      - name: Build
         run: |
           qmake
           make -j12 CC=$CC CXX=$CXX
           make install
 
-      - name: Tests
+      - name: Test
         run: |
           cd tests/
           qmake
@@ -102,11 +102,20 @@ jobs:
           cd qavplayer
           ./tst_qavplayer --platform minimal
 
-  build-windows-vs-qmake-default:
+  windows-vs-qmake-default:
     runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v2
+
+      - name: Init vs environment
+        uses: egor-tensin/vs-shell@v2
+        with:
+          arch: x64
+
+      - name: Install wget & unzip
+        run: |
+          choco install wget unzip xidel
 
       - name: Install Qt 5.15
         uses: jurplel/install-qt-action@v2
@@ -125,19 +134,32 @@ jobs:
           unzip %FFMPEG_NAME%.zip
           ren %FFMPEG_NAME% ffmpeg
           dir ffmpeg
+          dir ffmpeg\bin
+          SET FFMPEG=%CD%\ffmpeg
+          echo FFMPEG=%FFMPEG%>>%GITHUB_ENV%
+          echo PATH=%FFMPEG%\lib;%FFMPEG%\bin;%PATH%>>%GITHUB_ENV%
+          echo INCLUDE=%FFMPEG%\include;%INCLUDE%>>%GITHUB_ENV%
+          echo LIB=%FFMPEG%\lib;%FFMPEG%\bin;%LIB%>>%GITHUB_ENV%
 
-      - name: Building
+      - name: Build
+        shell: cmd
         run: |
           qmake
           nmake
+          nmake install
 
-      - name: Tests
+      - name: Test
+        shell: cmd
         run: |
           cd tests/
           qmake
           nmake
           cd auto/integration/qavdemuxer
-          Release/tst_qavdemuxer.exe --platform minimal
+          dir release
+          echo "Staring tst_qavdemuxer"
+          release\tst_qavdemuxer.exe --platform minimal
           cd ../
           cd qavplayer
-          Release/tst_qavplayer --platform minimal
+          dir release
+          echo "Staring tst_qavplayer"
+          release\tst_qavplayer.exe --platform minimal
