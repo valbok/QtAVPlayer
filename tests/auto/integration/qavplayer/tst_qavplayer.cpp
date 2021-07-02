@@ -35,7 +35,7 @@ private slots:
     void pauseVideo();
     void seekVideo();
     void speedVideo();
-    void vo();
+    void videoFrame();
     void pauseSeekVideo();
 };
 
@@ -237,7 +237,7 @@ void tst_QAVPlayer::playAudioOutput()
     QFileInfo file(QLatin1String("../testdata/test.wav"));
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
     QAVAudioFrame frame;
-    p.ao([&frame](const QAVAudioFrame &b) { frame = b; });
+    QObject::connect(&p, &QAVPlayer::audioFrame, [&](const QAVAudioFrame &f) { frame = f; });
     p.play();
 
     QTRY_VERIFY(p.position() != 0);
@@ -552,17 +552,17 @@ void tst_QAVPlayer::speedVideo()
     p.play();
 }
 
-void tst_QAVPlayer::vo()
+void tst_QAVPlayer::videoFrame()
 {
     QAVPlayer p;
 
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
-    p.play();
 
     QAVVideoFrame frame;
-    p.vo([&frame](const QAVVideoFrame &f) { frame = f; });
+    QObject::connect(&p, &QAVPlayer::videoFrame, [&frame](const QAVVideoFrame &f) { frame = f; });
 
+    p.play();
     QTRY_VERIFY(!frame.size().isEmpty());
     QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
 }
@@ -575,7 +575,7 @@ void tst_QAVPlayer::pauseSeekVideo()
 
     QAVVideoFrame frame;
     int count = 0;
-    p.vo([&](const QAVVideoFrame &f) { frame = f; ++count; });
+    QObject::connect(&p, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &f) { frame = f; ++count; });
 
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
     QTest::qWait(200);

@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     auto videoSurface = vo->videoSurface();
 #endif
 
-    p.vo([&videoSurface](const QAVVideoFrame &frame) {
+    QObject::connect(&p, &QAVPlayer::videoFrame, [&videoSurface](const QAVVideoFrame &frame) {
         QVideoFrame::PixelFormat pf = QVideoFrame::Format_Invalid;
         switch (frame.frame()->format)
         {
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
             videoSurface->present(videoFrame);
     });
 
-    p.ao([&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); });
+    QObject::connect(&p, &QAVPlayer::audioFrame, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); });
     p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
     p.play();
 
