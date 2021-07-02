@@ -58,9 +58,6 @@ public:
     bool isAudioAvailable() const;
     bool isVideoAvailable() const;
 
-    void vo(std::function<void(const QAVVideoFrame &frame)>);
-    void ao(std::function<void(const QAVAudioFrame &frame)>);
-
     State state() const;
     MediaStatus mediaStatus() const;
     qint64 duration() const;
@@ -89,6 +86,9 @@ Q_SIGNALS:
     void seekableChanged(bool seekable);
     void mutedChanged(bool muted);
     void speedChanged(qreal rate);
+
+    void videoFrame(const QAVVideoFrame &frame);
+    void audioFrame(const QAVAudioFrame &frame);
 
 protected:
     QScopedPointer<QAVPlayerPrivate> d_ptr;

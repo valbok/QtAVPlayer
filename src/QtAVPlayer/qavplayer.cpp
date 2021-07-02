@@ -85,9 +85,7 @@ public:
     QMutex waitMutex;
     QWaitCondition waitCond;
     mutable QMutex positionMutex;
-
-    std::function<void(const QAVVideoFrame &frame)> vo;
-    std::function<void(const QAVAudioFrame &frame)> ao;
+    QMutex stateMutex;
 };
 
 static QString err_str(int err)
@@ -310,8 +308,8 @@ void QAVPlayerPrivate::doPlayVideo()
 
         dispatch([this, frame] {
             bool publish = state == QAVPlayer::PausedState || state == QAVPlayer::StoppedState ? setWait(true) : true;
-            if (publish && vo)
-                vo(frame);
+            if (publish)
+                emit q_ptr->videoFrame(frame);
         });
 
         videoQueue.pop();
@@ -333,8 +331,8 @@ void QAVPlayerPrivate::doPlayAudio()
 
         frame.frame()->sample_rate *= speed;
         dispatch([this, frame] {
-            if (!muted && ao)
-                ao(frame);
+            if (!muted)
+                emit q_ptr->audioFrame(frame);
         });
 
         audioQueue.pop();
@@ -399,18 +397,6 @@ bool QAVPlayer::isAudioAvailable() const
 bool QAVPlayer::isVideoAvailable() const
 {
     return d_func()->videoStream >= 0;
-}
-
-void QAVPlayer::vo(std::function<void(const QAVVideoFrame &data)> f)
-{
-    Q_D(QAVPlayer);
-    d->vo = f;
-}
-
-void QAVPlayer::ao(std::function<void(const QAVAudioFrame &buf)> f)
-{
-    Q_D(QAVPlayer);
-    d->ao = f;
 }
 
 QAVPlayer::State QAVPlayer::state() const
