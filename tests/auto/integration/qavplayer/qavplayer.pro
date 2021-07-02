@@ -2,7 +2,7 @@ TARGET = tst_qavplayer
 
 QT += multimedia-private testlib QtAVPlayer
 
-CONFIG += testcase
+CONFIG += testcase console
 
 SOURCES += \
     tst_qavplayer.cpp

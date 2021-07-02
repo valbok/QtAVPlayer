@@ -2,7 +2,7 @@ TARGET = tst_qavdemuxer
 
 QT += multimedia-private testlib QtAVPlayer-private
 
-CONFIG += testcase
+CONFIG += testcase console
 
 SOURCES += \
     tst_qavdemuxer.cpp

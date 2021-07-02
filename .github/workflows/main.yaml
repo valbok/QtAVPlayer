@@ -155,11 +155,7 @@ jobs:
           qmake
           nmake
           cd auto/integration/qavdemuxer
-          dir release
-          echo "Staring tst_qavdemuxer"
-          release\tst_qavdemuxer.exe --platform minimal
+          release\tst_qavdemuxer.exe
           cd ../
           cd qavplayer
-          dir release
-          echo "Staring tst_qavplayer"
-          release\tst_qavplayer.exe --platform minimal
+          release\tst_qavplayer.exe
