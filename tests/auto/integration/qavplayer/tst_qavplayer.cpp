@@ -563,8 +563,8 @@ void tst_QAVPlayer::vo()
     QAVVideoFrame frame;
     p.vo([&frame](const QAVVideoFrame &f) { frame = f; });
 
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
-    QVERIFY(!frame.size().isEmpty());
+    QTRY_VERIFY(!frame.size().isEmpty());
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
 }
 
 void tst_QAVPlayer::pauseSeekVideo()
@@ -572,36 +572,53 @@ void tst_QAVPlayer::pauseSeekVideo()
     QAVPlayer p;
 
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
 
     QAVVideoFrame frame;
     int count = 0;
-    p.vo([&](const QAVVideoFrame &f) { frame = f; count++; });
+    p.vo([&](const QAVVideoFrame &f) { frame = f; ++count; });
 
+    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    QTest::qWait(200);
+    QCOMPARE(count, 0);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QVERIFY(frame.size().isEmpty());
+
     p.pause();
+    QCOMPARE(count, 0);
     QTRY_VERIFY(!frame.size().isEmpty());
     QCOMPARE(count, 1);
 
     QCOMPARE(p.state(), QAVPlayer::PausedState);
     frame = QAVVideoFrame();
-    p.stop();
-    p.pause();
-    QVERIFY(frame.size().isEmpty());
-    QTRY_VERIFY(!frame.size().isEmpty());
-    QCOMPARE(count, 2);
 
-    QCOMPARE(p.state(), QAVPlayer::PausedState);
-    frame = QAVVideoFrame();
-    p.seek(1);
+    p.stop();
+    QTest::qWait(100);
+    QVERIFY(frame.size().isEmpty());
+
+    p.pause();
     QTRY_VERIFY(!frame.size().isEmpty());
+    QTest::qWait(100);
+    QCOMPARE(count, 2);
     QCOMPARE(p.state(), QAVPlayer::PausedState);
+
+    frame = QAVVideoFrame();
+
+    p.seek(1);
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTRY_VERIFY(!frame.size().isEmpty());
+    QTest::qWait(100);
     QCOMPARE(count, 3);
+
+    frame = QAVVideoFrame();
 
     p.stop();
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
+    QTest::qWait(100);
+    QVERIFY(frame.size().isEmpty());
+    QCOMPARE(count, 3);
+
     frame = QAVVideoFrame();
+
     p.seek(1);
     QTRY_VERIFY(!frame.size().isEmpty());
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
@@ -609,38 +626,53 @@ void tst_QAVPlayer::pauseSeekVideo()
     QCOMPARE(count, 4);
 
     frame = QAVVideoFrame();
+
     p.pause();
     QTRY_VERIFY(!frame.size().isEmpty());
     QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTest::qWait(100);
     QCOMPARE(count, 5);
 
     frame = QAVVideoFrame();
+
     p.play();
     QCOMPARE(p.state(), QAVPlayer::PlayingState);
     QTRY_VERIFY(!frame.size().isEmpty());
+
     frame = QAVVideoFrame();
+
     p.seek(1);
+    QVERIFY(frame.size().isEmpty());
     QTRY_VERIFY(!frame.size().isEmpty());
     QCOMPARE(p.state(), QAVPlayer::PlayingState);
 
     count = 0;
+    frame = QAVVideoFrame();
+
     p.stop();
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
-    frame = QAVVideoFrame();
+    QTest::qWait(100);
+    QCOMPARE(count, 0);
+
     p.seek(1);
     QTRY_VERIFY(!frame.size().isEmpty());
     QTest::qWait(100);
     QCOMPARE(count, 1);
 
     frame = QAVVideoFrame();
+
     p.pause();
+    QVERIFY(frame.size().isEmpty());
     QTRY_VERIFY(!frame.size().isEmpty());
+    QTest::qWait(100);
     QCOMPARE(p.state(), QAVPlayer::PausedState);
     QCOMPARE(count, 2);
 
     frame = QAVVideoFrame();
     p.seek(1);
+
     QTRY_VERIFY(!frame.size().isEmpty());
+    QTest::qWait(100);
     QCOMPARE(count, 3);
 }
 
