@@ -13,7 +13,14 @@ if(NOT WIN32)
 endif()
 add_dependencies(${PROJECT_NAME} QtAVPlayer)
 
-find_library(MultimediaQuick_LIBRARY REQUIRED NAMES Qt5MultimediaQuick)
-target_link_libraries(${PROJECT_NAME} QtAVPlayer Qt5::Core Qt5::Gui Qt5::Quick Qt5::Multimedia ${MultimediaQuick_LIBRARY} ${LIBAV})
+if (Qt5Core_VERSION VERSION_LESS 5.15.0)
+    find_library(MultimediaQuick_LIBRARY REQUIRED NAMES Qt5MultimediaQuick)
+    target_link_libraries(${PROJECT_NAME} QtAVPlayer Qt5::Core Qt5::Gui Qt5::Quick Qt5::Multimedia ${MultimediaQuick_LIBRARY} ${LIBAV})
+else()
+    find_package(Qt5 COMPONENTS MultimediaQuick REQUIRED)
+    target_link_libraries(${PROJECT_NAME} QtAVPlayer Qt5::Core Qt5::Gui Qt5::Quick Qt5::Multimedia Qt5::MultimediaQuick ${LIBAV})
+    include_directories(${Qt5MultimediaQuick_PRIVATE_INCLUDE_DIRS})
+endif()
 
 include_directories(${Qt5Multimedia_PRIVATE_INCLUDE_DIRS})
+
