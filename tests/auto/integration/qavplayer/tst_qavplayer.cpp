@@ -21,7 +21,6 @@ public slots:
 private slots:
     void construction();
     void sourceChanged();
-    void mutedChanged();
     void speedChanged();
     void quitAudio();
     void playIncorrectSource();
@@ -54,7 +53,6 @@ void tst_QAVPlayer::construction()
     QCOMPARE(p.mediaStatus(), QAVPlayer::NoMedia);
     QCOMPARE(p.duration(), 0);
     QCOMPARE(p.position(), 0);
-    QVERIFY(!p.isMuted());
     QCOMPARE(p.speed(), 1.0);
     QVERIFY(!p.isSeekable());
     QCOMPARE(p.error(), QAVPlayer::NoError);
@@ -69,16 +67,6 @@ void tst_QAVPlayer::sourceChanged()
     QCOMPARE(spy.count(), 1);
     p.setSource(QUrl(QLatin1String("unknown.mp4")));
     QCOMPARE(spy.count(), 1);
-}
-
-void tst_QAVPlayer::mutedChanged()
-{
-    QAVPlayer p;
-    QSignalSpy spy(&p, &QAVPlayer::mutedChanged);
-    QVERIFY(!p.isMuted());
-    p.setMuted(true);
-    QCOMPARE(spy.count(), 1);
-    QVERIFY(p.isMuted());
 }
 
 void tst_QAVPlayer::speedChanged()

@@ -53,7 +53,6 @@ public:
     QAVPlayer::MediaStatus mediaStatus = QAVPlayer::NoMedia;
     QAVPlayer::State state = QAVPlayer::StoppedState;
     bool seekable = false;
-    bool muted = false;
     qreal speed = 1.0;
 
     QAVPlayer::Error error = QAVPlayer::NoError;
@@ -330,10 +329,7 @@ void QAVPlayerPrivate::doPlayAudio()
             continue;
 
         frame.frame()->sample_rate *= speed;
-        dispatch([this, frame] {
-            if (!muted)
-                emit q_ptr->audioFrame(frame);
-        });
+        emit q_ptr->audioFrame(frame);
 
         audioQueue.pop();
         if (!q_ptr->isVideoAvailable())
@@ -481,21 +477,6 @@ qint64 QAVPlayer::position() const
         return duration();
 
     return d->position * 1000;
-}
-
-void QAVPlayer::setMuted(bool m)
-{
-    Q_D(QAVPlayer);
-    if (d->muted == m)
-        return;
-
-    d->muted = m;
-    emit mutedChanged(m);
-}
-
-bool QAVPlayer::isMuted() const
-{
-    return d_func()->muted;
 }
 
 void QAVPlayer::setSpeed(qreal r)
