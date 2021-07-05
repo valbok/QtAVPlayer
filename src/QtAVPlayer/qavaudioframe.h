@@ -32,6 +32,8 @@ private:
     Q_DECLARE_PRIVATE(QAVAudioFrame)
 };
 
+Q_DECLARE_METATYPE(QAVAudioFrame)
+
 QT_END_NAMESPACE
 
 #endif

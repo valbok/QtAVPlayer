@@ -52,8 +52,11 @@ public:
     QUrl url;
     QAVPlayer::MediaStatus mediaStatus = QAVPlayer::NoMedia;
     QAVPlayer::State state = QAVPlayer::StoppedState;
+    mutable QMutex stateMutex;
+
     bool seekable = false;
     qreal speed = 1.0;
+    mutable QMutex speedMutex;
 
     QAVPlayer::Error error = QAVPlayer::NoError;
     QString errorString;
@@ -61,6 +64,8 @@ public:
     double duration = 0;
     double position = 0;
     double pendingPosition = -1;
+    mutable QMutex positionMutex;
+
     bool pendingPlay = false;
 
     int videoStream = -1;
@@ -83,8 +88,6 @@ public:
     bool wait = false;
     QMutex waitMutex;
     QWaitCondition waitCond;
-    mutable QMutex positionMutex;
-    QMutex stateMutex;
 };
 
 static QString err_str(int err)
@@ -112,10 +115,13 @@ void QAVPlayerPrivate::setMediaStatus(QAVPlayer::MediaStatus status)
 void QAVPlayerPrivate::setState(QAVPlayer::State s)
 {
     Q_Q(QAVPlayer);
-    if (state == s)
-        return;
+    {
+        QMutexLocker locker(&stateMutex);
+        if (state == s)
+            return;
 
-    state = s;
+        state = s;
+    }
     emit q->stateChanged(s);
 }
 
@@ -246,7 +252,7 @@ void QAVPlayerPrivate::doLoad(const QUrl &url)
 void QAVPlayerPrivate::doDemux()
 {
     const int maxQueueBytes = 15 * 1024 * 1024;
-    QMutex mutex;
+    QMutex waiterMutex;
     QWaitCondition waiter;
 
     while (!quit) {
@@ -254,22 +260,25 @@ void QAVPlayerPrivate::doDemux()
         if (videoQueue.bytes() + audioQueue.bytes() > maxQueueBytes
             || (videoQueue.enough() && audioQueue.enough()))
         {
-            QMutexLocker locker(&mutex);
-            waiter.wait(&mutex, 10);
+            QMutexLocker locker(&waiterMutex);
+            waiter.wait(&waiterMutex, 10);
             continue;
         }
 
+        double pos = -1;
         {
             QMutexLocker lock(&positionMutex);
-            if (pendingPosition >= 0) {
-                int ret = demuxer.seek(pendingPosition);
-                if (ret >= 0) {
-                    videoQueue.clear();
-                    audioQueue.clear();
-                } else {
-                    qWarning() << "Could not seek:" << err_str(ret);
-                }
-                pendingPosition = -1;
+            pos = pendingPosition;
+            pendingPosition = -1;
+        }
+
+        if (pos >= 0) {
+            int ret = demuxer.seek(pos);
+            if (ret >= 0) {
+                videoQueue.clear();
+                audioQueue.clear();
+            } else {
+                qWarning() << "Could not seek:" << err_str(ret);
             }
         }
 
@@ -282,8 +291,8 @@ void QAVPlayerPrivate::doDemux()
                 });
             }
 
-            QMutexLocker locker(&mutex);
-            waiter.wait(&mutex, 10);
+            QMutexLocker locker(&waiterMutex);
+            waiter.wait(&waiterMutex, 10);
             continue;
         }
 
@@ -305,11 +314,12 @@ void QAVPlayerPrivate::doPlayVideo()
         if (!frame)
             continue;
 
-        dispatch([this, frame] {
-            bool publish = state == QAVPlayer::PausedState || state == QAVPlayer::StoppedState ? setWait(true) : true;
-            if (publish)
-                emit q_ptr->videoFrame(frame);
-        });
+        const QAVPlayer::State state_ = q_ptr->state();
+        bool publish = state_ == QAVPlayer::PausedState || state_ == QAVPlayer::StoppedState
+                     ? setWait(true)
+                     : true;
+        if (publish)
+            emit q_ptr->videoFrame(frame);
 
         videoQueue.pop();
         updatePosition(frame.pts());
@@ -321,18 +331,20 @@ void QAVPlayerPrivate::doPlayVideo()
 void QAVPlayerPrivate::doPlayAudio()
 {
     QAVAudioFrame frame;
+    const bool hasVideo = q_ptr->isVideoAvailable();
 
     while (!quit) {
         doWait();
-        frame = audioQueue.sync(speed);
+        const qreal speed_ = q_ptr->speed();
+        frame = audioQueue.sync(speed_);
         if (!frame)
             continue;
 
-        frame.frame()->sample_rate *= speed;
+        frame.frame()->sample_rate *= speed_;
         emit q_ptr->audioFrame(frame);
 
         audioQueue.pop();
-        if (!q_ptr->isVideoAvailable())
+        if (!hasVideo)
             updatePosition(frame.pts());
     }
 
@@ -397,7 +409,10 @@ bool QAVPlayer::isVideoAvailable() const
 
 QAVPlayer::State QAVPlayer::state() const
 {
-    return d_func()->state;
+    Q_D(const QAVPlayer);
+
+    QMutexLocker locker(&d->stateMutex);
+    return d->state;
 }
 
 QAVPlayer::MediaStatus QAVPlayer::mediaStatus() const
@@ -453,8 +468,12 @@ void QAVPlayer::seek(qint64 pos)
     if (pos < 0 || (duration() > 0 && pos > duration()))
         return;
 
-    QMutexLocker lock(&d->positionMutex);
-    d->pendingPosition = pos / 1000.0;
+    {
+        QMutexLocker lock(&d->positionMutex);
+        d->pendingPosition = pos / 1000.0;
+    }
+
+    d->setMediaStatus(QAVPlayer::LoadedMedia);
     d->setWait(false);
 }
 
@@ -467,11 +486,9 @@ qint64 QAVPlayer::position() const
 {
     Q_D(const QAVPlayer);
 
-    {
-        QMutexLocker lock(&d->positionMutex);
-        if (d->pendingPosition >= 0)
-            return d->pendingPosition * 1000;
-    }
+    QMutexLocker lock(&d->positionMutex);
+    if (d->pendingPosition >= 0)
+        return d->pendingPosition * 1000;
 
     if (d->mediaStatus == QAVPlayer::EndOfMedia)
         return duration();
@@ -482,16 +499,23 @@ qint64 QAVPlayer::position() const
 void QAVPlayer::setSpeed(qreal r)
 {
     Q_D(QAVPlayer);
-    if (qFuzzyCompare(d->speed, r))
-        return;
 
-    d->speed = r;
+    {
+        QMutexLocker locker(&d->speedMutex);
+        if (qFuzzyCompare(d->speed, r))
+            return;
+
+        d->speed = r;
+    }
     emit speedChanged(r);
 }
 
 qreal QAVPlayer::speed() const
 {
-    return d_func()->speed;
+    Q_D(const QAVPlayer);
+
+    QMutexLocker locker(&d->speedMutex);
+    return d->speed;
 }
 
 QAVPlayer::Error QAVPlayer::error() const

@@ -49,6 +49,8 @@ protected:
     Q_DECLARE_PRIVATE(QAVVideoFrame)
 };
 
+Q_DECLARE_METATYPE(QAVVideoFrame)
+
 QT_END_NAMESPACE
 
 #endif

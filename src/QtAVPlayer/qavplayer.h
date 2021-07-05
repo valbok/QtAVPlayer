@@ -95,10 +95,10 @@ private:
     Q_DECLARE_PRIVATE(QAVPlayer)
 };
 
-QT_END_NAMESPACE
-
 Q_DECLARE_METATYPE(QAVPlayer::State)
 Q_DECLARE_METATYPE(QAVPlayer::MediaStatus)
 Q_DECLARE_METATYPE(QAVPlayer::Error)
+
+QT_END_NAMESPACE
 
 #endif
