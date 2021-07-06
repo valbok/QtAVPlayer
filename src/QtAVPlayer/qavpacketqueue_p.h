@@ -34,7 +34,7 @@ QT_BEGIN_NAMESPACE
 class QAVQueueClock
 {
 public:
-    QAVQueueClock(double v = 1/24)
+    QAVQueueClock(double v = 1/24.0)
         : frameRate(v)
     {
     }
@@ -167,7 +167,6 @@ public:
             locker.relock();
             m_frame = frame;
         }
-        locker.unlock();
 
         if (!frame || !m_clock.sync(frame.pts(), speed, master))
             return {};

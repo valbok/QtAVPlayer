@@ -55,8 +55,8 @@ public:
     void setSource(const QUrl &url);
     QUrl source() const;
 
-    bool isAudioAvailable() const;
-    bool isVideoAvailable() const;
+    bool hasAudio() const;
+    bool hasVideo() const;
 
     State state() const;
     MediaStatus mediaStatus() const;
