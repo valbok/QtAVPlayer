@@ -167,9 +167,9 @@ void QAVPlayerPrivate::terminate()
     pendingPlay = false;
     setWait(false);
     videoQueue.clear();
-    videoQueue.wakeAll();
+    videoQueue.abort();
     audioQueue.clear();
-    audioQueue.wakeAll();
+    audioQueue.abort();
     loaderFuture.waitForFinished();
     demuxerFuture.waitForFinished();
     videoPlayFuture.waitForFinished();
@@ -261,6 +261,8 @@ void QAVPlayerPrivate::doDemux()
                 if (ret >= 0) {
                     videoQueue.clear();
                     audioQueue.clear();
+                    videoQueue.waitForFinished();
+                    audioQueue.waitForFinished();
                 } else {
                     qWarning() << "Could not seek:" << err_str(ret);
                 }
