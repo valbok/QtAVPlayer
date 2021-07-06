@@ -244,6 +244,7 @@ void tst_QAVPlayer::pauseAudio()
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadingMedia);
 
     p.play();
 
@@ -251,7 +252,7 @@ void tst_QAVPlayer::pauseAudio()
     p.pause();
 
     QCOMPARE(p.state(), QAVPlayer::PausedState);
-    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(spyState.count(), 2); // Stopped -> Playing -> Paused
     QCOMPARE(spyMediaStatus.count(), 2); // NoMedia -> Loading -> Loaded
 
