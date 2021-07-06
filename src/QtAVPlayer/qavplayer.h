@@ -37,6 +37,7 @@ public:
     {
         NoMedia,
         LoadingMedia,
+        SeekingMedia,
         LoadedMedia,
         EndOfMedia,
         InvalidMedia

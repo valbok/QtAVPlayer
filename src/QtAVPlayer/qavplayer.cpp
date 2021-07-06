@@ -167,9 +167,9 @@ void QAVPlayerPrivate::terminate()
     pendingPlay = false;
     setWait(false);
     videoQueue.clear();
-    videoQueue.wakeAll();
+    videoQueue.abort();
     audioQueue.clear();
-    audioQueue.wakeAll();
+    audioQueue.abort();
     loaderFuture.waitForFinished();
     demuxerFuture.waitForFinished();
     videoPlayFuture.waitForFinished();
@@ -261,11 +261,17 @@ void QAVPlayerPrivate::doDemux()
                 if (ret >= 0) {
                     videoQueue.clear();
                     audioQueue.clear();
+                    setWait(false);
+                    videoQueue.waitForFinished();
+                    audioQueue.waitForFinished();
                 } else {
                     qWarning() << "Could not seek:" << err_str(ret);
                 }
             }
             pendingPosition = -1;
+            dispatch([this] {
+                setMediaStatus(QAVPlayer::LoadedMedia);
+            });
         }
 
         auto packet = demuxer.read();
@@ -458,7 +464,7 @@ void QAVPlayer::seek(qint64 pos)
         d->pendingPosition = pos / 1000.0;
     }
 
-    d->setMediaStatus(QAVPlayer::LoadedMedia);
+    d->setMediaStatus(QAVPlayer::SeekingMedia);
     d->setWait(false);
 }
 
