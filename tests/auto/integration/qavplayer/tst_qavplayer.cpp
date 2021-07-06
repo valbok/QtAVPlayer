@@ -225,7 +225,7 @@ void tst_QAVPlayer::playAudioOutput()
     QFileInfo file(QLatin1String("../testdata/test.wav"));
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
     QAVAudioFrame frame;
-    QObject::connect(&p, &QAVPlayer::audioFrame, [&](const QAVAudioFrame &f) { frame = f; });
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { frame = f; });
     p.play();
 
     QTRY_VERIFY(p.position() != 0);
@@ -497,11 +497,13 @@ void tst_QAVPlayer::seekVideo()
 
     p.seek(5000);
     p.play();
-
+    QCOMPARE(p.state(), QAVPlayer::PlayingState);
     QTRY_VERIFY(p.position() > 5000);
 
     p.seek(13000);
+    QCOMPARE(p.state(), QAVPlayer::PlayingState);
     QTRY_VERIFY(p.position() > 13000);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
 
     p.seek(2000);
     QCOMPARE(p.position(), 2000);

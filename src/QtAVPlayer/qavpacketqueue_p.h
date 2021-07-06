@@ -34,7 +34,7 @@ QT_BEGIN_NAMESPACE
 class QAVQueueClock
 {
 public:
-    QAVQueueClock(double v = 1/24)
+    QAVQueueClock(double v = 1/24.0)
         : frameRate(v)
     {
     }
@@ -90,7 +90,7 @@ public:
     QAVPacketQueue() = default;
     ~QAVPacketQueue()
     {
-        m_waiter.wakeAll();
+        abort();
     }
 
     bool isEmpty() const
@@ -101,20 +101,32 @@ public:
 
     void enqueue(const QAVPacket &packet)
     {
-        QMutexLocker lock(&m_mutex);
+        QMutexLocker locker(&m_mutex);
         m_packets.append(packet);
         m_bytes += packet.bytes() + sizeof(packet);
         m_duration += packet.duration();
-        m_waiter.wakeAll();
+        m_consumerWaiter.wakeAll();
+        m_abort = false;
+    }
+
+    void waitForFinished()
+    {
+        QMutexLocker locker(&m_mutex);
+        if (!m_abort && !m_packets.isEmpty())
+            m_producerWaiter.wait(&m_mutex, 100);
     }
 
     QAVPacket dequeue()
     {
         QMutexLocker locker(&m_mutex);
-        if (m_packets.isEmpty())
-            m_waiter.wait(&m_mutex, 100);
+        if (m_packets.isEmpty()) {
+            m_producerWaiter.wakeAll();
+            if (!m_abort)
+                m_consumerWaiter.wait(&m_mutex, 100);
+        }
         if (m_packets.isEmpty())
             return {};
+
         auto packet = m_packets.takeFirst();
         m_bytes -= packet.bytes() + sizeof(packet);
         m_duration -= packet.duration();
@@ -127,9 +139,12 @@ public:
         m_frame = QAVFrame();
     }
 
-    void wakeAll()
+    void abort()
     {
-        m_waiter.wakeAll();
+        QMutexLocker locker(&m_mutex);
+        m_abort = true;
+        m_consumerWaiter.wakeAll();
+        m_producerWaiter.wakeAll();
     }
 
     bool enough() const
@@ -167,7 +182,6 @@ public:
             locker.relock();
             m_frame = frame;
         }
-        locker.unlock();
 
         if (!frame || !m_clock.sync(frame.pts(), speed, master))
             return {};
@@ -190,7 +204,9 @@ public:
 private:
     QList<QAVPacket> m_packets;
     mutable QMutex m_mutex;
-    QWaitCondition m_waiter;
+    QWaitCondition m_consumerWaiter;
+    QWaitCondition m_producerWaiter;
+    bool m_abort = false;
 
     int m_bytes = 0;
     int m_duration = 0;

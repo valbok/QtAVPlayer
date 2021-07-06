@@ -178,9 +178,9 @@ void QAVPlayerPrivate::terminate()
     pendingPlay = false;
     setWait(false);
     videoQueue.clear();
-    videoQueue.wakeAll();
+    videoQueue.abort();
     audioQueue.clear();
-    audioQueue.wakeAll();
+    audioQueue.abort();
     loaderFuture.waitForFinished();
     demuxerFuture.waitForFinished();
     videoPlayFuture.waitForFinished();
@@ -257,29 +257,30 @@ void QAVPlayerPrivate::doDemux()
 
     while (!quit) {
         doWait();
+        QMutexLocker locker(&positionMutex);
+        if (pendingPosition >= 0) {
+            double pos = pendingPosition;
+            locker.unlock();
+            int ret = demuxer.seek(pos);
+            if (ret >= 0) {
+                videoQueue.clear();
+                audioQueue.clear();
+                videoQueue.waitForFinished();
+                audioQueue.waitForFinished();
+            } else {
+                qWarning() << "Could not seek:" << err_str(ret);
+            }
+            locker.relock();
+            pendingPosition = -1;
+        }
+        locker.unlock();
+
         if (videoQueue.bytes() + audioQueue.bytes() > maxQueueBytes
             || (videoQueue.enough() && audioQueue.enough()))
         {
             QMutexLocker locker(&waiterMutex);
             waiter.wait(&waiterMutex, 10);
             continue;
-        }
-
-        double pos = -1;
-        {
-            QMutexLocker lock(&positionMutex);
-            pos = pendingPosition;
-            pendingPosition = -1;
-        }
-
-        if (pos >= 0) {
-            int ret = demuxer.seek(pos);
-            if (ret >= 0) {
-                videoQueue.clear();
-                audioQueue.clear();
-            } else {
-                qWarning() << "Could not seek:" << err_str(ret);
-            }
         }
 
         auto packet = demuxer.read();
@@ -486,12 +487,12 @@ qint64 QAVPlayer::position() const
 {
     Q_D(const QAVPlayer);
 
+    if (d->mediaStatus == QAVPlayer::EndOfMedia)
+        return duration();
+
     QMutexLocker lock(&d->positionMutex);
     if (d->pendingPosition >= 0)
         return d->pendingPosition * 1000;
-
-    if (d->mediaStatus == QAVPlayer::EndOfMedia)
-        return duration();
 
     return d->position * 1000;
 }
