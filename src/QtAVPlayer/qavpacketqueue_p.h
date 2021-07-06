@@ -111,19 +111,22 @@ public:
 
     void waitForFinished()
     {
-        QMutexLocker locker(&m_mutex);
+        QMutexLocker locker(&m_waiterMutex);
         if (!m_abort && !m_packets.isEmpty())
-            m_producerWaiter.wait(&m_mutex, 100);
+            m_producerWaiter.wait(&m_waiterMutex, 100);
     }
 
     QAVPacket dequeue()
     {
         QMutexLocker locker(&m_mutex);
         if (m_packets.isEmpty()) {
+            locker.unlock();
+            QMutexLocker waiterLocker(&m_waiterMutex);
             m_producerWaiter.wakeAll();
             if (!m_abort)
-                m_consumerWaiter.wait(&m_mutex, 100);
+                m_consumerWaiter.wait(&m_waiterMutex, 100);
         }
+        locker.relock();
         if (m_packets.isEmpty())
             return {};
 
@@ -182,6 +185,7 @@ public:
             locker.relock();
             m_frame = frame;
         }
+        locker.unlock();
 
         if (!frame || !m_clock.sync(frame.pts(), speed, master))
             return {};
@@ -204,6 +208,7 @@ public:
 private:
     QList<QAVPacket> m_packets;
     mutable QMutex m_mutex;
+    mutable QMutex m_waiterMutex;
     QWaitCondition m_consumerWaiter;
     QWaitCondition m_producerWaiter;
     bool m_abort = false;
