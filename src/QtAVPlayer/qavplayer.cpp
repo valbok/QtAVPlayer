@@ -269,9 +269,6 @@ void QAVPlayerPrivate::doDemux()
                     qWarning() << "Could not seek:" << err_str(ret);
                 }
                 pendingPosition = -1;
-                dispatch([this] {
-                    setMediaStatus(QAVPlayer::LoadedMedia);
-                });
             }
         }
 
@@ -308,12 +305,15 @@ void QAVPlayerPrivate::doPlayVideo()
             continue;
 
         dispatch([this, frame] {
-            const bool publish = state == QAVPlayer::PausedState || state == QAVPlayer::StoppedState
-                               ? setWait(true)
-                               : true;
+            position = frame.pts();
+            if (mediaStatus == QAVPlayer::SeekingMedia)
+                setMediaStatus(QAVPlayer::LoadedMedia);
+
+            bool publish = state == QAVPlayer::PausedState || state == QAVPlayer::StoppedState
+                         ? setWait(true)
+                         : true;
             if (publish)
                 emit q_ptr->videoFrame(frame);
-            position = frame.pts();
         });
 
         videoQueue.pop();
@@ -333,10 +333,14 @@ void QAVPlayerPrivate::doPlayAudio()
             continue;
 
         dispatch([this, frame] {
+            if (!q_ptr->hasVideo()) {
+                position = frame.pts();
+                if (mediaStatus == QAVPlayer::SeekingMedia)
+                    setMediaStatus(QAVPlayer::LoadedMedia);
+            }
+
             frame.frame()->sample_rate *= q_ptr->speed();
             emit q_ptr->audioFrame(frame);
-            if (!q_ptr->hasVideo())
-                position = frame.pts();
         });
 
         audioQueue.pop();
