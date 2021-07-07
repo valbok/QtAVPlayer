@@ -1,0 +1,12 @@
+#ifndef QT_QTAVPLAYER_MODULE_H
+#define QT_QTAVPLAYER_MODULE_H
+#include <QtMultimedia/QtMultimedia>
+#include <QtConcurrent/QtConcurrent>
+#include "qtavplayerglobal.h"
+#include "qavaudioformat.h"
+#include "qavaudioframe.h"
+#include "qavaudiooutput.h"
+#include "qavframe.h"
+#include "qavplayer.h"
+#include "qavvideoframe.h"
+#endif

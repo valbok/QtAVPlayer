@@ -5,12 +5,17 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#include "private/qavdemuxer_p.h"
 #include "qavaudioframe.h"
 #include "qavvideoframe.h"
+#ifndef QTAVPLAYERLIB
+#include "private/qavdemuxer_p.h"
 #include "private/qavvideocodec_p.h"
 #include "private/qavaudiocodec_p.h"
-
+#else
+#include "qavdemuxer_p.h"
+#include "qavvideocodec_p.h"
+#include "qavaudiocodec_p.h"
+#endif
 #include <QDebug>
 #include <QtTest/QtTest>
 
@@ -74,7 +79,8 @@ void tst_QAVDemuxer::loadAudio()
 {
     QAVDemuxer d;
 
-    QFileInfo file(QLatin1String("../testdata/test.wav"));
+    auto dirName = QFileInfo(__FILE__).absoluteDir().path();
+    QFileInfo file(dirName + "/../testdata/test.wav");
 
     QVERIFY(d.load(QUrl::fromLocalFile(file.absoluteFilePath())) >= 0);
     QVERIFY(d.videoStream() < 0);
@@ -154,7 +160,8 @@ void tst_QAVDemuxer::loadVideo()
 {
     QAVDemuxer d;
 
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    auto dirName = QFileInfo(__FILE__).absoluteDir().path();
+    QFileInfo file(dirName + "/../testdata/colors.mp4");
 
     QVERIFY(d.load(QUrl::fromLocalFile(file.absoluteFilePath())) >= 0);
     QVERIFY(d.videoStream() >= 0);
