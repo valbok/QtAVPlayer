@@ -180,7 +180,7 @@ void QAVPlayerPrivate::doWait()
 {
     QMutexLocker lock(&waitMutex);
     if (wait)
-        waitCond.wait(&waitMutex);
+        waitCond.wait(&waitMutex, 100);
 }
 
 bool QAVPlayerPrivate::setWait(bool v)
@@ -266,8 +266,11 @@ void QAVPlayerPrivate::doDemux()
                 } else {
                     qWarning() << "Could not seek:" << err_str(ret);
                 }
+                pendingPosition = -1;
+                dispatch([this] {
+                    setMediaStatus(QAVPlayer::LoadedMedia);
+                });
             }
-            pendingPosition = -1;
         }
 
         auto packet = demuxer.read();
@@ -458,9 +461,10 @@ void QAVPlayer::seek(qint64 pos)
     {
         QMutexLocker lock(&d->pendingPositionMutex);
         d->pendingPosition = pos / 1000.0;
+        d->position = d->pendingPosition;
     }
 
-    d->setMediaStatus(QAVPlayer::LoadedMedia);
+    d->setMediaStatus(QAVPlayer::SeekingMedia);
     d->setWait(false);
 }
 
