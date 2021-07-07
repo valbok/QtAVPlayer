@@ -182,6 +182,7 @@ public:
             locker.relock();
             m_frame = frame;
         }
+        locker.unlock();
 
         if (!frame || !m_clock.sync(frame.pts(), speed, master))
             return {};
