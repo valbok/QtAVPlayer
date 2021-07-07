@@ -27,6 +27,7 @@ public:
     QAVPlayerPrivate(QAVPlayer *q)
         : q_ptr(q)
     {
+        threadPool.setMaxThreadCount(4);
     }
 
     void setMediaStatus(QAVPlayer::MediaStatus status);
@@ -72,6 +73,7 @@ public:
 
     QAVDemuxer demuxer;
 
+    QThreadPool threadPool;
     QFuture<void> loaderFuture;
     QFuture<void> demuxerFuture;
 
@@ -228,13 +230,13 @@ void QAVPlayerPrivate::doLoad(const QUrl &url)
     });
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    demuxerFuture = QtConcurrent::run(this, &QAVPlayerPrivate::doDemux);
-    videoPlayFuture = QtConcurrent::run(this, &QAVPlayerPrivate::doPlayVideo);
-    audioPlayFuture = QtConcurrent::run(this, &QAVPlayerPrivate::doPlayAudio);
+    demuxerFuture = QtConcurrent::run(&threadPool, this, &QAVPlayerPrivate::doDemux);
+    videoPlayFuture = QtConcurrent::run(&threadPool, this, &QAVPlayerPrivate::doPlayVideo);
+    audioPlayFuture = QtConcurrent::run(&threadPool, this, &QAVPlayerPrivate::doPlayAudio);
 #else
-    demuxerFuture = QtConcurrent::run(&QAVPlayerPrivate::doDemux, this);
-    videoPlayFuture = QtConcurrent::run(&QAVPlayerPrivate::doPlayVideo, this);
-    audioPlayFuture = QtConcurrent::run(&QAVPlayerPrivate::doPlayAudio, this);
+    demuxerFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doDemux, this);
+    videoPlayFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doPlayVideo, this);
+    audioPlayFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doPlayAudio, this);
 #endif
 }
 
@@ -347,9 +349,6 @@ QAVPlayer::QAVPlayer(QObject *parent)
     : QObject(parent)
     , d_ptr(new QAVPlayerPrivate(this))
 {
-    const int maxThreadCount = QThreadPool::globalInstance()->maxThreadCount();
-    if (maxThreadCount < 4)
-        qWarning() << "Max thread count is to low:" << maxThreadCount;
 }
 
 QAVPlayer::~QAVPlayer()
@@ -378,9 +377,9 @@ void QAVPlayer::setSource(const QUrl &url)
     d->quit = false;
     d->setMediaStatus(QAVPlayer::LoadingMedia);
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    d->loaderFuture = QtConcurrent::run(d, &QAVPlayerPrivate::doLoad, d->url);
+    d->loaderFuture = QtConcurrent::run(&d->threadPool, d, &QAVPlayerPrivate::doLoad, d->url);
 #else
-    d->loaderFuture = QtConcurrent::run(&QAVPlayerPrivate::doLoad, d, d->url);
+    d->loaderFuture = QtConcurrent::run(&d->threadPool, &QAVPlayerPrivate::doLoad, d, d->url);
 #endif
 }
 
