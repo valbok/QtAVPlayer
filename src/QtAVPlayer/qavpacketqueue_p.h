@@ -113,7 +113,7 @@ public:
     {
         QMutexLocker locker(&m_mutex);
         if (!m_abort && !m_packets.isEmpty())
-            m_producerWaiter.wait(&m_mutex, 100);
+            m_producerWaiter.wait(&m_mutex);
     }
 
     QAVPacket dequeue()
@@ -122,7 +122,7 @@ public:
         if (m_packets.isEmpty()) {
             m_producerWaiter.wakeAll();
             if (!m_abort)
-                m_consumerWaiter.wait(&m_mutex, 100);
+                m_consumerWaiter.wait(&m_mutex);
         }
         if (m_packets.isEmpty())
             return {};
