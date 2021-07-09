@@ -112,7 +112,7 @@ public:
     void waitForFinished()
     {
         QMutexLocker locker(&m_mutex);
-        if (!m_abort && !m_packets.isEmpty())
+        if (!m_isConsumerWaiting)
             m_producerWaiter.wait(&m_mutex);
     }
 
@@ -121,11 +121,16 @@ public:
         QMutexLocker locker(&m_mutex);
         if (m_packets.isEmpty()) {
             m_producerWaiter.wakeAll();
-            if (!m_abort)
+            if (!m_abort) {
+                m_isConsumerWaiting = true;
                 m_consumerWaiter.wait(&m_mutex);
+                m_isConsumerWaiting = false;
+            }
         }
-        if (m_packets.isEmpty())
+        if (m_packets.isEmpty()) {
+            m_producerWaiter.wakeAll();
             return {};
+        }
 
         auto packet = m_packets.takeFirst();
         m_bytes -= packet.bytes() + sizeof(packet);
@@ -208,6 +213,7 @@ private:
     QWaitCondition m_consumerWaiter;
     QWaitCondition m_producerWaiter;
     bool m_abort = false;
+    bool m_isConsumerWaiting = false;
 
     int m_bytes = 0;
     int m_duration = 0;

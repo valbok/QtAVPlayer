@@ -154,9 +154,12 @@ void QAVPlayerPrivate::updatePosition(double p)
     position = p;
     // If the demuxer reported that seeking is finished
     if (pendingPosition < 0) {
+        locker.unlock();
         // Notify that seeking is finished
-        if (q_ptr->mediaStatus() == QAVPlayer::SeekingMedia)
+        if (q_ptr->mediaStatus() == QAVPlayer::SeekingMedia) {
+            emit q_ptr->seeked(q_ptr->position());
             setMediaStatus(QAVPlayer::LoadedMedia);
+        }
         // Show only first decoded frame on seek/pause.
         const QAVPlayer::State currState = q_ptr->state();
         if (currState == QAVPlayer::PausedState || currState == QAVPlayer::StoppedState)
@@ -251,7 +254,8 @@ void QAVPlayerPrivate::doLoad(const QUrl &url)
     dispatch([this, d, seekable, vs, as, ss] {
         setSeekable(seekable);
         setDuration(d);
-        setMediaStatus(QAVPlayer::LoadedMedia);
+        if (!isSeeking())
+            setMediaStatus(QAVPlayer::LoadedMedia);
         videoStream = vs;
         audioStream = as;
         subtitleStream = ss;
@@ -442,9 +446,10 @@ void QAVPlayer::play()
 
     d->setState(QAVPlayer::PlayingState);
     if (mediaStatus() == QAVPlayer::EndOfMedia) {
-        if (!d->isSeeking())
+        if (!d->isSeeking()) {
             seek(0);
-        d->setMediaStatus(QAVPlayer::LoadedMedia);
+            d->setMediaStatus(QAVPlayer::LoadedMedia);
+        }
     } else if (mediaStatus() != QAVPlayer::LoadedMedia) {
         d->pendingPlay = true;
         return;
