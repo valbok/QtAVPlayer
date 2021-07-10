@@ -85,6 +85,7 @@ Q_SIGNALS:
     void seekableChanged(bool seekable);
     void speedChanged(qreal rate);
     void seeked(qint64 pos);
+    void paused(qint64 pos);
 
     void videoFrame(const QAVVideoFrame &frame);
     void audioFrame(const QAVAudioFrame &frame);
