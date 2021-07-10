@@ -31,7 +31,7 @@ public:
     }
 
     void setMediaStatus(QAVPlayer::MediaStatus status);
-    void setState(QAVPlayer::State s);
+    bool setState(QAVPlayer::State s);
     void setSeekable(bool seekable);
     void setError(QAVPlayer::Error err, const QString &str);
     void setDuration(double d);
@@ -41,7 +41,7 @@ public:
     void terminate();
 
     void doWait();
-    bool setWait(bool v);
+    void setWait(bool v);
     void doLoad(const QUrl &url);
     void doDemux();
     void doPlayVideo();
@@ -89,7 +89,7 @@ public:
 
     bool quit = 0;
     bool wait = false;
-    QMutex waitMutex;
+    mutable QMutex waitMutex;
     QWaitCondition waitCond;
 };
 
@@ -115,17 +115,20 @@ void QAVPlayerPrivate::setMediaStatus(QAVPlayer::MediaStatus status)
     emit q_ptr->mediaStatusChanged(status);
 }
 
-void QAVPlayerPrivate::setState(QAVPlayer::State s)
+bool QAVPlayerPrivate::setState(QAVPlayer::State s)
 {
     Q_Q(QAVPlayer);
+    bool result = false;
     {
         QMutexLocker locker(&stateMutex);
         if (state == s)
-            return;
+            return result;
 
         state = s;
+        result = true;
     }
     emit q->stateChanged(s);
+    return result;
 }
 
 void QAVPlayerPrivate::setSeekable(bool s)
@@ -155,15 +158,19 @@ void QAVPlayerPrivate::updatePosition(double p)
     // If the demuxer reported that seeking is finished
     if (pendingPosition < 0) {
         locker.unlock();
+        const QAVPlayer::State currState = q_ptr->state();
         // Notify that seeking is finished
         if (q_ptr->mediaStatus() == QAVPlayer::SeekingMedia) {
             emit q_ptr->seeked(q_ptr->position());
             setMediaStatus(QAVPlayer::LoadedMedia);
+        } else if (currState == QAVPlayer::PausedState) {
+            emit q_ptr->paused(q_ptr->position());
         }
-        // Show only first decoded frame on seek/pause.
-        const QAVPlayer::State currState = q_ptr->state();
-        if (currState == QAVPlayer::PausedState || currState == QAVPlayer::StoppedState)
+
+        // Show only first decoded frame on seek/pause
+        if (!quit && (currState == QAVPlayer::PausedState || currState == QAVPlayer::StoppedState)) {
             setWait(true);
+        }
     }
 }
 
@@ -216,19 +223,15 @@ void QAVPlayerPrivate::doWait()
         waitCond.wait(&waitMutex);
 }
 
-bool QAVPlayerPrivate::setWait(bool v)
+void QAVPlayerPrivate::setWait(bool v)
 {
-    bool result = false;
     {
         QMutexLocker locker(&waitMutex);
-        result = v != wait;
         wait = v;
     }
 
     if (!v)
         waitCond.wakeAll();
-
-    return result;
 }
 
 void QAVPlayerPrivate::doLoad(const QUrl &url)
@@ -248,17 +251,11 @@ void QAVPlayerPrivate::doLoad(const QUrl &url)
 
     double d = demuxer.duration();
     bool seekable = demuxer.seekable();
-    int vs = demuxer.videoStream();
-    int as = demuxer.audioStream();
-    int ss = demuxer.subtitleStream();
-    dispatch([this, d, seekable, vs, as, ss] {
+    dispatch([this, d, seekable] {
         setSeekable(seekable);
         setDuration(d);
         if (!isSeeking())
             setMediaStatus(QAVPlayer::LoadedMedia);
-        videoStream = vs;
-        audioStream = as;
-        subtitleStream = ss;
         if (pendingPlay)
             q_ptr->play();
     });
@@ -342,6 +339,7 @@ void QAVPlayerPrivate::doPlayVideo()
             continue;
 
         emit q_ptr->videoFrame(frame);
+
         updatePosition(frame.pts());
         videoQueue.pop();
     }
@@ -363,6 +361,7 @@ void QAVPlayerPrivate::doPlayAudio()
 
         frame.frame()->sample_rate *= currSpeed;
         emit q_ptr->audioFrame(frame);
+
         if (!hasVideo)
             updatePosition(frame.pts());
         audioQueue.pop();
@@ -416,12 +415,12 @@ QUrl QAVPlayer::source() const
 
 bool QAVPlayer::hasAudio() const
 {
-    return d_func()->audioStream >= 0;
+    return d_func()->demuxer.audioStream() >= 0;
 }
 
 bool QAVPlayer::hasVideo() const
 {
-    return d_func()->videoStream >= 0;
+    return d_func()->demuxer.videoStream() >= 0;
 }
 
 QAVPlayer::State QAVPlayer::state() const
@@ -462,8 +461,7 @@ void QAVPlayer::play()
 void QAVPlayer::pause()
 {
     Q_D(QAVPlayer);
-    d->setState(QAVPlayer::PausedState);
-    d->setWait(!hasVideo());
+    d->setWait(!d->setState(QAVPlayer::PausedState));
     d->pendingPlay = false;
 }
 
