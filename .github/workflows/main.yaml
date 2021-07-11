@@ -54,6 +54,7 @@ jobs:
           cd tests/
           qmake
           make -j12 CC=$CC CXX=$CXX
+          export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
           cd auto/integration/qavdemuxer
           ./tst_qavdemuxer --platform minimal
           cd ../
@@ -96,6 +97,7 @@ jobs:
           cd tests/
           qmake
           make -j12 CC=$CC CXX=$CXX
+          export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
           cd auto/integration/qavdemuxer
           ./tst_qavdemuxer --platform minimal
           cd ../
