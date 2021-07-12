@@ -13,6 +13,7 @@
 #include "qavaudioframe.h"
 #include "qavpacketqueue_p.h"
 #include <QtConcurrent/qtconcurrentrun.h>
+#include <QLoggingCategory>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -71,10 +72,6 @@ public:
     mutable QMutex positionMutex;
 
     bool pendingPlay = false;
-
-    int videoStream = -1;
-    int audioStream = -1;
-    int subtitleStream = -1;
 
     QAVDemuxer demuxer;
 
