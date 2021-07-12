@@ -589,7 +589,7 @@ void tst_QAVPlayer::seekVideo()
     p.seek(13000);
     QVERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
     QTRY_VERIFY_WITH_TIMEOUT(p.position() > 13000, 10000);
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia || p.mediaStatus() == QAVPlayer::EndOfMedia);
     QCOMPARE(spySeeked.count(), 2);
     QTRY_VERIFY(seekPosition >= 0);
     QVERIFY(qAbs(seekPosition - 13000) < 500);
