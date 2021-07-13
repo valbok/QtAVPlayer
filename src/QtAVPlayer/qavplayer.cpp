@@ -311,7 +311,8 @@ void QAVPlayerPrivate::doDemux()
                     qWarning() << "Could not seek:" << err_str(ret);
                 }
                 locker.relock();
-                pendingPosition = -1;
+                if (qFuzzyCompare(pendingPosition, pos))
+                    pendingPosition = -1;
             }
         }
 
