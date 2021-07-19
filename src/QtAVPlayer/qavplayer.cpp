@@ -40,6 +40,7 @@ public:
     void setDuration(double d);
     void updatePosition(double p);
     bool isSeeking() const;
+    void setVideoFrameRate(double v);
 
     void terminate();
 
@@ -62,6 +63,7 @@ public:
     bool seekable = false;
     qreal speed = 1.0;
     mutable QMutex speedMutex;
+    double videoFrameRate = 0.0;
 
     QAVPlayer::Error error = QAVPlayer::NoError;
     QString errorString;
@@ -185,6 +187,17 @@ bool QAVPlayerPrivate::isSeeking() const
     return pendingPosition >= 0;
 }
 
+void QAVPlayerPrivate::setVideoFrameRate(double v)
+{
+    Q_Q(QAVPlayer);
+    if (qFuzzyCompare(videoFrameRate, v))
+        return;
+
+    qCDebug(lcAVPlayer) << "[" << url << "]:" << __FUNCTION__ << ":" << videoFrameRate << "->" << v;
+    videoFrameRate = v;
+    emit q->videoFrameRateChanged(v);
+}
+
 template <class T>
 void QAVPlayerPrivate::dispatch(T fn)
 {
@@ -257,10 +270,12 @@ void QAVPlayerPrivate::doLoad(const QUrl &url)
 
     double d = demuxer.duration();
     bool seekable = demuxer.seekable();
-    dispatch([this, d, seekable] {
+    double frameRate = demuxer.frameRate();
+    dispatch([this, d, seekable, frameRate] {
         qCDebug(lcAVPlayer) << "[" << this->url << "]: Loaded, seekable:" << seekable << ", duration:" << d;
         setSeekable(seekable);
         setDuration(d);
+        setVideoFrameRate(frameRate);
         if (!isSeeking())
             setMediaStatus(QAVPlayer::LoadedMedia);
         if (pendingPlay)
@@ -552,6 +567,11 @@ qreal QAVPlayer::speed() const
 
     QMutexLocker locker(&d->speedMutex);
     return d->speed;
+}
+
+double QAVPlayer::videoFrameRate() const
+{
+    return d_func()->videoFrameRate;
 }
 
 QAVPlayer::Error QAVPlayer::error() const

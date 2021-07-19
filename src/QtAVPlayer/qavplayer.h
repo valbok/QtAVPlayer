@@ -64,6 +64,7 @@ public:
     qint64 duration() const;
     qint64 position() const;
     qreal speed() const;
+    double videoFrameRate() const;
 
     bool isSeekable() const;
     Error error() const;
@@ -84,6 +85,7 @@ Q_SIGNALS:
     void durationChanged(qint64 duration);
     void seekableChanged(bool seekable);
     void speedChanged(qreal rate);
+    void videoFrameRateChanged(double rate);
     void seeked(qint64 pos);
     void paused(qint64 pos);
 
