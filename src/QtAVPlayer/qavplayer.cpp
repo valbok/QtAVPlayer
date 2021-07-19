@@ -225,6 +225,7 @@ void QAVPlayerPrivate::terminate()
     quit = true;
     pendingPlay = false;
     setWait(false);
+    videoFrameRate = 0.0;
     videoQueue.clear();
     videoQueue.abort();
     audioQueue.clear();
