@@ -373,10 +373,10 @@ double QAVDemuxer::frameRate() const
 {
     Q_D(const QAVDemuxer);
     if (d->videoStream < 0)
-        return 1/24;
+        return 1/24.0;
 
     AVRational frame_rate = av_guess_frame_rate(d->ctx, d->ctx->streams[d->videoStream], NULL);
-    return frame_rate.num && frame_rate.den ? av_q2d({frame_rate.den, frame_rate.num}) : 0;
+    return frame_rate.num && frame_rate.den ? av_q2d({frame_rate.den, frame_rate.num}) : 0.0;
 }
 
 QT_END_NAMESPACE

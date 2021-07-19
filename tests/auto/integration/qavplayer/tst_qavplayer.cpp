@@ -370,6 +370,7 @@ void tst_QAVPlayer::playVideo()
     QSignalSpy spyMediaStatus(&p, &QAVPlayer::mediaStatusChanged);
     QSignalSpy spyDuration(&p, &QAVPlayer::durationChanged);
     QSignalSpy spyPaused(&p, &QAVPlayer::paused);
+    QSignalSpy spyVideoFrameRateChanged(&p, &QAVPlayer::videoFrameRateChanged);
 
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QCOMPARE(p.mediaStatus(), QAVPlayer::NoMedia);
@@ -380,6 +381,8 @@ void tst_QAVPlayer::playVideo()
     QCOMPARE(spyMediaStatus.count(), 0);
     QCOMPARE(spyDuration.count(), 0);
     QCOMPARE(spyPaused.count(), 0);
+    QCOMPARE(spyVideoFrameRateChanged.count(), 0);
+    QCOMPARE(p.videoFrameRate(), 0.0);
 
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
@@ -390,6 +393,8 @@ void tst_QAVPlayer::playVideo()
     QCOMPARE(spyMediaStatus.count(), 2); // NoMedia -> Loading -> Loaded
     QCOMPARE(spyDuration.count(), 1);
     QCOMPARE(spyPaused.count(), 0);
+    QCOMPARE(spyVideoFrameRateChanged.count(), 1);
+    QCOMPARE(p.videoFrameRate(), 0.04);
     QCOMPARE(p.duration(), 15019);
     QCOMPARE(p.error(), QAVPlayer::NoError);
     QVERIFY(p.errorString().isEmpty());
@@ -404,6 +409,7 @@ void tst_QAVPlayer::playVideo()
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(spyState.count(), 1); // Stopped -> Playing
     QCOMPARE(spyPaused.count(), 0);
+    QCOMPARE(spyVideoFrameRateChanged.count(), 1);
 
     QTRY_VERIFY(p.position() != 0);
 }
