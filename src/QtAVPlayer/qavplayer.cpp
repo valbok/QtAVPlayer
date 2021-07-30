@@ -176,6 +176,11 @@ void QAVPlayerPrivate::updatePosition(double p)
                 setMediaStatus(QAVPlayer::LoadedMedia);
                 emit q_ptr->paused(q_ptr->position());
                 break;
+            case QAVPlayer::SteppingMedia:
+                qCDebug(lcAVPlayer) << "Stepped to pos:" << q_ptr->position();
+                setMediaStatus(QAVPlayer::LoadedMedia);
+                emit q_ptr->stepped(q_ptr->position());
+                break;
             default:
                 break;
         }
@@ -511,15 +516,26 @@ void QAVPlayer::pause()
     d->pendingPlay = false;
 }
 
+void QAVPlayer::stepForward()
+{
+    Q_D(QAVPlayer);
+    qCDebug(lcAVPlayer) << __FUNCTION__;
+    d->setState(QAVPlayer::PausedState);
+    d->setMediaStatus(QAVPlayer::SteppingMedia);
+    d->setWait(false);
+    d->pendingPlay = false;
+}
+
 void QAVPlayer::stop()
 {
     Q_D(QAVPlayer);
     qCDebug(lcAVPlayer) << __FUNCTION__;
-    d->setState(QAVPlayer::StoppedState);
+    if (d->setState(QAVPlayer::StoppedState)) {
+        if (hasVideo())
+            d->dispatch([this] { emit videoFrame({}); });
+    }
     d->setWait(true);
     d->pendingPlay = false;
-    if (hasVideo())
-        d->dispatch([this] { emit videoFrame({}); });
 }
 
 bool QAVPlayer::isSeekable() const
@@ -629,6 +645,8 @@ QDebug operator<<(QDebug dbg, QAVPlayer::MediaStatus status)
             return dbg << "LoadingMedia";
         case QAVPlayer::PausingMedia:
             return dbg << "PausingMedia";
+        case QAVPlayer::SteppingMedia:
+            return dbg << "SteppingMedia";
         case QAVPlayer::SeekingMedia:
             return dbg << "SeekingMedia";
         case QAVPlayer::LoadedMedia:

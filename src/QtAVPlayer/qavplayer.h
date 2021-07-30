@@ -38,6 +38,7 @@ public:
         NoMedia,
         LoadingMedia,
         PausingMedia,
+        SteppingMedia,
         SeekingMedia,
         LoadedMedia,
         EndOfMedia,
@@ -74,6 +75,7 @@ public:
 public Q_SLOTS:
     void play();
     void pause();
+    void stepForward();
     void stop();
     void seek(qint64 position);
     void setSpeed(qreal rate);
@@ -89,6 +91,7 @@ Q_SIGNALS:
     void videoFrameRateChanged(double rate);
     void seeked(qint64 pos);
     void paused(qint64 pos);
+    void stepped(qint64 pos);
 
     void videoFrame(const QAVVideoFrame &frame);
     void audioFrame(const QAVAudioFrame &frame);

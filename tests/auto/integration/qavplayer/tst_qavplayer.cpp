@@ -36,6 +36,7 @@ private slots:
     void speedVideo();
     void videoFrame();
     void pauseSeekVideo();
+    void stepForward();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -914,6 +915,147 @@ void tst_QAVPlayer::pauseSeekVideo()
     QVERIFY(qAbs(seekPosition - 1) < 100);
     seekPosition = -1;
     QCOMPARE(pausePosition, -1);
+}
+
+void tst_QAVPlayer::stepForward()
+{
+    QAVPlayer p;
+
+    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+
+    QAVVideoFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+    qint64 pausePosition = -1;
+    QObject::connect(&p, &QAVPlayer::paused, &p, [&](qint64 pos) { pausePosition = pos; });
+    qint64 stepPosition = -1;
+    QObject::connect(&p, &QAVPlayer::stepped, &p, [&](qint64 pos) { stepPosition = pos; });
+    QSignalSpy spyMediaStatus(&p, &QAVPlayer::mediaStatusChanged);
+
+    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    QTest::qWait(200);
+    QCOMPARE(framesCount, 0);
+    QCOMPARE(p.state(), QAVPlayer::StoppedState);
+    QVERIFY(frame == false);
+    QCOMPARE(pausePosition, -1);
+
+    p.pause();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTRY_VERIFY(frame == true);
+    QCOMPARE(framesCount, 1);
+
+    frame = QAVVideoFrame();
+    framesCount = 0;
+
+    p.pause();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QVERIFY(frame == false);
+    QCOMPARE(framesCount, 0);
+    QTest::qWait(50);
+
+    p.pause();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QVERIFY(frame == false);
+    QCOMPARE(framesCount, 0);
+    QCOMPARE(stepPosition, -1);
+
+    spyMediaStatus.clear();
+    qint64 prev = -1;
+
+    p.stepForward();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTRY_VERIFY(frame == true);
+    QCOMPARE(framesCount, 1);
+    QVERIFY(stepPosition > prev);
+    QCOMPARE(spyMediaStatus.count(), 2); // Loaded -> Stepping -> Loaded
+
+    spyMediaStatus.clear();
+    frame = QAVVideoFrame();
+    framesCount = 0;
+    prev = stepPosition;
+
+    p.stepForward();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTRY_VERIFY(frame == true);
+    QCOMPARE(framesCount, 1);
+    QVERIFY(stepPosition > prev);
+    QCOMPARE(spyMediaStatus.count(), 2); // Loaded -> Stepping -> Loaded
+
+    spyMediaStatus.clear();
+    frame = QAVVideoFrame();
+    framesCount = 0;
+    prev = stepPosition;
+
+    p.stepForward();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTRY_VERIFY(frame == true);
+    QCOMPARE(framesCount, 1);
+    QVERIFY(stepPosition > prev);
+    QCOMPARE(spyMediaStatus.count(), 2); // Loaded -> Stepping -> Loaded
+
+    p.play();
+    QCOMPARE(p.state(), QAVPlayer::PlayingState);
+    QTest::qWait(50);
+
+    spyMediaStatus.clear();
+    frame = QAVVideoFrame();
+    framesCount = 0;
+    prev = stepPosition;
+    
+    p.stepForward();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTest::qWait(50);
+    QTRY_VERIFY(frame == true);
+    QCOMPARE(framesCount, 1);
+    QVERIFY(stepPosition > prev);
+    QCOMPARE(spyMediaStatus.count(), 2); // Loaded -> Stepping -> Loaded
+
+    spyMediaStatus.clear();
+    frame = QAVVideoFrame();
+    framesCount = 0;
+    prev = stepPosition;
+
+    p.stepForward();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTRY_VERIFY(frame == true);
+    QCOMPARE(framesCount, 1);
+    QVERIFY(stepPosition > prev);
+    QCOMPARE(spyMediaStatus.count(), 2); // Loaded -> Stepping -> Loaded
+
+    spyMediaStatus.clear();
+    frame = QAVVideoFrame();
+    framesCount = 0;
+    stepPosition = -1;
+
+    p.stop();
+    QVERIFY(frame == false);
+    QCOMPARE(framesCount, 1);
+    QCOMPARE(stepPosition, -1);
+    QCOMPARE(spyMediaStatus.count(), 0);
+
+    spyMediaStatus.clear();
+    frame = QAVVideoFrame();
+    framesCount = 0;
+    stepPosition = -1;
+
+    QTest::qWait(50);
+    p.stop();
+    QVERIFY(frame == false);
+    QCOMPARE(framesCount, 0);
+    QCOMPARE(stepPosition, -1);
+    QCOMPARE(spyMediaStatus.count(), 0);
+
+    spyMediaStatus.clear();
+    frame = QAVVideoFrame();
+    framesCount = 0;
+    prev = stepPosition;
+
+    p.stepForward();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTRY_VERIFY(frame == true);
+    QCOMPARE(framesCount, 1);
+    QVERIFY(stepPosition > prev);
+    QCOMPARE(spyMediaStatus.count(), 2); // Loaded -> Stepping -> Loaded
 }
 
 QTEST_MAIN(tst_QAVPlayer)
