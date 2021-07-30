@@ -111,9 +111,10 @@ void QAVPlayerPrivate::setMediaStatus(QAVPlayer::MediaStatus status)
         if (mediaStatus == status)
             return;
 
-        qCDebug(lcAVPlayer) << "[" << url << "]:" << __FUNCTION__ << ":" << mediaStatus << "->" << status;
+        qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << mediaStatus << "->" << status;
         mediaStatus = status;
     }
+
     emit q_ptr->mediaStatusChanged(status);
 }
 
@@ -126,10 +127,11 @@ bool QAVPlayerPrivate::setState(QAVPlayer::State s)
         if (state == s)
             return result;
 
-        qCDebug(lcAVPlayer) << "[" << url << "]:" << __FUNCTION__ << ":" << state << "->" << s;
+        qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << state << "->" << s;
         state = s;
         result = true;
     }
+
     emit q->stateChanged(s);
     return result;
 }
@@ -140,7 +142,7 @@ void QAVPlayerPrivate::setSeekable(bool s)
     if (seekable == s)
         return;
 
-    qCDebug(lcAVPlayer) << "[" << url << "]:" << __FUNCTION__ << ":" << seekable << "->" << s;
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << seekable << "->" << s;
     seekable = s;
     emit q->seekableChanged(seekable);
 }
@@ -151,7 +153,7 @@ void QAVPlayerPrivate::setDuration(double d)
     if (qFuzzyCompare(duration, d))
         return;
 
-    qCDebug(lcAVPlayer) << "[" << url << "]:" << __FUNCTION__ << ":" << duration << "->" << d;
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << duration << "->" << d;
     duration = d;
     emit q->durationChanged(q->duration());
 }
@@ -193,7 +195,7 @@ void QAVPlayerPrivate::setVideoFrameRate(double v)
     if (qFuzzyCompare(videoFrameRate, v))
         return;
 
-    qCDebug(lcAVPlayer) << "[" << url << "]:" << __FUNCTION__ << ":" << videoFrameRate << "->" << v;
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << videoFrameRate << "->" << v;
     videoFrameRate = v;
     emit q->videoFrameRateChanged(v);
 }
@@ -219,7 +221,7 @@ void QAVPlayerPrivate::setError(QAVPlayer::Error err, const QString &str)
 
 void QAVPlayerPrivate::terminate()
 {
-    qCDebug(lcAVPlayer) << "[" << url << "]:" << __FUNCTION__;
+    qCDebug(lcAVPlayer) << __FUNCTION__;
     setState(QAVPlayer::StoppedState);
     demuxer.abort();
     quit = true;
@@ -315,12 +317,12 @@ void QAVPlayerPrivate::doDemux()
             if (pendingPosition >= 0) {
                 const double pos = pendingPosition;
                 locker.unlock();
-                qCDebug(lcAVPlayer) << "[" << url << "]: Seeking to pos:" << pos * 1000;
+                qCDebug(lcAVPlayer) << "Seeking to pos:" << pos * 1000;
                 const int ret = demuxer.seek(pos);
                 if (ret >= 0) {
                     videoQueue.clear();
                     audioQueue.clear();
-                    qCDebug(lcAVPlayer) << "[" << url << "]: Waiting before all packets are handled";
+                    qCDebug(lcAVPlayer) << "Waiting before all packets are handled";
                     videoQueue.waitForFinished();
                     audioQueue.waitForFinished();
                 } else {
@@ -336,7 +338,7 @@ void QAVPlayerPrivate::doDemux()
         if (!packet) {
             if (demuxer.eof() && videoQueue.isEmpty() && audioQueue.isEmpty()) {
                 dispatch([this] {
-                    qCDebug(lcAVPlayer) << "[" << url << "]: End of stream";
+                    qCDebug(lcAVPlayer) << "EndOfMedia";
                     q_ptr->stop();
                     setMediaStatus(QAVPlayer::EndOfMedia);
                 });
@@ -415,7 +417,7 @@ void QAVPlayer::setSource(const QUrl &url)
     if (d->url == url)
         return;
 
-    qCDebug(lcAVPlayer) << "[" << d->url << "]:" << __FUNCTION__ << ":" << url;
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << url;
     d->terminate();
     d->url = url;
     emit sourceChanged(url);
@@ -471,16 +473,16 @@ void QAVPlayer::play()
     if (d->url.isEmpty() || mediaStatus() == QAVPlayer::InvalidMedia)
         return;
 
-    qCDebug(lcAVPlayer) << "[" << d->url << "]:" << __FUNCTION__;
+    qCDebug(lcAVPlayer) << __FUNCTION__;
     d->setState(QAVPlayer::PlayingState);
     if (mediaStatus() == QAVPlayer::EndOfMedia) {
         if (!d->isSeeking()) {
-            qCDebug(lcAVPlayer) << "[" << d->url << "]: Playing from beginning";
+            qCDebug(lcAVPlayer) << "Playing from beginning";
             seek(0);
             d->setMediaStatus(QAVPlayer::LoadedMedia);
         }
     } else if (mediaStatus() != QAVPlayer::LoadedMedia) {
-        qCDebug(lcAVPlayer) << "[" << d->url << "]: Postponing playing until loaded";
+        qCDebug(lcAVPlayer) << "Postponing playing until loaded";
         d->pendingPlay = true;
         return;
     }
@@ -492,7 +494,7 @@ void QAVPlayer::play()
 void QAVPlayer::pause()
 {
     Q_D(QAVPlayer);
-    qCDebug(lcAVPlayer) << "[" << d->url << "]:" << __FUNCTION__;
+    qCDebug(lcAVPlayer) << __FUNCTION__;
     d->setWait(!d->setState(QAVPlayer::PausedState));
     d->pendingPlay = false;
 }
@@ -500,7 +502,7 @@ void QAVPlayer::pause()
 void QAVPlayer::stop()
 {
     Q_D(QAVPlayer);
-    qCDebug(lcAVPlayer) << "[" << d->url << "]:" << __FUNCTION__;
+    qCDebug(lcAVPlayer) << __FUNCTION__;
     d->setState(QAVPlayer::StoppedState);
     d->setWait(true);
     d->pendingPlay = false;
@@ -517,7 +519,7 @@ void QAVPlayer::seek(qint64 pos)
     if (pos < 0 || (duration() > 0 && pos > duration()))
         return;
 
-    qCDebug(lcAVPlayer) << "[" << d->url << "]:" << __FUNCTION__ << ":" << "pos:" << pos;
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << "pos:" << pos;
     {
         QMutexLocker locker(&d->positionMutex);
         d->pendingPosition = pos / 1000.0;
@@ -556,7 +558,7 @@ void QAVPlayer::setSpeed(qreal r)
         if (qFuzzyCompare(d->speed, r))
             return;
 
-        qCDebug(lcAVPlayer) << "[" << d->url << "]:" << __FUNCTION__ << ":" << d->speed << "->" << r;
+        qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << d->speed << "->" << r;
         d->speed = r;
     }
     emit speedChanged(r);
@@ -584,5 +586,45 @@ QString QAVPlayer::errorString() const
 {
     return d_func()->errorString;
 }
+
+#ifndef QT_NO_DEBUG_STREAM
+QDebug operator<<(QDebug dbg, QAVPlayer::State state)
+{
+    QDebugStateSaver saver(dbg);
+    dbg.nospace();
+    switch (state) {
+        case QAVPlayer::StoppedState:
+            return dbg << "StoppedState";
+        case QAVPlayer::PlayingState:
+            return dbg << "PlayingState";
+        case QAVPlayer::PausedState:
+            return dbg << "PausedState";
+        default:
+            return dbg << QString(QLatin1String("UserType(%1)" )).arg(int(state)).toLatin1().constData();
+    }
+}
+
+QDebug operator<<(QDebug dbg, QAVPlayer::MediaStatus status)
+{
+    QDebugStateSaver saver(dbg);
+    dbg.nospace();
+    switch (status) {
+        case QAVPlayer::NoMedia:
+            return dbg << "NoMedia";
+        case QAVPlayer::LoadingMedia:
+            return dbg << "LoadingMedia";
+        case QAVPlayer::SeekingMedia:
+            return dbg << "SeekingMedia";
+        case QAVPlayer::LoadedMedia:
+            return dbg << "LoadedMedia";
+        case QAVPlayer::EndOfMedia:
+            return dbg << "EndOfMedia";
+        case QAVPlayer::InvalidMedia:
+            return dbg << "InvalidMedia";
+        default:
+            return dbg << QString(QLatin1String("UserType(%1)" )).arg(int(status)).toLatin1().constData();
+    }
+}
+#endif
 
 QT_END_NAMESPACE
