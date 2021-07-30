@@ -208,6 +208,12 @@ public:
         m_clock.frameRate = v;
     }
 
+    void wakeAll()
+    {
+        QMutexLocker locker(&m_mutex);
+        m_consumerWaiter.wakeAll();
+    }
+
 private:
     QList<QAVPacket> m_packets;
     mutable QMutex m_mutex;

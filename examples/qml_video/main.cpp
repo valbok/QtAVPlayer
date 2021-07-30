@@ -114,7 +114,8 @@ int main(int argc, char *argv[])
             pf = QVideoFrame::Format_NV12;
             break;
         default:
-            qDebug() << "format not supported: " << frame.frame()->format;
+            if (frame)
+                qDebug() << "format not supported: " << frame.frame()->format;
         }
 
         QVideoFrame videoFrame(new PlanarVideoBuffer(frame), frame.size(), pf);
