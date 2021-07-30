@@ -37,6 +37,7 @@ public:
     {
         NoMedia,
         LoadingMedia,
+        PausingMedia,
         SeekingMedia,
         LoadedMedia,
         EndOfMedia,
@@ -99,6 +100,11 @@ private:
     Q_DISABLE_COPY(QAVPlayer)
     Q_DECLARE_PRIVATE(QAVPlayer)
 };
+
+#ifndef QT_NO_DEBUG_STREAM
+Q_AVPLAYER_EXPORT QDebug operator<<(QDebug, QAVPlayer::State);
+Q_AVPLAYER_EXPORT QDebug operator<<(QDebug, QAVPlayer::MediaStatus);
+#endif
 
 Q_DECLARE_METATYPE(QAVPlayer::State)
 Q_DECLARE_METATYPE(QAVPlayer::MediaStatus)
