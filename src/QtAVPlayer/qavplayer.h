@@ -39,6 +39,7 @@ public:
         LoadingMedia,
         PausingMedia,
         SeekingMedia,
+        StoppingMedia,
         LoadedMedia,
         EndOfMedia,
         InvalidMedia
