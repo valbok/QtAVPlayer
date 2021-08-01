@@ -506,7 +506,7 @@ void QAVPlayer::pause()
     if (d->setState(QAVPlayer::PausedState)) {
         d->wait(false);
         d->setMediaStatus(QAVPlayer::PausingMedia, [this, d](const QAVFrame &frame) {
-            if (!frame)
+            if (!frame && !d->eof)
                 return false;
             qCDebug(lcAVPlayer) << "Paused to pos:" << position();
             d->setMediaStatus(QAVPlayer::LoadedMedia);
@@ -561,7 +561,7 @@ void QAVPlayer::seek(qint64 pos)
     }
 
     d->setMediaStatus(QAVPlayer::SeekingMedia, [this, d](const QAVFrame &frame) {
-        if (!frame)
+        if (!frame && !d->eof)
             return false;
         qCDebug(lcAVPlayer) << "Seeked to pos:" << position();
         d->setMediaStatus(QAVPlayer::LoadedMedia);
