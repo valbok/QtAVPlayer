@@ -135,6 +135,7 @@ public:
         auto packet = m_packets.takeFirst();
         m_bytes -= packet.bytes() + sizeof(packet);
         m_duration -= packet.duration();
+        m_eof = false;
         return packet;
     }
 
@@ -181,6 +182,8 @@ public:
     QAVFrame sync(double speed = 1.0, double master = -1)
     {
         QMutexLocker locker(&m_mutex);
+        if (m_eof)
+            return {};
         auto frame = m_frame;
         if (!frame) {
             locker.unlock();
@@ -214,6 +217,24 @@ public:
         m_consumerWaiter.wakeAll();
     }
 
+    void finish()
+    {
+        QMutexLocker locker(&m_mutex);
+        m_eof = true;
+    }
+
+    void start()
+    {
+        QMutexLocker locker(&m_mutex);
+        m_eof = false;
+    }
+
+    bool finished() const
+    {
+        QMutexLocker locker(&m_mutex);
+        return m_eof;
+    }
+
 private:
     QList<QAVPacket> m_packets;
     mutable QMutex m_mutex;
@@ -221,6 +242,7 @@ private:
     QWaitCondition m_producerWaiter;
     bool m_abort = false;
     bool m_waitingForPackets = true;
+    bool m_eof = false;
 
     int m_bytes = 0;
     int m_duration = 0;
