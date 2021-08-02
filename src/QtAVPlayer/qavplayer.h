@@ -36,10 +36,6 @@ public:
     enum MediaStatus
     {
         NoMedia,
-        LoadingMedia,
-        PausingMedia,
-        SeekingMedia,
-        StoppingMedia,
         LoadedMedia,
         EndOfMedia,
         InvalidMedia
@@ -88,8 +84,10 @@ Q_SIGNALS:
     void seekableChanged(bool seekable);
     void speedChanged(qreal rate);
     void videoFrameRateChanged(double rate);
-    void seeked(qint64 pos);
+    void played(qint64 pos);
     void paused(qint64 pos);
+    void stopped(qint64 pos);
+    void seeked(qint64 pos);
 
     void videoFrame(const QAVVideoFrame &frame);
     void audioFrame(const QAVAudioFrame &frame);
