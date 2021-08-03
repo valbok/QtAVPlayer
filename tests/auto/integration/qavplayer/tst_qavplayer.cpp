@@ -155,7 +155,7 @@ void tst_QAVPlayer::playAudio()
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QCOMPARE(spyState.count(), 0);
-    QCOMPARE(spyMediaStatus.count(), 2); // NoMedia -> Loading -> Loaded
+    QCOMPARE(spyMediaStatus.count(), 1); // NoMedia -> Loaded
     QCOMPARE(spyDuration.count(), 1);
     QCOMPARE(p.duration(), 999);
     QCOMPARE(p.position(), 0);
@@ -165,12 +165,15 @@ void tst_QAVPlayer::playAudio()
     QVERIFY(!p.hasVideo());
     QVERIFY(p.isSeekable());
 
+    spyState.clear();
+    spyMediaStatus.clear();
+
     p.play();
 
     QCOMPARE(p.state(), QAVPlayer::PlayingState);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(spyState.count(), 1); // Stopped -> Playing
-    QCOMPARE(spyMediaStatus.count(), 2);
+    QCOMPARE(spyMediaStatus.count(), 0);
 
     QTRY_VERIFY(p.position() != 0);
 
@@ -187,7 +190,7 @@ void tst_QAVPlayer::playAudio()
     QCOMPARE(p.state(), QAVPlayer::PlayingState);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(spyState.count(), 1); // Stopped -> Playing
-    QCOMPARE(spyMediaStatus.count(), 2); // EndOfMedia -> SeekingMedia -> LoadedMedia
+    QCOMPARE(spyMediaStatus.count(), 1); // EndOfMedia -> Loaded
     QCOMPARE(spyDuration.count(), 0);
     QCOMPARE(p.duration(), 999);
     QCOMPARE(p.error(), QAVPlayer::NoError);
@@ -212,18 +215,16 @@ void tst_QAVPlayer::playAudio()
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
-    QCOMPARE(p.state(), QAVPlayer::StoppedState);
+    QTRY_COMPARE(p.state(), QAVPlayer::StoppedState);
 }
 
 void tst_QAVPlayer::playAudioOutput()
 {
     QAVPlayer p;
-    QSignalSpy spyState(&p, &QAVPlayer::stateChanged);
-    QSignalSpy spyMediaStatus(&p, &QAVPlayer::mediaStatusChanged);
-    QSignalSpy spyDuration(&p, &QAVPlayer::durationChanged);
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+
     QAVAudioFrame frame;
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { frame = f; });
     p.play();
@@ -232,7 +233,7 @@ void tst_QAVPlayer::playAudioOutput()
     QCOMPARE(frame.format().sampleFormat(), QAVAudioFormat::Int32);
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
-    QCOMPARE(p.state(), QAVPlayer::StoppedState);
+    QTRY_COMPARE(p.state(), QAVPlayer::StoppedState);
     QCOMPARE(p.position(), p.duration());
 }
 
@@ -245,12 +246,11 @@ void tst_QAVPlayer::pauseAudio()
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
-    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadingMedia);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QCOMPARE(spyPaused.count(), 0);
 
     p.play();
-    QCOMPARE(p.state(), QAVPlayer::PlayingState);
+    QTRY_COMPARE(p.state(), QAVPlayer::PlayingState);
 
     QTest::qWait(50);
     QCOMPARE(spyPaused.count(), 0);
@@ -260,13 +260,13 @@ void tst_QAVPlayer::pauseAudio()
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(p.state(), QAVPlayer::PausedState);
     QCOMPARE(spyState.count(), 2); // Stopped -> Playing -> Paused
-    QCOMPARE(spyMediaStatus.count(), 4); // NoMedia -> Loading -> Loaded -> Pausing -> Loaded
+    QCOMPARE(spyMediaStatus.count(), 1); // NoMedia -> Loaded
     QTRY_COMPARE(spyPaused.count(), 1);
 
     p.play();
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
-    QCOMPARE(p.state(), QAVPlayer::StoppedState);
+    QTRY_COMPARE(p.state(), QAVPlayer::StoppedState);
     QCOMPARE(spyPaused.count(), 1);
 }
 
@@ -278,19 +278,19 @@ void tst_QAVPlayer::stopAudio()
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
     p.play();
 
-    QCOMPARE(p.state(), QAVPlayer::PlayingState);
+    QTRY_COMPARE(p.state(), QAVPlayer::PlayingState);
     QTRY_VERIFY(p.position() != 0);
 
     p.stop();
 
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QVERIFY(p.position() != 0);
     QVERIFY(p.duration() != 0);
 
     p.play();
 
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QTRY_COMPARE(p.state(), QAVPlayer::StoppedState);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
 }
@@ -304,30 +304,30 @@ void tst_QAVPlayer::seekAudio()
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
 
     p.seek(500);
-    QCOMPARE(p.position(), 500);
-    p.play();
+    QTRY_COMPARE(p.position(), 500);
 
+    p.play();
     QCOMPARE(p.state(), QAVPlayer::PlayingState);
     QVERIFY(p.position() >= 500);
     QTRY_COMPARE(p.state(), QAVPlayer::StoppedState);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
     QCOMPARE(p.position(), p.duration());
 
-
     p.seek(100);
-    QVERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(p.position(), 100);
 
     p.play();
-
     QCOMPARE(p.state(), QAVPlayer::PlayingState);
     QTRY_COMPARE(p.position(), p.duration());
-    QCOMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+    QTRY_COMPARE(p.state(), QAVPlayer::StoppedState);
 
     p.seek(100000);
     QCOMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
-    p.play();
+    QCOMPARE(p.state(), QAVPlayer::StoppedState);
 
+    p.play();
     QCOMPARE(p.state(), QAVPlayer::PlayingState);
     QTRY_COMPARE(p.state(), QAVPlayer::StoppedState);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
@@ -335,17 +335,16 @@ void tst_QAVPlayer::seekAudio()
 
     p.seek(200);
     p.play();
-    QVERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QTRY_VERIFY(p.position() > 200);
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
 
     p.seek(100);
-    QVERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QTRY_VERIFY(p.position() < 200);
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
 
     p.seek(p.duration());
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+    QTRY_COMPARE(p.state(), QAVPlayer::StoppedState);
     QCOMPARE(spyPaused.count(), 0);
 }
 
@@ -358,8 +357,9 @@ void tst_QAVPlayer::speedAudio()
 
     p.setSpeed(0.5);
     p.play();
-    QCOMPARE(p.state(), QAVPlayer::PlayingState);
+    QTRY_COMPARE(p.state(), QAVPlayer::PlayingState);
     QCOMPARE(p.speed(), 0.5);
+    QTest::qWait(50);
     p.setSpeed(2.0);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
 }
@@ -391,7 +391,7 @@ void tst_QAVPlayer::playVideo()
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QCOMPARE(spyState.count(), 0);
-    QCOMPARE(spyMediaStatus.count(), 2); // NoMedia -> Loading -> Loaded
+    QCOMPARE(spyMediaStatus.count(), 1); // NoMedia -> Loaded
     QCOMPARE(spyDuration.count(), 1);
     QCOMPARE(spyPaused.count(), 0);
     QCOMPARE(spyVideoFrameRateChanged.count(), 1);
@@ -405,9 +405,8 @@ void tst_QAVPlayer::playVideo()
     QCOMPARE(p.position(), 0);
 
     p.play();
-
     QCOMPARE(p.state(), QAVPlayer::PlayingState);
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(spyState.count(), 1); // Stopped -> Playing
     QCOMPARE(spyPaused.count(), 0);
     QCOMPARE(spyVideoFrameRateChanged.count(), 1);
@@ -457,7 +456,6 @@ void tst_QAVPlayer::seekVideo()
 
     p.seek(14500);
     p.play();
-
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
     QTRY_VERIFY(frame == false);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
@@ -477,13 +475,12 @@ void tst_QAVPlayer::seekVideo()
     spySeeked.clear();
 
     p.play();
-
     QCOMPARE(p.state(), QAVPlayer::PlayingState);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QTRY_VERIFY(frame == true);
     QVERIFY(framesCount > 0);
     QCOMPARE(spyState.count(), 1); // Stopped -> Playing
-    QTRY_COMPARE(spyMediaStatus.count(), 2); // EndOfMedia -> SeekingMedia -> LoadedMedia
+    QTRY_COMPARE(spyMediaStatus.count(), 1); // EndOfMedia -> LoadedMedia
     QCOMPARE(spyDuration.count(), 0);
     QTRY_COMPARE(spySeeked.count(), 1);
     QTRY_VERIFY(seekPosition < 80); // Playing from beginning
@@ -499,13 +496,12 @@ void tst_QAVPlayer::seekVideo()
     framesCount = 0;
 
     p.stop();
-
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QTRY_VERIFY(frame == false);
     QVERIFY(p.position() != p.duration());
     QCOMPARE(spyPaused.count(), 0);
-    QCOMPARE(spyMediaStatus.count(), 2); // Loaded -> Stopping -> Loaded
+    QCOMPARE(spyMediaStatus.count(), 0);
 
     spyState.clear();
     spyMediaStatus.clear();
@@ -514,13 +510,12 @@ void tst_QAVPlayer::seekVideo()
     framesCount = 0;
 
     p.setSource({});
-
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QCOMPARE(p.mediaStatus(), QAVPlayer::NoMedia);
     QCOMPARE(p.duration(), 0);
     QCOMPARE(p.position(), 0);
     QCOMPARE(spyState.count(), 0);
-    QCOMPARE(spyMediaStatus.count(), 1); // EndOfMedia -> NoMedia
+    QCOMPARE(spyMediaStatus.count(), 1); // Loaded -> NoMedia
     QCOMPARE(spyDuration.count(), 1);
     QCOMPARE(spySeeked.count(), 0);
     QCOMPARE(spyPaused.count(), 0);
@@ -533,9 +528,8 @@ void tst_QAVPlayer::seekVideo()
 
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
     p.play();
-
-    QCOMPARE(p.state(), QAVPlayer::PlayingState);
-    QTRY_COMPARE(spyMediaStatus.count(), 2); // NoMedia -> Loading -> Loaded
+    QTRY_COMPARE(p.state(), QAVPlayer::PlayingState);
+    QTRY_COMPARE(spyMediaStatus.count(), 1); // NoMedia -> Loaded
     QCOMPARE(spyState.count(), 1); // Stopped -> Playing
     QCOMPARE(spyDuration.count(), 1);
     QCOMPARE(spySeeked.count(), 0);
@@ -545,12 +539,12 @@ void tst_QAVPlayer::seekVideo()
     QVERIFY(framesCount > 0);
 
     p.seek(14500);
-    QVERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QCOMPARE(spySeeked.count(), 1);
     QVERIFY(seekPosition >= 0);
-    QVERIFY(qAbs(seekPosition - 14500) < 500);
+    QTRY_VERIFY(qAbs(seekPosition - 14500) < 500);
     seekPosition = -1;
     QCOMPARE(spyPaused.count(), 0);
     QCOMPARE(pausePosition, -1);
@@ -564,6 +558,7 @@ void tst_QAVPlayer::seekVideo()
 
     framesCount = 0;
     QTest::qWait(10);
+
     p.stop();
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QCOMPARE(spyPaused.count(), 0);
@@ -575,10 +570,9 @@ void tst_QAVPlayer::seekVideo()
     seekPosition = -1;
 
     p.seek(0);
-    QVERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(p.position(), 0);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QTRY_COMPARE(spySeeked.count(), 1);
     QTRY_VERIFY(seekPosition >= 0);
     QVERIFY(seekPosition < 10);
@@ -594,7 +588,7 @@ void tst_QAVPlayer::seekVideo()
     QTest::qWait(50);
     QCOMPARE(p.position(), pos);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(spySeeked.count(), 1);
     QCOMPARE(spyPaused.count(), 0);
     QCOMPARE(pausePosition, -1);
@@ -602,27 +596,26 @@ void tst_QAVPlayer::seekVideo()
     spySeeked.clear();
 
     p.seek(5000);
-    QVERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     p.play();
 
     QTRY_VERIFY_WITH_TIMEOUT(p.position() > 5000, 10000);
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(spySeeked.count(), 1);
     QTRY_VERIFY(seekPosition >= 0);
     QVERIFY(qAbs(seekPosition - 5000) < 500);
     seekPosition = -1;
 
     p.seek(8000);
-    QVERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QTRY_VERIFY_WITH_TIMEOUT(p.position() > 8000, 10000);
-    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia || p.mediaStatus() == QAVPlayer::EndOfMedia);
     QCOMPARE(spySeeked.count(), 2);
     QTRY_VERIFY(seekPosition >= 0);
     QVERIFY(qAbs(seekPosition - 8000) < 500);
     seekPosition = -1;
 
     p.seek(2000);
-    QVERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(p.position(), 2000);
     QTRY_COMPARE(spySeeked.count(), 3);
     QTRY_VERIFY(seekPosition >= 0);
@@ -661,7 +654,7 @@ void tst_QAVPlayer::seekVideo()
     QCOMPARE(spyPaused.count(), 0);
 
     p.play();
-    QVERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 10000);
     QCOMPARE(spySeeked.count(), 4);
     QCOMPARE(seekPosition, -1);
@@ -676,10 +669,14 @@ void tst_QAVPlayer::speedVideo()
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
 
+    QAVVideoFrame frame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame](const QAVVideoFrame &f) { frame = f; });
+
     p.setSpeed(5);
     p.play();
 
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 10000);
+    QTRY_VERIFY(!frame);
 
     p.setSpeed(0.5);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
@@ -688,9 +685,11 @@ void tst_QAVPlayer::speedVideo()
     p.play();
 
     QTest::qWait(100);
+    QTRY_VERIFY(frame);
     p.setSpeed(5);
     p.pause();
     QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QVERIFY(frame);
 
     p.play();
 }
@@ -769,16 +768,15 @@ void tst_QAVPlayer::pauseSeekVideo()
 
     p.seek(1);
     QCOMPARE(p.state(), QAVPlayer::PausedState);
-    QVERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QTRY_VERIFY(!frame.size().isEmpty());
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(pausePosition, -1);
     QVERIFY(framesCount > 0);
     count = framesCount;
     QTest::qWait(100);
     QVERIFY(framesCount - count < 2);
     QVERIFY(seekPosition >= 0);
-    QVERIFY(seekPosition < 150);
+    QVERIFY(seekPosition < 220);
     seekPosition = -1;
 
     frame = QAVVideoFrame();
@@ -794,10 +792,9 @@ void tst_QAVPlayer::pauseSeekVideo()
     framesCount = 0;
 
     p.seek(1);
-    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QTRY_VERIFY(!frame.size().isEmpty());
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(pausePosition, -1);
     QVERIFY(framesCount > 0);
     count = framesCount;
@@ -828,7 +825,7 @@ void tst_QAVPlayer::pauseSeekVideo()
     p.play();
     QCOMPARE(p.state(), QAVPlayer::PlayingState);
     QTRY_VERIFY(!frame.size().isEmpty());
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QVERIFY(framesCount > 0);
     count = framesCount;
     QTest::qWait(100);
@@ -839,16 +836,15 @@ void tst_QAVPlayer::pauseSeekVideo()
     framesCount = 0;
 
     p.seek(1);
-    QVERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QVERIFY(frame.size().isEmpty());
     QTRY_VERIFY(!frame.size().isEmpty());
     QCOMPARE(p.state(), QAVPlayer::PlayingState);
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QVERIFY(framesCount > 0);
     count = framesCount;
     QTest::qWait(100);
     QVERIFY(count != framesCount);
-    QVERIFY(seekPosition >= 0);
+    QTRY_VERIFY(seekPosition >= 0);
     QVERIFY(qAbs(seekPosition - 1) < 100);
     seekPosition = -1;
     QCOMPARE(pausePosition, -1);
@@ -870,14 +866,13 @@ void tst_QAVPlayer::pauseSeekVideo()
     framesCount = 0;
 
     p.seek(1);
-    QVERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QTRY_VERIFY(!frame.size().isEmpty());
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QVERIFY(framesCount > 0);
     count = framesCount;
     QTest::qWait(100);
     QVERIFY(framesCount - count < 2);
-    QVERIFY(seekPosition >= 0);
+    QTRY_VERIFY(seekPosition >= 0);
     QVERIFY(qAbs(seekPosition - 1) < 100);
     seekPosition = -1;
     QCOMPARE(pausePosition, -1);
@@ -888,7 +883,7 @@ void tst_QAVPlayer::pauseSeekVideo()
     p.pause();
     QVERIFY(frame.size().isEmpty());
     QTRY_VERIFY(!frame.size().isEmpty());
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QVERIFY(framesCount > 0);
     count = framesCount;
     QTRY_COMPARE(pausePosition, p.position());
@@ -903,14 +898,13 @@ void tst_QAVPlayer::pauseSeekVideo()
 
     p.seek(1);
     QCOMPARE(pausePosition, -1);
-    QVERIFY(p.mediaStatus() == QAVPlayer::SeekingMedia || p.mediaStatus() == QAVPlayer::LoadedMedia);
     QTRY_VERIFY(!frame.size().isEmpty());
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QVERIFY(framesCount > 0);
     count = framesCount;
     QTest::qWait(100);
     QVERIFY(framesCount - count < 2);
-    QVERIFY(seekPosition >= 0);
+    QTRY_VERIFY(seekPosition >= 0);
     QVERIFY(qAbs(seekPosition - 1) < 100);
     seekPosition = -1;
     QCOMPARE(pausePosition, -1);

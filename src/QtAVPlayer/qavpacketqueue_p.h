@@ -107,9 +107,10 @@ public:
         m_duration += packet.duration();
         m_consumerWaiter.wakeAll();
         m_abort = false;
+        m_eof = false;
     }
 
-    void waitForFinished()
+    void waitForEmpty()
     {
         QMutexLocker locker(&m_mutex);
         if (!m_abort && !m_waitingForPackets)
@@ -127,10 +128,8 @@ public:
                 m_waitingForPackets = false;
             }
         }
-        if (m_packets.isEmpty()) {
-            m_producerWaiter.wakeAll();
+        if (m_packets.isEmpty())
             return {};
-        }
 
         auto packet = m_packets.takeFirst();
         m_bytes -= packet.bytes() + sizeof(packet);
@@ -182,8 +181,6 @@ public:
     QAVFrame sync(double speed = 1.0, double master = -1)
     {
         QMutexLocker locker(&m_mutex);
-        if (m_eof)
-            return {};
         auto frame = m_frame;
         if (!frame) {
             locker.unlock();
