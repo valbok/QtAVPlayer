@@ -351,11 +351,12 @@ void QAVPlayerPrivate::doDemux()
             if (demuxer.eof() && videoQueue.isEmpty() && audioQueue.isEmpty() && !videoQueue.finished() && !audioQueue.finished()) {
                 if (q_ptr->hasVideo())
                     videoQueue.finish();
-                audioQueue.finish();
+                if (q_ptr->hasAudio())
+                    audioQueue.finish();
                 dispatch([this] {
                     qCDebug(lcAVPlayer) << "EndOfMedia";
-                    q_ptr->stop();
                     setMediaStatus(QAVPlayer::EndOfMedia);
+                    q_ptr->stop();
                 });
             }
 
@@ -527,6 +528,10 @@ void QAVPlayer::pause()
     qCDebug(lcAVPlayer) << __FUNCTION__;
     auto status = mediaStatus();
     if (status == QAVPlayer::LoadedMedia || status == QAVPlayer::EndOfMedia) {
+        if (status == QAVPlayer::EndOfMedia) {
+            qCDebug(lcAVPlayer) << "Pausing from beginning";
+            seek(0);
+        }
         if (d->setState(QAVPlayer::PausedState)) {
             d->wait(false);
             d->event([this, d](bool tick) {
