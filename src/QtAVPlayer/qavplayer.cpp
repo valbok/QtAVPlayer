@@ -42,7 +42,6 @@ public:
     void setError(QAVPlayer::Error err, const QString &str);
     void setDuration(double d);
     bool isSeeking() const;
-    void updatePosition(double pts);
     void setVideoFrameRate(double v);
 
     void terminate();
@@ -74,7 +73,6 @@ public:
     QString errorString;
 
     double duration = 0;
-    double position = 0;
     double pendingPosition = -1;
     mutable QMutex positionMutex;
 
@@ -221,7 +219,6 @@ void QAVPlayerPrivate::terminate()
     demuxerFuture.waitForFinished();
     videoPlayFuture.waitForFinished();
     audioPlayFuture.waitForFinished();
-    position = 0;
     pendingPosition = -1;
 }
 
@@ -379,7 +376,6 @@ void QAVPlayerPrivate::doPlayVideo()
         doWait();
         QAVVideoFrame frame = videoQueue.sync(q_ptr->speed(), audioQueue.pts());
         if (frame) {
-            updatePosition(frame.pts());
             emit q_ptr->videoFrame(frame);
             videoQueue.pop();
         }
@@ -404,20 +400,11 @@ void QAVPlayerPrivate::doPlayAudio()
             audioQueue.pop();
         }
 
-        if (!hasVideo) {
-            if (frame)
-                updatePosition(frame.pts());
+        if (!hasVideo)
             processEvents(frame);
-        }
     }
 
     audioQueue.clear();
-}
-
-void QAVPlayerPrivate::updatePosition(double pts)
-{
-    QMutexLocker locker(&positionMutex);
-    position = pts;
 }
 
 QAVPlayer::QAVPlayer(QObject *parent)
@@ -632,7 +619,8 @@ qint64 QAVPlayer::position() const
     if (d->pendingPosition >= 0)
         return d->pendingPosition * 1000;
 
-    return d->position * 1000;
+    double pts = hasVideo() ? d->videoQueue.pts() : d->audioQueue.pts();
+    return pts * 1000;
 }
 
 void QAVPlayer::setSpeed(qreal r)
