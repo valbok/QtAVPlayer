@@ -228,15 +228,13 @@ void QAVPlayerPrivate::processEvents(bool tick)
     if (events.isEmpty() || isSeeking())
         return;
 
-    auto copy = events;
-    events.clear();
-    locker.unlock();
-    for (auto &event : copy) {
-        if (!event(tick)) {
-            locker.relock();
-            events.append(event);
-            locker.unlock();
-        }
+    while (!events.isEmpty()) {
+        auto event = events.first();
+        locker.unlock();
+        if (!event(tick))
+            break;
+        locker.relock();
+        events.removeFirst();
     }
 }
 
@@ -588,7 +586,7 @@ void QAVPlayer::seek(qint64 pos)
         if (status == QAVPlayer::EndOfMedia)
             d->setMediaStatus(QAVPlayer::LoadedMedia);
         d->event([this, d](bool tick) {
-            if (!tick)
+            if (!tick || d->isSeeking())
                 return false;
             qCDebug(lcAVPlayer) << "Seeked to pos:" << position();
             emit seeked(position());
