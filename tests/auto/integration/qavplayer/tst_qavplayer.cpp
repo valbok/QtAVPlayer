@@ -919,6 +919,8 @@ void tst_QAVPlayer::videoFiles_data()
     QTest::addColumn<bool>("hasVideo");
     QTest::addColumn<bool>("hasAudio");
 
+    QTest::newRow("test.wav") << QString("../testdata/test.wav") << 999 << false << true;
+    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4") << 15019 << true << true;
     QTest::newRow("shots0000.dv") << QString("../testdata/shots0000.dv") << 40 << true << false;
     QTest::newRow("dv_dsf_1_stype_1.dv") << QString("../testdata/dv_dsf_1_stype_1.dv") << 600 << true << true;
     QTest::newRow("dv25_ntsc_411_169_2ch_48k_bars_sine.dv") << QString("../testdata/dv25_ntsc_411_169_2ch_48k_bars_sine.dv") << 1968 << true << true;
@@ -959,6 +961,7 @@ void tst_QAVPlayer::videoFiles()
         QTRY_COMPARE(vf, 1);
 
     vf = 0;
+    af = 0;
 
     p.play();
     if (hasVideo) {
@@ -971,13 +974,14 @@ void tst_QAVPlayer::videoFiles()
         QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || af > 0);
     }
 
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 18000);
     if (hasVideo)
         QTRY_VERIFY(!videoFrame);
 
     vf = 0;
     af = 0;
 
+    p.pause();
     p.play();
     if (hasVideo) {
         QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
@@ -994,7 +998,26 @@ void tst_QAVPlayer::videoFiles()
     if (hasVideo)
         QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
 
+    p.seek(duration * 0.8);
+    if (hasVideo)
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
+
+    videoFrame = QAVVideoFrame();
+    p.play();
+    if (hasVideo)
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
+
+    p.play();
     p.stop();
+    if (hasVideo)
+        QTRY_VERIFY(!videoFrame);
+
+    p.pause();
+    p.stop();
+    p.pause();
+    p.play();
+    p.seek(duration * 0.9);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 18000);
     if (hasVideo)
         QTRY_VERIFY(!videoFrame);
 }
