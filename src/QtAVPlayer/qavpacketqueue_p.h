@@ -96,7 +96,7 @@ public:
     bool isEmpty() const
     {
         QMutexLocker locker(&m_mutex);
-        return m_packets.isEmpty();
+        return m_packets.isEmpty() && !m_frame;
     }
 
     void enqueue(const QAVPacket &packet)
@@ -107,7 +107,6 @@ public:
         m_duration += packet.duration();
         m_consumerWaiter.wakeAll();
         m_abort = false;
-        m_eof = false;
     }
 
     void waitForEmpty()
@@ -134,7 +133,6 @@ public:
         auto packet = m_packets.takeFirst();
         m_bytes -= packet.bytes() + sizeof(packet);
         m_duration -= packet.duration();
-        m_eof = false;
         return packet;
     }
 
@@ -214,24 +212,6 @@ public:
         m_consumerWaiter.wakeAll();
     }
 
-    void finish()
-    {
-        QMutexLocker locker(&m_mutex);
-        m_eof = true;
-    }
-
-    void start()
-    {
-        QMutexLocker locker(&m_mutex);
-        m_eof = false;
-    }
-
-    bool finished() const
-    {
-        QMutexLocker locker(&m_mutex);
-        return m_eof;
-    }
-
 private:
     QList<QAVPacket> m_packets;
     mutable QMutex m_mutex;
@@ -239,7 +219,6 @@ private:
     QWaitCondition m_producerWaiter;
     bool m_abort = false;
     bool m_waitingForPackets = true;
-    bool m_eof = false;
 
     int m_bytes = 0;
     int m_duration = 0;
