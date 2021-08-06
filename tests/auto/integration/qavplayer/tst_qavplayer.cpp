@@ -955,7 +955,7 @@ void tst_QAVPlayer::files()
         QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || vf == 1);
     }
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia || p.mediaStatus() == QAVPlayer::EndOfMedia);
-    QCOMPARE(p.duration(), duration);
+    QTRY_COMPARE(p.duration(), duration);
     QCOMPARE(p.hasVideo(), hasVideo);
     QCOMPARE(p.hasAudio(), hasAudio);
 
