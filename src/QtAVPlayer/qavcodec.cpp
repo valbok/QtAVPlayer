@@ -63,7 +63,6 @@ bool QAVCodec::open(AVStream *stream)
     }
 
     d->avctx->codec_id = d->codec->id;
-    d->avctx->lowres = d->codec->max_lowres;
 
     av_opt_set_int(d->avctx, "refcounted_frames", true, 0);
     av_opt_set_int(d->avctx, "threads", 1, 0);
