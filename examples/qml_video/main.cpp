@@ -17,10 +17,6 @@
 #include <QGuiApplication>
 #include <QDebug>
 
-extern "C" {
-#include <libavformat/avformat.h>
-}
-
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
 class Source : public QObject
 {
@@ -50,7 +46,7 @@ public:
 
     MapMode mapMode() const override { return m_mode; }
     int map(MapMode mode, int *numBytes, int bytesPerLine[4], uchar *data[4]) override
-    {        
+    {
         if (m_mode != NotMapped || mode == NotMapped)
             return 0;
 
@@ -68,7 +64,7 @@ public:
             data[i] = mapData.data[i];
         }
 
-        return i;        
+        return i;
     }
     void unmap() override { m_mode = NotMapped; }
 
@@ -100,11 +96,23 @@ int main(int argc, char *argv[])
     auto videoSurface = vo->videoSurface();
 #endif
 
-    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&videoSurface](const QAVVideoFrame &frame) {
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&videoSurface](QAVVideoFrame frame) {
         QVideoFrame::PixelFormat pf = QVideoFrame::Format_Invalid;
         switch (frame.frame()->format)
         {
         case AV_PIX_FMT_YUV420P:
+            pf = QVideoFrame::Format_YUV420P;
+            break;
+        case AV_PIX_FMT_YUV422P:
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+            frame = frame.convertTo(AV_PIX_FMT_YUV420P);
+            pf = QVideoFrame::Format_YUV420P;
+#else
+            pf = QVideoFrame::Format_YUV422P;
+#endif
+            break;
+        case AV_PIX_FMT_YUV411P:
+            frame = frame.convertTo(AV_PIX_FMT_YUV420P);
             pf = QVideoFrame::Format_YUV420P;
             break;
         case AV_PIX_FMT_NV12:
@@ -115,7 +123,7 @@ int main(int argc, char *argv[])
             break;
         default:
             if (frame)
-                qDebug() << "format not supported: " << frame.frame()->format;
+                qDebug() << "format not supported: " << frame.formatName();
         }
 
         QVideoFrame videoFrame(new PlanarVideoBuffer(frame), frame.size(), pf);
@@ -126,7 +134,8 @@ int main(int argc, char *argv[])
     });
 
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); });
-    p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
+    QString file = argc > 1 ? QLatin1String(argv[1]) : QLatin1String("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
+    p.setSource(QUrl(file));
     p.play();
 
     QObject::connect(&p, &QAVPlayer::stateChanged, [&](auto s) { qDebug() << "stateChanged" << s << p.mediaStatus(); });

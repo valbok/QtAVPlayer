@@ -14,8 +14,8 @@
             },
             "sources": [
                 { "type": "pkgConfig",
-                  "args": "libavcodec libavformat libavutil libswresample" },
-                { "libs": "-lavcodec -lavformat -lswscale -lavutil -lswresample" },
+                  "args": "libavcodec libavformat libavutil libswresample libswscale" },
+                { "libs": "-lavcodec -lavformat -lswscale -lavutil -lswresample -lswscale" },
                 { "libs": "", "condition": "config.android" }
             ]
         },

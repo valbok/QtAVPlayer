@@ -28,6 +28,7 @@ public:
     QAVVideoFrame(QObject *parent = nullptr);
     QAVVideoFrame(const QAVFrame &other, QObject *parent = nullptr);
     QAVVideoFrame(const QAVVideoFrame &other, QObject *parent = nullptr);
+    QAVVideoFrame(const QSize &size, AVPixelFormat fmt, QObject *parent = nullptr);
 
     QAVVideoFrame &operator=(const QAVFrame &other);
     QAVVideoFrame &operator=(const QAVVideoFrame &other);
@@ -45,11 +46,15 @@ public:
     HandleType handleType() const;
     QVariant handle() const;
 
+    AVPixelFormat format() const;
+    QString formatName() const;
+    QAVVideoFrame convertTo(AVPixelFormat fmt) const;
 protected:
     Q_DECLARE_PRIVATE(QAVVideoFrame)
 };
 
 Q_DECLARE_METATYPE(QAVVideoFrame)
+Q_DECLARE_METATYPE(AVPixelFormat)
 
 QT_END_NAMESPACE
 
