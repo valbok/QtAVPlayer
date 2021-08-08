@@ -40,6 +40,8 @@ private slots:
     void files();
     void convert_data();
     void convert();
+    void map_data();
+    void map();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -1060,6 +1062,40 @@ void tst_QAVPlayer::convert()
     QVERIFY(converted);
     QCOMPARE(converted.format(), to);
     QCOMPARE(videoFrame.format(), from);
+}
+
+void tst_QAVPlayer::map_data()
+{
+    QTest::addColumn<QString>("path");
+
+    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4");
+    QTest::newRow("dv_dsf_1_stype_1.dv") << QString("../testdata/dv_dsf_1_stype_1.dv");
+    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv");
+    QTest::newRow("small.mp4") << QString("../testdata/small.mp4");
+    QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov");
+}
+
+void tst_QAVPlayer::map()
+{
+    QFETCH(QString, path);
+
+    QAVPlayer p;
+
+    QFileInfo file(path);
+    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+
+    QAVVideoFrame frame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame](const QAVVideoFrame &f) { frame = f; });
+
+    p.play();
+    QTRY_VERIFY(frame);
+
+    auto mapData = frame.map();
+    QVERIFY(mapData.size > 0);
+    QVERIFY(mapData.bytesPerLine[0] > 0);
+    QVERIFY(mapData.bytesPerLine[1] > 0);
+    QVERIFY(mapData.data[0] != nullptr);
+    QVERIFY(mapData.data[1] != nullptr);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
