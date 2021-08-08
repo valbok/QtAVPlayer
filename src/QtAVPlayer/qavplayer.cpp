@@ -245,8 +245,13 @@ void QAVPlayerPrivate::step(bool tick)
         if (!pendingMediaStatuses.isEmpty())
             pendingMediaStatuses.removeFirst();
     }
-    if (!pendingMediaStatuses.isEmpty())
+
+    if (pendingMediaStatuses.isEmpty()) {
+        videoQueue.wake(false);
+        audioQueue.wake(false);
+    } else {
         wait(false);
+    }
 }
 
 bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool tick)
@@ -332,8 +337,8 @@ void QAVPlayerPrivate::wait(bool v)
 
     if (!v)
         waitCond.wakeAll();
-    videoQueue.wakeAll();
-    audioQueue.wakeAll();
+    videoQueue.wake(true);
+    audioQueue.wake(true);
 }
 
 void QAVPlayerPrivate::doLoad(const QUrl &url)
