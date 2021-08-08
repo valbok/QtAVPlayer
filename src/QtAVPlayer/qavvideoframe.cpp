@@ -133,6 +133,11 @@ QAVVideoFrame QAVVideoFrame::convertTo(AVPixelFormat fmt) const
     auto ctx = sws_getContext(size().width(), size().height(), AVPixelFormat(frame()->format),
                               size().width(), size().height(), fmt,
                               SWS_BICUBIC, NULL, NULL, NULL);
+    if (ctx == nullptr) {
+        qWarning() << __FUNCTION__ << "Could not get sws context";
+        return QAVVideoFrame();
+    }
+
     int ret = sws_setColorspaceDetails(ctx, sws_getCoefficients(SWS_CS_ITU601),
                                        0, sws_getCoefficients(SWS_CS_ITU709), 0, 0, 1 << 16, 1 << 16);
     if (ret == -1) {
