@@ -30,6 +30,7 @@ enum PendingMediaStatus
     PlayingMedia,
     PausingMedia,
     StoppingMedia,
+    SteppingMedia,
     SeekingMedia,
     EndOfMedia
 };
@@ -46,8 +47,8 @@ public:
 
     void setMediaStatus(QAVPlayer::MediaStatus status);
     void setPendingMediaStatus(PendingMediaStatus status);
-    void step(bool tick);
-    bool doStep(PendingMediaStatus status, bool tick);
+    void step(bool hasFrame);
+    bool doStep(PendingMediaStatus status, bool hasFrame);
     bool setState(QAVPlayer::State s);
     void setSeekable(bool seekable);
     void setError(QAVPlayer::Error err, const QString &str);
@@ -233,13 +234,13 @@ void QAVPlayerPrivate::terminate()
     pendingPosition = -1;
 }
 
-void QAVPlayerPrivate::step(bool tick)
+void QAVPlayerPrivate::step(bool hasFrame)
 {
     QMutexLocker locker(&stateMutex);
     while (!pendingMediaStatuses.isEmpty()) {
         auto status = pendingMediaStatuses.first();
         locker.unlock();
-        if (!doStep(status, tick))
+        if (!doStep(status, hasFrame))
             break;
         locker.relock();
         if (!pendingMediaStatuses.isEmpty())
@@ -254,12 +255,13 @@ void QAVPlayerPrivate::step(bool tick)
     }
 }
 
-bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool tick)
+bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
 {
     bool result = false;
+    const bool valid = hasFrame && !isSeeking() && q_ptr->mediaStatus() != QAVPlayer::NoMedia;
     switch (status) {
         case PlayingMedia:
-            if (tick && !isSeeking() && q_ptr->mediaStatus() != QAVPlayer::NoMedia) {
+            if (valid) {
                 result = true;
                 qCDebug(lcAVPlayer) << "Played from pos:" << q_ptr->position();
                 emit q_ptr->played(q_ptr->position());
@@ -268,7 +270,7 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool tick)
             break;
 
         case PausingMedia:
-            if (tick && !isSeeking() && q_ptr->mediaStatus() != QAVPlayer::NoMedia) {
+            if (valid) {
                 result = true;
                 qCDebug(lcAVPlayer) << "Paused to pos:" << q_ptr->position();
                 emit q_ptr->paused(q_ptr->position());
@@ -277,7 +279,7 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool tick)
             break;
 
         case SeekingMedia:
-            if (tick && !isSeeking() && q_ptr->mediaStatus() != QAVPlayer::NoMedia) {
+            if (valid) {
                 result = true;
                 if (q_ptr->mediaStatus() == QAVPlayer::EndOfMedia)
                     setMediaStatus(QAVPlayer::LoadedMedia);
@@ -298,6 +300,16 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool tick)
                     qCDebug(lcAVPlayer) << "Flushing empty video frame";
                     emit q_ptr->videoFrame({});
                 }
+                wait(true);
+            }
+            break;
+
+        case SteppingMedia:
+            result = eof;
+            if (valid) {
+                result = true;
+                qCDebug(lcAVPlayer) << "Stepped to pos:" << q_ptr->position();
+                emit q_ptr->stepped(q_ptr->position());
                 wait(true);
             }
             break;
@@ -594,6 +606,19 @@ void QAVPlayer::stop()
     }
 }
 
+void QAVPlayer::stepForward()
+{
+    Q_D(QAVPlayer);
+    qCDebug(lcAVPlayer) << __FUNCTION__;
+    d->setState(QAVPlayer::PausedState);
+    if (d->eof) {
+        qCDebug(lcAVPlayer) << "Stepping from beginning";
+        seek(0);
+    }
+    d->setPendingMediaStatus(SteppingMedia);
+    d->wait(false);
+}
+
 bool QAVPlayer::isSeekable() const
 {
     return d_func()->seekable;
@@ -610,6 +635,7 @@ void QAVPlayer::seek(qint64 pos)
         QMutexLocker locker(&d->positionMutex);
         d->pendingPosition = pos / 1000.0;
     }
+
     d->setPendingMediaStatus(SeekingMedia);
     d->wait(false);
 }
@@ -720,6 +746,8 @@ QDebug operator<<(QDebug dbg, PendingMediaStatus status)
             return dbg << "PausingMedia";
         case StoppingMedia:
             return dbg << "StoppingMedia";
+        case SteppingMedia:
+            return dbg << "SteppingMedia";
         case SeekingMedia:
             return dbg << "SeekingMedia";
         case EndOfMedia:

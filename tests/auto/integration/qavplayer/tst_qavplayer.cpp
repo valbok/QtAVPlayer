@@ -46,6 +46,7 @@ private slots:
     void cast2QVideoFrame_data();
     void cast2QVideoFrame();
 #endif
+    void stepForward();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -1140,6 +1141,132 @@ void tst_QAVPlayer::cast2QVideoFrame()
     QVERIFY(q.bytesPerLine() > 0);
 }
 #endif
+
+void tst_QAVPlayer::stepForward()
+{
+    QAVPlayer p;
+
+    QFileInfo file(QLatin1String("../testdata/small.mp4"));
+
+    QAVVideoFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+    qint64 pausePosition = -1;
+    QObject::connect(&p, &QAVPlayer::paused, &p, [&](qint64 pos) { pausePosition = pos; });
+    qint64 stepPosition = -1;
+    QObject::connect(&p, &QAVPlayer::stepped, &p, [&](qint64 pos) { stepPosition = pos; });
+
+    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    QTest::qWait(200);
+    QCOMPARE(framesCount, 0);
+    QCOMPARE(p.state(), QAVPlayer::StoppedState);
+    QVERIFY(!frame);
+    QCOMPARE(pausePosition, -1);
+
+    p.pause();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTRY_VERIFY(frame);
+    QCOMPARE(framesCount, 1);
+
+    frame = QAVVideoFrame();
+    framesCount = 0;
+
+    p.pause();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QVERIFY(!frame);
+    QCOMPARE(framesCount, 0);
+    QTest::qWait(50);
+
+    p.pause();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QVERIFY(frame == false);
+    QCOMPARE(framesCount, 0);
+    QCOMPARE(stepPosition, -1);
+
+    qint64 prev = -1;
+
+    p.stepForward();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTRY_VERIFY(frame);
+    QCOMPARE(framesCount, 1);
+    QVERIFY(stepPosition > prev);
+
+    frame = QAVVideoFrame();
+    framesCount = 0;
+    prev = stepPosition;
+
+    p.stepForward();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTRY_VERIFY(frame);
+    QCOMPARE(framesCount, 1);
+    QVERIFY(stepPosition > prev);
+
+    frame = QAVVideoFrame();
+    framesCount = 0;
+    prev = stepPosition;
+
+    p.stepForward();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTRY_VERIFY(frame);
+    QCOMPARE(framesCount, 1);
+    QVERIFY(stepPosition > prev);
+
+    p.play();
+    QCOMPARE(p.state(), QAVPlayer::PlayingState);
+    QTest::qWait(50);
+
+    frame = QAVVideoFrame();
+    framesCount = 0;
+    prev = stepPosition;
+
+    p.stepForward();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTest::qWait(50);
+    QTRY_VERIFY(frame);
+    QTRY_VERIFY(stepPosition > prev);
+
+    frame = QAVVideoFrame();
+    framesCount = 0;
+    prev = stepPosition;
+
+    p.stepForward();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTRY_VERIFY(frame);
+    QCOMPARE(framesCount, 1);
+    QTRY_VERIFY(stepPosition > prev);
+
+    framesCount = 0;
+    stepPosition = -1;
+
+    p.stop();
+    QTRY_VERIFY(!frame);
+    QVERIFY(framesCount < 3);
+    QCOMPARE(stepPosition, -1);
+
+    frame = QAVVideoFrame();
+    framesCount = 0;
+    stepPosition = -1;
+
+    QTest::qWait(50);
+    p.stop();
+    QVERIFY(!frame);
+    QCOMPARE(framesCount, 0);
+    QCOMPARE(stepPosition, -1);
+
+    frame = QAVVideoFrame();
+    framesCount = 0;
+    prev = stepPosition;
+
+    p.stepForward();
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
+    QTRY_VERIFY(frame);
+    QCOMPARE(framesCount, 1);
+    QTRY_VERIFY(stepPosition > prev);
+
+    QObject::connect(&p, &QAVPlayer::stepped, &p, [&](qint64) { p.stepForward(); });
+    p.stepForward();
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 8000);
+}
 
 QTEST_MAIN(tst_QAVPlayer)
 #include "tst_qavplayer.moc"
