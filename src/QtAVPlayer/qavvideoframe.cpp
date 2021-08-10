@@ -11,6 +11,9 @@
 #include "qavvideocodec_p.h"
 #include "qavhwdevice_p.h"
 #include <QSize>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#include <QAbstractVideoSurface>
+#endif
 #include <QDebug>
 
 extern "C"
@@ -152,5 +155,80 @@ QAVVideoFrame QAVVideoFrame::convertTo(AVPixelFormat fmt) const
 
     return result;
 }
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+class PlanarVideoBuffer : public QAbstractPlanarVideoBuffer
+{
+public:
+    PlanarVideoBuffer(const QAVVideoFrame &frame, HandleType type = NoHandle)
+        : QAbstractPlanarVideoBuffer(type), m_frame(frame)
+    {
+    }
+
+    MapMode mapMode() const override { return m_mode; }
+    int map(MapMode mode, int *numBytes, int bytesPerLine[4], uchar *data[4]) override
+    {
+        if (m_mode != NotMapped || mode == NotMapped)
+            return 0;
+
+        auto mapData = m_frame.map();
+        m_mode = mode;
+        if (numBytes)
+            *numBytes = mapData.size;
+
+        int i = 0;
+        for (; i < 4; ++i) {
+            if (!mapData.bytesPerLine[i])
+                break;
+
+            bytesPerLine[i] = mapData.bytesPerLine[i];
+            data[i] = mapData.data[i];
+        }
+
+        return i;
+    }
+    void unmap() override { m_mode = NotMapped; }
+
+private:
+    QAVVideoFrame m_frame;
+    MapMode m_mode = NotMapped;
+};
+
+QAVVideoFrame::operator QVideoFrame() const
+{
+    QAVVideoFrame result = *this;
+    if (!result)
+        return QVideoFrame();
+
+    QVideoFrame::PixelFormat format = QVideoFrame::Format_Invalid;
+    switch (frame()->format) {
+        case AV_PIX_FMT_YUV420P:
+            format = QVideoFrame::Format_YUV420P;
+            break;
+        case AV_PIX_FMT_YUV422P:
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+            result = convertTo(AV_PIX_FMT_YUV420P);
+            format = QVideoFrame::Format_YUV420P;
+#else
+            format = QVideoFrame::Format_YUV422P;
+#endif
+            break;
+        case AV_PIX_FMT_YUV411P:
+            result = convertTo(AV_PIX_FMT_YUV420P);
+            format = QVideoFrame::Format_YUV420P;
+            break;
+        case AV_PIX_FMT_NV12:
+            format = QVideoFrame::Format_NV12;
+            break;
+        case AV_PIX_FMT_D3D11:
+            format = QVideoFrame::Format_NV12;
+            break;
+        default:
+            qDebug() << "Format not supported: " << result.formatName();
+    }
+
+    return QVideoFrame(new PlanarVideoBuffer(result), size(), format);
+}
+#endif
 
 QT_END_NAMESPACE

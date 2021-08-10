@@ -8,8 +8,6 @@
 #include <QtAVPlayer/qavplayer.h>
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QtAVPlayer/qavaudiooutput.h>
-
-#include <QVideoFrame>
 #include <QAbstractVideoSurface>
 #include <private/qdeclarativevideooutput_p.h>
 #include <QtQuick/QQuickView>
@@ -36,43 +34,6 @@ public:
 };
 #endif
 
-class PlanarVideoBuffer : public QAbstractPlanarVideoBuffer
-{
-public:
-    PlanarVideoBuffer(const QAVVideoFrame &frame, HandleType type = NoHandle)
-        : QAbstractPlanarVideoBuffer(type), m_frame(frame)
-    {
-    }
-
-    MapMode mapMode() const override { return m_mode; }
-    int map(MapMode mode, int *numBytes, int bytesPerLine[4], uchar *data[4]) override
-    {
-        if (m_mode != NotMapped || mode == NotMapped)
-            return 0;
-
-        auto mapData = m_frame.map();
-        m_mode = mode;
-        if (numBytes)
-            *numBytes = mapData.size;
-
-        int i = 0;
-        for (; i < 4; ++i) {
-            if (!mapData.bytesPerLine[i])
-                break;
-
-            bytesPerLine[i] = mapData.bytesPerLine[i];
-            data[i] = mapData.data[i];
-        }
-
-        return i;
-    }
-    void unmap() override { m_mode = NotMapped; }
-
-private:
-    QAVVideoFrame m_frame;
-    MapMode m_mode = NotMapped;
-};
-
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
@@ -96,37 +57,8 @@ int main(int argc, char *argv[])
     auto videoSurface = vo->videoSurface();
 #endif
 
-    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&videoSurface](QAVVideoFrame frame) {
-        QVideoFrame::PixelFormat pf = QVideoFrame::Format_Invalid;
-        switch (frame.frame()->format)
-        {
-        case AV_PIX_FMT_YUV420P:
-            pf = QVideoFrame::Format_YUV420P;
-            break;
-        case AV_PIX_FMT_YUV422P:
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-            frame = frame.convertTo(AV_PIX_FMT_YUV420P);
-            pf = QVideoFrame::Format_YUV420P;
-#else
-            pf = QVideoFrame::Format_YUV422P;
-#endif
-            break;
-        case AV_PIX_FMT_YUV411P:
-            frame = frame.convertTo(AV_PIX_FMT_YUV420P);
-            pf = QVideoFrame::Format_YUV420P;
-            break;
-        case AV_PIX_FMT_NV12:
-            pf = QVideoFrame::Format_NV12;
-            break;
-        case AV_PIX_FMT_D3D11:
-            pf = QVideoFrame::Format_NV12;
-            break;
-        default:
-            if (frame)
-                qDebug() << "format not supported: " << frame.formatName();
-        }
-
-        QVideoFrame videoFrame(new PlanarVideoBuffer(frame), frame.size(), pf);
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&videoSurface](const QAVVideoFrame &frame) {
+        QVideoFrame videoFrame = frame;
         if (!videoSurface->isActive())
             videoSurface->start({videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType()});
         if (videoSurface->isActive())

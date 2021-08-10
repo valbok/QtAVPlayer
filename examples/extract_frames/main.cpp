@@ -7,6 +7,7 @@
 
 #include <QtAVPlayer/qavplayer.h>
 #include <QtAVPlayer/qavvideoframe.h>
+#include <QtAVPlayer/qavaudioframe.h>
 #include <QGuiApplication>
 #include <QDebug>
 
@@ -15,8 +16,8 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     QAVPlayer p;
-    QObject::connect(&p, &QAVPlayer::audioFrame, [&](const QAVAudioFrame &frame) { qDebug() << "audioFrame" << frame; });
-    QObject::connect(&p, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) { qDebug() << "videoFrame" << frame; });
+    QObject::connect(&p, &QAVPlayer::audioFrame, [&](const QAVAudioFrame &frame) { qDebug() << "audioFrame" << bool(frame); });
+    QObject::connect(&p, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) { qDebug() << "videoFrame" << bool(frame); });
     p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
     p.play();
 
