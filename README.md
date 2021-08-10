@@ -11,7 +11,7 @@ Currently implemented software decoding everywhere and following hardware accele
 QT_AVPLAYER_NO_HWDEVICE can be used to force using software decoding.
 The video codec is negotiated automatically.
 
-QtAVPlayer decodes the audio and video streams and returns in `QAVPlayer::ao()` and `QAVPlayer::vo()`.
+QtAVPlayer decodes the audio and video streams and returns in `QAVPlayer::videoFrame()` and `QAVPlayer::audioFrame()`.
 Also the video frames can contain OpenGL, Direct3d, Vulkan or Metal textrures.
 
 At least Qt 5.12 is supported.
@@ -19,67 +19,17 @@ At least Qt 5.12 is supported.
 # Example:
 
     QAVPlayer p;
-    QObject::connect(&p, &QAVPlayer::audioFrame, [&](const QAVAudioFrame &frame) { qDebug() << "audioFrame" << frame; });
-    QObject::connect(&p, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) { qDebug() << "videoFrame" << frame; });
+    QObject::connect(&p, &QAVPlayer::audioFrame, [&](const QAVAudioFrame &frame) { qDebug() << "audioFrame" << bool(frame); });
+    QObject::connect(&p, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) { qDebug() << "videoFrame" << bool(frame); });
     p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
     p.play();
 
-To play audio `QAVAudioOutput` can be used:
-
+    // QAVAudioOutput can be used to play audio:
     QAVAudioOutput audioOutput;
     audioOutput.play(audioFrame);
 
-To render video QAbstractVideoSurface can be used:
-
-    class PlanarVideoBuffer : public QAbstractPlanarVideoBuffer
-    {
-    public:
-        PlanarVideoBuffer(const QAVVideoFrame &frame, HandleType type = NoHandle)
-            : QAbstractPlanarVideoBuffer(type), m_frame(frame)
-        {
-        }
-
-        MapMode mapMode() const override { return m_mode; }
-        int map(MapMode mode, int *numBytes, int bytesPerLine[4], uchar *data[4]) override
-        {        
-            if (m_mode != NotMapped || mode == NotMapped)
-                return 0;
-
-            auto mapData = m_frame.map();
-            m_mode = mode;
-            if (numBytes)
-                *numBytes = mapData.size;
-
-            int i = 0;
-            for (; i < 4; ++i) {
-                bytesPerLine[i] = mapData.bytesPerLine[i];
-                data[i] = mapData.data[i];
-            }
-
-            return i;        
-        }
-        void unmap() override { m_mode = NotMapped; }
-
-    private:
-        QAVVideoFrame m_frame;
-        MapMode m_mode = NotMapped;
-    };
-
     QObject::connect(&p, &QAVPlayer::videoFrame, [&videoSurface](const QAVVideoFrame &frame) {
-        QVideoFrame::PixelFormat pf = QVideoFrame::Format_Invalid;
-        switch (frame.frame()->format)
-        {
-        case AV_PIX_FMT_YUV420P:
-            pf = QVideoFrame::Format_YUV420P;
-            break;
-        case AV_PIX_FMT_NV12:
-            pf = QVideoFrame::Format_NV12;
-            break;
-        default:
-            break;
-        }
-
-        QVideoFrame videoFrame(new PlanarVideoBuffer(frame), frame.size(), pf);
+        QVideoFrame videoFrame = frame;
         if (!videoSurface->isActive())
             videoSurface->start({videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType()});
         if (videoSurface->isActive())
