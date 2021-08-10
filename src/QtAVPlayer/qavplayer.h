@@ -74,6 +74,7 @@ public Q_SLOTS:
     void stop();
     void seek(qint64 position);
     void setSpeed(qreal rate);
+    void stepForward();
 
 Q_SIGNALS:
     void sourceChanged(const QUrl &url);
@@ -87,6 +88,7 @@ Q_SIGNALS:
     void played(qint64 pos);
     void paused(qint64 pos);
     void stopped(qint64 pos);
+    void stepped(qint64 pos);
     void seeked(qint64 pos);
 
     void videoFrame(const QAVVideoFrame &frame);
