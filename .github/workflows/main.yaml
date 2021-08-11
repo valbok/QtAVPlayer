@@ -59,7 +59,7 @@ jobs:
           ./tst_qavdemuxer --platform minimal
           cd ../
           cd qavplayer
-          ./tst_qavplayer --platform minimal
+          ./tst_qavplayer --platform minimal -maxwarnings 100000
 
   macos-qmake-default:
     strategy:
@@ -102,7 +102,7 @@ jobs:
           ./tst_qavdemuxer --platform minimal
           cd ../
           cd qavplayer
-          ./tst_qavplayer --platform minimal
+          ./tst_qavplayer --platform minimal -maxwarnings 100000
 
   windows-vs-qmake-default:
     runs-on: windows-latest
