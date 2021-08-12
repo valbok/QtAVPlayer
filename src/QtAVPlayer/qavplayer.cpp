@@ -54,6 +54,8 @@ public:
     void setError(QAVPlayer::Error err, const QString &str);
     void setDuration(double d);
     bool isSeeking() const;
+    bool isEndOfFile() const;
+    void endOfFile(bool v);
     void setVideoFrameRate(double v);
 
     void terminate();
@@ -104,7 +106,7 @@ public:
     bool isWaiting = false;
     mutable QMutex waitMutex;
     QWaitCondition waitCond;
-    QAtomicInt eof = false;
+    bool eof = false;
 };
 
 static QString err_str(int err)
@@ -182,6 +184,18 @@ bool QAVPlayerPrivate::isSeeking() const
 {
     QMutexLocker locker(&positionMutex);
     return pendingPosition >= 0;
+}
+
+bool QAVPlayerPrivate::isEndOfFile() const
+{
+    QMutexLocker locker(&stateMutex);
+    return eof;
+}
+
+void QAVPlayerPrivate::endOfFile(bool v)
+{
+    QMutexLocker locker(&stateMutex);
+    eof = v;
 }
 
 void QAVPlayerPrivate::setVideoFrameRate(double v)
@@ -305,7 +319,7 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
             break;
 
         case SteppingMedia:
-            result = eof;
+            result = isEndOfFile();
             if (valid) {
                 result = true;
                 qCDebug(lcAVPlayer) << "Stepped to pos:" << q_ptr->position();
@@ -435,14 +449,14 @@ void QAVPlayerPrivate::doDemux()
 
         auto packet = demuxer.read();
         if (packet) {
-            eof = false;
+            endOfFile(false);
             if (packet.streamIndex() == demuxer.videoStream())
                 videoQueue.enqueue(packet);
             else if (packet.streamIndex() == demuxer.audioStream())
                 audioQueue.enqueue(packet);
         } else {
-            if (demuxer.eof() && videoQueue.isEmpty() && audioQueue.isEmpty() && !eof) {
-                eof = true;
+            if (demuxer.eof() && videoQueue.isEmpty() && audioQueue.isEmpty() && !isEndOfFile()) {
+                endOfFile(true);
                 qCDebug(lcAVPlayer) << "EndOfMedia";
                 q_ptr->stop();
                 setPendingMediaStatus(EndOfMedia);
@@ -569,7 +583,7 @@ void QAVPlayer::play()
 
     qCDebug(lcAVPlayer) << __FUNCTION__;
     if (d->setState(QAVPlayer::PlayingState)) {
-        if (d->eof) {
+        if (d->isEndOfFile()) {
             qCDebug(lcAVPlayer) << "Playing from beginning";
             seek(0);
         }
@@ -583,7 +597,7 @@ void QAVPlayer::pause()
     Q_D(QAVPlayer);
     qCDebug(lcAVPlayer) << __FUNCTION__;
     if (d->setState(QAVPlayer::PausedState)) {
-        if (d->eof) {
+        if (d->isEndOfFile()) {
             qCDebug(lcAVPlayer) << "Pausing from beginning";
             seek(0);
         }
@@ -611,7 +625,7 @@ void QAVPlayer::stepForward()
     Q_D(QAVPlayer);
     qCDebug(lcAVPlayer) << __FUNCTION__;
     d->setState(QAVPlayer::PausedState);
-    if (d->eof) {
+    if (d->isEndOfFile()) {
         qCDebug(lcAVPlayer) << "Stepping from beginning";
         seek(0);
     }
