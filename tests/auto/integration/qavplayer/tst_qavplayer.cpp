@@ -612,7 +612,7 @@ void tst_QAVPlayer::seekVideo()
 
     QTRY_VERIFY_WITH_TIMEOUT(p.position() > 5000, 10000);
     QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
-    QCOMPARE(spySeeked.count(), 1);
+    QTRY_COMPARE(spySeeked.count(), 1);
     QTRY_VERIFY(seekPosition >= 0);
     QVERIFY(qAbs(seekPosition - 5000) < 500);
     seekPosition = -1;
@@ -927,24 +927,26 @@ void tst_QAVPlayer::files_data()
 {
     QTest::addColumn<QString>("path");
     QTest::addColumn<int>("duration");
-    QTest::addColumn<bool>("hasVideo");
-    QTest::addColumn<bool>("hasAudio");
+    QTest::addColumn<int>("videoFrames");
+    QTest::addColumn<int>("audioFrames");
 
-    QTest::newRow("test.wav") << QString("../testdata/test.wav") << 999 << false << true;
-    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4") << 15019 << true << true;
-    QTest::newRow("shots0000.dv") << QString("../testdata/shots0000.dv") << 40 << true << false;
-    QTest::newRow("dv_dsf_1_stype_1.dv") << QString("../testdata/dv_dsf_1_stype_1.dv") << 600 << true << true;
-    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << 2000 << true << true;
-    QTest::newRow("small.mp4") << QString("../testdata/small.mp4") << 5568 << true << true;
-    QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov") << 6840 << true << false;
+    QTest::newRow("test.wav") << QString("../testdata/test.wav") << 999 << 0 << 21;
+    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4") << 15019 << 374 << 702;
+    QTest::newRow("shots0000.dv") << QString("../testdata/shots0000.dv") << 40 << 1 << 0;
+    QTest::newRow("dv_dsf_1_stype_1.dv") << QString("../testdata/dv_dsf_1_stype_1.dv") << 600 << 14 << 14;
+    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << 2000 << 49 << 49;
+    QTest::newRow("small.mp4") << QString("../testdata/small.mp4") << 5568 << 165 << 259;
+    QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov") << 6840 << 169 << 0;
 }
 
 void tst_QAVPlayer::files()
 {
     QFETCH(QString, path);
     QFETCH(int, duration);
-    QFETCH(bool, hasVideo);
-    QFETCH(bool, hasAudio);
+    QFETCH(int, videoFrames);
+    QFETCH(int, audioFrames);
+    const bool hasVideo = videoFrames > 0;
+    const bool hasAudio = audioFrames > 0;
 
     QAVPlayer p;
 
@@ -987,6 +989,8 @@ void tst_QAVPlayer::files()
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 18000);
     if (hasVideo)
         QTRY_VERIFY(!videoFrame);
+    QVERIFY(qAbs(vf - videoFrames) < 2);
+    QVERIFY(qAbs(af - audioFrames) < 2);
 
     vf = 0;
     af = 0;
