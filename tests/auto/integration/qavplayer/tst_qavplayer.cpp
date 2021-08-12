@@ -9,6 +9,7 @@
 
 #include <QDebug>
 #include <QtTest/QtTest>
+#include <stdlib.h>
 
 QT_USE_NAMESPACE
 
@@ -473,8 +474,8 @@ void tst_QAVPlayer::seekVideo()
     QCOMPARE(p.position(), p.duration());
     QVERIFY(p.hasVideo());
     QVERIFY(p.hasAudio());
-    QCOMPARE(spySeeked.count(), 1);
-    QCOMPARE(spyPaused.count(), 0);
+    QTRY_COMPARE(spySeeked.count(), 1);
+    QTRY_COMPARE(spyPaused.count(), 0);
     QVERIFY(seekPosition >= 0);
     QVERIFY(qAbs(seekPosition - 14500) < 500);
     seekPosition = -1;
@@ -813,7 +814,7 @@ void tst_QAVPlayer::pauseSeekVideo()
     QTest::qWait(100);
     QVERIFY(framesCount - count < 5);
     QVERIFY(frame);
-    QVERIFY(seekPosition >= 0);
+    QTRY_VERIFY(seekPosition >= 0);
     QVERIFY(qAbs(seekPosition - 1) < 200);
     seekPosition = -1;
     QCOMPARE(pausePosition, -1);
@@ -990,7 +991,6 @@ void tst_QAVPlayer::files()
     if (hasVideo)
         QTRY_VERIFY(!videoFrame);
     QVERIFY(qAbs(vf - videoFrames) < 2);
-    QVERIFY(qAbs(af - audioFrames) < 2);
 
     vf = 0;
     af = 0;
@@ -1051,6 +1051,7 @@ void tst_QAVPlayer::convert_data()
 
 void tst_QAVPlayer::convert()
 {
+    qputenv("QT_AVPLAYER_NO_HWDEVICE", "TRUE");
     QFETCH(QString, path);
     QFETCH(AVPixelFormat, from);
     QFETCH(AVPixelFormat, to);
@@ -1071,6 +1072,7 @@ void tst_QAVPlayer::convert()
     QVERIFY(converted);
     QCOMPARE(converted.format(), to);
     QCOMPARE(videoFrame.format(), from);
+    qunsetenv("QT_AVPLAYER_NO_HWDEVICE");
 }
 
 void tst_QAVPlayer::map_data()
@@ -1269,7 +1271,7 @@ void tst_QAVPlayer::stepForward()
 
     QObject::connect(&p, &QAVPlayer::stepped, &p, [&](qint64) { p.stepForward(); });
     p.stepForward();
-    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 8000);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
 }
 
 QTEST_MAIN(tst_QAVPlayer)

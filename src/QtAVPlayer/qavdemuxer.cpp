@@ -116,13 +116,13 @@ static QAVVideoCodec *create_video_codec(AVStream *stream)
     Q_UNUSED(opts);
     auto name = QGuiApplication::platformName();
 
-#if defined(VA_X11) && QT_CONFIG(opengl)
+#if QT_CONFIG(va_x11) && QT_CONFIG(opengl)
     if (name == QLatin1String("xcb")) {
         device.reset(new QAVHWDevice_VAAPI_X11_GLX);
         av_dict_set(&opts, "connection_type", "x11", 0);
     }
 #endif
-#if defined(VA_DRM) && QT_CONFIG(egl)
+#if QT_CONFIG(va_drm) && QT_CONFIG(egl)
     if (name == QLatin1String("eglfs"))
         device.reset(new QAVHWDevice_VAAPI_DRM_EGL);
 #endif
@@ -160,9 +160,14 @@ static QAVVideoCodec *create_video_codec(AVStream *stream)
             supported.append(config->device_type);
     }
 
-    qDebug() << codec->codec()->name << ": supported hardware device contexts:";
-    for (auto a: supported)
-        qDebug() << "   " << av_hwdevice_get_type_name(a);
+    if (!supported.isEmpty()) {
+        qDebug() << codec->codec()->name << ": supported hardware device contexts:";
+        for (auto a: supported)
+            qDebug() << "   " << av_hwdevice_get_type_name(a);
+    } else {
+        qWarning() << "None of the hardware accelerations are supported";
+        return codec.take();
+    }
 #endif
 
     if (!device) {
@@ -173,7 +178,7 @@ static QAVVideoCodec *create_video_codec(AVStream *stream)
 
     AVBufferRef *hw_device_ctx = nullptr;
     if (av_hwdevice_ctx_create(&hw_device_ctx, device->type(), nullptr, opts, 0) >= 0) {
-        qDebug() << "Using hardware device context:" << av_hwdevice_get_type_name(device->type());
+        qDebug() << "Found hardware device context:" << av_hwdevice_get_type_name(device->type());
         codec->avctx()->hw_device_ctx = hw_device_ctx;
         codec->avctx()->pix_fmt = device->format();
         codec->setDevice(device.take());
