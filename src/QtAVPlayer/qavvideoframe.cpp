@@ -40,7 +40,7 @@ public:
     {
         if (!buffer) {
             auto c = videoCodec(q_ptr->codec());
-            auto buf = c && c->device() ? c->device()->videoBuffer(*q_ptr) : new QAVVideoBuffer_CPU(*q_ptr);
+            auto buf = c && c->device() && frame->format == c->device()->format() ? c->device()->videoBuffer(*q_ptr) : new QAVVideoBuffer_CPU(*q_ptr);
             const_cast<QAVVideoFramePrivate*>(this)->buffer.reset(buf);
         }
 
@@ -217,10 +217,9 @@ QAVVideoFrame::operator QVideoFrame() const
             result = convertTo(AV_PIX_FMT_YUV420P);
             format = QVideoFrame::Format_YUV420P;
             break;
-        case AV_PIX_FMT_NV12:
-            format = QVideoFrame::Format_NV12;
-            break;
+        case AV_PIX_FMT_VAAPI:
         case AV_PIX_FMT_D3D11:
+        case AV_PIX_FMT_NV12:
             format = QVideoFrame::Format_NV12;
             break;
         default:
