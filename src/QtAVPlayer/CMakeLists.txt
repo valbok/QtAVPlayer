@@ -22,12 +22,12 @@ set(PUBLIC_HEADERS
     qtavplayerglobal.h
 )
 
-if(Qt5Gui_EGL_LIBRARIES AND VA_DRM)
+if(Qt5Gui_EGL_LIBRARIES AND va_drm)
     set(SOURCES ${SOURCES} qavhwdevice_vaapi_drm_egl.cpp)
     set(LIBS EGL)
 endif()
 
-if(Qt5Gui_OPENGL_LIBRARIES AND VA_X11)
+if(Qt5Gui_OPENGL_LIBRARIES AND va_x11)
     set(SOURCES ${SOURCES} qavhwdevice_vaapi_x11_glx.cpp)
 endif()
 
