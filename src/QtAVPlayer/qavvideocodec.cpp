@@ -67,8 +67,13 @@ static AVPixelFormat negotiate_pixel_format(AVCodecContext *c, const AVPixelForm
     AVPixelFormat pf = !supported.isEmpty() ? supported[0] : AV_PIX_FMT_NONE;
     const char *decStr = "software";
     if (d->hw_device) {
-        pf = d->hw_device->format();
-        decStr = "hardware";
+        for (auto f : unsupported) {
+            if (f == d->hw_device->format()) {
+                pf = d->hw_device->format();
+                decStr = "hardware";
+                break;
+            }
+        }
     }
 
     auto dsc = av_pix_fmt_desc_get(pf);
@@ -81,7 +86,7 @@ QAVVideoCodec::QAVVideoCodec(QObject *parent)
     : QAVCodec(*new QAVVideoCodecPrivate, parent)
 {
     d_ptr->avctx->opaque = d_ptr.data();
-    d_ptr->avctx->get_format = negotiate_pixel_format;    
+    d_ptr->avctx->get_format = negotiate_pixel_format;
 }
 
 void QAVVideoCodec::setDevice(QAVHWDevice *d)
