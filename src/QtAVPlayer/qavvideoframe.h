@@ -43,6 +43,7 @@ public:
         int size = 0;
         int bytesPerLine[4] = {0};
         uchar *data[4] = {nullptr};
+        AVPixelFormat format = AV_PIX_FMT_NONE;
     };
 
     MapData map() const;

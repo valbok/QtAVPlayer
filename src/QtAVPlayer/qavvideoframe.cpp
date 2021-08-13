@@ -133,11 +133,12 @@ QAVVideoFrame QAVVideoFrame::convertTo(AVPixelFormat fmt) const
     if (fmt == frame()->format)
         return *this;
 
-    auto ctx = sws_getContext(size().width(), size().height(), AVPixelFormat(frame()->format),
+    auto mapData = map();
+    auto ctx = sws_getContext(size().width(), size().height(), mapData.format,
                               size().width(), size().height(), fmt,
                               SWS_BICUBIC, NULL, NULL, NULL);
     if (ctx == nullptr) {
-        qWarning() << __FUNCTION__ << "Could not get sws context";
+        qWarning() << __FUNCTION__ << ": Could not get sws context:" << av_pix_fmt_desc_get(AVPixelFormat(frame()->format))->name;
         return QAVVideoFrame();
     }
 
@@ -150,7 +151,7 @@ QAVVideoFrame QAVVideoFrame::convertTo(AVPixelFormat fmt) const
 
     QAVVideoFrame result(size(), fmt);
     result.d_ptr->codec = codec();
-    sws_scale(ctx, frame()->data, frame()->linesize, 0, result.size().height(), result.frame()->data, result.frame()->linesize);
+    sws_scale(ctx, mapData.data, mapData.bytesPerLine, 0, result.size().height(), result.frame()->data, result.frame()->linesize);
     sws_freeContext(ctx);
 
     return result;

@@ -20,6 +20,7 @@ QAVVideoFrame::MapData QAVVideoBuffer_CPU::map() const
     auto frame = m_frame.frame();
 
     mapData.size = av_image_get_buffer_size(AVPixelFormat(frame->format), frame->width, frame->height, 1);
+    mapData.format = AVPixelFormat(frame->format);
 
     for (int i = 0; i < 4; ++i) {
         if (!frame->linesize[i])
