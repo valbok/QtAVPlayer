@@ -32,8 +32,6 @@ void tst_QAVDemuxer::construction()
     QVERIFY(d.videoStream() < 0);
     QVERIFY(d.audioStream() < 0);
     QVERIFY(d.subtitleStream() < 0);
-    QCOMPARE(d.videoCodec(), nullptr);
-    QCOMPARE(d.audioCodec(), nullptr);
     QCOMPARE(d.duration(), 0);
     QCOMPARE(d.seekable(), false);
     QCOMPARE(d.eof(), false);

@@ -54,8 +54,18 @@ public:
     void setSource(const QUrl &url);
     QUrl source() const;
 
-    bool hasAudio() const;
     bool hasVideo() const;
+    bool hasAudio() const;
+
+    int videoStreamsCount() const;
+    int videoStream() const;
+    void setVideoStream(int stream);
+
+    int audioStreamsCount() const;
+    int audioStream() const;
+    void setAudioStream(int stream);
+
+    int subtitleStreamsCount() const;
 
     State state() const;
     MediaStatus mediaStatus() const;
@@ -85,6 +95,8 @@ Q_SIGNALS:
     void seekableChanged(bool seekable);
     void speedChanged(qreal rate);
     void videoFrameRateChanged(double rate);
+    void videoStreamChanged(int stream);
+    void audioStreamChanged(int stream);
     void played(qint64 pos);
     void paused(qint64 pos);
     void stopped(qint64 pos);
