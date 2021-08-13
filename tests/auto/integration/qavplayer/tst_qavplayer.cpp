@@ -9,7 +9,6 @@
 
 #include <QDebug>
 #include <QtTest/QtTest>
-#include <stdlib.h>
 
 QT_USE_NAMESPACE
 
@@ -816,7 +815,7 @@ void tst_QAVPlayer::pauseSeekVideo()
     QVERIFY(framesCount - count < 5);
     QVERIFY(frame);
     QTRY_VERIFY(seekPosition >= 0);
-    QVERIFY(qAbs(seekPosition - 1) < 200);
+    QTRY_VERIFY(qAbs(seekPosition - 1) < 200);
     seekPosition = -1;
     QCOMPARE(pausePosition, -1);
 
@@ -1040,21 +1039,18 @@ void tst_QAVPlayer::files()
 void tst_QAVPlayer::convert_data()
 {
     QTest::addColumn<QString>("path");
-    QTest::addColumn<AVPixelFormat>("from");
     QTest::addColumn<AVPixelFormat>("to");
 
-    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4") << AV_PIX_FMT_YUV420P << AV_PIX_FMT_NV12;
-    QTest::newRow("dv_dsf_1_stype_1.dv") << QString("../testdata/dv_dsf_1_stype_1.dv") << AV_PIX_FMT_YUV420P << AV_PIX_FMT_NV21;
-    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << AV_PIX_FMT_YUV411P << AV_PIX_FMT_YUV420P;
-    QTest::newRow("small.mp4") << QString("../testdata/small.mp4") << AV_PIX_FMT_YUV420P << AV_PIX_FMT_YUV422P;
-    QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov") << AV_PIX_FMT_YUV420P << AV_PIX_FMT_NV12;
+    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4") << AV_PIX_FMT_NV12;
+    QTest::newRow("dv_dsf_1_stype_1.dv") << QString("../testdata/dv_dsf_1_stype_1.dv") << AV_PIX_FMT_NV21;
+    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << AV_PIX_FMT_YUV420P;
+    QTest::newRow("small.mp4") << QString("../testdata/small.mp4") << AV_PIX_FMT_YUV422P;
+    QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov") << AV_PIX_FMT_NV12;
 }
 
 void tst_QAVPlayer::convert()
 {
-    qputenv("QT_AVPLAYER_NO_HWDEVICE", "TRUE");
     QFETCH(QString, path);
-    QFETCH(AVPixelFormat, from);
     QFETCH(AVPixelFormat, to);
 
     QAVPlayer p;
@@ -1067,13 +1063,10 @@ void tst_QAVPlayer::convert()
 
     p.pause();
     QTRY_VERIFY(videoFrame);
-    QCOMPARE(videoFrame.format(), from);
 
     QAVVideoFrame converted = videoFrame.convertTo(to);
     QVERIFY(converted);
     QCOMPARE(converted.format(), to);
-    QCOMPARE(videoFrame.format(), from);
-    qunsetenv("QT_AVPLAYER_NO_HWDEVICE");
 }
 
 void tst_QAVPlayer::map_data()
