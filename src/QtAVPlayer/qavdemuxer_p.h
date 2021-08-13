@@ -39,12 +39,19 @@ public:
     int load(const QUrl &url);
     void unload();
 
+    QList<int> videoStreams() const;
     int videoStream() const;
-    void setVideoCodec(QAVVideoCodec *);
-    QAVVideoCodec *videoCodec() const;
+    QList<int> audioStreams() const;
     int audioStream() const;
-    QAVAudioCodec *audioCodec() const;
+    QList<int> subtitleStreams() const;
     int subtitleStream() const;
+
+    int videoStreamIndex() const;
+    void setVideoStreamIndex(int stream);
+    int audioStreamIndex() const;
+    void setAudioStreamIndex(int stream);
+    int subtitleStreamIndex() const;
+    void setSubtitleStreamIndex(int stream);
 
     QAVPacket read();
 

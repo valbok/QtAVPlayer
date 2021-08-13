@@ -48,6 +48,7 @@ private slots:
     void cast2QVideoFrame();
 #endif
     void stepForward();
+    void audioStreams();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -860,7 +861,7 @@ void tst_QAVPlayer::pauseSeekVideo()
     QTest::qWait(100);
     QTRY_VERIFY(count != framesCount);
     QTRY_VERIFY(seekPosition >= 0);
-    QVERIFY(qAbs(seekPosition - 1) < 100);
+    QTRY_VERIFY(qAbs(seekPosition - 1) < 100);
     seekPosition = -1;
     QCOMPARE(pausePosition, -1);
 
@@ -919,7 +920,7 @@ void tst_QAVPlayer::pauseSeekVideo()
     QTest::qWait(100);
     QVERIFY(framesCount - count < 5);
     QTRY_VERIFY(seekPosition >= 0);
-    QVERIFY(qAbs(seekPosition - 1) < 100);
+    QTRY_VERIFY(qAbs(seekPosition - 1) < 100);
     seekPosition = -1;
     QCOMPARE(pausePosition, -1);
 }
@@ -1272,6 +1273,76 @@ void tst_QAVPlayer::stepForward()
     QObject::connect(&p, &QAVPlayer::stepped, &p, [&](qint64) { p.stepForward(); });
     p.stepForward();
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
+}
+
+void tst_QAVPlayer:: audioStreams()
+{
+    QAVPlayer p;
+
+    QFileInfo file(QLatin1String("../testdata/guido.mp4"));
+
+    QSignalSpy spy(&p, &QAVPlayer::audioStreamChanged);
+
+    int framesCount = 0;
+    QAVAudioFrame frame;
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { frame = f; ++framesCount; });
+
+    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QCOMPARE(p.videoStreamsCount(), 1);
+    QCOMPARE(p.audioStreamsCount(), 2);
+    QCOMPARE(p.videoStream(), 0);
+    QCOMPARE(p.audioStream(), 0);
+    QCOMPARE(p.subtitleStreamsCount(), 0);
+    QTRY_COMPARE(spy.count(), 1); // -1 -> 0
+
+    spy.clear();
+
+    p.setAudioStream(-1);
+    QCOMPARE(p.audioStream(), 0);
+    p.setVideoStream(-1);
+    QCOMPARE(p.videoStream(), 0);
+    QCOMPARE(spy.count(), 0);
+
+    p.setAudioStream(2);
+    QCOMPARE(p.audioStream(), 0);
+    QCOMPARE(spy.count(), 0);
+
+    p.setAudioStream(1);
+    QCOMPARE(p.audioStream(), 1);
+    QTRY_COMPARE(spy.count(), 1);
+
+    p.pause();
+    QCOMPARE(p.audioStream(), 1);
+
+    p.play();
+    QTRY_VERIFY(frame);
+    QVERIFY(framesCount > 0);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
+    QCOMPARE(p.audioStream(), 1);
+
+    framesCount = 0;
+
+    p.play();
+    QTRY_VERIFY(framesCount > 3);
+
+    framesCount = 0;
+    spy.clear();
+
+    p.setAudioStream(0);
+    QTRY_COMPARE(spy.count(), 1);
+    QTRY_VERIFY(framesCount > 3);
+    QCOMPARE(p.audioStream(), 0);
+
+    framesCount = 0;
+
+    p.stop();
+    p.seek(20);
+    p.pause();
+    p.play();
+    QTRY_VERIFY(framesCount > 3);
+    QCOMPARE(p.audioStream(), 0);
 }
 
 QTEST_MAIN(tst_QAVPlayer)

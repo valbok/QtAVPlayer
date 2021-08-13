@@ -67,9 +67,9 @@ public:
     int audioStream = -1;
     int videoStream = -1;
     int subtitleStream = -1;
-    QScopedPointer<QAVAudioCodec> audioCodec;
-    QScopedPointer<QAVVideoCodec> videoCodec;
-    QScopedPointer<QAVCodec> subtitleCodec;
+    QList<QAVAudioCodec *> audioCodecs;
+    QList<QAVVideoCodec *> videoCodecs;
+    QList<QAVCodec *> subtitleCodecs; // TODO
 
     AVPacket audioPacket;
     AVPacket videoPacket;
@@ -81,6 +81,16 @@ static int decode_interrupt_cb(void *ctx)
 {
     auto d = reinterpret_cast<QAVDemuxerPrivate *>(ctx);
     return d ? int(d->abortRequest) : 0;
+}
+
+static int streamIndex(const QList<int> &list, int stream)
+{
+    for (int i = 0; i < list.size(); ++i) {
+        if (list[i] == stream)
+            return i;
+    }
+
+    return -1;
 }
 
 QAVDemuxer::QAVDemuxer(QObject *parent)
@@ -108,9 +118,8 @@ void QAVDemuxer::abort(bool stop)
     d->abortRequest = stop;
 }
 
-static QAVVideoCodec *create_video_codec(AVStream *stream)
+static void setup_video_codec(AVStream *stream, QAVVideoCodec &codec)
 {
-    QScopedPointer<QAVVideoCodec> codec(new QAVVideoCodec);
     QScopedPointer<QAVHWDevice> device;
     AVDictionary *opts = NULL;
     Q_UNUSED(opts);
@@ -137,22 +146,24 @@ static QAVVideoCodec *create_video_codec(AVStream *stream)
 #if defined(Q_OS_ANDROID)
     if (name == QLatin1String("android")) {
         device.reset(new QAVHWDevice_MediaCodec);
-        codec->setCodec(avcodec_find_decoder_by_name("h264_mediacodec"));
+        codec.setCodec(avcodec_find_decoder_by_name("h264_mediacodec"));
         auto vm = QtAndroidPrivate::javaVM();
         av_jni_set_java_vm(vm, NULL);
     }
 #endif
 
-    if (!codec->open(stream))
-        return nullptr;
+    if (!codec.open(stream)) {
+        qWarning() << "Could not open video codec for stream:" << stream;
+        return;
+    }
 
     if (qEnvironmentVariableIsSet("QT_AVPLAYER_NO_HWDEVICE"))
-        return codec.take();
+        return;
 
     QList<AVHWDeviceType> supported;
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(58, 0, 0)
     for (int i = 0;; ++i) {
-        const AVCodecHWConfig *config = avcodec_get_hw_config(codec->codec(), i);
+        const AVCodecHWConfig *config = avcodec_get_hw_config(codec.codec(), i);
         if (!config)
             break;
 
@@ -161,30 +172,28 @@ static QAVVideoCodec *create_video_codec(AVStream *stream)
     }
 
     if (!supported.isEmpty()) {
-        qDebug() << codec->codec()->name << ": supported hardware device contexts:";
+        qDebug() << codec.codec()->name << ": supported hardware device contexts:";
         for (auto a: supported)
             qDebug() << "   " << av_hwdevice_get_type_name(a);
     } else {
         qWarning() << "None of the hardware accelerations are supported";
-        return codec.take();
+        return;
     }
 #endif
 
     if (!device) {
         if (!supported.isEmpty())
             qWarning() << "None of the hardware accelerations was implemented";
-        return codec.take();
+        return;
     }
 
     AVBufferRef *hw_device_ctx = nullptr;
     if (av_hwdevice_ctx_create(&hw_device_ctx, device->type(), nullptr, opts, 0) >= 0) {
         qDebug() << "Found hardware device context:" << av_hwdevice_get_type_name(device->type());
-        codec->avctx()->hw_device_ctx = hw_device_ctx;
-        codec->avctx()->pix_fmt = device->format();
-        codec->setDevice(device.take());
+        codec.avctx()->hw_device_ctx = hw_device_ctx;
+        codec.avctx()->pix_fmt = device->format();
+        codec.setDevice(device.take());
     }
-
-    return codec.take();
 }
 
 static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
@@ -235,7 +244,6 @@ int QAVDemuxer::load(const QUrl &url)
         else if (type == AVMEDIA_TYPE_SUBTITLE)
             d->subtitleStreams.push_back(i);
     }
-
     d->videoStream = av_find_best_stream(d->ctx, AVMEDIA_TYPE_VIDEO,
                                          d->videoStream, -1, nullptr, 0);
     d->audioStream = av_find_best_stream(d->ctx, AVMEDIA_TYPE_AUDIO,
@@ -246,17 +254,21 @@ int QAVDemuxer::load(const QUrl &url)
                                             d->subtitleStream,
                                             d->audioStream >= 0 ? d->audioStream : d->videoStream,
                                             nullptr, 0);
-    if (d->audioStream >= 0) {
-        d->audioCodec.reset(new QAVAudioCodec);
-        if (!d->audioCodec->open(d->ctx->streams[d->audioStream]))
-            qWarning() << "Could not open audio codec";
-    }
-
     av_log_set_callback(log_callback);
 
-    if (d->videoStream >= 0) {
-        if (!d->videoCodec)
-            d->videoCodec.reset(create_video_codec(d->ctx->streams[d->videoStream]));
+    for (int i = 0; i < d->audioStreams.size(); ++i) {
+        const int stream = d->audioStreams[i];
+        auto codec = new QAVAudioCodec;
+        if (!codec->open(d->ctx->streams[stream]))
+            qWarning() << "Could not open audio codec for stream:" << stream;
+        d->audioCodecs.push_back(codec);
+    }
+
+    for (int i = 0; i < d->videoStreams.size(); ++i) {
+        const int stream = d->videoStreams[i];
+        auto codec = new QAVVideoCodec;
+        setup_video_codec(d->ctx->streams[stream], *codec);
+        d->videoCodecs.push_back(codec);
     }
 
     d->seekable = d->ctx->iformat->read_seek || d->ctx->iformat->read_seek2;
@@ -266,19 +278,19 @@ int QAVDemuxer::load(const QUrl &url)
     return 0;
 }
 
+QList<int> QAVDemuxer::videoStreams() const
+{
+    return d_func()->videoStreams;
+}
+
 int QAVDemuxer::videoStream() const
 {
     return d_func()->videoStream;
 }
 
-void QAVDemuxer::setVideoCodec(QAVVideoCodec *codec)
+QList<int> QAVDemuxer::audioStreams() const
 {
-    return d_func()->videoCodec.reset(codec);
-}
-
-QAVVideoCodec *QAVDemuxer::videoCodec() const
-{
-    return d_func()->videoCodec.data();
+    return d_func()->audioStreams;
 }
 
 int QAVDemuxer::audioStream() const
@@ -286,14 +298,59 @@ int QAVDemuxer::audioStream() const
     return d_func()->audioStream;
 }
 
-QAVAudioCodec *QAVDemuxer::audioCodec() const
+QList<int> QAVDemuxer::subtitleStreams() const
 {
-    return d_func()->audioCodec.data();
+    return d_func()->subtitleStreams;
 }
 
 int QAVDemuxer::subtitleStream() const
 {
     return d_func()->subtitleStream;
+}
+
+int QAVDemuxer::videoStreamIndex() const
+{
+    Q_D(const QAVDemuxer);
+    return streamIndex(d->videoStreams, d->videoStream);
+}
+
+void QAVDemuxer::setVideoStreamIndex(int stream)
+{
+    Q_D(QAVDemuxer);
+    if (stream < 0 || stream >= d->videoStreams.size())
+        return;
+
+    d->videoStream = d->videoStreams[stream];
+}
+
+int QAVDemuxer::audioStreamIndex() const
+{
+    Q_D(const QAVDemuxer);
+    return streamIndex(d->audioStreams, d->audioStream);
+}
+
+void QAVDemuxer::setAudioStreamIndex(int stream)
+{
+    Q_D(QAVDemuxer);
+    if (stream < 0 || stream >= d->audioStreams.size())
+        return;
+
+    d->audioStream = d->audioStreams[stream];
+}
+
+int QAVDemuxer::subtitleStreamIndex() const
+{
+    Q_D(const QAVDemuxer);
+    return streamIndex(d->subtitleStreams, d->subtitleStream);
+}
+
+void QAVDemuxer::setSubtitleStreamIndex(int stream)
+{
+    Q_D(QAVDemuxer);
+    if (stream < 0 || stream >= d->subtitleStreams.size())
+        return;
+
+    d->subtitleStream = d->subtitleStreams[stream];
 }
 
 void QAVDemuxer::unload()
@@ -309,9 +366,12 @@ void QAVDemuxer::unload()
     d->audioStreams.clear();
     d->subtitleStream = -1;
     d->subtitleStreams.clear();
-    d->audioCodec.reset();
-    d->videoCodec.reset();
-    d->subtitleCodec.reset();
+    qDeleteAll(d->audioCodecs);
+    d->audioCodecs.clear();
+    qDeleteAll(d->videoCodecs);
+    d->videoCodecs.clear();
+    qDeleteAll(d->subtitleCodecs);
+    d->subtitleCodecs.clear();
 }
 
 bool QAVDemuxer::eof() const
@@ -337,11 +397,9 @@ QAVPacket QAVDemuxer::read()
     }
 
     if (pkt.packet()->stream_index == d->videoStream)
-        pkt.setCodec(d->videoCodec.data());
-    if (pkt.packet()->stream_index == d->audioStream)
-        pkt.setCodec(d->audioCodec.data());
-    if (pkt.packet()->stream_index == d->subtitleStream)
-        pkt.setCodec(d->subtitleCodec.data());
+        pkt.setCodec(d->videoCodecs[videoStreamIndex()]);
+    else if (pkt.packet()->stream_index == d->audioStream)
+        pkt.setCodec(d->audioCodecs[audioStreamIndex()]);
 
     return pkt;
 }

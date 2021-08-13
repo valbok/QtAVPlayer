@@ -67,12 +67,19 @@ int main(int argc, char *argv[])
 
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); });
     QString file = argc > 1 ? QLatin1String(argv[1]) : QLatin1String("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
-    p.setSource(QUrl(file));
-    p.play();
 
     QObject::connect(&p, &QAVPlayer::stateChanged, [&](auto s) { qDebug() << "stateChanged" << s << p.mediaStatus(); });
-    QObject::connect(&p, &QAVPlayer::mediaStatusChanged, [&](auto s) { qDebug() << "mediaStatusChanged"<< s << p.state(); });
+    QObject::connect(&p, &QAVPlayer::mediaStatusChanged, [&](auto status) {
+        qDebug() << "mediaStatusChanged"<< status << p.state();
+        if (status == QAVPlayer::LoadedMedia) {
+            qDebug() << "Video streams:" << p.videoStreamsCount();
+            qDebug() << "Audio streams:" << p.audioStreamsCount();
+        }
+    });
     QObject::connect(&p, &QAVPlayer::durationChanged, [&](auto d) { qDebug() << "durationChanged" << d; });
+
+    p.setSource(QUrl(file));
+    p.play();
 
     viewer.setMinimumSize(QSize(300, 360));
     viewer.resize(1960, 1086);
