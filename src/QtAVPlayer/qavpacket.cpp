@@ -20,7 +20,7 @@ QT_BEGIN_NAMESPACE
 class QAVPacketPrivate
 {
 public:
-    const QAVCodec *codec = nullptr;
+    QSharedPointer<QAVCodec> codec;
     AVPacket *pkt = nullptr;
 };
 
@@ -94,10 +94,10 @@ int QAVPacket::streamIndex() const
     return d_func()->pkt->stream_index;
 }
 
-void QAVPacket::setCodec(const QAVCodec *c)
+void QAVPacket::setCodec(const QSharedPointer<QAVCodec> &codec)
 {
     Q_D(QAVPacket);
-    d->codec = c;
+    d->codec = codec;
 }
 
 QAVFrame QAVPacket::decode()
@@ -106,7 +106,10 @@ QAVFrame QAVPacket::decode()
     if (!d->codec)
         return {};
 
-    return d->codec->decode(d->pkt);
+    QAVFrame frame(d->codec);
+    if (d->codec->decode(d->pkt, frame))
+        return frame;
+    return {};
 }
 
 QT_END_NAMESPACE

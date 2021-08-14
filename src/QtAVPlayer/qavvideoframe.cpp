@@ -39,7 +39,7 @@ public:
     QAVVideoBuffer &videoBuffer() const
     {
         if (!buffer) {
-            auto c = videoCodec(q_ptr->codec());
+            auto c = videoCodec(&q_ptr->codec());
             auto buf = c && c->device() && frame->format == c->device()->format() ? c->device()->videoBuffer(*q_ptr) : new QAVVideoBuffer_CPU(*q_ptr);
             const_cast<QAVVideoFramePrivate*>(this)->buffer.reset(buf);
         }
@@ -150,7 +150,7 @@ QAVVideoFrame QAVVideoFrame::convertTo(AVPixelFormat fmt) const
     }
 
     QAVVideoFrame result(size(), fmt);
-    result.d_ptr->codec = codec();
+    result.d_ptr->codec = d_ptr->codec;
     sws_scale(ctx, mapData.data, mapData.bytesPerLine, 0, result.size().height(), result.frame()->data, result.frame()->linesize);
     sws_freeContext(ctx);
 

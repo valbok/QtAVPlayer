@@ -29,7 +29,7 @@ class QAVFramePrivate
 public:
     virtual ~QAVFramePrivate() = default;
 
-    const QAVCodec *codec = nullptr;
+    QSharedPointer<QAVCodec> codec;
     AVFrame *frame = nullptr;
 };
 

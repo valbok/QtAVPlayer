@@ -42,7 +42,7 @@ public:
     int bytes() const;
     int streamIndex() const;
 
-    void setCodec(const QAVCodec *codec);
+    void setCodec(const QSharedPointer<QAVCodec> &codec);
     QAVFrame decode();
 
 protected:

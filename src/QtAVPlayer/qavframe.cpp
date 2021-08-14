@@ -21,10 +21,10 @@ QAVFrame::QAVFrame(QObject *parent)
 {
 }
 
-QAVFrame::QAVFrame(const QAVCodec *c, QObject *parent)
+QAVFrame::QAVFrame(const QSharedPointer<QAVCodec> &codec, QObject *parent)
     : QAVFrame(*new QAVFramePrivate, parent)
 {
-    d_ptr->codec = c;
+    d_ptr->codec = codec;
 }
 
 QAVFrame::QAVFrame(const QAVFrame &other)
@@ -40,9 +40,9 @@ QAVFrame::QAVFrame(QAVFramePrivate &d, QObject *parent)
     d_ptr->frame = av_frame_alloc();
 }
 
-const QAVCodec *QAVFrame::codec() const
+const QAVCodec &QAVFrame::codec() const
 {
-    return d_ptr->codec;
+    return *d_ptr->codec;
 }
 
 QAVFrame &QAVFrame::operator=(const QAVFrame &other)

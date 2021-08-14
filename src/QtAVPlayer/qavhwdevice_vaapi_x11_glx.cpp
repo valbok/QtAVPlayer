@@ -90,7 +90,7 @@ public:
         }
 
         auto av_frame = frame().frame();
-        AVHWDeviceContext *hwctx = (AVHWDeviceContext *)frame().codec()->avctx()->hw_device_ctx->data;
+        AVHWDeviceContext *hwctx = (AVHWDeviceContext *)frame().codec().avctx()->hw_device_ctx->data;
         AVVAAPIDeviceContext *vactx = (AVVAAPIDeviceContext *)hwctx->hwctx;
         VADisplay va_display = vactx->display;
         VASurfaceID va_surface = (VASurfaceID)(uintptr_t)av_frame->data[3];

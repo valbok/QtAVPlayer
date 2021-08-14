@@ -23,10 +23,10 @@ class Q_AVPLAYER_EXPORT QAVFrame : public QObject
 {
 public:
     QAVFrame(QObject *parent = nullptr);
-    QAVFrame(const QAVCodec *c, QObject *parent = nullptr);
+    QAVFrame(const QSharedPointer<QAVCodec> &codec, QObject *parent = nullptr);
     ~QAVFrame();
     QAVFrame(const QAVFrame &other);
-    const QAVCodec *codec() const;
+    const QAVCodec &codec() const;
     QAVFrame &operator=(const QAVFrame &other);
     operator bool() const;
     AVFrame *frame() const;
