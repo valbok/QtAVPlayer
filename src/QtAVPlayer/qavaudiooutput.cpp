@@ -35,8 +35,10 @@ public:
         auto data = frame.data();
         int pos = 0;
         int size = data.size();
-        while (size) {
+        while (!quit && size) {
+            QMutexLocker locker(&mutex);
             if (audioOutput->bytesFree() < audioOutput->periodSize()) {
+                locker.unlock();
                 const double refreshRate = 0.01;
                 av_usleep((int64_t)(refreshRate * 1000000.0));
                 continue;
@@ -55,12 +57,14 @@ public:
     void doPlayAudio()
     {
         while (!quit) {
-            QMutexLocker lock(&mutex);
+            QMutexLocker locker(&mutex);
             cond.wait(&mutex, 5000);
 
-            if (currentFrame) {
-                play(currentFrame);
+            if (audioOutput && device && currentFrame) {
+                QAVAudioFrame frame = currentFrame;
                 currentFrame = QAVAudioFrame();
+                locker.unlock();
+                play(frame);
             }
         }
     }
@@ -131,15 +135,19 @@ static QAudioFormat format(const QAVAudioFormat &from)
 bool QAVAudioOutput::play(const QAVAudioFrame &frame)
 {
     Q_D(QAVAudioOutput);
-    if (!d->audioOutput) {
-        d->audioOutput.reset(new QAudioOutput(format(frame.format())));
+    if (d->quit || !frame)
+        return false;
+
+    auto fmt = format(frame.format());
+    QMutexLocker locker(&d->mutex);
+    if (!d->audioOutput || d->audioOutput->format() != fmt) {
+        d->audioOutput.reset(new QAudioOutput(fmt));
         d->device = d->audioOutput->start();
         if (!d->device)
             return false;
         d->audioOutput->setVolume(d->volume);
     }
 
-    QMutexLocker locker(&d->mutex);
     d->currentFrame = frame;
     d->cond.wakeAll();
 

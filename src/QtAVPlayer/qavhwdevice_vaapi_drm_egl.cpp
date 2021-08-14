@@ -85,7 +85,7 @@ public:
             glGenTextures(2, m_hw->textures);
 
         auto va_frame = frame().frame();
-        AVHWDeviceContext *hwctx = (AVHWDeviceContext *)frame().codec()->avctx()->hw_device_ctx->data;
+        AVHWDeviceContext *hwctx = (AVHWDeviceContext *)frame().codec().avctx()->hw_device_ctx->data;
         AVVAAPIDeviceContext *vactx = (AVVAAPIDeviceContext *)hwctx->hwctx;
         VADisplay va_display = vactx->display;
         VASurfaceID va_surface = (VASurfaceID)(uintptr_t)va_frame->data[3];

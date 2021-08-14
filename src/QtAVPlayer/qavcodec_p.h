@@ -42,7 +42,7 @@ public:
     const AVCodec *codec() const;
     AVStream *stream() const;
 
-    QAVFrame decode(const AVPacket *pkt) const;
+    bool decode(const AVPacket *pkt, QAVFrame &frame) const;
 
 protected:
     QAVCodec(QObject *parent = nullptr);

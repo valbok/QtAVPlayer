@@ -6,6 +6,7 @@
  *********************************************************/
 
 #include "qavplayer.h"
+#include "qavaudiooutput.h"
 
 #include <QDebug>
 #include <QtTest/QtTest>
@@ -48,6 +49,7 @@ private slots:
 #endif
     void stepForward();
     void audioStreams();
+    void audioOutput();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -1189,7 +1191,7 @@ void tst_QAVPlayer::stepForward()
     QCOMPARE(p.state(), QAVPlayer::PausedState);
     QTRY_VERIFY(frame);
     QCOMPARE(framesCount, 1);
-    QVERIFY(stepPosition > prev);
+    QTRY_VERIFY(stepPosition > prev);
 
     frame = QAVVideoFrame();
     framesCount = 0;
@@ -1199,7 +1201,7 @@ void tst_QAVPlayer::stepForward()
     QCOMPARE(p.state(), QAVPlayer::PausedState);
     QTRY_VERIFY(frame);
     QCOMPARE(framesCount, 1);
-    QVERIFY(stepPosition > prev);
+    QTRY_VERIFY(stepPosition > prev);
 
     frame = QAVVideoFrame();
     framesCount = 0;
@@ -1209,7 +1211,7 @@ void tst_QAVPlayer::stepForward()
     QCOMPARE(p.state(), QAVPlayer::PausedState);
     QTRY_VERIFY(frame);
     QCOMPARE(framesCount, 1);
-    QVERIFY(stepPosition > prev);
+    QTRY_VERIFY(stepPosition > prev);
 
     p.play();
     QCOMPARE(p.state(), QAVPlayer::PlayingState);
@@ -1268,7 +1270,7 @@ void tst_QAVPlayer::stepForward()
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
 }
 
-void tst_QAVPlayer:: audioStreams()
+void tst_QAVPlayer::audioStreams()
 {
     QAVPlayer p;
 
@@ -1336,6 +1338,24 @@ void tst_QAVPlayer:: audioStreams()
     p.play();
     QTRY_VERIFY(framesCount > 3);
     QCOMPARE(p.audioStream(), 0);
+}
+
+void tst_QAVPlayer::audioOutput()
+{
+    QFileInfo file1(QLatin1String("../testdata/guido.mp4"));
+    QFileInfo file2(QLatin1String("../testdata/small.mp4"));
+
+    QAVPlayer p;
+    QAVAudioOutput out;
+    QObject::connect(&p, &QAVPlayer::audioFrame, &out, [&out](const QAVAudioFrame &f) { out.play(f); });
+
+    p.setSource(QUrl::fromLocalFile(file1.absoluteFilePath()));
+    p.play();
+    QTest::qWait(100);
+
+    p.setSource(QUrl::fromLocalFile(file2.absoluteFilePath()));
+    p.play();
+    QTest::qWait(100);
 }
 
 QTEST_MAIN(tst_QAVPlayer)

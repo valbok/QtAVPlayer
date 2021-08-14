@@ -124,7 +124,7 @@ void tst_QAVDemuxer::loadAudio()
         QVERIFY(af);
         QVERIFY(af.frame());
         QCOMPARE(af.pts(), f.pts());
-        QVERIFY(af.codec());
+        QVERIFY(af.codec().codec() != nullptr);
 
         auto format = af.format();
         QCOMPARE(format.sampleFormat(), QAVAudioFormat::Int32);

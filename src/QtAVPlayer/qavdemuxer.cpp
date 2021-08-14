@@ -67,9 +67,8 @@ public:
     int audioStream = -1;
     int videoStream = -1;
     int subtitleStream = -1;
-    QList<QAVAudioCodec *> audioCodecs;
-    QList<QAVVideoCodec *> videoCodecs;
-    QList<QAVCodec *> subtitleCodecs; // TODO
+    QList<QSharedPointer<QAVAudioCodec>> audioCodecs;
+    QList<QSharedPointer<QAVVideoCodec>> videoCodecs;
 
     AVPacket audioPacket;
     AVPacket videoPacket;
@@ -261,14 +260,14 @@ int QAVDemuxer::load(const QUrl &url)
         auto codec = new QAVAudioCodec;
         if (!codec->open(d->ctx->streams[stream]))
             qWarning() << "Could not open audio codec for stream:" << stream;
-        d->audioCodecs.push_back(codec);
+        d->audioCodecs.push_back(QSharedPointer<QAVAudioCodec>(codec));
     }
 
     for (int i = 0; i < d->videoStreams.size(); ++i) {
         const int stream = d->videoStreams[i];
         auto codec = new QAVVideoCodec;
         setup_video_codec(d->ctx->streams[stream], *codec);
-        d->videoCodecs.push_back(codec);
+        d->videoCodecs.push_back(QSharedPointer<QAVVideoCodec>(codec));
     }
 
     d->seekable = d->ctx->iformat->read_seek || d->ctx->iformat->read_seek2;
@@ -366,12 +365,8 @@ void QAVDemuxer::unload()
     d->audioStreams.clear();
     d->subtitleStream = -1;
     d->subtitleStreams.clear();
-    qDeleteAll(d->audioCodecs);
     d->audioCodecs.clear();
-    qDeleteAll(d->videoCodecs);
     d->videoCodecs.clear();
-    qDeleteAll(d->subtitleCodecs);
-    d->subtitleCodecs.clear();
 }
 
 bool QAVDemuxer::eof() const
