@@ -153,6 +153,9 @@ jobs:
       - name: Test
         shell: cmd
         run: |
+          set QT_LOGGING_RULES=qt.QtAVPlayer.debug=true
+          set QT_FORCE_STDERR_LOGGING=1
+          set QT_ASSUME_STDERR_HAS_CONSOLE=1
           cd tests/
           qmake
           nmake
@@ -160,4 +163,4 @@ jobs:
           release\tst_qavdemuxer.exe
           cd ../
           cd qavplayer
-          release\tst_qavplayer.exe
+          release\tst_qavplayer.exe -maxwarnings 100000

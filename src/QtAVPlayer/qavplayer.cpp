@@ -572,6 +572,8 @@ QAVPlayer::QAVPlayer(QObject *parent)
     : QObject(parent)
     , d_ptr(new QAVPlayerPrivate(this))
 {
+    qRegisterMetaType<QAVAudioFrame>();
+    qRegisterMetaType<QAVVideoFrame>();
 }
 
 QAVPlayer::~QAVPlayer()

@@ -1355,7 +1355,7 @@ void tst_QAVPlayer::audioOutput()
 
     p.setSource(QUrl::fromLocalFile(file2.absoluteFilePath()));
     p.play();
-    QTest::qWait(100);
+    QTRY_VERIFY(p.position() > 500);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
