@@ -57,6 +57,11 @@ int main(int argc, char *argv[])
     auto videoSurface = vo->videoSurface();
 #endif
 
+    // Make sure that render geometry has been updated after a frame
+    QObject::connect(vo, &QDeclarativeVideoOutput::sourceRectChanged, &p, [&] {
+        vo->update();
+    });
+
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&videoSurface](const QAVVideoFrame &frame) {
         QVideoFrame videoFrame = frame;
         if (!videoSurface->isActive())
