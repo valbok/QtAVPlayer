@@ -301,6 +301,7 @@ void QAVPlayerPrivate::terminate()
     videoPlayFuture.waitForFinished();
     audioPlayFuture.waitForFinished();
     pendingPosition = -1;
+    pendingMediaStatuses.clear();
 }
 
 void QAVPlayerPrivate::step(bool hasFrame)
@@ -365,10 +366,6 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
                 result = true;
                 qCDebug(lcAVPlayer) << "Stopped to pos:" << q_ptr->position();
                 emit q_ptr->stopped(q_ptr->position());
-                if (q_ptr->hasVideo()) {
-                    qCDebug(lcAVPlayer) << "Flushing empty video frame";
-                    emit q_ptr->videoFrame({});
-                }
                 wait(true);
             }
             break;
