@@ -287,7 +287,6 @@ void QAVPlayerPrivate::terminate()
 {
     qCDebug(lcAVPlayer) << __FUNCTION__;
     setState(QAVPlayer::StoppedState);
-    setMediaStatus(QAVPlayer::NoMedia);
     demuxer.abort();
     quit = true;
     wait(false);
@@ -302,6 +301,8 @@ void QAVPlayerPrivate::terminate()
     audioPlayFuture.waitForFinished();
     pendingPosition = -1;
     pendingMediaStatuses.clear();
+    setDuration(0);
+    setMediaStatus(QAVPlayer::NoMedia);
 }
 
 void QAVPlayerPrivate::step(bool hasFrame)
@@ -588,14 +589,11 @@ void QAVPlayer::setSource(const QUrl &url)
     d->terminate();
     d->url = url;
     emit sourceChanged(url);
-    if (d->url.isEmpty()) {
-        d->setMediaStatus(QAVPlayer::NoMedia);
-        d->setDuration(0);
-        return;
-    }
-
     d->wait(true);
     d->quit = false;
+    if (d->url.isEmpty())
+        return;
+
     d->setPendingMediaStatus(LoadingMedia);
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     d->loaderFuture = QtConcurrent::run(&d->threadPool, d, &QAVPlayerPrivate::doLoad, d->url);

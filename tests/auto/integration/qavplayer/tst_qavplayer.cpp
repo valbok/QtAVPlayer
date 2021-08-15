@@ -50,6 +50,7 @@ private slots:
     void stepForward();
     void audioStreams();
     void audioOutput();
+    void setEmptySource();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -1356,6 +1357,31 @@ void tst_QAVPlayer::audioOutput()
     p.setSource(QUrl::fromLocalFile(file2.absoluteFilePath()));
     p.play();
     QTRY_VERIFY(p.position() > 500);
+}
+
+void tst_QAVPlayer::setEmptySource()
+{
+    QAVPlayer p;
+
+    QSignalSpy spyMediaStatus(&p, &QAVPlayer::mediaStatusChanged);
+
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &) { ++framesCount; });
+
+    QFileInfo file(QLatin1String("../testdata/small.mp4"));
+    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.play();
+    QTRY_COMPARE(spyMediaStatus.count(), 1); // NoMedia -> Loaded
+
+    spyMediaStatus.clear();
+    QTest::qWait(100);
+
+    p.setSource(QUrl(""));
+    QTRY_COMPARE(spyMediaStatus.count(), 1); // Loaded -> NoMedia
+    QCOMPARE(p.mediaStatus(), QAVPlayer::NoMedia);
+    framesCount = 0;
+    QTest::qWait(100);
+    QVERIFY(framesCount < 2);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
