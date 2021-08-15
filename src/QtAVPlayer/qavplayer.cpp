@@ -540,7 +540,6 @@ void QAVPlayerPrivate::doPlayVideo()
         step(frame);
     }
 
-    emit q_ptr->videoFrame({});
     videoQueue.clear();
 }
 

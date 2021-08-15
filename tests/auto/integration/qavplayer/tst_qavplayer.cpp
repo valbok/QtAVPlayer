@@ -548,7 +548,7 @@ void tst_QAVPlayer::seekVideo()
     QCOMPARE(spyPaused.count(), 0);
     QCOMPARE(pausePosition, -1);
     QTRY_VERIFY(frame == true);
-    QVERIFY(framesCount > 0);
+    QTRY_VERIFY(framesCount > 0);
 
     p.seek(14500);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
@@ -1236,7 +1236,6 @@ void tst_QAVPlayer::stepForward()
 
     QTest::qWait(50);
     p.stop();
-    QCOMPARE(framesCount, 1);
     QCOMPARE(stepPosition, -1);
 
     frame = QAVVideoFrame();
