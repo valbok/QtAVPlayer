@@ -54,7 +54,6 @@ public:
 QAVVideoFrame::QAVVideoFrame(QObject *parent)
     : QAVFrame(*new QAVVideoFramePrivate(this), parent)
 {
-    qRegisterMetaType<QAVVideoFrame>();
 }
 
 QAVVideoFrame::QAVVideoFrame(const QAVFrame &other, QObject *parent)

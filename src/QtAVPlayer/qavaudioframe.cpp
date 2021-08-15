@@ -29,7 +29,6 @@ public:
 QAVAudioFrame::QAVAudioFrame(QObject *parent)
     : QAVFrame(*new QAVAudioFramePrivate, parent)
 {
-    qRegisterMetaType<QAVAudioFrame>();
 }
 
 QAVAudioFrame::~QAVAudioFrame()
