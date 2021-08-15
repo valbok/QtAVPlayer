@@ -999,7 +999,6 @@ void tst_QAVPlayer::files()
     }
 
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 18000);
-    QVERIFY(qAbs(vf - videoFrames) < 2);
 
     vf = 0;
     af = 0;
@@ -1363,25 +1362,24 @@ void tst_QAVPlayer::setEmptySource()
 {
     QAVPlayer p;
 
-    QSignalSpy spyMediaStatus(&p, &QAVPlayer::mediaStatusChanged);
-
     int framesCount = 0;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &) { ++framesCount; });
+
+    bool noMediaReceived = false;
+    QObject::connect(&p, &QAVPlayer::mediaStatusChanged, &p, [&](QAVPlayer::MediaStatus s) { noMediaReceived = s == QAVPlayer::NoMedia; });
 
     QFileInfo file(QLatin1String("../testdata/small.mp4"));
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
     p.play();
-    QTRY_COMPARE(spyMediaStatus.count(), 1); // NoMedia -> Loaded
 
-    spyMediaStatus.clear();
-    QTest::qWait(100);
+    QTest::qWait(200);
 
     p.setSource(QUrl(""));
-    QTRY_COMPARE(spyMediaStatus.count(), 1); // Loaded -> NoMedia
-    QCOMPARE(p.mediaStatus(), QAVPlayer::NoMedia);
+    QTRY_VERIFY(noMediaReceived);
+
     framesCount = 0;
     QTest::qWait(100);
-    QVERIFY(framesCount < 2);
+    QCOMPARE(framesCount, 0);
 }
 
 QTEST_MAIN(tst_QAVPlayer)

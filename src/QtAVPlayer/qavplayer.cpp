@@ -302,7 +302,6 @@ void QAVPlayerPrivate::terminate()
     pendingPosition = -1;
     pendingMediaStatuses.clear();
     setDuration(0);
-    setMediaStatus(QAVPlayer::NoMedia);
 }
 
 void QAVPlayerPrivate::step(bool hasFrame)
@@ -542,6 +541,7 @@ void QAVPlayerPrivate::doPlayVideo()
     }
 
     videoQueue.clear();
+    setMediaStatus(QAVPlayer::NoMedia);
 }
 
 void QAVPlayerPrivate::doPlayAudio()
@@ -563,6 +563,8 @@ void QAVPlayerPrivate::doPlayAudio()
     }
 
     audioQueue.clear();
+    if (!hasVideo)
+        setMediaStatus(QAVPlayer::NoMedia);
 }
 
 QAVPlayer::QAVPlayer(QObject *parent)
@@ -571,6 +573,8 @@ QAVPlayer::QAVPlayer(QObject *parent)
 {
     qRegisterMetaType<QAVAudioFrame>();
     qRegisterMetaType<QAVVideoFrame>();
+    qRegisterMetaType<State>();
+    qRegisterMetaType<MediaStatus>();
 }
 
 QAVPlayer::~QAVPlayer()
