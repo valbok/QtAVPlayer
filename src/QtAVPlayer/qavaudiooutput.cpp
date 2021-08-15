@@ -119,6 +119,7 @@ public:
                 locker.relock();
             }
         }
+        audioOutput.reset();
     }
 
 };
