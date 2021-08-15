@@ -7,6 +7,7 @@
 
 #include "qavpacket_p.h"
 #include "qavcodec_p.h"
+#include <QSharedPointer>
 #include <QDebug>
 
 extern "C" {

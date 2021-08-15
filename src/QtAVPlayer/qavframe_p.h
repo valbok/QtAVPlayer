@@ -19,6 +19,8 @@
 // We mean it.
 //
 
+#include <QSharedPointer>
+
 QT_BEGIN_NAMESPACE
 
 struct AVFrame;
