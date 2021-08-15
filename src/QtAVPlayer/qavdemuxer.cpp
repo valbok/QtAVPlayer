@@ -38,6 +38,7 @@ extern "C" {
 #include <QAtomicInt>
 #include <QGuiApplication>
 #include <QDir>
+#include <QSharedPointer>
 #include <QDebug>
 
 extern "C" {
