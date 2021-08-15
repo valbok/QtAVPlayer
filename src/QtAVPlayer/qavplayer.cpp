@@ -515,8 +515,8 @@ void QAVPlayerPrivate::doDemux()
             if (demuxer.eof() && videoQueue.isEmpty() && audioQueue.isEmpty() && !isEndOfFile()) {
                 endOfFile(true);
                 qCDebug(lcAVPlayer) << "EndOfMedia";
-                q_ptr->stop();
                 setPendingMediaStatus(EndOfMedia);
+                q_ptr->stop();
                 wait(false);
             }
 
