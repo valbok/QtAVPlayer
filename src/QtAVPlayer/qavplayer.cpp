@@ -65,6 +65,8 @@ public:
 
     void doWait();
     void wait(bool v);
+    void wakeDemuxer(bool wake);
+
     void doLoad(const QUrl &url);
     void doDemux();
     void doPlayVideo();
@@ -108,13 +110,17 @@ public:
 
     QFuture<void> audioPlayFuture;
     QAVPacketQueue audioQueue;
-    double audioPts = 0;
 
+    bool eof = false;
     bool quit = 0;
     bool isWaiting = false;
     mutable QMutex waitMutex;
     QWaitCondition waitCond;
-    bool eof = false;
+    // If there is no more packets or too many packets in queues,
+    // demuxer should wait.
+    QMutex demuxerMutex;
+    QWaitCondition demuxerCond;
+    bool demuxerWake = true;
 };
 
 static QString err_str(int err)
@@ -317,9 +323,10 @@ void QAVPlayerPrivate::step(bool hasFrame)
             pendingMediaStatuses.removeFirst();
     }
 
-    if (pendingMediaStatuses.isEmpty()) {
+    if (pendingMediaStatuses.isEmpty() && !quit) {
         videoQueue.wake(false);
         audioQueue.wake(false);
+        wakeDemuxer(false);
     } else {
         wait(false);
     }
@@ -402,6 +409,7 @@ void QAVPlayerPrivate::doWait()
     QMutexLocker lock(&waitMutex);
     if (isWaiting)
         waitCond.wait(&waitMutex);
+    wakeDemuxer(true);
 }
 
 void QAVPlayerPrivate::wait(bool v)
@@ -417,6 +425,15 @@ void QAVPlayerPrivate::wait(bool v)
         waitCond.wakeAll();
     videoQueue.wake(true);
     audioQueue.wake(true);
+    wakeDemuxer(true);
+}
+
+void QAVPlayerPrivate::wakeDemuxer(bool wake)
+{
+    QMutexLocker locker(&demuxerMutex);
+    demuxerWake = wake;
+    if (wake)
+        demuxerCond.wakeAll();
 }
 
 void QAVPlayerPrivate::doLoad(const QUrl &url)
@@ -461,20 +478,20 @@ void QAVPlayerPrivate::doLoad(const QUrl &url)
     if (q_ptr->hasAudio())
         audioPlayFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doPlayAudio, this);
 #endif
+    qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
 
 void QAVPlayerPrivate::doDemux()
 {
     const int maxQueueBytes = 15 * 1024 * 1024;
-    QMutex waiterMutex;
-    QWaitCondition waiter;
 
     while (!quit) {
         if (videoQueue.bytes() + audioQueue.bytes() > maxQueueBytes
             || (videoQueue.enough() && audioQueue.enough()))
         {
-            QMutexLocker locker(&waiterMutex);
-            waiter.wait(&waiterMutex, 10);
+            QMutexLocker locker(&demuxerMutex);
+            if (!demuxerWake)
+                demuxerCond.wait(&demuxerMutex);
             continue;
         }
 
@@ -520,10 +537,12 @@ void QAVPlayerPrivate::doDemux()
                 wait(false);
             }
 
-            QMutexLocker locker(&waiterMutex);
-            waiter.wait(&waiterMutex, 10);
+            QMutexLocker locker(&demuxerMutex);
+            if (!demuxerWake)
+                demuxerCond.wait(&demuxerMutex);
         }
     }
+    qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
 
 void QAVPlayerPrivate::doPlayVideo()
@@ -542,6 +561,7 @@ void QAVPlayerPrivate::doPlayVideo()
 
     videoQueue.clear();
     setMediaStatus(QAVPlayer::NoMedia);
+    qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
 
 void QAVPlayerPrivate::doPlayAudio()
@@ -565,6 +585,7 @@ void QAVPlayerPrivate::doPlayAudio()
     audioQueue.clear();
     if (!hasVideo)
         setMediaStatus(QAVPlayer::NoMedia);
+    qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
 
 QAVPlayer::QAVPlayer(QObject *parent)
