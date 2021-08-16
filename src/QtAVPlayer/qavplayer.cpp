@@ -57,9 +57,6 @@ public:
     bool isEndOfFile() const;
     void endOfFile(bool v);
     void setVideoFrameRate(double v);
-    void setVideoStream(int stream);
-    void setAudioStream(int stream);
-    void setSubtitleStream(int stream);
 
     void terminate();
 
@@ -221,53 +218,6 @@ void QAVPlayerPrivate::setVideoFrameRate(double v)
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << videoFrameRate << "->" << v;
     videoFrameRate = v;
     emit q->videoFrameRateChanged(v);
-}
-
-void QAVPlayerPrivate::setVideoStream(int stream)
-{
-    Q_Q(QAVPlayer);
-
-    {
-        QMutexLocker locker(&streamsMutex);
-        if (stream < 0 || videoStream == stream || stream >= q_ptr->videoStreamsCount())
-            return;
-
-        qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << videoStream << "->" << stream;
-        videoStream = stream;
-        demuxer.setVideoStreamIndex(stream);
-    }
-    emit q->videoStreamChanged(stream);
-}
-
-void QAVPlayerPrivate::setAudioStream(int stream)
-{
-    Q_Q(QAVPlayer);
-
-    {
-        QMutexLocker locker(&streamsMutex);
-        if (stream < 0 || audioStream == stream || stream >= q->audioStreamsCount())
-            return;
-
-        qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << audioStream << "->" << stream;
-        audioStream = stream;
-        demuxer.setAudioStreamIndex(stream);
-    }
-    emit q->audioStreamChanged(stream);
-}
-
-void QAVPlayerPrivate::setSubtitleStream(int stream)
-{
-    Q_Q(QAVPlayer);
-
-    {
-        QMutexLocker locker(&streamsMutex);
-        if (stream < 0 || subtitleStream == stream || stream >= q->subtitleStreamsCount())
-            return;
-
-        qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << subtitleStream << "->" << stream;
-        subtitleStream = stream;
-        demuxer.setSubtitleStreamIndex(stream);
-    }
 }
 
 template <class T>
@@ -451,17 +401,13 @@ void QAVPlayerPrivate::doLoad(const QUrl &url)
         return;
     }
 
-    double d = demuxer.duration();
-    bool seekable = demuxer.seekable();
-    double frameRate = demuxer.frameRate();
-    setVideoStream(demuxer.videoStreamIndex());
-    setAudioStream(demuxer.audioStreamIndex());
-    setSubtitleStream(demuxer.subtitleStreamIndex());
-    dispatch([this, d, seekable, frameRate] {
-        qCDebug(lcAVPlayer) << "[" << this->url << "]: Loaded, seekable:" << seekable << ", duration:" << d;
-        setSeekable(seekable);
-        setDuration(d);
-        setVideoFrameRate(frameRate);
+    dispatch([this] {
+        qCDebug(lcAVPlayer) << "[" << this->url << "]: Loaded, seekable:" << demuxer.seekable() << ", duration:" << demuxer.duration();
+        setSeekable(demuxer.seekable());
+        setDuration(demuxer.duration());
+        setVideoFrameRate(demuxer.frameRate());
+        q_ptr->setVideoStream(demuxer.videoStreamIndex());
+        q_ptr->setAudioStream(demuxer.audioStreamIndex());
         step(false);
     });
 
@@ -519,9 +465,7 @@ void QAVPlayerPrivate::doDemux()
             }
         }
 
-        streamsMutex.lock();
         auto packet = demuxer.read();
-        streamsMutex.unlock();
         if (packet) {
             endOfFile(false);
             if (packet.streamIndex() == demuxer.videoStream())
@@ -654,7 +598,15 @@ int QAVPlayer::videoStream() const
 
 void QAVPlayer::setVideoStream(int stream)
 {
-    d_func()->setVideoStream(stream);
+    Q_D(QAVPlayer);
+
+    if (stream < 0 || stream == d->videoStream || stream >= videoStreamsCount())
+        return;
+
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << d->videoStream << "->" << stream;
+    d->videoStream = stream;
+    d->demuxer.setVideoStreamIndex(stream);
+    emit videoStreamChanged(stream);
 }
 
 int QAVPlayer::audioStreamsCount() const
@@ -669,7 +621,15 @@ int QAVPlayer::audioStream() const
 
 void QAVPlayer::setAudioStream(int stream)
 {
-    d_func()->setAudioStream(stream);
+    Q_D(QAVPlayer);
+
+    if (stream < 0 || stream == d->audioStream || stream >= audioStreamsCount())
+        return;
+
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << d->audioStream << "->" << stream;
+    d->audioStream = stream;
+    d->demuxer.setAudioStreamIndex(stream);
+    emit audioStreamChanged(stream);
 }
 
 int QAVPlayer::subtitleStreamsCount() const
