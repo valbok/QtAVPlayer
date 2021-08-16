@@ -470,6 +470,7 @@ void QAVPlayerPrivate::doDemux()
     QWaitCondition waiter;
 
     while (!quit) {
+        doWait();
         if (videoQueue.bytes() + audioQueue.bytes() > maxQueueBytes
             || (videoQueue.enough() && audioQueue.enough()))
         {
