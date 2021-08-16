@@ -60,7 +60,9 @@ public:
     QAVDemuxer *q_ptr = nullptr;
     AVFormatContext *ctx = nullptr;
 
-    QAtomicInt abortRequest = 0;
+    bool abortRequest = false;
+    mutable QMutex mutex;
+
     bool seekable = false;
     QList<int> audioStreams;
     QList<int> videoStreams;
@@ -80,6 +82,7 @@ public:
 static int decode_interrupt_cb(void *ctx)
 {
     auto d = reinterpret_cast<QAVDemuxerPrivate *>(ctx);
+    QMutexLocker locker(&d->mutex);
     return d ? int(d->abortRequest) : 0;
 }
 
@@ -285,7 +288,9 @@ QList<int> QAVDemuxer::videoStreams() const
 
 int QAVDemuxer::videoStream() const
 {
-    return d_func()->videoStream;
+    Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    return d->videoStream;
 }
 
 QList<int> QAVDemuxer::audioStreams() const
@@ -295,7 +300,9 @@ QList<int> QAVDemuxer::audioStreams() const
 
 int QAVDemuxer::audioStream() const
 {
-    return d_func()->audioStream;
+    Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    return d->audioStream;
 }
 
 QList<int> QAVDemuxer::subtitleStreams() const
@@ -305,18 +312,22 @@ QList<int> QAVDemuxer::subtitleStreams() const
 
 int QAVDemuxer::subtitleStream() const
 {
-    return d_func()->subtitleStream;
+    Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    return d->subtitleStream;
 }
 
 int QAVDemuxer::videoStreamIndex() const
 {
     Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
     return streamIndex(d->videoStreams, d->videoStream);
 }
 
 void QAVDemuxer::setVideoStreamIndex(int stream)
 {
     Q_D(QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
     if (stream < 0 || stream >= d->videoStreams.size())
         return;
 
@@ -326,12 +337,14 @@ void QAVDemuxer::setVideoStreamIndex(int stream)
 int QAVDemuxer::audioStreamIndex() const
 {
     Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
     return streamIndex(d->audioStreams, d->audioStream);
 }
 
 void QAVDemuxer::setAudioStreamIndex(int stream)
 {
     Q_D(QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
     if (stream < 0 || stream >= d->audioStreams.size())
         return;
 
@@ -341,12 +354,14 @@ void QAVDemuxer::setAudioStreamIndex(int stream)
 int QAVDemuxer::subtitleStreamIndex() const
 {
     Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
     return streamIndex(d->subtitleStreams, d->subtitleStream);
 }
 
 void QAVDemuxer::setSubtitleStreamIndex(int stream)
 {
     Q_D(QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
     if (stream < 0 || stream >= d->subtitleStreams.size())
         return;
 
@@ -356,6 +371,7 @@ void QAVDemuxer::setSubtitleStreamIndex(int stream)
 void QAVDemuxer::unload()
 {
     Q_D(QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
     if (d->ctx)
         avformat_close_input(&d->ctx);
     d->eof = false;
@@ -373,29 +389,36 @@ void QAVDemuxer::unload()
 bool QAVDemuxer::eof() const
 {
     Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
     return d->eof;
 }
 
 QAVPacket QAVDemuxer::read()
 {
     Q_D(QAVDemuxer);
-
+    const int videoStreamIdx = videoStreamIndex();
+    const int audioStreamIdx = audioStreamIndex();
+    QMutexLocker locker(&d->mutex);
     if (!d->ctx || d->eof)
         return {};
 
     QAVPacket pkt;
+    locker.unlock();
     int ret = av_read_frame(d->ctx, pkt.packet());
     if (ret < 0) {
-        if (ret == AVERROR_EOF || avio_feof(d->ctx->pb))
+        if (ret == AVERROR_EOF || avio_feof(d->ctx->pb)) {
+            locker.relock();
             d->eof = true;
+        }
 
         return {};
     }
+    locker.relock();
 
     if (pkt.packet()->stream_index == d->videoStream)
-        pkt.setCodec(d->videoCodecs[videoStreamIndex()]);
+        pkt.setCodec(d->videoCodecs[videoStreamIdx]);
     else if (pkt.packet()->stream_index == d->audioStream)
-        pkt.setCodec(d->audioCodecs[audioStreamIndex()]);
+        pkt.setCodec(d->audioCodecs[audioStreamIdx]);
 
     return pkt;
 }
@@ -431,6 +454,7 @@ double QAVDemuxer::duration() const
 double QAVDemuxer::frameRate() const
 {
     Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
     if (d->videoStream < 0)
         return 1/24.0;
 
