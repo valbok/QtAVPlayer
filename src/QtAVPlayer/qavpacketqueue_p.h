@@ -107,6 +107,7 @@ public:
         m_duration += packet.duration();
         m_consumerWaiter.wakeAll();
         m_abort = false;
+        m_waitingForPackets = false;
     }
 
     void waitForEmpty()
@@ -146,7 +147,7 @@ public:
     {
         QMutexLocker locker(&m_mutex);
         m_abort = true;
-        m_waitingForPackets = true;
+        m_waitingForPackets = false;
         m_consumerWaiter.wakeAll();
         m_producerWaiter.wakeAll();
     }
@@ -220,7 +221,7 @@ private:
     QWaitCondition m_consumerWaiter;
     QWaitCondition m_producerWaiter;
     bool m_abort = false;
-    bool m_waitingForPackets = true;
+    bool m_waitingForPackets = false;
     bool m_wake = false;
 
     int m_bytes = 0;
