@@ -914,7 +914,7 @@ void tst_QAVPlayer::pauseSeekVideo()
     QTRY_COMPARE(pausePosition, p.position());
     pausePosition = -1;
     QTest::qWait(100);
-    QVERIFY(framesCount - count < 2);
+    QTRY_VERIFY(framesCount - count < 2);
     QCOMPARE(p.state(), QAVPlayer::PausedState);
     QCOMPARE(pausePosition, -1);
 
@@ -928,7 +928,7 @@ void tst_QAVPlayer::pauseSeekVideo()
     QVERIFY(framesCount > 0);
     count = framesCount;
     QTest::qWait(100);
-    QVERIFY(framesCount - count < 2);
+    QTRY_VERIFY(framesCount - count < 2);
     QTRY_VERIFY(seekPosition >= 0);
     QVERIFY(seekPosition < 100);
     seekPosition = -1;
