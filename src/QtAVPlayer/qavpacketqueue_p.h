@@ -107,6 +107,7 @@ public:
         m_duration += packet.duration();
         m_consumerWaiter.wakeAll();
         m_abort = false;
+        m_waitingForPackets = false;
     }
 
     void waitForEmpty()

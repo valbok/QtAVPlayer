@@ -105,7 +105,6 @@ public:
 
     QFuture<void> audioPlayFuture;
     QAVPacketQueue audioQueue;
-    double audioPts = 0;
 
     bool quit = 0;
     bool isWaiting = false;
@@ -407,6 +406,7 @@ void QAVPlayerPrivate::doLoad(const QUrl &url)
     if (q_ptr->hasAudio())
         audioPlayFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doPlayAudio, this);
 #endif
+    qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
 
 void QAVPlayerPrivate::doDemux()
@@ -468,6 +468,7 @@ void QAVPlayerPrivate::doDemux()
             waiter.wait(&waiterMutex, 10);
         }
     }
+    qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
 
 void QAVPlayerPrivate::doPlayVideo()
@@ -486,6 +487,7 @@ void QAVPlayerPrivate::doPlayVideo()
 
     videoQueue.clear();
     setMediaStatus(QAVPlayer::NoMedia);
+    qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
 
 void QAVPlayerPrivate::doPlayAudio()
@@ -509,6 +511,7 @@ void QAVPlayerPrivate::doPlayAudio()
     audioQueue.clear();
     if (!hasVideo)
         setMediaStatus(QAVPlayer::NoMedia);
+    qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
 
 QAVPlayer::QAVPlayer(QObject *parent)
