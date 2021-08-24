@@ -435,9 +435,9 @@ int QAVDemuxer::seek(double sec)
         return -1;
 
     d->eof = false;
-    int flags = 0;
+    int flags = AVSEEK_FLAG_BACKWARD;
     int64_t target = sec * AV_TIME_BASE;
-    int64_t min = target;
+    int64_t min = INT_MIN;
     int64_t max = target;
     return avformat_seek_file(d->ctx, -1, min, target, max, flags);
 }

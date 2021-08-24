@@ -385,8 +385,8 @@ void QAVPlayerPrivate::doLoad(const QUrl &url)
         return;
     }
 
-    dispatch([this] {
-        qCDebug(lcAVPlayer) << "[" << this->url << "]: Loaded, seekable:" << demuxer.seekable() << ", duration:" << demuxer.duration();
+    dispatch([this, url] {
+        qCDebug(lcAVPlayer) << "[" << url << "]: Loaded, seekable:" << demuxer.seekable() << ", duration:" << demuxer.duration();
         setSeekable(demuxer.seekable());
         setDuration(demuxer.duration());
         setVideoFrameRate(demuxer.frameRate());
@@ -446,7 +446,7 @@ void QAVPlayerPrivate::doDemux()
                     audioQueue.waitForEmpty();
                     qCDebug(lcAVPlayer) << "Start reading packets from" << pos * 1000;
                 } else {
-                    qWarning() << "Could not seek:" << err_str(ret);
+                    qWarning() << "Could not seek:" << ret << ":" << err_str(ret);
                 }
                 locker.relock();
                 if (qFuzzyCompare(pendingPosition, pos)) {
