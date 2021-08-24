@@ -34,6 +34,7 @@ private slots:
     void playVideo();
     void pauseVideo();
     void seekVideo();
+    void seekVideoNegative();
     void speedVideo();
     void videoFrame();
     void pauseSeekVideo();
@@ -606,13 +607,13 @@ void tst_QAVPlayer::seekVideo()
     const int pos = p.position();
     QTest::qWait(50);
     QCOMPARE(p.position(), pos);
-    p.seek(-1);
+    p.seek(0);
     QCOMPARE(p.position(), pos);
     QTest::qWait(50);
     QCOMPARE(p.position(), pos);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
-    QCOMPARE(spySeeked.count(), 1);
+    QCOMPARE(spySeeked.count(), 2);
     QCOMPARE(spyPaused.count(), 0);
     QCOMPARE(pausePosition, -1);
 
@@ -687,6 +688,120 @@ void tst_QAVPlayer::seekVideo()
     QCOMPARE(seekPosition, -1);
     QCOMPARE(spyPaused.count(), 0);
     p.play();
+}
+
+void tst_QAVPlayer::seekVideoNegative()
+{
+    QAVPlayer p;
+    QSignalSpy spySeeked(&p, &QAVPlayer::seeked);
+
+    qint64 seekPosition = -1;
+    QObject::connect(&p, &QAVPlayer::seeked, &p, [&](qint64 pos) { seekPosition = pos; });
+
+    int framesCount = 0;
+    QAVVideoFrame frame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame, &framesCount](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+
+    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+
+    p.seek(-1000);
+    QCOMPARE(p.position(), -1000);
+
+    p.play();
+    QTRY_COMPARE(spySeeked.count(), 1);
+    QVERIFY(qAbs(seekPosition - 14400) < 500);
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+
+    spySeeked.clear();
+    seekPosition = -1;
+
+    p.seek(-50000);
+    QTRY_COMPARE(spySeeked.count(), 1);
+    QVERIFY(seekPosition < 500);
+
+    spySeeked.clear();
+    seekPosition = -1;
+
+    p.seek(p.duration() - 5000);
+    QTRY_COMPARE(spySeeked.count(), 1);
+    qint64 sp = seekPosition;
+
+    spySeeked.clear();
+
+    p.seek(-5000);
+    QTRY_COMPARE(spySeeked.count(), 1);
+    QCOMPARE(seekPosition, sp);
+
+    spySeeked.clear();
+    seekPosition = -1;
+
+    p.pause();
+    p.seek(0);
+    QTRY_COMPARE(spySeeked.count(), 1);
+    QVERIFY(seekPosition < 500);
+
+    spySeeked.clear();
+    seekPosition = -1;
+
+    p.seek(-1000);
+    QTRY_COMPARE(spySeeked.count(), 1);
+    QVERIFY(seekPosition >= 14000);
+
+    spySeeked.clear();
+    seekPosition = -1;
+
+    p.seek(-2000);
+    QTRY_COMPARE(spySeeked.count(), 1);
+    QVERIFY(seekPosition >= p.duration() - 2000 - 500);
+
+    spySeeked.clear();
+    seekPosition = -1;
+
+    p.seek(-20000);
+    QTRY_COMPARE(spySeeked.count(), 1);
+    QVERIFY(seekPosition < 500);
+
+    spySeeked.clear();
+    seekPosition = -1;
+
+    p.stop();
+    p.seek(-3000);
+    QTRY_COMPARE(spySeeked.count(), 1);
+    QVERIFY(seekPosition >= p.duration() - 3000 - 500);
+
+    spySeeked.clear();
+    seekPosition = -1;
+
+    p.seek(-14000);
+    QTRY_COMPARE(spySeeked.count(), 1);
+    QVERIFY(seekPosition >= p.duration() - 14000 - 500);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+
+    spySeeked.clear();
+    seekPosition = -1;
+
+    p.seek(-500);
+    QTRY_COMPARE(spySeeked.count(), 1);
+    QVERIFY(seekPosition >= p.duration() - 500 - 500);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+
+    spySeeked.clear();
+    seekPosition = -1;
+
+    p.play();
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+    QCOMPARE(spySeeked.count(), 0);
+    QCOMPARE(seekPosition, -1);
+
+    spySeeked.clear();
+    seekPosition = -1;
+
+    p.seek(0);
+    QTRY_COMPARE(spySeeked.count(), 1);
+    QVERIFY(seekPosition < 500);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    p.stop();
 }
 
 void tst_QAVPlayer::speedVideo()
