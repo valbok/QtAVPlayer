@@ -86,7 +86,8 @@ public:
     QString errorString;
 
     double duration = 0;
-    double pendingPosition = -1;
+    double pendingPosition = 0;
+    bool pendingSeek = false;
     mutable QMutex positionMutex;
 
     int videoStream = -1;
@@ -187,7 +188,7 @@ void QAVPlayerPrivate::setDuration(double d)
 bool QAVPlayerPrivate::isSeeking() const
 {
     QMutexLocker locker(&positionMutex);
-    return pendingPosition >= 0;
+    return pendingSeek;
 }
 
 bool QAVPlayerPrivate::isEndOfFile() const
@@ -248,7 +249,8 @@ void QAVPlayerPrivate::terminate()
     demuxerFuture.waitForFinished();
     videoPlayFuture.waitForFinished();
     audioPlayFuture.waitForFinished();
-    pendingPosition = -1;
+    pendingPosition = 0;
+    pendingSeek = false;
     pendingMediaStatuses.clear();
     setDuration(0);
 }
@@ -383,8 +385,8 @@ void QAVPlayerPrivate::doLoad(const QUrl &url)
         return;
     }
 
-    dispatch([this] {
-        qCDebug(lcAVPlayer) << "[" << this->url << "]: Loaded, seekable:" << demuxer.seekable() << ", duration:" << demuxer.duration();
+    dispatch([this, url] {
+        qCDebug(lcAVPlayer) << "[" << url << "]: Loaded, seekable:" << demuxer.seekable() << ", duration:" << demuxer.duration();
         setSeekable(demuxer.seekable());
         setDuration(demuxer.duration());
         setVideoFrameRate(demuxer.frameRate());
@@ -426,7 +428,11 @@ void QAVPlayerPrivate::doDemux()
 
         {
             QMutexLocker locker(&positionMutex);
-            if (pendingPosition >= 0) {
+            if (pendingSeek) {
+                if (pendingPosition < 0)
+                    pendingPosition += demuxer.duration();
+                if (pendingPosition < 0)
+                    pendingPosition = 0;
                 const double pos = pendingPosition;
                 locker.unlock();
                 qCDebug(lcAVPlayer) << "Seeking to pos:" << pos * 1000;
@@ -440,11 +446,13 @@ void QAVPlayerPrivate::doDemux()
                     audioQueue.waitForEmpty();
                     qCDebug(lcAVPlayer) << "Start reading packets from" << pos * 1000;
                 } else {
-                    qWarning() << "Could not seek:" << err_str(ret);
+                    qWarning() << "Could not seek:" << ret << ":" << err_str(ret);
                 }
                 locker.relock();
-                if (qFuzzyCompare(pendingPosition, pos))
-                    pendingPosition = -1;
+                if (qFuzzyCompare(pendingPosition, pos)) {
+                    pendingPosition = 0;
+                    pendingSeek = false;
+                }
             }
         }
 
@@ -699,12 +707,13 @@ bool QAVPlayer::isSeekable() const
 void QAVPlayer::seek(qint64 pos)
 {
     Q_D(QAVPlayer);
-    if (pos < 0 || (duration() > 0 && pos > duration()))
+    if (duration() > 0 && pos > duration())
         return;
 
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << "pos:" << pos;
     {
         QMutexLocker locker(&d->positionMutex);
+        d->pendingSeek = true;
         d->pendingPosition = pos / 1000.0;
     }
 
@@ -722,8 +731,8 @@ qint64 QAVPlayer::position() const
     Q_D(const QAVPlayer);
 
     QMutexLocker locker(&d->positionMutex);
-    if (d->pendingPosition >= 0)
-        return d->pendingPosition * 1000;
+    if (d->pendingSeek)
+        return d->pendingPosition * 1000 + (d->pendingPosition < 0 ? duration() : 0);
 
     if (mediaStatus() == QAVPlayer::EndOfMedia)
         return duration();
