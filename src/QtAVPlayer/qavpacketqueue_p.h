@@ -113,8 +113,10 @@ public:
     void waitForEmpty()
     {
         QMutexLocker locker(&m_mutex);
+        clearPackets();
         if (!m_abort && !m_waitingForPackets)
             m_producerWaiter.wait(&m_mutex);
+        clearTimers();
     }
 
     QAVPacket dequeue()
@@ -168,13 +170,8 @@ public:
     void clear()
     {
         QMutexLocker locker(&m_mutex);
-        m_packets.clear();
-        m_bytes = 0;
-        m_duration = 0;
-
-        m_clock.prevPts = 0;
-        m_clock.frameTimer = 0;
-        m_frame = QAVFrame();
+        clearPackets();
+        clearTimers();
     }
 
     QAVFrame sync(double speed = 1.0, double master = -1)
@@ -216,6 +213,20 @@ public:
     }
 
 private:
+    void clearPackets()
+    {
+        m_packets.clear();
+        m_bytes = 0;
+        m_duration = 0;
+        m_frame = QAVFrame();
+    }
+
+    void clearTimers()
+    {
+        m_clock.prevPts = 0;
+        m_clock.frameTimer = 0;        
+    }
+
     QList<QAVPacket> m_packets;
     mutable QMutex m_mutex;
     QWaitCondition m_consumerWaiter;
