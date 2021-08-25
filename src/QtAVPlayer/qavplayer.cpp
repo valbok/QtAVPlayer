@@ -438,8 +438,6 @@ void QAVPlayerPrivate::doDemux()
                 qCDebug(lcAVPlayer) << "Seeking to pos:" << pos * 1000;
                 const int ret = demuxer.seek(pos);
                 if (ret >= 0) {
-                    videoQueue.clear();
-                    audioQueue.clear();
                     qCDebug(lcAVPlayer) << "Waiting video thread finished processing packets";
                     videoQueue.waitForEmpty();
                     qCDebug(lcAVPlayer) << "Waiting audio thread finished processing packets";
