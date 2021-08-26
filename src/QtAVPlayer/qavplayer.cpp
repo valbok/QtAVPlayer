@@ -64,6 +64,7 @@ public:
     void wait(bool v);
     void doLoad(const QUrl &url);
     void doDemux();
+    bool skipFrame(const QAVFrame &frame, const QAVPacketQueue &queue, int stream, bool master);
     void doPlayVideo();
     void doPlayAudio();
 
@@ -447,10 +448,8 @@ void QAVPlayerPrivate::doDemux()
                     qWarning() << "Could not seek:" << ret << ":" << err_str(ret);
                 }
                 locker.relock();
-                if (qFuzzyCompare(pendingPosition, pos)) {
-                    pendingPosition = 0;
+                if (qFuzzyCompare(pendingPosition, pos))
                     pendingSeek = false;
-                }
             }
         }
 
@@ -477,18 +476,46 @@ void QAVPlayerPrivate::doDemux()
     qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
 
+bool QAVPlayerPrivate::skipFrame(const QAVFrame &frame, const QAVPacketQueue &queue, int stream, bool master = true)
+{
+    QMutexLocker locker(&positionMutex);
+    bool result = pendingSeek;
+    if (!pendingSeek && pendingPosition > 0) {
+        const bool isQueueEOF = demuxer.eof() && queue.isEmpty();
+        // Assume that no frames will be sent after this pts
+        const double duration = qMin(demuxer.duration(), demuxer.duration(stream));
+        const double requestedPos = qMin(pendingPosition, duration);
+        double pos = frame.pts();
+        // Show last frame if seeked to duration
+        if (pendingPosition >= duration)
+            pos += frame.duration();
+        result = pos < requestedPos && !isQueueEOF;
+        if (!result && master)
+            pendingPosition = 0;
+    }
+
+    return result;
+}
+
 void QAVPlayerPrivate::doPlayVideo()
 {
     videoQueue.setFrameRate(demuxer.frameRate());
+    bool sync = true;
+    bool tick = false;
+    QAVVideoFrame frame;
 
     while (!quit) {
         doWait();
-        QAVVideoFrame frame = videoQueue.sync(q_ptr->speed(), audioQueue.pts());
+        tick = false;
+        frame = videoQueue.frame(sync, q_ptr->speed(), audioQueue.pts());
         if (frame) {
-            emit q_ptr->videoFrame(frame);
-            videoQueue.pop();
+            sync = !skipFrame(frame, videoQueue, demuxer.videoStream(), true);
+            if (sync) {
+                emit q_ptr->videoFrame(frame);
+                tick = true;
+            }
         }
-        step(frame);
+        step(tick);
     }
 
     videoQueue.clear();
@@ -499,19 +526,25 @@ void QAVPlayerPrivate::doPlayVideo()
 void QAVPlayerPrivate::doPlayAudio()
 {
     const bool hasVideo = q_ptr->hasVideo();
+    bool sync = true;
+    bool tick = false;
+    QAVAudioFrame frame;
 
     while (!quit) {
         doWait();
+        tick = false;
         const qreal currSpeed = q_ptr->speed();
-        QAVAudioFrame frame = audioQueue.sync(currSpeed);
+        frame = audioQueue.frame(sync, currSpeed);
         if (frame) {
-            frame.frame()->sample_rate *= currSpeed;
-            emit q_ptr->audioFrame(frame);
-            audioQueue.pop();
+            sync = !skipFrame(frame, audioQueue, demuxer.audioStream(), !hasVideo);
+            if (sync) {
+                frame.frame()->sample_rate *= currSpeed;
+                emit q_ptr->audioFrame(frame);
+                tick = true;
+            }
         }
-
         if (!hasVideo)
-            step(frame);
+            step(tick);
     }
 
     audioQueue.clear();

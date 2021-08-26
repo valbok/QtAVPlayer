@@ -55,6 +55,7 @@ public:
 
     QAVPacket read();
 
+    double duration(int stream) const;
     double duration() const;
     bool seekable() const;
     int seek(double sec);

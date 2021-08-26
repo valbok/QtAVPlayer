@@ -32,6 +32,7 @@ public:
     operator bool() const;
     AVFrame *frame() const;
     double pts() const;
+    double duration() const;
 
 protected:
     QScopedPointer<QAVFramePrivate> d_ptr;
