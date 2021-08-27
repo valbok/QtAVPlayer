@@ -39,7 +39,7 @@ public:
     {
     }
 
-    bool sync(double pts, double speed = 1.0, double master = -1)
+    bool sync(bool sync, double pts, double speed = 1.0, double master = -1)
     {
         double delay = pts - prevPts;
         if (isnan(delay) || delay <= 0 || delay > maxFrameDuration)
@@ -60,15 +60,17 @@ public:
 
         delay /= speed;
         double time = av_gettime_relative() / 1000000.0;
-        if (time < frameTimer + delay) {
-            double remaining_time = qMin(frameTimer + delay - time, refreshRate);
-            av_usleep((int64_t)(remaining_time * 1000000.0));
-            return false;
+        if (sync) {
+            if (time < frameTimer + delay) {
+                double remaining_time = qMin(frameTimer + delay - time, refreshRate);
+                av_usleep((int64_t)(remaining_time * 1000000.0));
+                return false;
+            }
         }
 
         prevPts = pts;
         frameTimer += delay;
-        if (delay > 0 && time - frameTimer > maxThreshold)
+        if ((delay > 0 && time - frameTimer > maxThreshold) || !sync)
             frameTimer = time;
 
         return true;
@@ -139,12 +141,6 @@ public:
         return packet;
     }
 
-    void pop()
-    {
-        QMutexLocker locker(&m_mutex);
-        m_frame = QAVFrame();
-    }
-
     void abort()
     {
         QMutexLocker locker(&m_mutex);
@@ -174,7 +170,7 @@ public:
         clearTimers();
     }
 
-    QAVFrame sync(double speed = 1.0, double master = -1)
+    QAVFrame frame(bool sync = true, double speed = 1.0, double master = -1)
     {
         QMutexLocker locker(&m_mutex);
         auto frame = m_frame;
@@ -186,9 +182,11 @@ public:
         }
         locker.unlock();
 
-        if (!frame || !m_clock.sync(frame.pts(), speed, master))
+        if (!frame || !m_clock.sync(sync, frame.pts(), speed, master))
             return {};
 
+        locker.relock();
+        m_frame = QAVFrame();
         return frame;
     }
 

@@ -85,4 +85,13 @@ double QAVFrame::pts() const
     return d->frame->pts * av_q2d(d->codec->stream()->time_base);
 }
 
+double QAVFrame::duration() const
+{
+    Q_D(const QAVFrame);
+    if (!d->frame || !d->codec)
+        return -1;
+
+    return d->frame->pkt_duration * av_q2d(d->codec->stream()->time_base);
+}
+
 QT_END_NAMESPACE

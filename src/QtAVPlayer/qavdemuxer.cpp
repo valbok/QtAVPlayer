@@ -451,6 +451,15 @@ double QAVDemuxer::duration() const
     return d->ctx->duration * av_q2d({1, AV_TIME_BASE});
 }
 
+double QAVDemuxer::duration(int stream) const
+{
+    Q_D(const QAVDemuxer);
+    if (!d->ctx || stream < 0 || stream >= int(d->ctx->nb_streams))
+        return 0;
+
+    return d->ctx->streams[stream]->duration * av_q2d(d->ctx->streams[stream]->time_base);
+}
+
 double QAVDemuxer::frameRate() const
 {
     Q_D(const QAVDemuxer);
