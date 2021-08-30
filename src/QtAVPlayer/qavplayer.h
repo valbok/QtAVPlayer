@@ -85,6 +85,7 @@ public Q_SLOTS:
     void seek(qint64 position);
     void setSpeed(qreal rate);
     void stepForward();
+    void stepBackward();
 
 Q_SIGNALS:
     void sourceChanged(const QUrl &url);

@@ -57,6 +57,7 @@ public:
     bool isEndOfFile() const;
     void endOfFile(bool v);
     void setVideoFrameRate(double v);
+    double pts() const;
 
     void terminate();
 
@@ -213,6 +214,12 @@ void QAVPlayerPrivate::setVideoFrameRate(double v)
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << videoFrameRate << "->" << v;
     videoFrameRate = v;
     emit q->videoFrameRateChanged(v);
+}
+
+double QAVPlayerPrivate::pts() const
+{
+    Q_Q(const QAVPlayer);
+    return q->hasVideo() ? videoQueue.pts() : audioQueue.pts();
 }
 
 template <class T>
@@ -482,7 +489,7 @@ bool QAVPlayerPrivate::skipFrame(const QAVFrame &frame, const QAVPacketQueue &qu
     bool result = pendingSeek;
     if (!pendingSeek && pendingPosition > 0) {
         const bool isQueueEOF = demuxer.eof() && queue.isEmpty();
-        // Assume that no frames will be sent after this pts
+        // Assume that no frames will be sent after duration
         const double duration = qMin(demuxer.duration(), demuxer.duration(stream));
         const double requestedPos = qMin(pendingPosition, duration);
         double pos = frame.pts();
@@ -730,6 +737,17 @@ void QAVPlayer::stepForward()
     d->wait(false);
 }
 
+void QAVPlayer::stepBackward()
+{
+    Q_D(QAVPlayer);
+    qCDebug(lcAVPlayer) << __FUNCTION__;
+    d->setState(QAVPlayer::PausedState);
+    const qint64 pos = d->pts() > 0 ? (d->pts() - videoFrameRate()) * 1000 : duration();
+    seek(pos);
+    d->setPendingMediaStatus(SteppingMedia);
+    d->wait(false);
+}
+
 bool QAVPlayer::isSeekable() const
 {
     return d_func()->seekable;
@@ -768,8 +786,7 @@ qint64 QAVPlayer::position() const
     if (mediaStatus() == QAVPlayer::EndOfMedia)
         return duration();
 
-    const double pts = hasVideo() ? d->videoQueue.pts() : d->audioQueue.pts();
-    return pts * 1000;
+    return d->pts() * 1000;
 }
 
 void QAVPlayer::setSpeed(qreal r)
