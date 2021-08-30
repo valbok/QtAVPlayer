@@ -39,6 +39,7 @@ extern "C" {
 #include <QGuiApplication>
 #include <QDir>
 #include <QSharedPointer>
+#include <QMutexLocker>
 #include <QDebug>
 
 extern "C" {
