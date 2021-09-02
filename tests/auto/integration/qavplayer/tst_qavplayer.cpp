@@ -1948,7 +1948,7 @@ void tst_QAVPlayer::lastFrame()
     p.seek(p.duration());
     QTRY_COMPARE(framesCount, 1);
     QVERIFY(frame);
-    QCOMPARE(seekPosition, 5500);
+    QTRY_COMPARE(seekPosition, 5500);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
 }
 

@@ -40,6 +40,20 @@
                 { "type": "pkgConfig",
                   "args": "libva-drm" }
             ]
+        },
+        "egl": {
+            "label": "EGL",
+            "test": {
+                "main": [
+                    "EGLint x = 0; EGLDisplay dpy = 0; EGLContext ctx = 0;",
+                    "eglDestroyContext(dpy, ctx);"
+                ]
+            },
+            "headers": "EGL/egl.h",
+            "sources": [
+                { "type": "pkgConfig", "args": "egl" },
+                { "type": "makeSpec", "spec": "EGL" }
+            ]
         }
     },
 
@@ -58,6 +72,11 @@
             "label": "va_drm",
             "condition": "libs.va_drm",
             "output": [ "privateFeature" ]
+        },
+        "egl": {
+            "label": "egl",
+            "condition": "libs.egl",
+            "output": [ "privateFeature" ]
         }
     },
 
@@ -67,7 +86,8 @@
             "entries": [
                 "ffmpeg",
                 "va_x11",
-                "va_drm"
+                "va_drm",
+                "egl"
             ]
         }
     ]
