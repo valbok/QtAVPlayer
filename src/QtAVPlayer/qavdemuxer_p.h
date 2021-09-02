@@ -20,9 +20,9 @@
 //
 
 #include "qavpacket_p.h"
-#include "qtavplayerglobal_p.h"
 #include <QObject>
 #include <QUrl>
+#include <QScopedPointer>
 
 QT_BEGIN_NAMESPACE
 

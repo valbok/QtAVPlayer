@@ -13,7 +13,6 @@
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QUrl>
 #include <QScopedPointer>
-#include <functional>
 
 QT_BEGIN_NAMESPACE
 

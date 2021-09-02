@@ -10,6 +10,7 @@
 
 #include <QObject>
 #include <QSharedPointer>
+#include <QScopedPointer>
 #include <QtAVPlayer/qtavplayerglobal.h>
 
 QT_BEGIN_NAMESPACE
