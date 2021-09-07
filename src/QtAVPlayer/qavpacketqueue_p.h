@@ -20,6 +20,7 @@
 //
 
 #include "qavpacket_p.h"
+#include "qavfilter_p.h"
 #include <QMutex>
 #include <QWaitCondition>
 #include <QList>
@@ -98,7 +99,7 @@ public:
     bool isEmpty() const
     {
         QMutexLocker locker(&m_mutex);
-        return m_packets.isEmpty() && !m_frame;
+        return m_packets.isEmpty() && !m_frame && (!m_filter || m_filter->eof());
     }
 
     void enqueue(const QAVPacket &packet)
@@ -170,24 +171,36 @@ public:
         clearTimers();
     }
 
-    QAVFrame frame(bool sync = true, double speed = 1.0, double master = -1)
+    int frame(bool sync, double speed, double master, QAVFrame &frame)
     {
         QMutexLocker locker(&m_mutex);
-        auto frame = m_frame;
+        frame = m_frame;
         if (!frame) {
-            locker.unlock();
-            frame = dequeue().decode();
-            locker.relock();
+            bool decode = !m_filter || m_filter->eof();
+            if (decode) {
+                locker.unlock();
+                frame = dequeue().decode();
+                locker.relock();
+                if (m_filter && frame) {
+                    int ret = m_filter->write(frame);
+                    if (ret < 0)
+                        return ret;
+                }
+            }
+            if (m_filter)
+                frame = m_filter->read();
             m_frame = frame;
         }
         locker.unlock();
 
-        if (!frame || !m_clock.sync(sync, frame.pts(), speed, master))
-            return {};
+        if (!frame || !m_clock.sync(sync, frame.pts(), speed, master)) {
+            frame = {};
+            return 0;
+        }
 
         locker.relock();
         m_frame = QAVFrame();
-        return frame;
+        return 0;
     }
 
     double pts() const
@@ -210,7 +223,16 @@ public:
         m_wake = wake;
     }
 
+    void setFilter(QAVFilter *filter)
+    {
+        QMutexLocker locker(&m_mutex);
+        m_filter.reset(filter);
+        m_frame = {};
+    }
+
 private:
+    Q_DISABLE_COPY(QAVPacketQueue)
+
     void clearPackets()
     {
         m_packets.clear();
@@ -222,7 +244,7 @@ private:
     void clearTimers()
     {
         m_clock.prevPts = 0;
-        m_clock.frameTimer = 0;        
+        m_clock.frameTimer = 0;
     }
 
     QList<QAVPacket> m_packets;
@@ -238,6 +260,8 @@ private:
 
     QAVFrame m_frame;
     QAVQueueClock m_clock;
+
+    QScopedPointer<QAVFilter> m_filter;
 };
 
 QT_END_NAMESPACE

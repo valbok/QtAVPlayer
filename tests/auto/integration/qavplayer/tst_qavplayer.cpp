@@ -56,6 +56,9 @@ private slots:
     void accurateSeek_data();
     void accurateSeek();
     void lastFrame();
+    void configureVideoFilter();
+    void videoFilter_data();
+    void videoFilter();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -75,8 +78,6 @@ void tst_QAVPlayer::construction()
     QCOMPARE(p.position(), 0);
     QCOMPARE(p.speed(), 1.0);
     QVERIFY(!p.isSeekable());
-    QCOMPARE(p.error(), QAVPlayer::NoError);
-    QVERIFY(p.errorString().isEmpty());
 }
 
 void tst_QAVPlayer::sourceChanged()
@@ -115,37 +116,47 @@ void tst_QAVPlayer::quitAudio()
 void tst_QAVPlayer::playIncorrectSource()
 {
     QAVPlayer p;
-    QSignalSpy spy(&p, &QAVPlayer::stateChanged);
+    QSignalSpy spyStateChanged(&p, &QAVPlayer::stateChanged);
+    QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
 
     p.play();
-
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::NoMedia);
+    QCOMPARE(p.mediaStatus(), QAVPlayer::NoMedia);
     QVERIFY(!p.hasAudio());
     QVERIFY(!p.hasVideo());
-    QCOMPARE(spy.count(), 0);
+    QCOMPARE(spyStateChanged.count(), 0);
 
     p.setSource(QUrl(QLatin1String("unknown")));
-
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::InvalidMedia);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
-    QCOMPARE(p.error(), QAVPlayer::ResourceError);
-    QVERIFY(!p.errorString().isEmpty());
+    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+
+    spyErrorOccurred.clear();
 
     p.play();
-
     QCOMPARE(p.mediaStatus(), QAVPlayer::InvalidMedia);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
-    QCOMPARE(p.error(), QAVPlayer::ResourceError);
-    QVERIFY(!p.errorString().isEmpty());
     QVERIFY(!p.hasAudio());
     QVERIFY(!p.hasVideo());
-    QCOMPARE(spy.count(), 0);
+    QCOMPARE(spyStateChanged.count(), 0);
+    QCOMPARE(spyErrorOccurred.count(), 0);
+
+    spyStateChanged.clear();
 
     p.setSource(QUrl(QLatin1String("unknown")));
     p.play();
     QCOMPARE(p.mediaStatus(), QAVPlayer::InvalidMedia);
-    QCOMPARE(spy.count(), 0);
+    QCOMPARE(spyStateChanged.count(), 0);
+    QCOMPARE(spyErrorOccurred.count(), 0);
+    QCOMPARE(p.state(), QAVPlayer::StoppedState);
+
+    QFileInfo file(QLatin1String("../testdata/test.wav"));
+    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));    
+
+    p.play();
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QTRY_COMPARE(spyStateChanged.count(), 1);
+    QCOMPARE(p.state(), QAVPlayer::PlayingState);
 }
 
 void tst_QAVPlayer::playAudio()
@@ -179,8 +190,6 @@ void tst_QAVPlayer::playAudio()
     QCOMPARE(spyDuration.count(), 1);
     QCOMPARE(p.duration(), 999);
     QCOMPARE(p.position(), 0);
-    QCOMPARE(p.error(), QAVPlayer::NoError);
-    QVERIFY(p.errorString().isEmpty());
     QVERIFY(p.hasAudio());
     QVERIFY(!p.hasVideo());
     QVERIFY(p.isSeekable());
@@ -212,8 +221,6 @@ void tst_QAVPlayer::playAudio()
     QCOMPARE(spyMediaStatus.count(), 1); // EndOfMedia -> Loaded
     QCOMPARE(spyDuration.count(), 0);
     QCOMPARE(p.duration(), 999);
-    QCOMPARE(p.error(), QAVPlayer::NoError);
-    QVERIFY(p.errorString().isEmpty());
 
     QTRY_VERIFY(p.position() != 0);
 
@@ -417,8 +424,6 @@ void tst_QAVPlayer::playVideo()
     QCOMPARE(spyVideoFrameRateChanged.count(), 1);
     QCOMPARE(p.videoFrameRate(), 0.04);
     QCOMPARE(p.duration(), 15019);
-    QCOMPARE(p.error(), QAVPlayer::NoError);
-    QVERIFY(p.errorString().isEmpty());
     QVERIFY(p.hasAudio());
     QVERIFY(p.hasVideo());
     QVERIFY(p.isSeekable());
@@ -509,8 +514,6 @@ void tst_QAVPlayer::seekVideo()
     QCOMPARE(spyPaused.count(), 0);
     QCOMPARE(pausePosition, -1);
     QCOMPARE(p.duration(), 15019);
-    QCOMPARE(p.error(), QAVPlayer::NoError);
-    QVERIFY(p.errorString().isEmpty());
 
     QTRY_VERIFY(p.position() < 5000 && p.position() > 1000);
 
@@ -552,7 +555,7 @@ void tst_QAVPlayer::seekVideo()
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
     p.play();
     QTRY_COMPARE(p.state(), QAVPlayer::PlayingState);
-    QCOMPARE(spyMediaStatus.count(), 0);
+    QTRY_COMPARE(spyMediaStatus.count(), 1); // NoMeida -> Loaded
     QCOMPARE(spyState.count(), 1); // Stopped -> Playing
     QTRY_COMPARE(spyDuration.count(), 1);
     QCOMPARE(spySeeked.count(), 0);
@@ -1950,6 +1953,213 @@ void tst_QAVPlayer::lastFrame()
     QVERIFY(frame);
     QTRY_COMPARE(seekPosition, 5500);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+}
+
+void tst_QAVPlayer::configureVideoFilter()
+{
+    QAVPlayer p;
+
+    QFileInfo file(QLatin1String("../testdata/small.mp4"));
+    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    QSignalSpy spy(&p, &QAVPlayer::videoFilterChanged);
+    QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
+    QAVVideoFrame frame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; });
+
+    p.pause();
+    QTRY_VERIFY(frame);
+    QCOMPARE(frame.size(), QSize(560, 320));
+
+    frame = QAVVideoFrame();
+
+    QString desc = "scale=iw/2:-1";
+    p.setVideoFilter(desc);
+    QCOMPARE(p.videoFilter(), desc);
+    QTRY_COMPARE(spy.count(), 1);
+    QCOMPARE(spyErrorOccurred.count(), 0);
+
+    p.play();
+    QTRY_VERIFY(frame);
+    QCOMPARE(frame.size(), QSize(560 / 2, 320 / 2));
+
+    spy.clear();
+    spyErrorOccurred.clear();
+
+    p.stop();
+    p.setVideoFilter(desc);
+    QCOMPARE(p.videoFilter(), desc);
+    QCOMPARE(spy.count(), 0);
+    QCOMPARE(spyErrorOccurred.count(), 0);
+
+    p.setVideoFilter("");
+    QCOMPARE(p.videoFilter(), "");
+    QTRY_COMPARE(spy.count(), 1);
+    QCOMPARE(spyErrorOccurred.count(), 0);
+
+    frame = QAVVideoFrame();
+
+    p.pause();
+    QTRY_VERIFY(frame);
+    QTRY_COMPARE(frame.size(), QSize(560, 320));
+
+    frame = QAVVideoFrame();
+
+    p.play();
+    QTRY_VERIFY(frame);
+    QCOMPARE(frame.size(), QSize(560, 320));
+
+    p.stop();
+    p.setVideoFilter("wrong");
+    QCOMPARE(p.videoFilter(), "wrong");
+    p.pause();
+    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+
+    frame = QAVVideoFrame();
+    spyErrorOccurred.clear();
+
+    p.pause();
+    QCOMPARE(p.videoFilter(), "wrong");
+    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+    QVERIFY(!frame);
+
+    spy.clear();
+    spyErrorOccurred.clear();
+
+    p.setVideoFilter(desc);
+    QCOMPARE(p.videoFilter(), desc);
+    QTRY_COMPARE(spy.count(), 1);
+
+    p.pause();
+    QTRY_VERIFY(frame);
+    QCOMPARE(frame.size(), QSize(560 / 2, 320 / 2));
+    QCOMPARE(spyErrorOccurred.count(), 0);
+
+    spy.clear();
+    spyErrorOccurred.clear();
+
+    p.setVideoFilter("wrong");
+    QCOMPARE(p.videoFilter(), "wrong");
+    QTRY_COMPARE(spy.count(), 1);
+    QCOMPARE(spyErrorOccurred.count(), 0);
+
+    p.pause();
+    QCOMPARE(spyErrorOccurred.count(), 0);
+
+    p.stepForward();
+    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+
+    spy.clear();
+    spyErrorOccurred.clear();
+
+    p.setVideoFilter("wrong2");
+    QCOMPARE(p.videoFilter(), "wrong2");
+    QTRY_COMPARE(spy.count(), 1);
+    QCOMPARE(spyErrorOccurred.count(), 0);
+
+    p.stop();
+    QCOMPARE(spyErrorOccurred.count(), 0);
+
+    p.play();
+    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+
+    spy.clear();
+    spyErrorOccurred.clear();
+    frame = QAVVideoFrame();
+
+    p.setVideoFilter("");
+    QCOMPARE(p.videoFilter(), "");
+    QTRY_COMPARE(spy.count(), 1);
+
+    p.play();    
+    QTRY_VERIFY(frame);
+    QTRY_COMPARE(frame.size(), QSize(560, 320));
+    QCOMPARE(spyErrorOccurred.count(), 0);
+
+    p.setVideoFilter(desc);
+    QTRY_COMPARE(frame.size(), QSize(560 / 2, 320 / 2));
+
+    p.seek(p.duration());
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 10000);
+}
+
+void tst_QAVPlayer::videoFilter_data()
+{
+    QTest::addColumn<QString>("filter");
+
+    QTest::newRow("fps=fps=10") << QString("fps=fps=10");
+    QTest::newRow("curves=vintage") << QString("curves=vintage");
+    QTest::newRow("scale=1920:1080,setsar=1:1") << QString("scale=1920:1080,setsar=1:1");
+    QTest::newRow("mirror") << QString("crop=iw/2:ih:0:0,split[left][tmp];[tmp]hflip[right];[left][right] hstack");
+    QTest::newRow("split") << QString("split=4[a][b][c][d];[b]lutrgb=g=0:b=0[x];[c]lutrgb=r=0:b=0[y];[d]lutrgb=r=0:g=0[z];[a][x][y][z]hstack=4");
+    QTest::newRow("yuv") << QString("split=4[a][b][c][d];[b]lutyuv=u=128:v=128[x];[c]lutyuv=y=0:v=128[y];[d]lutyuv=y=0:u=128[z];[a][x][y][z]hstack=4");
+    QTest::newRow("histogram") << QString("format=gbrp,split=4[a][b][c][d],[d]histogram=display_mode=0:level_height=244[dd],[a]waveform=m=1:d=0:r=0:c=7[aa],[b]waveform=m=0:d=0:r=0:c=7[bb],[c][aa]vstack[V],[bb][dd]vstack[V2],[V][V2]hstack");
+    QTest::newRow("vectorscope") << QString("format=yuv422p,split=4[a][b][c][d],[a]waveform[aa],[b][aa]vstack[V],[c]waveform=m=0[cc],[d]vectorscope=color4[dd],[cc][dd]vstack[V2],[V][V2]hstack");
+    //QTest::newRow("waveform") << QString("split[a][b];[a]format=gray,waveform,split[c][d];[b]pad=iw:ih+256[padded];[c]geq=g=1:b=1[red];[d]geq=r=1:b=1,crop=in_w:220:0:16[mid];[red][mid]overlay=0:16[wave];[padded][wave]overlay=0:H-h");
+    QTest::newRow("envelope") << QString("split[a][b];[a]waveform=e=3,split=3[c][d][e];[e]crop=in_w:20:0:235,lutyuv=v=180[low];[c]crop=in_w:16:0:0,lutyuv=y=val:v=180[high];[d]crop=in_w:220:0:16,lutyuv=v=110[mid] ; [b][high][mid][low]vstack=4");
+    QTest::newRow("yuv420p10le") << QString("format=yuv420p10le|yuv422p10le|yuv444p10le|yuv440p10le,            lutyuv=                y=if(eq(1\\,-1)\\,512\\,if(eq(1\\,0)\\,val\\,bitand(val\\,pow(2\\,10-1))*pow(2\\,1))):                u=if(eq(-1\\,-1)\\,512\\,if(eq(-1\\,0)\\,val\\,bitand(val\\,pow(2\\,10--1))*pow(2\\,-1))):                v=if(eq(-1\\,-1)\\,512\\,if(eq(-1\\,0)\\,val\\,bitand(val\\,pow(2\\,10--1))*pow(2\\,-1))),format=yuv444p");
+    QTest::newRow("bitplanenoise") << QString("bitplanenoise=bitplane=1:filter=1,extractplanes=y,format=yuv444p");
+    QTest::newRow("lutyuv") << QString("lutyuv=y=if(gt(val\\,maxval)\\,val-maxval\\,0):u=(maxval+minval)/2:v=(maxval+minval)/2,histeq=strength=1");
+    QTest::newRow("signalstats") << QString("signalstats=out=brng:c=0x40e0d0,format=yuv444p|rgb24");
+    QTest::newRow("ciescope") << QString("ciescope=system=1:gamuts=pow(2\\,1):contrast=0.7:intensity=0.01");
+    QTest::newRow("extractplanes") << QString("format=yuv444p,split[y][u];[y]extractplanes=y,pad=w=iw+256:h=ih:x=128,format=yuv444p[y1];[u]extractplanes=u,histeq,pad=w=iw+256:h=ih:x=0+128:y=0,format=yuv444p[u1];[y1][u1]vstack,il=l=i:c=i");
+    QTest::newRow("crop") << QString("split[a][b];[a]crop=360:576:0:0[a1];[b]colormatrix=bt601:bt709[b1];[b1][a1]overlay");
+    QTest::newRow("crop_histeq") << QString("split=4[a][b][c][d];[a]crop=w=24:h=24:x=0:y=0,histeq=strength=0,scale=24*16:24*16:flags=neighbor,drawgrid=w=iw/24:h=ih/24:t=1:c=green@0.5[a1];[b]crop=w=24:h=24:x=iw-24:y=0,histeq=strength=0,scale=24*16:24*16:flags=neighbor,drawgrid=w=iw/24:h=ih/24:t=1:c=green@0.5[b1];[c]crop=w=24:h=24:x=0:y=ih-24,histeq=strength=0,scale=24*16:24*16:flags=neighbor,drawgrid=w=iw/24:h=ih/24:t=1:c=green@0.5[c1];[d]crop=w=24:h=24:x=iw-24:y=ih-24,histeq=strength=0,scale=24*16:24*16:flags=neighbor,drawgrid=w=iw/24:h=ih/24:t=1:c=green@0.5[d1];[a1][b1]hstack[ab];[c1][d1]hstack[cd];[ab][cd]vstack,setsar=1/1,drawgrid=w=iw/2:h=ih/2:t=2:c=blue@0.5");
+    QTest::newRow("datascope") << QString("datascope=x=0:y=0:mode=1:axis=1");
+    QTest::newRow("extractplanes_formats") << QString("format=yuv444p|yuv422p|yuv420p|yuv410p,extractplanes=v,histeq=strength=0.2:intensity=0.2");
+    QTest::newRow("bottom_blend") << QString("split[a][b];[a]field=bottom[a1];[b]field=top,negate[b2];[a1][b2]blend=all_mode=average,histeq=strength=0:intensity=0");
+    QTest::newRow("force_original_aspect_ratio") << QString("scale=iw/8:ih/4:force_original_aspect_ratio=decrease,tile=8x4:overlap=8*4-1:init_padding=8*4-1");
+    QTest::newRow("histogram_linear") << QString("histogram=level_height=576:levels_mode=linear");
+    //QTest::newRow("thistogram") << QString("thistogram=levels_mode=linear"); does not exist in old ffmpeg version
+    QTest::newRow("shuffleplanes") << QString("limiter=min=0:max=255:planes=1,shuffleplanes=1-1,histeq=strength=0.2,format=gray,format=yuv444p");
+    QTest::newRow("crop_overlap") << QString("format=rgb24|yuv444p,crop=iw:1:0:288:0:1,tile=1x480:overlap=480-1:init_padding=480-1");
+    QTest::newRow("crop_mirror") << QString("crop=iw:1:0:288:0:1,waveform=intensity=1:mode=column:mirror=1:components=7:display=overlay:graticule=green:flags=numbers+dots:scale=0");
+    QTest::newRow("oscilloscope") << QString("oscilloscope=x=500000/1000000:y=500000/1000000:s=500000/1000000:t=500000/1000000");
+    QTest::newRow("geq") << QString("geq=lum=lum(X\\,Y)-lum(X-1\\,Y-0)+128:cb=cb(X\\,Y)-cb(X-0\\,Y-0)+128:cr=cr(X\\,Y)-cr(X-0\\,Y-0)+128,histeq=strength=0");
+    QTest::newRow("pixscope") << QString("pixscope=x=20/100:y=20/100:w=8:h=8,format=rgb24");
+    QTest::newRow("crop_in_range") << QString("split[a][b];[a]crop=100:100:0:0[a1];[b]scale=iw+1:ih:in_range=tv:out_range=full,scale=iw-1:ih[b1];[b1][a1]overlay");
+    QTest::newRow("between_hypot") << QString("format=yuv444p,geq=lum=lum(X\\,Y):cb=if(between(hypot(cb(X\\,Y)-128\\,cr(X\\,Y)-128)\\,89\\,182)\\,32\\,128):cr=if(between(hypot(cb(X\\,Y)-128\\,cr(X\\,Y)-128)\\,89\\,182)\\,220\\,128)");
+    QTest::newRow("tblend") << QString("tblend=all_mode=difference128,histeq=strength=0.2:intensity=0.2");
+    QTest::newRow("signalstats") << QString("format=yuv444p,signalstats=out=tout:c=0x40e0d0");
+    QTest::newRow("extractplanes_between") << QString("extractplanes=y,format=rgb24,lutrgb=r=if(between(val\\,235\\,255)\\,64\\,val):g=if(between(val\\,235\\,255)\\,224\\,val):b=if(between(val\\,235\\,255)\\,208\\,val)");
+    QTest::newRow("vectorscope_envelope") << QString("vectorscope=i=0.1:mode=3:envelope=0:colorspace=1:graticule=green:flags=name,pad=ih*1.33333:ih:(ow-iw)/2:(oh-ih)/2");
+    QTest::newRow("vectorscope_graticule") << QString("split[h][l];[l]vectorscope=i=0.1:mode=3:envelope=0:colorspace=1:graticule=green:flags=name:l=0:h=0.5[l1];[h]vectorscope=i=0.1:mode=3:envelope=0:colorspace=1:graticule=green:flags=name:l=0.5:h=1[h1];[l1][h1]hstack");
+    QTest::newRow("lutyuv_drawbox") << QString("split[a][b];            [a]lutyuv=y=val/4,scale=720:576,setsar=1/1,format=yuv444p|yuv444p10le,drawbox=w=120:h=120:x=20:y=20:color=invert:thickness=1[a1];            [b]crop=120:120:20:20,            format=yuv422p|yuv422p10le|yuv420p|yuv411p|yuv444p|yuv444p10le,vectorscope=i=0.1:mode=3:envelope=0:colorspace=601:graticule=green:flags=name,pad=ih*1.33333:ih:(ow-iw)/2:(oh-ih)/2,scale=720:576,setsar=1/1[b1];            [a1][b1]blend=addition");
+    QTest::newRow("signalstats_vrep") << QString("format=yuv444p,signalstats=out=vrep:c=0x40e0d0");
+    QTest::newRow("waveform_green") << QString("waveform=intensity=0.1:mode=column:mirror=1:c=1:f=0:graticule=green:flags=numbers+dots:scale=0");
+    QTest::newRow("lutyuv_drawbox_green") << QString("split[a][b];            [a]lutyuv=y=val/4,scale=720:576,setsar=1/1,format=yuv444p|yuv444p10le,drawbox=w=121:h=121:x=20:y=20:color=invert:thickness=1[a1];            [b]crop=121:121:20:20,            waveform=intensity=0.8:mode=column:mirror=1:c=1:f=0:graticule=green:flags=numbers+dots:scale=0,scale=720:576,setsar=1/1[b1];            [a1][b1]blend=addition");
+    QTest::newRow("crop_neighbor") << QString("crop=x=200:y=200:w=120:h=120,scale=720:576:flags=neighbor,histeq=strength=0,setsar=1/1");
+}
+
+void tst_QAVPlayer::videoFilter()
+{
+    QFETCH(QString, filter);
+    QAVPlayer p;
+
+    QFileInfo file(QLatin1String("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv"));
+    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+
+    QSignalSpy spyVideoFilterChanged(&p, &QAVPlayer::videoFilterChanged);
+    QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
+    QAVVideoFrame frame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; });
+
+    p.setVideoFilter(filter);
+    p.pause();
+    QTRY_VERIFY(frame);
+    QTRY_COMPARE(spyVideoFilterChanged.count(), 1);
+
+    frame = QAVVideoFrame();
+
+    p.play();
+    QTRY_VERIFY(frame);
+    QCOMPARE(p.videoFilter(), filter);
+    QCOMPARE(spyErrorOccurred.count(), 0);
+
+    QTest::qWait(100);
+
+    QCOMPARE(spyErrorOccurred.count(), 0);
+    p.seek(p.duration());
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 10000);
 }
 
 QTEST_MAIN(tst_QAVPlayer)

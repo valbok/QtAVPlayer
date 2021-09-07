@@ -1,12 +1,12 @@
 /*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
+ * Copyright (C) 2021, Val Doroshchuk <valbok@gmail.com> *
  *                                                       *
  * This file is part of QtAVPlayer.                      *
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#ifndef QAVFRAME_P_H
-#define QAVFRAME_P_H
+#ifndef QAVFILTER_P_P_H
+#define QAVFILTER_P_P_H
 
 //
 //  W A R N I N G
@@ -19,23 +19,28 @@
 // We mean it.
 //
 
-#include <QSharedPointer>
+#include <QString>
 
 QT_BEGIN_NAMESPACE
 
-struct AVFrame;
-class QAVFrame;
-class QAVCodec;
-class QAVFramePrivate
+class QAVFilter;
+struct AVFilterGraph;
+struct AVFilterContext;
+class QAVFilterPrivate
 {
+    Q_DECLARE_PUBLIC(QAVFilter)
 public:
-    virtual ~QAVFramePrivate() = default;
+    QAVFilterPrivate(QAVFilter *q) : q_ptr(q) { }
+    virtual ~QAVFilterPrivate() = default;
 
-    QSharedPointer<QAVCodec> codec;
-    AVFrame *frame = nullptr;
-    // Overridden data from filters if any
-    AVRational frameRate{};
-    AVRational timeBase{};
+    virtual int reconfigure(const QAVFrame &frame) = 0;
+
+    QAVFilter *q_ptr = nullptr;
+    QString desc;
+    AVFilterGraph *graph = nullptr;
+    AVFilterContext *src = nullptr;
+    AVFilterContext *sink = nullptr;
+    QAVFrame sourceFrame;
 };
 
 QT_END_NAMESPACE

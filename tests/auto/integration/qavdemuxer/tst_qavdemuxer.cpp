@@ -47,11 +47,11 @@ void tst_QAVDemuxer::construction()
 
     QAVFrame f;
     QVERIFY(!f);
-    QCOMPARE(f.pts(), -1);
+    QVERIFY(isnan(f.pts()));
 
     QAVAudioFrame af;
     QVERIFY(!af);
-    QCOMPARE(af.pts(), -1);
+    QVERIFY(isnan(af.pts()));
 
     QAVVideoFrame vf;
     QVERIFY(!vf);
@@ -124,7 +124,7 @@ void tst_QAVDemuxer::loadAudio()
         QVERIFY(af);
         QVERIFY(af.frame());
         QCOMPARE(af.pts(), f.pts());
-        QVERIFY(af.codec().codec() != nullptr);
+        QVERIFY(af.codec()->codec() != nullptr);
 
         auto format = af.format();
         QCOMPARE(format.sampleFormat(), QAVAudioFormat::Int32);
