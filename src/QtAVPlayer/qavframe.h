@@ -28,10 +28,13 @@ public:
     QAVFrame(const QSharedPointer<QAVCodec> &codec, QObject *parent = nullptr);
     ~QAVFrame();
     QAVFrame(const QAVFrame &other);
-    const QAVCodec &codec() const;
+    QSharedPointer<QAVCodec> codec() const;
     QAVFrame &operator=(const QAVFrame &other);
     operator bool() const;
     AVFrame *frame() const;
+
+    void setFrameRate(const AVRational &value);
+    void setTimeBase(const AVRational &value);
     double pts() const;
     double duration() const;
 

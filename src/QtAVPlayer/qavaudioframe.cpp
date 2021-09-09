@@ -75,7 +75,7 @@ static const QAVAudioCodec *audioCodec(const QAVCodec *c)
 
 QAVAudioFormat QAVAudioFrame::format() const
 {
-    auto c = audioCodec(&codec());
+    auto c = audioCodec(codec().data());
     if (!c)
         return {};
 

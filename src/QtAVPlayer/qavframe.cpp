@@ -40,9 +40,9 @@ QAVFrame::QAVFrame(QAVFramePrivate &d, QObject *parent)
     d_ptr->frame = av_frame_alloc();
 }
 
-const QAVCodec &QAVFrame::codec() const
+QSharedPointer<QAVCodec> QAVFrame::codec() const
 {
-    return *d_ptr->codec;
+    return d_ptr->codec;
 }
 
 QAVFrame &QAVFrame::operator=(const QAVFrame &other)
@@ -55,6 +55,8 @@ QAVFrame &QAVFrame::operator=(const QAVFrame &other)
         d_ptr->frame->pts = pts;
 
     d_ptr->codec = other.d_ptr->codec;
+    d_ptr->frameRate = other.d_ptr->frameRate;
+    d_ptr->timeBase = other.d_ptr->timeBase;
     return *this;
 }
 
@@ -76,22 +78,37 @@ AVFrame *QAVFrame::frame() const
     return d->frame;
 }
 
+void QAVFrame::setFrameRate(const AVRational &value)
+{
+    Q_D(QAVFrame);
+    d->frameRate = value;
+}
+
+void QAVFrame::setTimeBase(const AVRational &value)
+{
+    Q_D(QAVFrame);
+    d->timeBase = value;
+}
+
 double QAVFrame::pts() const
 {
     Q_D(const QAVFrame);
     if (!d->frame || !d->codec)
-        return -1;
+        return NAN;
 
-    return d->frame->pts * av_q2d(d->codec->stream()->time_base);
+    AVRational tb = d->timeBase.num && d->timeBase.den ? d->timeBase : d->codec->stream()->time_base;
+    return d->frame->pts == AV_NOPTS_VALUE ? NAN : d->frame->pts * av_q2d(tb);
 }
 
 double QAVFrame::duration() const
 {
     Q_D(const QAVFrame);
     if (!d->frame || !d->codec)
-        return -1;
+        return 0.0;
 
-    return d->frame->pkt_duration * av_q2d(d->codec->stream()->time_base);
+    return d->frameRate.den && d->frameRate.num
+           ? av_q2d(AVRational{d->frameRate.den, d->frameRate.num})
+           : d->frame->pkt_duration * av_q2d(d->codec->stream()->time_base);
 }
 
 QT_END_NAMESPACE

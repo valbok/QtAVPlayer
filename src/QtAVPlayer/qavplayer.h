@@ -43,9 +43,9 @@ public:
     enum Error
     {
         NoError,
-        ResourceError
+        ResourceError,
+        FilterError
     };
-
 
     QAVPlayer(QObject *parent = nullptr);
     ~QAVPlayer();
@@ -73,9 +73,10 @@ public:
     qreal speed() const;
     double videoFrameRate() const;
 
+    void setVideoFilter(const QString &desc);
+    QString videoFilter() const;
+
     bool isSeekable() const;
-    Error error() const;
-    QString errorString() const;
 
 public Q_SLOTS:
     void play();
@@ -102,6 +103,7 @@ Q_SIGNALS:
     void stopped(qint64 pos);
     void stepped(qint64 pos);
     void seeked(qint64 pos);
+    void videoFilterChanged(const QString &desc);
 
     void videoFrame(const QAVVideoFrame &frame);
     void audioFrame(const QAVAudioFrame &frame);
@@ -117,6 +119,7 @@ private:
 #ifndef QT_NO_DEBUG_STREAM
 Q_AVPLAYER_EXPORT QDebug operator<<(QDebug, QAVPlayer::State);
 Q_AVPLAYER_EXPORT QDebug operator<<(QDebug, QAVPlayer::MediaStatus);
+Q_AVPLAYER_EXPORT QDebug operator<<(QDebug, QAVPlayer::Error);
 #endif
 
 Q_DECLARE_METATYPE(QAVPlayer::State)

@@ -18,7 +18,10 @@ PRIVATE_HEADERS += \
     qavpacketqueue_p.h \
     qavvideobuffer_p.h \
     qavvideobuffer_cpu_p.h \
-    qavvideobuffer_gpu_p.h
+    qavvideobuffer_gpu_p.h \
+    qavfilter_p.h \
+    qavfilter_p_p.h \
+    qavvideofilter_p.h
 
 PUBLIC_HEADERS += \
     qavaudioformat.h \
@@ -41,7 +44,9 @@ SOURCES += \
     qavvideoframe.cpp \
     qavaudioframe.cpp \
     qavvideobuffer_cpu.cpp \
-    qavvideobuffer_gpu.cpp
+    qavvideobuffer_gpu.cpp \
+    qavfilter.cpp \
+    qavvideofilter.cpp
 
 qtConfig(va_x11):qtConfig(opengl): {
     QMAKE_USE += va_x11 x11

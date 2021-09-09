@@ -434,7 +434,7 @@ int QAVDemuxer::seek(double sec)
 {
     Q_D(QAVDemuxer);
     if (!d->ctx || !d->seekable)
-        return -1;
+        return AVERROR(EINVAL);
 
     d->eof = false;
     int flags = AVSEEK_FLAG_BACKWARD;
@@ -448,7 +448,7 @@ double QAVDemuxer::duration() const
 {
     Q_D(const QAVDemuxer);
     if (!d->ctx || d->ctx->duration == AV_NOPTS_VALUE)
-        return 0;
+        return 0.0;
 
     return d->ctx->duration * av_q2d({1, AV_TIME_BASE});
 }
@@ -457,7 +457,7 @@ double QAVDemuxer::duration(int stream) const
 {
     Q_D(const QAVDemuxer);
     if (!d->ctx || stream < 0 || stream >= int(d->ctx->nb_streams))
-        return 0;
+        return 0.0;
 
     return d->ctx->streams[stream]->duration * av_q2d(d->ctx->streams[stream]->time_base);
 }
@@ -467,7 +467,7 @@ double QAVDemuxer::frameRate() const
     Q_D(const QAVDemuxer);
     QMutexLocker locker(&d->mutex);
     if (d->videoStream < 0)
-        return 1/24.0;
+        return 1 / 24.0;
 
     AVRational frame_rate = av_guess_frame_rate(d->ctx, d->ctx->streams[d->videoStream], NULL);
     return frame_rate.num && frame_rate.den ? av_q2d({frame_rate.den, frame_rate.num}) : 0.0;
