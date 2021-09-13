@@ -20,6 +20,8 @@
 //
 
 #include "qavfilter_p.h"
+#include "qavvideoinputfilter_p.h"
+#include "qavvideooutputfilter_p.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -27,7 +29,15 @@ class QAVVideoFilterPrivate;
 class Q_AVPLAYER_EXPORT QAVVideoFilter : public QAVFilter
 {
 public:
-    QAVVideoFilter(const QString &desc, QObject *parent = nullptr);
+    QAVVideoFilter(const QList<QAVVideoInputFilter> &inputs, const QList<QAVVideoOutputFilter> &outputs, QObject *parent = nullptr);
+
+    int write(const QAVFrame &frame) override;
+    int read(QAVFrame &frame) override;
+
+protected:
+    Q_DECLARE_PRIVATE(QAVVideoFilter)
+private:
+    Q_DISABLE_COPY(QAVVideoFilter)
 };
 
 QT_END_NAMESPACE

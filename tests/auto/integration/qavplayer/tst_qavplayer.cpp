@@ -57,8 +57,8 @@ private slots:
     void accurateSeek();
     void lastFrame();
     void configureVideoFilter();
-    void videoFilter_data();
-    void videoFilter();
+    void filter_data();
+    void filter();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -1961,7 +1961,7 @@ void tst_QAVPlayer::configureVideoFilter()
 
     QFileInfo file(QLatin1String("../testdata/small.mp4"));
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
-    QSignalSpy spy(&p, &QAVPlayer::videoFilterChanged);
+    QSignalSpy spy(&p, &QAVPlayer::filterChanged);
     QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
     QAVVideoFrame frame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; });
@@ -1973,26 +1973,26 @@ void tst_QAVPlayer::configureVideoFilter()
     frame = QAVVideoFrame();
 
     QString desc = "scale=iw/2:-1";
-    p.setVideoFilter(desc);
-    QCOMPARE(p.videoFilter(), desc);
+    p.setFilter(desc);
+    QCOMPARE(p.filter(), desc);
     QTRY_COMPARE(spy.count(), 1);
     QCOMPARE(spyErrorOccurred.count(), 0);
 
     p.play();
     QTRY_VERIFY(frame);
-    QCOMPARE(frame.size(), QSize(560 / 2, 320 / 2));
+    QTRY_COMPARE(frame.size(), QSize(560 / 2, 320 / 2));
 
     spy.clear();
     spyErrorOccurred.clear();
 
     p.stop();
-    p.setVideoFilter(desc);
-    QCOMPARE(p.videoFilter(), desc);
+    p.setFilter(desc);
+    QCOMPARE(p.filter(), desc);
     QCOMPARE(spy.count(), 0);
     QCOMPARE(spyErrorOccurred.count(), 0);
 
-    p.setVideoFilter("");
-    QCOMPARE(p.videoFilter(), "");
+    p.setFilter("");
+    QCOMPARE(p.filter(), "");
     QTRY_COMPARE(spy.count(), 1);
     QCOMPARE(spyErrorOccurred.count(), 0);
 
@@ -2009,8 +2009,12 @@ void tst_QAVPlayer::configureVideoFilter()
     QCOMPARE(frame.size(), QSize(560, 320));
 
     p.stop();
-    p.setVideoFilter("wrong");
-    QCOMPARE(p.videoFilter(), "wrong");
+    p.setFilter("wrong");
+    QCOMPARE(p.filter(), "wrong");
+    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+
+    spyErrorOccurred.clear();
+
     p.pause();
     QTRY_COMPARE(spyErrorOccurred.count(), 1);
 
@@ -2018,32 +2022,37 @@ void tst_QAVPlayer::configureVideoFilter()
     spyErrorOccurred.clear();
 
     p.pause();
-    QCOMPARE(p.videoFilter(), "wrong");
+    QCOMPARE(p.filter(), "wrong");
     QTRY_COMPARE(spyErrorOccurred.count(), 1);
     QVERIFY(!frame);
 
     spy.clear();
     spyErrorOccurred.clear();
 
-    p.setVideoFilter(desc);
-    QCOMPARE(p.videoFilter(), desc);
+    p.setFilter(desc);
+    QCOMPARE(p.filter(), desc);
     QTRY_COMPARE(spy.count(), 1);
 
     p.pause();
     QTRY_VERIFY(frame);
-    QCOMPARE(frame.size(), QSize(560 / 2, 320 / 2));
+    QTRY_COMPARE(frame.size(), QSize(560 / 2, 320 / 2));
     QCOMPARE(spyErrorOccurred.count(), 0);
 
     spy.clear();
     spyErrorOccurred.clear();
 
-    p.setVideoFilter("wrong");
-    QCOMPARE(p.videoFilter(), "wrong");
+    p.setFilter("wrong");
+    QCOMPARE(p.filter(), "wrong");
     QTRY_COMPARE(spy.count(), 1);
-    QCOMPARE(spyErrorOccurred.count(), 0);
+    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+    QCOMPARE(p.state(), QAVPlayer::StoppedState);
+
+    spyErrorOccurred.clear();
 
     p.pause();
-    QCOMPARE(spyErrorOccurred.count(), 0);
+    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+
+    spyErrorOccurred.clear();
 
     p.stepForward();
     QTRY_COMPARE(spyErrorOccurred.count(), 1);
@@ -2051,13 +2060,17 @@ void tst_QAVPlayer::configureVideoFilter()
     spy.clear();
     spyErrorOccurred.clear();
 
-    p.setVideoFilter("wrong2");
-    QCOMPARE(p.videoFilter(), "wrong2");
+    p.setFilter("wrong2");
+    QCOMPARE(p.filter(), "wrong2");
     QTRY_COMPARE(spy.count(), 1);
-    QCOMPARE(spyErrorOccurred.count(), 0);
+    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+
+    spyErrorOccurred.clear();
 
     p.stop();
-    QCOMPARE(spyErrorOccurred.count(), 0);
+    QCOMPARE(spyErrorOccurred.count(), 1);
+
+    spyErrorOccurred.clear();
 
     p.play();
     QTRY_COMPARE(spyErrorOccurred.count(), 1);
@@ -2066,23 +2079,24 @@ void tst_QAVPlayer::configureVideoFilter()
     spyErrorOccurred.clear();
     frame = QAVVideoFrame();
 
-    p.setVideoFilter("");
-    QCOMPARE(p.videoFilter(), "");
+    p.setFilter("");
+    QCOMPARE(p.filter(), "");
     QTRY_COMPARE(spy.count(), 1);
+    QCOMPARE(spyErrorOccurred.count(), 0);
 
     p.play();    
     QTRY_VERIFY(frame);
     QTRY_COMPARE(frame.size(), QSize(560, 320));
     QCOMPARE(spyErrorOccurred.count(), 0);
 
-    p.setVideoFilter(desc);
+    p.setFilter(desc);
     QTRY_COMPARE(frame.size(), QSize(560 / 2, 320 / 2));
 
     p.seek(p.duration());
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 10000);
 }
 
-void tst_QAVPlayer::videoFilter_data()
+void tst_QAVPlayer::filter_data()
 {
     QTest::addColumn<QString>("filter");
 
@@ -2128,9 +2142,13 @@ void tst_QAVPlayer::videoFilter_data()
     QTest::newRow("waveform_green") << QString("waveform=intensity=0.1:mode=column:mirror=1:c=1:f=0:graticule=green:flags=numbers+dots:scale=0");
     QTest::newRow("lutyuv_drawbox_green") << QString("split[a][b];            [a]lutyuv=y=val/4,scale=720:576,setsar=1/1,format=yuv444p|yuv444p10le,drawbox=w=121:h=121:x=20:y=20:color=invert:thickness=1[a1];            [b]crop=121:121:20:20,            waveform=intensity=0.8:mode=column:mirror=1:c=1:f=0:graticule=green:flags=numbers+dots:scale=0,scale=720:576,setsar=1/1[b1];            [a1][b1]blend=addition");
     QTest::newRow("crop_neighbor") << QString("crop=x=200:y=200:w=120:h=120,scale=720:576:flags=neighbor,histeq=strength=0,setsar=1/1");
+    QTest::newRow("pad_negate_edgedetect_overlay") << QString("[0:v]pad=iw*2:ih*2[a];  [1:v]negate[b];  [2:v]hflip[c];  [3:v]edgedetect[d];  [a][b]overlay=w[x];  [x][c]overlay=0:h[y];  [y][d]overlay=w:h[out]");
+    QTest::newRow("waveform_audio_video") << QString("[0:v]waveform[v];[1:a]showwaves[a];[v][a]xstack");
+    QTest::newRow("negate_hflip_edgedetect_hstack") << QString("[1:v]negate[a];  [2:v]hflip[b];  [3:v]edgedetect[c];  [0:v][a]hstack=inputs=2[top];  [b][c]hstack=inputs=2[bottom];  [top][bottom]vstack=inputs=2[out]");
+    QTest::newRow("crop_black") << QString("crop=in_w-2*150:in_h,pad=980:980:x=0:y=0:color=black");
 }
 
-void tst_QAVPlayer::videoFilter()
+void tst_QAVPlayer::filter()
 {
     QFETCH(QString, filter);
     QAVPlayer p;
@@ -2138,12 +2156,12 @@ void tst_QAVPlayer::videoFilter()
     QFileInfo file(QLatin1String("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv"));
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
 
-    QSignalSpy spyVideoFilterChanged(&p, &QAVPlayer::videoFilterChanged);
+    QSignalSpy spyVideoFilterChanged(&p, &QAVPlayer::filterChanged);
     QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
     QAVVideoFrame frame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; });
 
-    p.setVideoFilter(filter);
+    p.setFilter(filter);
     p.pause();
     QTRY_VERIFY(frame);
     QTRY_COMPARE(spyVideoFilterChanged.count(), 1);
@@ -2152,7 +2170,7 @@ void tst_QAVPlayer::videoFilter()
 
     p.play();
     QTRY_VERIFY(frame);
-    QCOMPARE(p.videoFilter(), filter);
+    QCOMPARE(p.filter(), filter);
     QCOMPARE(spyErrorOccurred.count(), 0);
 
     QTest::qWait(100);

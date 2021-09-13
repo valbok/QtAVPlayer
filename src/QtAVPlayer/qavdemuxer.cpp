@@ -249,6 +249,7 @@ int QAVDemuxer::load(const QUrl &url)
         else if (type == AVMEDIA_TYPE_SUBTITLE)
             d->subtitleStreams.push_back(i);
     }
+
     d->videoStream = av_find_best_stream(d->ctx, AVMEDIA_TYPE_VIDEO,
                                          d->videoStream, -1, nullptr, 0);
     d->audioStream = av_find_best_stream(d->ctx, AVMEDIA_TYPE_AUDIO,
@@ -288,7 +289,7 @@ QList<int> QAVDemuxer::videoStreams() const
     return d_func()->videoStreams;
 }
 
-int QAVDemuxer::videoStream() const
+int QAVDemuxer::currentVideoStreamIndex() const
 {
     Q_D(const QAVDemuxer);
     QMutexLocker locker(&d->mutex);
@@ -300,7 +301,7 @@ QList<int> QAVDemuxer::audioStreams() const
     return d_func()->audioStreams;
 }
 
-int QAVDemuxer::audioStream() const
+int QAVDemuxer::currentAudioStreamIndex() const
 {
     Q_D(const QAVDemuxer);
     QMutexLocker locker(&d->mutex);
@@ -312,7 +313,7 @@ QList<int> QAVDemuxer::subtitleStreams() const
     return d_func()->subtitleStreams;
 }
 
-int QAVDemuxer::subtitleStream() const
+int QAVDemuxer::currentSubtitleStreamIndex() const
 {
     Q_D(const QAVDemuxer);
     QMutexLocker locker(&d->mutex);
@@ -453,24 +454,49 @@ double QAVDemuxer::duration() const
     return d->ctx->duration * av_q2d({1, AV_TIME_BASE});
 }
 
-double QAVDemuxer::duration(int stream) const
-{
-    Q_D(const QAVDemuxer);
-    if (!d->ctx || stream < 0 || stream >= int(d->ctx->nb_streams))
-        return 0.0;
-
-    return d->ctx->streams[stream]->duration * av_q2d(d->ctx->streams[stream]->time_base);
-}
-
-double QAVDemuxer::frameRate() const
+double QAVDemuxer::videoFrameRate() const
 {
     Q_D(const QAVDemuxer);
     QMutexLocker locker(&d->mutex);
     if (d->videoStream < 0)
         return 1 / 24.0;
 
-    AVRational frame_rate = av_guess_frame_rate(d->ctx, d->ctx->streams[d->videoStream], NULL);
-    return frame_rate.num && frame_rate.den ? av_q2d({frame_rate.den, frame_rate.num}) : 0.0;
+    AVRational fr = av_guess_frame_rate(d->ctx, d->ctx->streams[d->videoStream], NULL);
+    return fr.num && fr.den ? av_q2d({fr.den, fr.num}) : 0.0;
+}
+
+AVRational QAVDemuxer::frameRate() const
+{
+    Q_D(const QAVDemuxer);
+    return av_guess_frame_rate(d->ctx, d->ctx->streams[d->videoStream], NULL);
+}
+
+QSharedPointer<QAVVideoCodec> QAVDemuxer::videoCodec() const
+{
+    Q_D(const QAVDemuxer);
+    const int videoStreamIdx = videoStreamIndex();
+    QMutexLocker locker(&d->mutex);
+    return videoStreamIdx >= 0 ? d->videoCodecs[videoStreamIdx] : QSharedPointer<QAVVideoCodec>();
+}
+
+QSharedPointer<QAVAudioCodec> QAVDemuxer::audioCodec() const
+{
+    Q_D(const QAVDemuxer);
+    const int audioStreamIdx = audioStreamIndex();
+    QMutexLocker locker(&d->mutex);
+    return audioStreamIdx >= 0 ? d->audioCodecs[audioStreamIdx] : QSharedPointer<QAVAudioCodec>();
+}
+
+AVStream *QAVDemuxer::videoStream() const
+{
+    Q_D(const QAVDemuxer);
+    return d->videoStream >= 0 && d->videoStream < static_cast<int>(d->ctx->nb_streams) ? d->ctx->streams[d->videoStream] : nullptr;
+}
+
+AVStream *QAVDemuxer::audioStream() const
+{
+    Q_D(const QAVDemuxer);
+    return d->audioStream >= 0 && d->audioStream < static_cast<int>(d->ctx->nb_streams) ? d->ctx->streams[d->audioStream] : nullptr;
 }
 
 QT_END_NAMESPACE

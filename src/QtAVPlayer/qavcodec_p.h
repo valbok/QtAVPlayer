@@ -30,6 +30,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 }
 
+// @TODO: Must be public
 class QAVCodecPrivate;
 class Q_AVPLAYER_EXPORT QAVCodec : public QObject
 {
@@ -41,6 +42,7 @@ public:
     void setCodec(AVCodec *c);
     const AVCodec *codec() const;
     AVStream *stream() const;
+    double duration() const;
 
     bool decode(const AVPacket *pkt, QAVFrame &frame) const;
 

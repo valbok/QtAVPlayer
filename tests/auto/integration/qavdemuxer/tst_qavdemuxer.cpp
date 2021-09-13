@@ -29,9 +29,9 @@ private slots:
 void tst_QAVDemuxer::construction()
 {
     QAVDemuxer d;
-    QVERIFY(d.videoStream() < 0);
-    QVERIFY(d.audioStream() < 0);
-    QVERIFY(d.subtitleStream() < 0);
+    QVERIFY(d.currentVideoStreamIndex() < 0);
+    QVERIFY(d.currentAudioStreamIndex() < 0);
+    QVERIFY(d.currentSubtitleStreamIndex() < 0);
     QCOMPARE(d.duration(), 0);
     QCOMPARE(d.seekable(), false);
     QCOMPARE(d.eof(), false);
@@ -61,9 +61,9 @@ void tst_QAVDemuxer::loadIncorrect()
 {
     QAVDemuxer d;
     QVERIFY(d.load(QUrl("unknown.mp4")) < 0);
-    QVERIFY(d.videoStream() < 0);
-    QVERIFY(d.audioStream() < 0);
-    QVERIFY(d.subtitleStream() < 0);
+    QVERIFY(d.currentVideoStreamIndex() < 0);
+    QVERIFY(d.currentAudioStreamIndex() < 0);
+    QVERIFY(d.currentSubtitleStreamIndex() < 0);
     QVERIFY(!d.read());
     QVERIFY(d.seek(0) < 0);
 }
@@ -75,9 +75,9 @@ void tst_QAVDemuxer::loadAudio()
     QFileInfo file(QLatin1String("../testdata/test.wav"));
 
     QVERIFY(d.load(QUrl::fromLocalFile(file.absoluteFilePath())) >= 0);
-    QVERIFY(d.videoStream() < 0);
-    QVERIFY(d.audioStream() >= 0);
-    QVERIFY(d.subtitleStream() < 0);
+    QVERIFY(d.currentVideoStreamIndex() < 0);
+    QVERIFY(d.currentAudioStreamIndex() >= 0);
+    QVERIFY(d.currentSubtitleStreamIndex() < 0);
     QVERIFY(d.duration() > 0);
     QCOMPARE(d.seekable(), true);
     QCOMPARE(d.eof(), false);
@@ -91,7 +91,7 @@ void tst_QAVDemuxer::loadAudio()
         QVERIFY(p.duration() > 0);
         QVERIFY(p.pts() >= 0);
         QVERIFY(p.bytes() > 0);
-        QCOMPARE(p.streamIndex(), d.audioStream());
+        QCOMPARE(p.streamIndex(), d.currentAudioStreamIndex());
 
         p2 = p;
         QVERIFY(p2);
@@ -138,7 +138,7 @@ void tst_QAVDemuxer::loadAudio()
     QVERIFY(p2.packet());
     QVERIFY(p2.duration() > 0);
     QVERIFY(p2.bytes() > 0);
-    QCOMPARE(p2.streamIndex(), d.audioStream());
+    QCOMPARE(p2.streamIndex(), d.currentAudioStreamIndex());
 
     QVERIFY(f2);
     QVERIFY(f2.frame());
@@ -155,9 +155,9 @@ void tst_QAVDemuxer::loadVideo()
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
 
     QVERIFY(d.load(QUrl::fromLocalFile(file.absoluteFilePath())) >= 0);
-    QVERIFY(d.videoStream() >= 0);
-    QVERIFY(d.audioStream() >= 0);
-    QVERIFY(d.subtitleStream() < 0);
+    QVERIFY(d.currentVideoStreamIndex() >= 0);
+    QVERIFY(d.currentAudioStreamIndex() >= 0);
+    QVERIFY(d.currentSubtitleStreamIndex() < 0);
     QVERIFY(d.duration() > 0);
     QCOMPARE(d.seekable(), true);
     QCOMPARE(d.eof(), false);
@@ -178,7 +178,7 @@ void tst_QAVDemuxer::loadVideo()
     QVERIFY(d.seek(0) >= 0);
     while ((p = d.read())) {
         QCOMPARE(d.eof(), false);
-        if (p.streamIndex() == d.videoStream()) {
+        if (p.streamIndex() == d.currentVideoStreamIndex()) {
             auto f = p.decode();
             QVERIFY(f);
             QVERIFY(f.frame());

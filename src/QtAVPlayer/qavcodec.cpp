@@ -93,6 +93,12 @@ AVStream *QAVCodec::stream() const
     return d_func()->stream;
 }
 
+double QAVCodec::duration() const
+{
+    Q_D(const QAVCodec);
+    return d->stream->duration * av_q2d(d->stream->time_base);
+}
+
 bool QAVCodec::decode(const AVPacket *pkt, QAVFrame &frame) const
 {
     Q_D(const QAVCodec);
