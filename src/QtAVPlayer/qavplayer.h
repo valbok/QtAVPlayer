@@ -73,8 +73,8 @@ public:
     qreal speed() const;
     double videoFrameRate() const;
 
-    void setVideoFilter(const QString &desc);
-    QString videoFilter() const;
+    void setFilter(const QString &desc);
+    QString filter() const;
 
     bool isSeekable() const;
 
@@ -103,7 +103,7 @@ Q_SIGNALS:
     void stopped(qint64 pos);
     void stepped(qint64 pos);
     void seeked(qint64 pos);
-    void videoFilterChanged(const QString &desc);
+    void filterChanged(const QString &desc);
 
     void videoFrame(const QAVVideoFrame &frame);
     void audioFrame(const QAVAudioFrame &frame);

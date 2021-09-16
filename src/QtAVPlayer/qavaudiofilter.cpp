@@ -5,10 +5,9 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#include "qavvideofilter_p.h"
+#include "qavaudiofilter_p.h"
 #include "qavfilter_p_p.h"
 #include "qavcodec_p.h"
-#include "qavvideoframe.h"
 #include <QDebug>
 
 extern "C" {
@@ -20,50 +19,43 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-class QAVVideoFilterPrivate : public QAVFilterPrivate
+class QAVAudioFilterPrivate : public QAVFilterPrivate
 {
 public:
-    QAVVideoFilterPrivate(QAVFilter *q) : QAVFilterPrivate(q) { }
+    QAVAudioFilterPrivate(QAVFilter *q) : QAVFilterPrivate(q) { }
 
-    QList<QAVVideoInputFilter> inputs;
-    QList<QAVVideoOutputFilter> outputs;
+    QList<QAVAudioInputFilter> inputs;
+    QList<QAVAudioOutputFilter> outputs;
 
-    int width = -1;
-    int height = -1;
+    int sample_rate = 0;
+    int channels = 0;
+    uint64_t channel_layout = 0;
 };
 
-QAVVideoFilter::QAVVideoFilter(const QList<QAVVideoInputFilter> &inputs, const QList<QAVVideoOutputFilter> &outputs, QObject *parent)
-    : QAVFilter(*new QAVVideoFilterPrivate(this), parent)
+QAVAudioFilter::QAVAudioFilter(const QList<QAVAudioInputFilter> &inputs, const QList<QAVAudioOutputFilter> &outputs, QObject *parent)
+    : QAVFilter(*new QAVAudioFilterPrivate(this), parent)
 {
-    Q_D(QAVVideoFilter);
+    Q_D(QAVAudioFilter);
     d->inputs = inputs;
     d->outputs = outputs;
 }
 
-int QAVVideoFilter::write(const QAVFrame &frame)
+int QAVAudioFilter::write(const QAVFrame &frame)
 {
-    Q_D(QAVVideoFilter);
-    if (frame.codec()->stream()->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
-        qWarning() << "Frame is not video";
+    Q_D(QAVAudioFilter);
+    if (frame.codec()->stream()->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
+        qWarning() << "Frame is not audio";
         return AVERROR(EINVAL);
     }
 
-    QAVVideoFrame videoFrame = frame;
-    switch (frame.frame()->format) {
-        case AV_PIX_FMT_D3D11:
-        case AV_PIX_FMT_VAAPI:
-        case AV_PIX_FMT_VIDEOTOOLBOX:
-            videoFrame = videoFrame.convertTo(AV_PIX_FMT_YUV420P);
-            break;
-        default:
-            break;
-    }
-    d->sourceFrame = videoFrame;
-    d->format = d->sourceFrame.frame()->format;
-    d->width = d->sourceFrame.frame()->width;
-    d->height = d->sourceFrame.frame()->height;
+    d->sourceFrame = frame;
+    d->format = frame.frame()->format;
+    d->sample_rate = frame.frame()->sample_rate;
+    d->channels = frame.frame()->channels;
+    d->channel_layout = frame.frame()->channel_layout;
+
     for (auto &filter : d->inputs) {
-        QAVFrame ref = d->sourceFrame;
+        QAVFrame ref = frame;
         int ret = av_buffersrc_add_frame_flags(filter.ctx(), ref.frame(), 0);
         if (ret < 0)
             return ret;
@@ -72,9 +64,9 @@ int QAVVideoFilter::write(const QAVFrame &frame)
     return 0;
 }
 
-int QAVVideoFilter::read(QAVFrame &frame)
+int QAVAudioFilter::read(QAVFrame &frame)
 {
-    Q_D(QAVVideoFilter);
+    Q_D(QAVAudioFilter);
     if (d->outputs.isEmpty() || !d->sourceFrame) {
         frame = d->sourceFrame;
         d->sourceFrame = {};
@@ -92,8 +84,7 @@ int QAVVideoFilter::read(QAVFrame &frame)
 
                 if (!out.frame()->pkt_duration)
                     out.frame()->pkt_duration = d->sourceFrame.frame()->pkt_duration;
-                out.setFrameRate(av_buffersink_get_frame_rate(filter.ctx()));
-                out.setTimeBase(av_buffersink_get_time_base(filter.ctx()));
+                frame.setTimeBase(av_buffersink_get_time_base(filter.ctx()));
                 d->outputFrames.push_back(out);
             }
         }

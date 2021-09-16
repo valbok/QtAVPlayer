@@ -213,18 +213,15 @@ QAVVideoFrame::operator QVideoFrame() const
             format = QVideoFrame::Format_YUV422P;
 #endif
             break;
-        case AV_PIX_FMT_YUV444P:
-        case AV_PIX_FMT_YUV411P:
-            result = convertTo(AV_PIX_FMT_YUV420P);
-            format = QVideoFrame::Format_YUV420P;
-            break;
         case AV_PIX_FMT_VAAPI:
         case AV_PIX_FMT_D3D11:
         case AV_PIX_FMT_NV12:
             format = QVideoFrame::Format_NV12;
             break;
         default:
-            qDebug() << "Format not supported: " << result.formatName();
+            result = convertTo(AV_PIX_FMT_YUV420P);
+            format = QVideoFrame::Format_YUV420P;
+            break;        
     }
 
     return QVideoFrame(new PlanarVideoBuffer(result), size(), format);

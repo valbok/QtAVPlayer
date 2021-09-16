@@ -21,10 +21,12 @@
 
 #include "qavpacket_p.h"
 #include "qavfilter_p.h"
+#include "qavfiltergraph_p.h"
 #include <QMutex>
 #include <QWaitCondition>
 #include <QList>
 #include <math.h>
+#include <QSharedPointer>
 
 extern "C" {
 #include <libavutil/time.h>
@@ -35,7 +37,7 @@ QT_BEGIN_NAMESPACE
 class QAVQueueClock
 {
 public:
-    QAVQueueClock(double v = 1/24.0)
+    QAVQueueClock(double v = 1 / 24.0)
         : frameRate(v)
     {
     }
@@ -176,31 +178,40 @@ public:
         QMutexLocker locker(&m_mutex);
         frame = m_frame;
         if (!frame) {
-            bool decode = !m_filter || m_filter->eof();
+            const bool decode = !m_filter || m_filter->eof();
             if (decode) {
                 locker.unlock();
                 frame = dequeue().decode();
                 locker.relock();
                 if (m_filter && frame) {
-                    int ret = m_filter->write(frame);
-                    if (ret < 0)
-                        return ret;
+                    m_ret = m_filter->write(frame);
+                    if (m_ret < 0) {
+                        if (m_ret != AVERROR_EOF)
+                            return m_ret;
+                    }
                 }
             }
-            if (m_filter)
-                frame = m_filter->read();
+            if (m_filter) {
+                m_ret = m_filter->read(frame);
+                if (m_ret < 0) {
+                    if (m_ret != AVERROR(EAGAIN))
+                        return m_ret;
+                }
+            } else {
+                m_ret = 0;
+            }
             m_frame = frame;
         }
         locker.unlock();
 
-        if (!frame || !m_clock.sync(sync, frame.pts(), speed, master)) {
-            frame = {};
-            return 0;
+        if (frame && m_clock.sync(sync, frame.pts(), speed, master)) {
+            locker.relock();
+            m_frame = QAVFrame();
+            return m_ret;
         }
 
-        locker.relock();
-        m_frame = QAVFrame();
-        return 0;
+        frame = {};
+        return AVERROR(EAGAIN);
     }
 
     double pts() const
@@ -259,6 +270,7 @@ private:
     int m_duration = 0;
 
     QAVFrame m_frame;
+    int m_ret = 0;
     QAVQueueClock m_clock;
 
     QScopedPointer<QAVFilter> m_filter;

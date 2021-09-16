@@ -29,6 +29,9 @@ QT_BEGIN_NAMESPACE
 class QAVDemuxerPrivate;
 class QAVVideoCodec;
 class QAVAudioCodec;
+struct AVStream;
+struct AVCodecContext;
+struct AVFormatContext;
 class Q_AVPLAYER_EXPORT QAVDemuxer : public QObject
 {
 public:
@@ -40,11 +43,11 @@ public:
     void unload();
 
     QList<int> videoStreams() const;
-    int videoStream() const;
+    int currentVideoStreamIndex() const;
     QList<int> audioStreams() const;
-    int audioStream() const;
+    int currentAudioStreamIndex() const;
     QList<int> subtitleStreams() const;
-    int subtitleStream() const;
+    int currentSubtitleStreamIndex() const;
 
     int videoStreamIndex() const;
     void setVideoStreamIndex(int stream);
@@ -55,12 +58,17 @@ public:
 
     QAVPacket read();
 
-    double duration(int stream) const;
     double duration() const;
     bool seekable() const;
     int seek(double sec);
     bool eof() const;
-    double frameRate() const;
+    double videoFrameRate() const;
+
+    AVStream *videoStream() const;
+    AVStream *audioStream() const;
+    QSharedPointer<QAVVideoCodec> videoCodec() const;
+    QSharedPointer<QAVAudioCodec> audioCodec() const;
+    AVRational frameRate() const;
 
 protected:
     QScopedPointer<QAVDemuxerPrivate> d_ptr;

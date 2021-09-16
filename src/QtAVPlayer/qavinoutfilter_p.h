@@ -5,8 +5,8 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#ifndef QAVFILTER_P_H
-#define QAVFILTER_P_H
+#ifndef QAVINOUTFILTER_P_H
+#define QAVINOUTFILTER_P_H
 
 //
 //  W A R N I N G
@@ -20,28 +20,27 @@
 //
 
 #include <QtAVPlayer/qtavplayerglobal.h>
-#include <QtAVPlayer/qavframe.h>
-#include <QObject>
-#include <QScopedPointer>
 
 QT_BEGIN_NAMESPACE
 
-class QAVFilterPrivate;
-class Q_AVPLAYER_EXPORT QAVFilter : public QObject
+struct AVFilterGraph;
+struct AVFilterInOut;
+struct AVFilterContext;
+class QAVInOutFilterPrivate;
+class Q_AVPLAYER_EXPORT QAVInOutFilter : public QObject
 {
 public:
-    ~QAVFilter();
-
-    virtual int write(const QAVFrame &frame) = 0;
-    virtual int read(QAVFrame &frame) = 0;
-    virtual bool eof() const;
+    QAVInOutFilter(QObject *parent = nullptr);
+    ~QAVInOutFilter();
+    QAVInOutFilter(const QAVInOutFilter &other);
+    QAVInOutFilter &operator=(const QAVInOutFilter &other);
+    virtual int configure(AVFilterGraph *graph, AVFilterInOut *in) = 0;
+    AVFilterContext *ctx() const;
 
 protected:
-    QAVFilter(QAVFilterPrivate &d, QObject *parent = nullptr);
-    QScopedPointer<QAVFilterPrivate> d_ptr;
-    Q_DECLARE_PRIVATE(QAVFilter)
-private:
-    Q_DISABLE_COPY(QAVFilter)
+    QScopedPointer<QAVInOutFilterPrivate> d_ptr;
+    QAVInOutFilter(QAVInOutFilterPrivate &d, QObject *parent = nullptr);
+    Q_DECLARE_PRIVATE(QAVInOutFilter)
 };
 
 QT_END_NAMESPACE

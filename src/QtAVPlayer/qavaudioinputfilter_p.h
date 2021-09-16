@@ -5,8 +5,8 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#ifndef QAVFILTER_P_P_H
-#define QAVFILTER_P_P_H
+#ifndef QAVAUDIOINPUTFILTER_P_H
+#define QAVAUDIOINPUTFILTER_P_H
 
 //
 //  W A R N I N G
@@ -19,23 +19,25 @@
 // We mean it.
 //
 
-#include <QtAVPlayer/qavframe.h>
-#include <QList>
+#include "qavinoutfilter_p.h"
 
 QT_BEGIN_NAMESPACE
 
-class QAVFilter;
-class QAVFilterPrivate
+class QAVDemuxer;
+class QAVAudioInputFilterPrivate;
+class Q_AVPLAYER_EXPORT QAVAudioInputFilter : public QAVInOutFilter
 {
-    Q_DECLARE_PUBLIC(QAVFilter)
 public:
-    QAVFilterPrivate(QAVFilter *q) : q_ptr(q) { }
-    virtual ~QAVFilterPrivate() = default;
+    QAVAudioInputFilter(QObject *parent = nullptr);
+    QAVAudioInputFilter(const QAVDemuxer *demuxer, QObject *parent = nullptr);
+    QAVAudioInputFilter(const QAVAudioInputFilter &other);
+    ~QAVAudioInputFilter();
+    QAVAudioInputFilter &operator=(const QAVAudioInputFilter &other);
 
-    QAVFilter *q_ptr = nullptr;
-    QAVFrame sourceFrame;
-    QList<QAVFrame> outputFrames;
-    int format = -1;
+    int configure(AVFilterGraph *graph, AVFilterInOut *in) override;
+
+protected:
+    Q_DECLARE_PRIVATE(QAVAudioInputFilter)
 };
 
 QT_END_NAMESPACE
