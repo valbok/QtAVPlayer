@@ -287,6 +287,7 @@ void QAVPlayerPrivate::terminate()
     pendingPosition = 0;
     pendingSeek = false;
     pendingMediaStatuses.clear();
+    filterGraph.reset();
     setDuration(0);
     error = QAVPlayer::NoError;
 }
