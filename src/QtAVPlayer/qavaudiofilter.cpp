@@ -26,10 +26,6 @@ public:
 
     QList<QAVAudioInputFilter> inputs;
     QList<QAVAudioOutputFilter> outputs;
-
-    int sample_rate = 0;
-    int channels = 0;
-    uint64_t channel_layout = 0;
 };
 
 QAVAudioFilter::QAVAudioFilter(const QList<QAVAudioInputFilter> &inputs, const QList<QAVAudioOutputFilter> &outputs, QObject *parent)
@@ -49,11 +45,6 @@ int QAVAudioFilter::write(const QAVFrame &frame)
     }
 
     d->sourceFrame = frame;
-    d->format = frame.frame()->format;
-    d->sample_rate = frame.frame()->sample_rate;
-    d->channels = frame.frame()->channels;
-    d->channel_layout = frame.frame()->channel_layout;
-
     for (auto &filter : d->inputs) {
         QAVFrame ref = frame;
         int ret = av_buffersrc_add_frame_flags(filter.ctx(), ref.frame(), 0);

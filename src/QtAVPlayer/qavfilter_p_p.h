@@ -35,7 +35,6 @@ public:
     QAVFilter *q_ptr = nullptr;
     QAVFrame sourceFrame;
     QList<QAVFrame> outputFrames;
-    int format = -1;
 };
 
 QT_END_NAMESPACE

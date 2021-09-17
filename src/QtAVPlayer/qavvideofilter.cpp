@@ -27,9 +27,6 @@ public:
 
     QList<QAVVideoInputFilter> inputs;
     QList<QAVVideoOutputFilter> outputs;
-
-    int width = -1;
-    int height = -1;
 };
 
 QAVVideoFilter::QAVVideoFilter(const QList<QAVVideoInputFilter> &inputs, const QList<QAVVideoOutputFilter> &outputs, QObject *parent)
@@ -58,10 +55,8 @@ int QAVVideoFilter::write(const QAVFrame &frame)
         default:
             break;
     }
+
     d->sourceFrame = videoFrame;
-    d->format = d->sourceFrame.frame()->format;
-    d->width = d->sourceFrame.frame()->width;
-    d->height = d->sourceFrame.frame()->height;
     for (auto &filter : d->inputs) {
         QAVFrame ref = d->sourceFrame;
         int ret = av_buffersrc_add_frame_flags(filter.ctx(), ref.frame(), 0);
