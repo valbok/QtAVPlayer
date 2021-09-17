@@ -171,6 +171,7 @@ public:
         QMutexLocker locker(&m_mutex);
         clearPackets();
         clearTimers();
+        m_filter.reset();
     }
 
     int frame(bool sync, double speed, double master, QAVFrame &frame)

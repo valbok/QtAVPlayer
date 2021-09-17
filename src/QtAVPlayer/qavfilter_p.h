@@ -34,7 +34,7 @@ public:
 
     virtual int write(const QAVFrame &frame) = 0;
     virtual int read(QAVFrame &frame) = 0;
-    virtual bool eof() const;
+    bool eof() const;
 
 protected:
     QAVFilter(QAVFilterPrivate &d, QObject *parent = nullptr);

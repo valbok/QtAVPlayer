@@ -56,7 +56,8 @@ private slots:
     void accurateSeek_data();
     void accurateSeek();
     void lastFrame();
-    void configureVideoFilter();
+    void configureFilter();
+    void changeSourceFilter();
     void filter_data();
     void filter();
 };
@@ -151,7 +152,7 @@ void tst_QAVPlayer::playIncorrectSource()
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));    
+    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
 
     p.play();
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
@@ -1955,7 +1956,7 @@ void tst_QAVPlayer::lastFrame()
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
 }
 
-void tst_QAVPlayer::configureVideoFilter()
+void tst_QAVPlayer::configureFilter()
 {
     QAVPlayer p;
 
@@ -2084,7 +2085,7 @@ void tst_QAVPlayer::configureVideoFilter()
     QTRY_COMPARE(spy.count(), 1);
     QCOMPARE(spyErrorOccurred.count(), 0);
 
-    p.play();    
+    p.play();
     QTRY_VERIFY(frame);
     QTRY_COMPARE(frame.size(), QSize(560, 320));
     QCOMPARE(spyErrorOccurred.count(), 0);
@@ -2094,6 +2095,39 @@ void tst_QAVPlayer::configureVideoFilter()
 
     p.seek(p.duration());
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 10000);
+}
+
+void tst_QAVPlayer::changeSourceFilter()
+{
+    QAVPlayer p;
+
+    QFileInfo file1(QLatin1String("../testdata/small.mp4"));
+    p.setSource(QUrl::fromLocalFile(file1.absoluteFilePath()));
+    QSignalSpy spy(&p, &QAVPlayer::filterChanged);
+    QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
+    QAVVideoFrame frame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; });
+
+    const QString desc = "scale=iw/2:-1";
+    p.setFilter(desc);
+    p.play();
+    QTRY_VERIFY(frame);
+    QCOMPARE(frame.size(), QSize(560 / 2, 320 / 2));
+
+    QFileInfo file2(QLatin1String("../testdata/colors.mp4"));
+    p.setSource(QUrl::fromLocalFile(file2.absoluteFilePath()));
+
+    QCOMPARE(p.state(), QAVPlayer::StoppedState);
+    QCOMPARE(p.filter(), desc);
+
+    frame = QAVVideoFrame();
+
+    p.play();
+    QTRY_COMPARE(frame.size(), QSize(160 / 2, 120 / 2));
+
+    p.setSource(QUrl::fromLocalFile(file1.absoluteFilePath()));
+    p.play();
+    QTRY_COMPARE(frame.size(), QSize(560 / 2, 320 / 2));
 }
 
 void tst_QAVPlayer::filter_data()
