@@ -202,6 +202,9 @@ QAVVideoFrame::operator QVideoFrame() const
 
     QVideoFrame::PixelFormat format = QVideoFrame::Format_Invalid;
     switch (frame()->format) {
+        case AV_PIX_FMT_RGB32:
+            format = QVideoFrame::Format_RGB32;
+            break;
         case AV_PIX_FMT_YUV420P:
             format = QVideoFrame::Format_YUV420P;
             break;
