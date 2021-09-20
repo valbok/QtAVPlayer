@@ -1749,7 +1749,7 @@ void tst_QAVPlayer::accurateSeek()
     p.seek(4000);
     QTRY_COMPARE(seekPosition, 4000);
     QTRY_VERIFY(framesCount < 3);
-    QCOMPARE(frame.pts(), 4.0);
+    QTRY_COMPARE(frame.pts(), 4.0);
 
     frame = QAVVideoFrame();
     framesCount = 0;
