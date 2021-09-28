@@ -58,6 +58,7 @@ int QAVFilterGraph::parse(const QString &desc)
     AVFilterInOut *inputs = nullptr;
     struct InOutDeleter {
         AVFilterInOut **io = nullptr;
+        InOutDeleter(AVFilterInOut **o) : io(o) { }
         ~InOutDeleter() { avfilter_inout_free(io); }
     } inDeleter{ &inputs }, outDeleter{ &outputs };
 
