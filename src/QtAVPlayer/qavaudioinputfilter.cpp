@@ -74,7 +74,7 @@ int QAVAudioInputFilter::configure(AVFilterGraph *graph, AVFilterInOut *in)
 
     char name[255];
     static int index = 0;
-    snprintf(name, sizeof(name), "abuffer_%d", index);
+    snprintf(name, sizeof(name), "abuffer_%d", index++);
 
     int ret = avfilter_graph_create_filter(&d->ctx, 
                                            avfilter_get_by_name("abuffer"),
@@ -82,11 +82,7 @@ int QAVAudioInputFilter::configure(AVFilterGraph *graph, AVFilterInOut *in)
     if (ret < 0)
         return ret;
 
-    ret = avfilter_link(d->ctx, 0, in->filter_ctx, in->pad_idx);
-    if (ret < 0)
-        return ret;
-
-    return ret;
+    return avfilter_link(d->ctx, 0, in->filter_ctx, in->pad_idx);
 }
 
 QT_END_NAMESPACE
