@@ -16,6 +16,9 @@ extern "C" {
 #include <libavutil/bprint.h>
 }
 
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
 QT_BEGIN_NAMESPACE
 
 class QAVAudioInputFilterPrivate : public QAVInOutFilterPrivate
