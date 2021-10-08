@@ -5,6 +5,9 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
+#define __STDC_FORMAT_MACROS 1
+#include <inttypes.h>
+
 #include "qavaudioinputfilter_p.h"
 #include "qavinoutfilter_p_p.h"
 #include "qavdemuxer_p.h"
@@ -15,9 +18,6 @@ extern "C" {
 #include <libavfilter/buffersrc.h>
 #include <libavutil/bprint.h>
 }
-
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h>
 
 QT_BEGIN_NAMESPACE
 
