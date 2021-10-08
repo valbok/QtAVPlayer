@@ -164,3 +164,62 @@ jobs:
           cd ../
           cd qavplayer
           release\tst_qavplayer.exe -maxwarnings 100000
+
+  windows-mingw-qmake-default:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install wget & unzip
+        run: |
+          choco install wget unzip xidel
+
+      - name: Install Qt 5.15
+        uses: jurplel/install-qt-action@v2
+        with:
+          arch: win64_mingw81
+          version: 5.15.2
+
+      - name: Install FFmpeg
+        shell: cmd
+        run: |
+          cd ..
+          xidel https://github.com/BtbN/FFmpeg-Builds/releases -e "//a[contains(@href, '-gpl-shared-4.4.zip')]/@href[1]" --silent > ffmpeg.url
+          xidel https://github.com/BtbN/FFmpeg-Builds/releases -e "(//a[contains(@href, '-gpl-shared-4.4.zip')])[1]/substring(., 0, string-length(.) - 3)" --silent > ffmpeg.name
+          set /P FFMPEG_URL=< ffmpeg.url
+          set /P FFMPEG_NAME=< ffmpeg.name
+          wget https://github.com%FFMPEG_URL%
+          unzip %FFMPEG_NAME%.zip
+          ren %FFMPEG_NAME% ffmpeg
+          dir ffmpeg
+          dir ffmpeg\bin
+          SET FFMPEG=%CD%\ffmpeg
+          echo FFMPEG=%FFMPEG%>>%GITHUB_ENV%
+          echo PATH=%FFMPEG%\lib;%FFMPEG%\bin;%PATH%>>%GITHUB_ENV%
+          echo LIBRARY_PATH=%FFMPEG%\lib;%FFMPEG%\bin;%PATH%>>%GITHUB_ENV%
+          echo INCLUDE=%FFMPEG%\include;%INCLUDE%>>%GITHUB_ENV%
+          echo CPLUS_INCLUDE_PATH=%FFMPEG%\include;%CPLUS_INCLUDE_PATH%>>%GITHUB_ENV%
+          echo LIB=%FFMPEG%\lib;%FFMPEG%\bin;%LIB%>>%GITHUB_ENV%
+
+      - name: Build
+        shell: cmd
+        run: |
+          qmake
+          mingw32-make -j4
+          mingw32-make install
+
+      - name: Test
+        shell: cmd
+        run: |
+          set QT_LOGGING_RULES=qt.QtAVPlayer.debug=true
+          set QT_FORCE_STDERR_LOGGING=1
+          set QT_ASSUME_STDERR_HAS_CONSOLE=1
+          cd tests/
+          qmake
+          mingw32-make
+          cd auto/integration/qavdemuxer
+          release\tst_qavdemuxer.exe
+          cd ../
+          cd qavplayer
+          release\tst_qavplayer.exe -maxwarnings 100000
