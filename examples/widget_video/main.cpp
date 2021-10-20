@@ -100,8 +100,10 @@ int main(int argc, char *argv[])
             return;
 
         QVideoFrame videoFrame = frame.convertTo(AV_PIX_FMT_RGB32);
-        if (!vr.m_surface->isActive())
-            vr.m_surface->start({videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType()});
+        if (!vr.m_surface->isActive() || vr.m_surface->surfaceFormat().frameSize() != videoFrame.size()) {
+            QVideoSurfaceFormat f(videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType());
+            vr.m_surface->start(f);
+        }
         if (vr.m_surface->isActive())
             vr.m_surface->present(videoFrame);
     });
