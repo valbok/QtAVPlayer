@@ -7,6 +7,7 @@
 
 #include "qavplayer.h"
 #include "qavaudiooutput.h"
+#include "private/qaviodevice_p.h"
 
 #include <QDebug>
 #include <QtTest/QtTest>
@@ -40,6 +41,8 @@ private slots:
     void pauseSeekVideo();
     void files_data();
     void files();
+    void files_io_data();
+    void files_io();
     void convert_data();
     void convert();
     void map_data();
@@ -1106,6 +1109,118 @@ void tst_QAVPlayer::files()
 
     QFileInfo file(path);
     p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+
+    int vf = 0;
+    QAVVideoFrame videoFrame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { videoFrame = f; if (f) ++vf; });
+    int af = 0;
+    QAVAudioFrame audioFrame;
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { audioFrame = f; if (f) ++af; });
+
+    p.pause();
+    if (hasVideo) {
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || vf == 1);
+    }
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia || p.mediaStatus() == QAVPlayer::EndOfMedia);
+    QTRY_COMPARE(p.duration(), duration);
+    QCOMPARE(p.hasVideo(), hasVideo);
+    QCOMPARE(p.hasAudio(), hasAudio);
+
+    af = 0;
+    vf = 0;
+    videoFrame = QAVVideoFrame();
+
+    p.pause();
+    p.play();
+    if (hasVideo) {
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || vf > 0);
+    }
+
+    if (hasAudio) {
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || audioFrame);
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || af > 0);
+    }
+
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 18000);
+
+    vf = 0;
+    af = 0;
+
+    p.pause();
+    p.play();
+    if (hasVideo) {
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || vf > 0);
+    }
+    if (hasAudio) {
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || audioFrame);
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || af > 0);
+    }
+
+    videoFrame = QAVVideoFrame();
+
+    p.pause();
+    if (hasVideo)
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
+
+    p.seek(duration * 0.8);
+    if (hasVideo)
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
+
+    videoFrame = QAVVideoFrame();
+    p.play();
+    if (hasVideo)
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
+
+    p.play();
+    p.stop();
+    QTest::qWait(100);
+
+    p.pause();
+    p.stop();
+    p.pause();
+    p.play();
+    p.seek(duration * 0.9);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 18000);
+}
+
+void tst_QAVPlayer::files_io_data()
+{
+    QTest::addColumn<QString>("path");
+    QTest::addColumn<int>("duration");
+    QTest::addColumn<int>("videoFrames");
+    QTest::addColumn<int>("audioFrames");
+
+    QTest::newRow("test.wav") << QString("../testdata/test.wav") << 999 << 0 << 21;
+    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4") << 15019 << 374 << 702;
+    QTest::newRow("shots0000.dv") << QString("../testdata/shots0000.dv") << 40 << 1 << 0;
+    QTest::newRow("dv_dsf_1_stype_1.dv") << QString("../testdata/dv_dsf_1_stype_1.dv") << 600 << 14 << 14;
+    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << 2000 << 49 << 49;
+    QTest::newRow("small.mp4") << QString("../testdata/small.mp4") << 5568 << 165 << 259;
+    QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov") << 6840 << 169 << 0;
+}
+
+void tst_QAVPlayer::files_io()
+{
+    QFETCH(QString, path);
+    QFETCH(int, duration);
+    QFETCH(int, videoFrames);
+    QFETCH(int, audioFrames);
+    const bool hasVideo = videoFrames > 0;
+    const bool hasAudio = audioFrames > 0;
+
+    QAVPlayer p;
+
+    QFileInfo fileInfo(path);
+    QFile file(fileInfo.absoluteFilePath());
+    if (!file.open(QIODevice::ReadOnly)) {
+        QFAIL("Could not open");
+        return;
+    }
+
+    p.setSource(QUrl(path), &file);
 
     int vf = 0;
     QAVVideoFrame videoFrame;

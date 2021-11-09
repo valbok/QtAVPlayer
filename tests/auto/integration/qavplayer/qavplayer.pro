@@ -1,6 +1,6 @@
 TARGET = tst_qavplayer
 
-QT += multimedia-private testlib QtAVPlayer
+QT += multimedia-private testlib QtAVPlayer QtAVPlayer-private
 
 CONFIG += testcase console
 

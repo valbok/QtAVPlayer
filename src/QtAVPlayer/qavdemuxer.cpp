@@ -60,9 +60,6 @@ public:
     {
     }
 
-    void init(AVIOContext *io);
-    int open(const char *url);
-
     QAVDemuxer *q_ptr = nullptr;
     AVFormatContext *ctx = nullptr;
 
@@ -221,92 +218,75 @@ static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
     qDebug() << "FFmpeg:" << line;
 }
 
-void QAVDemuxerPrivate::init(AVIOContext *io)
-{
-    if (!ctx)
-        ctx = avformat_alloc_context();
-
-    ctx->flags |= AVFMT_FLAG_GENPTS;
-    ctx->interrupt_callback.callback = decode_interrupt_cb;
-    ctx->interrupt_callback.opaque = this;
-    if (io) {
-        ctx->pb = io;
-        ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
-    }
-}
-
-int QAVDemuxerPrivate::open(const char *url)
-{
-    int ret = avformat_open_input(&ctx, url, nullptr, nullptr);
-    if (ret < 0)
-        return ret;
-
-    ret = avformat_find_stream_info(ctx, NULL);
-    if (ret < 0)
-        return ret;
-
-    for (unsigned i = 0; i < ctx->nb_streams; ++i) {
-        enum AVMediaType type = ctx->streams[i]->codecpar->codec_type;
-        if (type == AVMEDIA_TYPE_VIDEO)
-            videoStreams.push_back(i);
-        else if (type == AVMEDIA_TYPE_AUDIO)
-            audioStreams.push_back(i);
-        else if (type == AVMEDIA_TYPE_SUBTITLE)
-            subtitleStreams.push_back(i);
-    }
-
-    videoStream = av_find_best_stream(ctx, AVMEDIA_TYPE_VIDEO,
-                                         videoStream, -1, nullptr, 0);
-    audioStream = av_find_best_stream(ctx, AVMEDIA_TYPE_AUDIO,
-                                         audioStream,
-                                         videoStream,
-                                         nullptr, 0);
-    subtitleStream = av_find_best_stream(ctx, AVMEDIA_TYPE_SUBTITLE,
-                                            subtitleStream,
-                                            audioStream >= 0 ? audioStream : videoStream,
-                                            nullptr, 0);
-    av_log_set_callback(log_callback);
-
-    for (int i = 0; i < audioStreams.size(); ++i) {
-        const int stream = audioStreams[i];
-        auto codec = new QAVAudioCodec;
-        if (!codec->open(ctx->streams[stream]))
-            qWarning() << "Could not open audio codec for stream:" << stream;
-        audioCodecs.push_back(QSharedPointer<QAVAudioCodec>(codec));
-    }
-
-    for (int i = 0; i < videoStreams.size(); ++i) {
-        const int stream = videoStreams[i];
-        auto codec = new QAVVideoCodec;
-        setup_video_codec(ctx->streams[stream], *codec);
-        videoCodecs.push_back(QSharedPointer<QAVVideoCodec>(codec));
-    }
-
-    seekable = ctx->iformat->read_seek || ctx->iformat->read_seek2;
-    if (ctx->pb)
-        seekable |= bool(ctx->pb->seekable);
-
-    return 0;
-}
-
-int QAVDemuxer::load(const QUrl &url)
+int QAVDemuxer::load(const QUrl &url, QAVIODevice *dev)
 {
     Q_D(QAVDemuxer);
+
+    if (!d->ctx)
+        d->ctx = avformat_alloc_context();
+
+    d->ctx->flags |= AVFMT_FLAG_GENPTS;
+    d->ctx->interrupt_callback.callback = decode_interrupt_cb;
+    d->ctx->interrupt_callback.opaque = d;
+    if (dev) {
+        d->ctx->pb = dev->ctx();
+        d->ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
+    }
 
     QString urlString = url.isLocalFile()
                       ? QDir::toNativeSeparators(url.toLocalFile())
                       : url.toString();
 
-    d->init(nullptr);
-    return d->open(urlString.toUtf8().constData());
-}
+    int ret = avformat_open_input(&d->ctx, urlString.toUtf8().constData(), nullptr, nullptr);
+    if (ret < 0)
+        return ret;
 
-int QAVDemuxer::load(const QAVIODevice &device)
-{
-    Q_D(QAVDemuxer);
+    ret = avformat_find_stream_info(d->ctx, NULL);
+    if (ret < 0)
+        return ret;
 
-    d->init(device.ctx());
-    return d->open("QAVIODevice");
+    for (unsigned i = 0; i < d->ctx->nb_streams; ++i) {
+        enum AVMediaType type = d->ctx->streams[i]->codecpar->codec_type;
+        if (type == AVMEDIA_TYPE_VIDEO)
+            d->videoStreams.push_back(i);
+        else if (type == AVMEDIA_TYPE_AUDIO)
+            d->audioStreams.push_back(i);
+        else if (type == AVMEDIA_TYPE_SUBTITLE)
+            d->subtitleStreams.push_back(i);
+    }
+
+    d->videoStream = av_find_best_stream(d->ctx, AVMEDIA_TYPE_VIDEO,
+                                         d->videoStream, -1, nullptr, 0);
+    d->audioStream = av_find_best_stream(d->ctx, AVMEDIA_TYPE_AUDIO,
+                                         d->audioStream,
+                                         d->videoStream,
+                                         nullptr, 0);
+    d->subtitleStream = av_find_best_stream(d->ctx, AVMEDIA_TYPE_SUBTITLE,
+                                            d->subtitleStream,
+                                            d->audioStream >= 0 ? d->audioStream : d->videoStream,
+                                            nullptr, 0);
+    av_log_set_callback(log_callback);
+
+    for (int i = 0; i < d->audioStreams.size(); ++i) {
+        const int stream = d->audioStreams[i];
+        auto codec = new QAVAudioCodec;
+        if (!codec->open(d->ctx->streams[stream]))
+            qWarning() << "Could not open audio codec for stream:" << stream;
+        d->audioCodecs.push_back(QSharedPointer<QAVAudioCodec>(codec));
+    }
+
+    for (int i = 0; i < d->videoStreams.size(); ++i) {
+        const int stream = d->videoStreams[i];
+        auto codec = new QAVVideoCodec;
+        setup_video_codec(d->ctx->streams[stream], *codec);
+        d->videoCodecs.push_back(QSharedPointer<QAVVideoCodec>(codec));
+    }
+
+    d->seekable = d->ctx->iformat->read_seek || d->ctx->iformat->read_seek2;
+    if (d->ctx->pb)
+        d->seekable |= bool(d->ctx->pb->seekable);
+
+    return 0;
 }
 
 QList<int> QAVDemuxer::videoStreams() const

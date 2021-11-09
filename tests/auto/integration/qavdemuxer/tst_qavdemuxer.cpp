@@ -201,6 +201,7 @@ void tst_QAVDemuxer::loadVideo()
 void tst_QAVDemuxer::fileIO()
 {
     QAVDemuxer d;
+
     QFile file(QLatin1String("../testdata/colors.mp4"));
     if (!file.open(QIODevice::ReadOnly)) {
         QFAIL("Could not open");
@@ -208,7 +209,7 @@ void tst_QAVDemuxer::fileIO()
     }
 
     QAVIODevice dev(file);
-    QVERIFY(d.load(dev) >= 0);
+    QVERIFY(d.load(QUrl("colors.mp4"), &dev) >= 0);
 
     QVERIFY(d.currentVideoStreamIndex() >= 0);
     QVERIFY(d.currentAudioStreamIndex() >= 0);
@@ -261,7 +262,7 @@ void tst_QAVDemuxer::qrcIO()
     }
 
     QAVIODevice dev(file);
-    QVERIFY(d.load(dev) >= 0);
+    QVERIFY(d.load(QUrl("test.wav"), &dev) >= 0);
     QVERIFY(d.currentVideoStreamIndex() < 0);
     QVERIFY(d.currentAudioStreamIndex() >= 0);
     QVERIFY(d.currentSubtitleStreamIndex() < 0);

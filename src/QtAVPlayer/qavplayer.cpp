@@ -7,6 +7,7 @@
 
 #include "qavplayer.h"
 #include "qavdemuxer_p.h"
+#include "qaviodevice_p.h"
 #include "qavvideocodec_p.h"
 #include "qavaudiocodec_p.h"
 #include "qavvideoframe.h"
@@ -69,7 +70,7 @@ public:
 
     void doWait();
     void wait(bool v);
-    void doLoad(const QUrl &url);
+    void doLoad();
     void doDemux();
     bool skipFrame(const QAVFrame &frame, const QAVPacketQueue &queue, bool master);
     bool doPlayStep(double refPts, bool master, QAVPacketQueue &queue, bool &sync, QAVFrame &frame);
@@ -81,6 +82,7 @@ public:
 
     QAVPlayer *q_ptr = nullptr;
     QUrl url;
+    QScopedPointer<QAVIODevice> dev;
     QAVPlayer::MediaStatus mediaStatus = QAVPlayer::NoMedia;
     QList<PendingMediaStatus> pendingMediaStatuses;
     QAVPlayer::State state = QAVPlayer::StoppedState;
@@ -432,11 +434,11 @@ void QAVPlayerPrivate::applyFilter(bool reset)
     }
 }
 
-void QAVPlayerPrivate::doLoad(const QUrl &url)
+void QAVPlayerPrivate::doLoad()
 {
     demuxer.abort(false);
     demuxer.unload();
-    int ret = demuxer.load(url);
+    int ret = demuxer.load(url, dev.data());
     if (ret < 0) {
         setError(QAVPlayer::ResourceError, err_str(ret));
         return;
@@ -448,7 +450,7 @@ void QAVPlayerPrivate::doLoad(const QUrl &url)
     }
     
     applyFilter();
-    dispatch([this, url] {
+    dispatch([this] {
         qCDebug(lcAVPlayer) << "[" << url << "]: Loaded, seekable:" << demuxer.seekable() << ", duration:" << demuxer.duration();
         setSeekable(demuxer.seekable());
         setDuration(demuxer.duration());
@@ -663,26 +665,29 @@ QAVPlayer::~QAVPlayer()
     d->terminate();
 }
 
-void QAVPlayer::setSource(const QUrl &url)
+void QAVPlayer::setSource(const QUrl &url, QIODevice *dev)
 {
     Q_D(QAVPlayer);
     if (d->url == url)
         return;
 
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << url;
+
     d->terminate();
     d->url = url;
+    if (dev)
+        d->dev.reset(new QAVIODevice(*dev));
     emit sourceChanged(url);
     d->wait(true);
     d->quit = false;
-    if (d->url.isEmpty())
+    if (url.isEmpty())
         return;
 
     d->setPendingMediaStatus(LoadingMedia);
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    d->loaderFuture = QtConcurrent::run(&d->threadPool, d, &QAVPlayerPrivate::doLoad, d->url);
+    d->loaderFuture = QtConcurrent::run(&d->threadPool, d, &QAVPlayerPrivate::doLoad);
 #else
-    d->loaderFuture = QtConcurrent::run(&d->threadPool, &QAVPlayerPrivate::doLoad, d, d->url);
+    d->loaderFuture = QtConcurrent::run(&d->threadPool, &QAVPlayerPrivate::doLoad, d);
 #endif
 }
 
