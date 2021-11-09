@@ -29,7 +29,8 @@ PRIVATE_HEADERS += \
     qavvideoinputfilter_p.h \
     qavaudioinputfilter_p.h \ 
     qavvideooutputfilter_p.h \
-    qavaudiooutputfilter_p.h
+    qavaudiooutputfilter_p.h \
+    qaviodevice_p.h
 
 PUBLIC_HEADERS += \
     qavaudioformat.h \
@@ -61,7 +62,8 @@ SOURCES += \
     qavvideoinputfilter.cpp \
     qavaudioinputfilter.cpp \
     qavvideooutputfilter.cpp \
-    qavaudiooutputfilter.cpp
+    qavaudiooutputfilter.cpp \
+    qaviodevice.cpp
 
 qtConfig(va_x11):qtConfig(opengl): {
     QMAKE_USE += va_x11 x11

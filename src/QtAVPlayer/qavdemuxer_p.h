@@ -29,6 +29,7 @@ QT_BEGIN_NAMESPACE
 class QAVDemuxerPrivate;
 class QAVVideoCodec;
 class QAVAudioCodec;
+class QAVIODevice;
 struct AVStream;
 struct AVCodecContext;
 struct AVFormatContext;
@@ -40,6 +41,7 @@ public:
 
     void abort(bool stop = true);
     int load(const QUrl &url);
+    int load(const QAVIODevice &device);
     void unload();
 
     QList<int> videoStreams() const;
