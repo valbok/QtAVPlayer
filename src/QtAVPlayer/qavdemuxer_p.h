@@ -40,8 +40,7 @@ public:
     ~QAVDemuxer();
 
     void abort(bool stop = true);
-    int load(const QUrl &url);
-    int load(const QAVIODevice &device);
+    int load(const QUrl &url, QAVIODevice *dev = nullptr);
     void unload();
 
     QList<int> videoStreams() const;

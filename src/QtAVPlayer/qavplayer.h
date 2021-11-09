@@ -16,6 +16,7 @@
 
 QT_BEGIN_NAMESPACE
 
+class QIODevice;
 class QAVPlayerPrivate;
 class Q_AVPLAYER_EXPORT QAVPlayer : public QObject
 {
@@ -50,7 +51,7 @@ public:
     QAVPlayer(QObject *parent = nullptr);
     ~QAVPlayer();
 
-    void setSource(const QUrl &url);
+    void setSource(const QUrl &url, QIODevice *dev = nullptr);
     QUrl source() const;
 
     bool hasVideo() const;

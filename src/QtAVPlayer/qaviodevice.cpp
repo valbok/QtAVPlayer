@@ -32,8 +32,8 @@ public:
     static int read(void *opaque, unsigned char *data, int maxSize)
     {
         auto io = static_cast<QAVIODevicePrivate *>(opaque);
-        qint64 r = io->device.read((char *)data, maxSize);
-        return r == 0 ? AVERROR_EOF : r;
+        qint64 bytes = io->device.read((char *)data, maxSize);
+        return bytes == 0 ? AVERROR_EOF : bytes;
     }
 
     static int64_t seek(void *opaque, int64_t offset, int whence)
