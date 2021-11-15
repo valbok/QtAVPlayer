@@ -282,6 +282,7 @@ void QAVPlayerPrivate::terminate()
     videoQueue.abort();
     audioQueue.clear();
     audioQueue.abort();
+    dev.reset();
     loaderFuture.waitForFinished();
     demuxerFuture.waitForFinished();
     videoPlayFuture.waitForFinished();

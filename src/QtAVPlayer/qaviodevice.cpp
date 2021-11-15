@@ -96,6 +96,8 @@ QAVIODevice::QAVIODevice(QIODevice &device, QObject *parent)
 
 QAVIODevice::~QAVIODevice()
 {
+    Q_D(QAVIODevice);
+    d->waitCond.wakeAll();
 }
 
 AVIOContext *QAVIODevice::ctx() const
