@@ -6,6 +6,8 @@
  *********************************************************/
 
 #include "qaviodevice_p.h"
+#include <QMutex>
+#include <QWaitCondition>
 
 extern "C" {
 #include <libavformat/avio.h>
@@ -15,9 +17,11 @@ QT_BEGIN_NAMESPACE
 
 class QAVIODevicePrivate
 {
+    Q_DECLARE_PUBLIC(QAVIODevice)
 public:
-    explicit QAVIODevicePrivate(QIODevice &device)
-        : device(device)
+    explicit QAVIODevicePrivate(QAVIODevice *q, QIODevice &device)
+        : q_ptr(q)
+        , device(device)
         , buffer(static_cast<unsigned char*>(av_malloc(buffer_size)))
         , ctx(avio_alloc_context(buffer, buffer_size, 0, this, &QAVIODevicePrivate::read, nullptr, &QAVIODevicePrivate::seek))
     {
@@ -31,37 +35,62 @@ public:
 
     static int read(void *opaque, unsigned char *data, int maxSize)
     {
-        auto io = static_cast<QAVIODevicePrivate *>(opaque);
-        qint64 bytes = io->device.read((char *)data, maxSize);
-        return bytes == 0 ? AVERROR_EOF : bytes;
+        auto d = static_cast<QAVIODevicePrivate *>(opaque);
+        int bytes = 0;
+        bool wake = false;
+        QMetaObject::invokeMethod(d->q_ptr, [&] {
+            QMutexLocker locker(&d->mutex);
+            bytes = !d->device.atEnd() ? d->device.read((char *)data, maxSize) : AVERROR_EOF;
+            d->waitCond.wakeAll();
+            wake = true;
+        }, nullptr);
+
+        QMutexLocker locker(&d->mutex);
+        if (!wake)
+            d->waitCond.wait(&d->mutex);
+        return bytes;
     }
 
     static int64_t seek(void *opaque, int64_t offset, int whence)
     {
-        auto io = static_cast<QAVIODevicePrivate *>(opaque);
-        if (whence == AVSEEK_SIZE)
-            return io->device.size() > 0 ? io->device.size() : 0;
+        auto d = static_cast<QAVIODevicePrivate *>(opaque);
+        int64_t pos = 0;
+        bool wake = false;
+        QMetaObject::invokeMethod(d->q_ptr, [&] {
+            QMutexLocker locker(&d->mutex);
+            if (whence == AVSEEK_SIZE) {
+                pos = d->device.size() > 0 ? d->device.size() : 0;
+            } else {
+                if (whence == SEEK_END)
+                    offset = d->device.size() - offset;
+                else if (whence == SEEK_CUR)
+                    offset = d->device.pos() + offset;
 
-        if (whence == SEEK_END)
-            offset = io->device.size() - offset;
-        else if (whence == SEEK_CUR)
-            offset = io->device.pos() + offset;
+                pos = d->device.seek(offset) ? d->device.pos() : -1;
+            }
+            d->waitCond.wakeAll();
+            wake = true;
+        }, nullptr);
 
-        if (!io->device.seek(offset))
-            return -1;
+        QMutexLocker locker(&d->mutex);
+        if (!wake)
+            d->waitCond.wait(&d->mutex);
 
-        return io->device.pos();
+        return pos;
     }
 
     const size_t buffer_size = 4 * 1024;
+    QAVIODevice *q_ptr = nullptr;
     QIODevice &device;
     unsigned char *buffer = nullptr;
     AVIOContext *ctx = nullptr;
+    QMutex mutex;
+    QWaitCondition waitCond;
 };
 
 QAVIODevice::QAVIODevice(QIODevice &device, QObject *parent)
     : QObject(parent)
-    , d_ptr(new QAVIODevicePrivate(device))
+    , d_ptr(new QAVIODevicePrivate(this, device))
 {
 }
 
