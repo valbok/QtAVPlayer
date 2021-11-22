@@ -23,6 +23,7 @@ public:
     ~QAVIODevice();
 
     AVIOContext *ctx() const;
+    void abort(bool aborted);
 
 protected:
     QScopedPointer<QAVIODevicePrivate> d_ptr;
