@@ -36,8 +36,13 @@ public:
     static int read(void *opaque, unsigned char *data, int maxSize)
     {
         auto d = static_cast<QAVIODevicePrivate *>(opaque);
+        QMutexLocker locker(&d->mutex);
+        if (d->aborted)
+            return ECANCELED;
+
         int bytes = 0;
         bool wake = false;
+        locker.unlock();
         QMetaObject::invokeMethod(d->q_ptr, [&] {
             QMutexLocker locker(&d->mutex);
             bytes = !d->device.atEnd() ? d->device.read((char *)data, maxSize) : AVERROR_EOF;
@@ -45,17 +50,23 @@ public:
             wake = true;
         }, nullptr);
 
-        QMutexLocker locker(&d->mutex);
+        locker.relock();
         if (!wake)
             d->waitCond.wait(&d->mutex);
+
         return bytes;
     }
 
     static int64_t seek(void *opaque, int64_t offset, int whence)
     {
         auto d = static_cast<QAVIODevicePrivate *>(opaque);
+        QMutexLocker locker(&d->mutex);
+        if (d->aborted)
+            return ECANCELED;
+
         int64_t pos = 0;
         bool wake = false;
+        locker.unlock();
         QMetaObject::invokeMethod(d->q_ptr, [&] {
             QMutexLocker locker(&d->mutex);
             if (whence == AVSEEK_SIZE) {
@@ -72,7 +83,7 @@ public:
             wake = true;
         }, nullptr);
 
-        QMutexLocker locker(&d->mutex);
+        locker.relock();
         if (!wake)
             d->waitCond.wait(&d->mutex);
 
@@ -86,6 +97,7 @@ public:
     AVIOContext *ctx = nullptr;
     QMutex mutex;
     QWaitCondition waitCond;
+    bool aborted = false;
 };
 
 QAVIODevice::QAVIODevice(QIODevice &device, QObject *parent)
@@ -96,11 +108,20 @@ QAVIODevice::QAVIODevice(QIODevice &device, QObject *parent)
 
 QAVIODevice::~QAVIODevice()
 {
+    abort(true);
 }
 
 AVIOContext *QAVIODevice::ctx() const
 {
     return d_func()->ctx;
+}
+
+void QAVIODevice::abort(bool aborted)
+{
+    Q_D(QAVIODevice);
+    QMutexLocker locker(&d->mutex);
+    d->aborted = aborted;
+    d->waitCond.wakeAll();
 }
 
 QT_END_NAMESPACE

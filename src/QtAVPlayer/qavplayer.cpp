@@ -282,6 +282,8 @@ void QAVPlayerPrivate::terminate()
     videoQueue.abort();
     audioQueue.clear();
     audioQueue.abort();
+    if (dev)
+        dev->abort(true);
     loaderFuture.waitForFinished();
     demuxerFuture.waitForFinished();
     videoPlayFuture.waitForFinished();
@@ -326,11 +328,6 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
                 qCDebug(lcAVPlayer) << "Played from pos:" << q_ptr->position();
                 emit q_ptr->played(q_ptr->position());
                 wait(false);
-            } else {
-                if (isEndOfFile()) {
-                    result = true;
-                    qCDebug(lcAVPlayer) << "EndOfMedia: skipping" << status;
-                }
             }
             break;
 
@@ -340,11 +337,6 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
                 qCDebug(lcAVPlayer) << "Paused to pos:" << q_ptr->position();
                 emit q_ptr->paused(q_ptr->position());
                 wait(true);
-            } else {
-                if (isEndOfFile()) {
-                    result = true;
-                    qCDebug(lcAVPlayer) << "EndOfMedia: skipping" << status;
-                }
             }
             break;
 
@@ -377,11 +369,6 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
                 qCDebug(lcAVPlayer) << "Stepped to pos:" << q_ptr->position();
                 emit q_ptr->stepped(q_ptr->position());
                 wait(true);
-            } else {
-                if (isEndOfFile()) {
-                    result = true;
-                    qCDebug(lcAVPlayer) << "EndOfMedia: skipping" << status;
-                }
             }
             break;
 
@@ -397,6 +384,13 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
 
         default:
             break;
+    }
+
+    // The step is finished but queues are empty => no more frames will be sent.
+    // Need to skip current status and move to next to prevent the blocking.
+    if (!result && demuxer.eof() && videoQueue.isEmpty() && audioQueue.isEmpty() && !isSeeking()) {
+        result = true;
+        qCDebug(lcAVPlayer) << __FUNCTION__ << ": EndOfMedia -> skipping:" << status;
     }
 
     return result;
@@ -1047,5 +1041,7 @@ QDebug operator<<(QDebug dbg, QAVPlayer::Error err)
     }
 }
 #endif
+
+Q_DECLARE_METATYPE(PendingMediaStatus)
 
 QT_END_NAMESPACE
