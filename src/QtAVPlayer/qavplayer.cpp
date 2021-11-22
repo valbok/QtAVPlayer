@@ -326,6 +326,11 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
                 qCDebug(lcAVPlayer) << "Played from pos:" << q_ptr->position();
                 emit q_ptr->played(q_ptr->position());
                 wait(false);
+            } else {
+                if (isEndOfFile()) {
+                    result = true;
+                    qCDebug(lcAVPlayer) << "EndOfMedia: skipping" << status;
+                }
             }
             break;
 
@@ -335,6 +340,11 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
                 qCDebug(lcAVPlayer) << "Paused to pos:" << q_ptr->position();
                 emit q_ptr->paused(q_ptr->position());
                 wait(true);
+            } else {
+                if (isEndOfFile()) {
+                    result = true;
+                    qCDebug(lcAVPlayer) << "EndOfMedia: skipping" << status;
+                }
             }
             break;
 
@@ -367,6 +377,11 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
                 qCDebug(lcAVPlayer) << "Stepped to pos:" << q_ptr->position();
                 emit q_ptr->stepped(q_ptr->position());
                 wait(true);
+            } else {
+                if (isEndOfFile()) {
+                    result = true;
+                    qCDebug(lcAVPlayer) << "EndOfMedia: skipping" << status;
+                }
             }
             break;
 
