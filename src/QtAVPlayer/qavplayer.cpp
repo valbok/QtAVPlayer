@@ -294,6 +294,8 @@ void QAVPlayerPrivate::terminate()
     filterGraph.reset();
     setDuration(0);
     error = QAVPlayer::NoError;
+    dev.reset();
+    eof = false;
 }
 
 void QAVPlayerPrivate::step(bool hasFrame)
