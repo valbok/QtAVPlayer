@@ -65,6 +65,7 @@ private slots:
     void filter();
     void filesIO();
     void filesIOSequential();
+    void filesIOSequentialDelay();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -2484,6 +2485,36 @@ void tst_QAVPlayer::filesIOSequential()
     }
     QTRY_VERIFY(frame);
     QTRY_VERIFY(framesCount > 100);
+}
+
+
+void tst_QAVPlayer::filesIOSequentialDelay()
+{
+    QFileInfo fileInfo(QLatin1String("../testdata/colors.mp4"));
+    QFile file(fileInfo.absoluteFilePath());
+    file.open(QFile::ReadOnly);
+
+    BufferSequential buffer;
+    buffer.open(QIODevice::ReadWrite);
+
+    QAVPlayer p;
+    QAVVideoFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+
+    while(!file.atEnd()) {
+        auto bytes = file.read(1024);
+        buffer.write(bytes);
+        if (file.pos() >= 26042 && p.state() != QAVPlayer::PlayingState) {
+            p.setSource(QUrl(fileInfo.fileName()), &buffer);
+            p.play();
+        }
+        QTest::qWait(50);
+    }
+
+    QTRY_VERIFY(frame);
+    QTRY_VERIFY(framesCount > 100);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 20000);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
