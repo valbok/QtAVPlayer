@@ -23,9 +23,10 @@ public:
         : q_ptr(q)
         , device(device)
         , buffer(static_cast<unsigned char*>(av_malloc(buffer_size)))
-        , ctx(avio_alloc_context(buffer, buffer_size, 0, this, &QAVIODevicePrivate::read, nullptr, &QAVIODevicePrivate::seek))
+        , ctx(avio_alloc_context(buffer, buffer_size, 0, this, &QAVIODevicePrivate::read, nullptr, !device.isSequential() ? &QAVIODevicePrivate::seek : nullptr))
     {
-        ctx->seekable = AVIO_SEEKABLE_NORMAL;
+        if (!device.isSequential())
+            ctx->seekable = AVIO_SEEKABLE_NORMAL;
     }
 
     ~QAVIODevicePrivate()
@@ -90,7 +91,7 @@ public:
         return pos;
     }
 
-    const size_t buffer_size = 4 * 1024;
+    const size_t buffer_size = 64 * 1024;
     QAVIODevice *q_ptr = nullptr;
     QIODevice &device;
     unsigned char *buffer = nullptr;

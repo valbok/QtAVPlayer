@@ -63,6 +63,8 @@ private slots:
     void changeSourceFilter();
     void filter_data();
     void filter();
+    void filesIO();
+    void filesIOSequential();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -2327,6 +2329,161 @@ void tst_QAVPlayer::filter()
     QCOMPARE(spyErrorOccurred.count(), 0);
     p.seek(p.duration());
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 10000);
+}
+
+class Buffer: public QIODevice
+{
+public:
+    qint64 readData(char *data, qint64 maxSize) override
+    {
+        QMutexLocker locker(&m_mutex);
+        if (!maxSize)
+            return 0;
+
+        QByteArray ba = m_buffer.mid(m_pos, maxSize);
+        memcpy(data, ba.data(), ba.size());
+        m_pos += ba.size();
+        return ba.size();
+    }
+
+    qint64 writeData(const char *data, qint64 maxSize) override
+    {
+        QMutexLocker locker(&m_mutex);
+        QByteArray ba(data, maxSize);
+        m_buffer.append(ba);
+        return ba.size();
+    }
+
+    bool atEnd() const override
+    {
+        QMutexLocker locker(&m_mutex);
+        return m_pos >= m_size;
+    }
+
+    qint64 pos() const override
+    {
+        QMutexLocker locker(&m_mutex);
+        return m_pos;
+    }
+
+    bool seek(qint64 pos) override
+    {
+        QMutexLocker locker(&m_mutex);
+        m_pos = pos;
+        return true;
+    }
+
+    qint64 size() const override
+    {
+        return m_size;
+    }
+
+    qint64 m_size = 0;
+    qint64 m_pos = 0;
+    QByteArray m_buffer;
+    mutable QMutex m_mutex;
+};
+
+void tst_QAVPlayer::filesIO()
+{
+    QFileInfo fileInfo(QLatin1String("../testdata/small.mp4"));
+    QFile file(fileInfo.absoluteFilePath());
+    if (!file.open(QIODevice::ReadOnly)) {
+        QFAIL("Could not open");
+        return;
+    }
+
+    Buffer buffer;
+    buffer.m_size = file.size();
+    buffer.open(QIODevice::ReadWrite);
+
+    QAVPlayer p;
+    QAVVideoFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+    QObject::connect(&p, &QAVPlayer::errorOccurred, &p, [&](QAVPlayer::Error err, const QString &) {
+        if (err == QAVPlayer::ResourceError) {
+            p.setSource(QUrl());
+            p.setSource(QUrl(fileInfo.fileName()), &buffer);
+            p.play();
+        }
+    });
+
+    p.setSource(QUrl(fileInfo.fileName()), &buffer);
+    p.play();
+
+    while(!file.atEnd()) {
+        auto bytes = file.read(4 * 1024);
+        buffer.write(bytes);
+        QTest::qWait(50);
+    }
+
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 20000);
+    if (!frame) {
+        buffer.seek(0);
+        p.setSource(QUrl());
+        p.setSource(QUrl(fileInfo.fileName()), &buffer);
+        p.play();
+    }
+    QTRY_VERIFY(frame);
+    QTRY_VERIFY(framesCount > 100);
+}
+
+class BufferSequential : public Buffer
+{
+public:
+    BufferSequential() { }
+    bool isSequential() const override
+    {
+        return true;
+    }
+
+    bool atEnd() const override
+    {
+        return false;
+    }
+};
+
+void tst_QAVPlayer::filesIOSequential()
+{
+    QFileInfo fileInfo(QLatin1String("../testdata/colors.mp4"));
+    QFile file(fileInfo.absoluteFilePath());
+    file.open(QFile::ReadOnly);
+
+    BufferSequential buffer;
+    buffer.open(QIODevice::ReadWrite);
+
+    QAVPlayer p;
+    QAVVideoFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+    QObject::connect(&p, &QAVPlayer::errorOccurred, &p, [&](QAVPlayer::Error err, const QString &) {
+        if (err == QAVPlayer::ResourceError) {
+            buffer.seek(0);
+            p.setSource(QUrl());
+            p.setSource(QUrl(fileInfo.fileName()), &buffer);
+            p.play();
+        }
+    });
+
+    p.setSource(QUrl(fileInfo.fileName()), &buffer);
+    p.play();
+
+    while(!file.atEnd()) {
+        auto bytes = file.read(4 * 1024);
+        buffer.write(bytes);
+        QTest::qWait(50);
+    }
+
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 20000);
+    if (!frame) {
+        buffer.seek(0);
+        p.setSource(QUrl());
+        p.setSource(QUrl(fileInfo.fileName()), &buffer);
+        p.play();
+    }
+    QTRY_VERIFY(frame);
+    QTRY_VERIFY(framesCount > 100);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
