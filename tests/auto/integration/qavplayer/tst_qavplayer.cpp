@@ -2490,11 +2490,12 @@ void tst_QAVPlayer::filesIOSequential()
 
 void tst_QAVPlayer::filesIOSequentialDelay()
 {
-    QFileInfo fileInfo(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo fileInfo(QLatin1String("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv"));
     QFile file(fileInfo.absoluteFilePath());
     file.open(QFile::ReadOnly);
 
-    BufferSequential buffer;
+    Buffer buffer;
+    buffer.m_size = file.size();
     buffer.open(QIODevice::ReadWrite);
 
     QAVPlayer p;
@@ -2505,15 +2506,16 @@ void tst_QAVPlayer::filesIOSequentialDelay()
     while(!file.atEnd()) {
         auto bytes = file.read(1024);
         buffer.write(bytes);
-        if (file.pos() >= 26042 && p.state() != QAVPlayer::PlayingState) {
+        if (file.pos() >= 24 * 1024 && p.state() != QAVPlayer::PlayingState) {
             p.setSource(QUrl(fileInfo.fileName()), &buffer);
             p.play();
         }
-        QTest::qWait(50);
+        if (file.pos() < 64 * 1024)
+            QTest::qWait(100);
     }
 
     QTRY_VERIFY(frame);
-    QTRY_VERIFY(framesCount > 100);
+    QTRY_VERIFY(framesCount > 10);
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 20000);
 }
 
