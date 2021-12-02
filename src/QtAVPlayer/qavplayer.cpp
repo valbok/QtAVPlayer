@@ -81,7 +81,7 @@ public:
     void dispatch(T fn);
 
     QAVPlayer *q_ptr = nullptr;
-    QUrl url;
+    QString url;
     QScopedPointer<QAVIODevice> dev;
     QAVPlayer::MediaStatus mediaStatus = QAVPlayer::NoMedia;
     QList<PendingMediaStatus> pendingMediaStatuses;
@@ -676,7 +676,7 @@ QAVPlayer::~QAVPlayer()
     d->terminate();
 }
 
-void QAVPlayer::setSource(const QUrl &url, QIODevice *dev)
+void QAVPlayer::setSource(const QString &url, QIODevice *dev)
 {
     Q_D(QAVPlayer);
     if (d->url == url)
@@ -702,7 +702,7 @@ void QAVPlayer::setSource(const QUrl &url, QIODevice *dev)
 #endif
 }
 
-QUrl QAVPlayer::source() const
+QString QAVPlayer::source() const
 {
     return d_func()->url;
 }

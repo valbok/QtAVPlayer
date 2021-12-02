@@ -218,7 +218,7 @@ static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
     qDebug() << "FFmpeg:" << line;
 }
 
-int QAVDemuxer::load(const QUrl &url, QAVIODevice *dev)
+int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
 {
     Q_D(QAVDemuxer);
 
@@ -233,11 +233,7 @@ int QAVDemuxer::load(const QUrl &url, QAVIODevice *dev)
         d->ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
     }
 
-    QString urlString = url.isLocalFile()
-                      ? QDir::toNativeSeparators(url.toLocalFile())
-                      : url.toString();
-
-    int ret = avformat_open_input(&d->ctx, urlString.toUtf8().constData(), nullptr, nullptr);
+    int ret = avformat_open_input(&d->ctx, url.toUtf8().constData(), nullptr, nullptr);
     if (ret < 0)
         return ret;
 

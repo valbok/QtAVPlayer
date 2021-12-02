@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
     QAVPlayer p;
     QObject::connect(&p, &QAVPlayer::audioFrame, [&](const QAVAudioFrame &frame) { qDebug() << "audioFrame" << bool(frame); });
     QObject::connect(&p, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) { qDebug() << "videoFrame" << bool(frame); });
-    p.setSource(QUrl("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
+    p.setSource(QLatin1String("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
     p.play();
 
     QObject::connect(&p, &QAVPlayer::stateChanged, [&](auto s) { qDebug() << "stateChanged" << s << p.mediaStatus(); });

@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     });
     QObject::connect(&p, &QAVPlayer::durationChanged, [&](auto d) { qDebug() << "durationChanged" << d; });
 
-    p.setSource(QUrl(file));
+    p.setSource(file);
     p.play();
 
     viewer.setMinimumSize(QSize(300, 360));

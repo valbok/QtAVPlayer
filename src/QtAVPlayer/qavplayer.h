@@ -11,7 +11,7 @@
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QtAVPlayer/qavaudioframe.h>
 #include <QtAVPlayer/qtavplayerglobal.h>
-#include <QUrl>
+#include <QString>
 #include <QScopedPointer>
 
 QT_BEGIN_NAMESPACE
@@ -51,8 +51,8 @@ public:
     QAVPlayer(QObject *parent = nullptr);
     ~QAVPlayer();
 
-    void setSource(const QUrl &url, QIODevice *dev = nullptr);
-    QUrl source() const;
+    void setSource(const QString &url, QIODevice *dev = nullptr);
+    QString source() const;
 
     bool hasVideo() const;
     bool hasAudio() const;
@@ -89,7 +89,7 @@ public Q_SLOTS:
     void stepBackward();
 
 Q_SIGNALS:
-    void sourceChanged(const QUrl &url);
+    void sourceChanged(const QString &url);
     void stateChanged(QAVPlayer::State newState);
     void mediaStatusChanged(QAVPlayer::MediaStatus status);
     void errorOccurred(QAVPlayer::Error, const QString &str);
