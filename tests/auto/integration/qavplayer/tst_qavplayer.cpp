@@ -66,6 +66,8 @@ private slots:
     void filesIO();
     void filesIOSequential();
     void filesIOSequentialDelay();
+    void subfile();
+    void subfileTar();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -91,9 +93,9 @@ void tst_QAVPlayer::sourceChanged()
 {
     QAVPlayer p;
     QSignalSpy spy(&p, &QAVPlayer::sourceChanged);
-    p.setSource(QUrl(QLatin1String("unknown.mp4")));
+    p.setSource(QLatin1String("unknown.mp4"));
     QCOMPARE(spy.count(), 1);
-    p.setSource(QUrl(QLatin1String("unknown.mp4")));
+    p.setSource(QLatin1String("unknown.mp4"));
     QCOMPARE(spy.count(), 1);
 }
 
@@ -115,7 +117,7 @@ void tst_QAVPlayer::quitAudio()
     QAVPlayer p;
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
 }
@@ -133,7 +135,7 @@ void tst_QAVPlayer::playIncorrectSource()
     QVERIFY(!p.hasVideo());
     QCOMPARE(spyStateChanged.count(), 0);
 
-    p.setSource(QUrl(QLatin1String("unknown")));
+    p.setSource(QLatin1String("unknown"));
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::InvalidMedia);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QTRY_COMPARE(spyErrorOccurred.count(), 1);
@@ -150,7 +152,7 @@ void tst_QAVPlayer::playIncorrectSource()
 
     spyStateChanged.clear();
 
-    p.setSource(QUrl(QLatin1String("unknown")));
+    p.setSource(QLatin1String("unknown"));
     p.play();
     QCOMPARE(p.mediaStatus(), QAVPlayer::InvalidMedia);
     QCOMPARE(spyStateChanged.count(), 0);
@@ -158,7 +160,7 @@ void tst_QAVPlayer::playIncorrectSource()
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     p.play();
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
@@ -188,7 +190,7 @@ void tst_QAVPlayer::playAudio()
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
@@ -245,7 +247,7 @@ void tst_QAVPlayer::playAudio()
     QCOMPARE(p.mediaStatus(), QAVPlayer::NoMedia);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
 
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QTRY_COMPARE(p.state(), QAVPlayer::StoppedState);
@@ -256,7 +258,7 @@ void tst_QAVPlayer::playAudioOutput()
     QAVPlayer p;
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     QAVAudioFrame frame;
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { frame = f; });
@@ -279,7 +281,7 @@ void tst_QAVPlayer::pauseAudio()
     QSignalSpy spyPaused(&p, &QAVPlayer::paused);
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QCOMPARE(spyPaused.count(), 0);
 
@@ -309,7 +311,7 @@ void tst_QAVPlayer::stopAudio()
     QAVPlayer p;
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
     p.play();
 
     QTRY_COMPARE(p.state(), QAVPlayer::PlayingState);
@@ -335,7 +337,7 @@ void tst_QAVPlayer::seekAudio()
     QSignalSpy spyPaused(&p, &QAVPlayer::paused);
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     p.seek(500);
     QTRY_COMPARE(p.position(), 500);
@@ -387,7 +389,7 @@ void tst_QAVPlayer::speedAudio()
     QAVPlayer p;
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     p.setSpeed(0.5);
     p.play();
@@ -420,7 +422,7 @@ void tst_QAVPlayer::playVideo()
     QCOMPARE(p.videoFrameRate(), 0.0);
 
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
@@ -451,7 +453,7 @@ void tst_QAVPlayer::pauseVideo()
     QAVPlayer p;
 
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
@@ -485,7 +487,7 @@ void tst_QAVPlayer::seekVideo()
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame, &framesCount](const QAVVideoFrame &f) { frame = f; ++framesCount; });
 
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     p.seek(14500);
     p.play();
@@ -559,7 +561,7 @@ void tst_QAVPlayer::seekVideo()
     spyState.clear();
     spyStopped.clear();
 
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
     p.play();
     QTRY_COMPARE(p.state(), QAVPlayer::PlayingState);
     QTRY_COMPARE(spyMediaStatus.count(), 1); // NoMeida -> Loaded
@@ -717,7 +719,7 @@ void tst_QAVPlayer::seekVideoNegative()
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame, &framesCount](const QAVVideoFrame &f) { frame = f; ++framesCount; });
 
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     p.seek(-1000);
     QCOMPARE(p.position(), -1000);
@@ -842,7 +844,7 @@ void tst_QAVPlayer::speedVideo()
     QAVPlayer p;
 
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     QAVVideoFrame frame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame](const QAVVideoFrame &f) { frame = f; });
@@ -873,7 +875,7 @@ void tst_QAVPlayer::videoFrame()
     QAVPlayer p;
 
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     QAVVideoFrame frame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame](const QAVVideoFrame &f) { frame = f; });
@@ -899,7 +901,7 @@ void tst_QAVPlayer::pauseSeekVideo()
     qint64 pausePosition = -1;
     QObject::connect(&p, &QAVPlayer::paused, &p, [&](qint64 pos) { pausePosition = pos; });
 
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
     QTest::qWait(200);
     QCOMPARE(framesCount, 0);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
@@ -1111,7 +1113,7 @@ void tst_QAVPlayer::files()
     QAVPlayer p;
 
     QFileInfo file(path);
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     int vf = 0;
     QAVVideoFrame videoFrame;
@@ -1223,7 +1225,7 @@ void tst_QAVPlayer::files_io()
         return;
     }
 
-    p.setSource(QUrl(path), &file);
+    p.setSource(path, &file);
 
     int vf = 0;
     QAVVideoFrame videoFrame;
@@ -1321,7 +1323,7 @@ void tst_QAVPlayer::convert()
     QAVPlayer p;
 
     QFileInfo file(path);
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     QAVVideoFrame videoFrame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { videoFrame = f; });
@@ -1352,7 +1354,7 @@ void tst_QAVPlayer::map()
     QAVPlayer p;
 
     QFileInfo file(path);
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     QAVVideoFrame frame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame](const QAVVideoFrame &f) { frame = f; });
@@ -1389,7 +1391,7 @@ void tst_QAVPlayer::cast2QVideoFrame()
     QAVPlayer p;
 
     QFileInfo file(path);
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     QAVVideoFrame frame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame](const QAVVideoFrame &f) { frame = f; });
@@ -1421,7 +1423,7 @@ void tst_QAVPlayer::stepForward()
     qint64 stepPosition = -1;
     QObject::connect(&p, &QAVPlayer::stepped, &p, [&](qint64 pos) { stepPosition = pos; });
 
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
     QTest::qWait(200);
     QCOMPARE(framesCount, 0);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
@@ -1545,7 +1547,7 @@ void tst_QAVPlayer::stepBackward()
     QObject::connect(&p, &QAVPlayer::stepped, &p, [&](qint64 pos) { stepPosition = pos; });
     QSignalSpy spySeeked(&p, &QAVPlayer::seeked);
 
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
     QTest::qWait(200);
     QCOMPARE(framesCount, 0);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
@@ -1728,7 +1730,7 @@ void tst_QAVPlayer::audioStreams()
     QAVAudioFrame frame;
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { frame = f; ++framesCount; });
 
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
     QCOMPARE(p.videoStreamsCount(), 1);
@@ -1795,11 +1797,11 @@ void tst_QAVPlayer::audioOutput()
     QAVAudioOutput out;
     QObject::connect(&p, &QAVPlayer::audioFrame, &out, [&out](const QAVAudioFrame &f) { out.play(f); });
 
-    p.setSource(QUrl::fromLocalFile(file1.absoluteFilePath()));
+    p.setSource(file1.absoluteFilePath());
     p.play();
     QTest::qWait(100);
 
-    p.setSource(QUrl::fromLocalFile(file2.absoluteFilePath()));
+    p.setSource(file2.absoluteFilePath());
     p.play();
     QTRY_VERIFY(p.position() > 500);
 }
@@ -1818,12 +1820,12 @@ void tst_QAVPlayer::setEmptySource()
     });
 
     QFileInfo file(QLatin1String("../testdata/small.mp4"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
     p.play();
 
     QTest::qWait(200);
 
-    p.setSource(QUrl(""));
+    p.setSource(QLatin1String());
     QTRY_VERIFY(noMediaReceived);
 
     framesCount = 0;
@@ -1846,7 +1848,7 @@ void tst_QAVPlayer::accurateSeek()
     QAVPlayer p;
 
     QFileInfo file(path);
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     int framesCount = 0;
     QAVVideoFrame frame;
@@ -2040,7 +2042,7 @@ void tst_QAVPlayer::lastFrame()
     QAVPlayer p;
 
     QFileInfo file(QLatin1String("../testdata/small.mp4"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     int framesCount = 0;
     QAVVideoFrame frame;
@@ -2079,7 +2081,7 @@ void tst_QAVPlayer::configureFilter()
     QAVPlayer p;
 
     QFileInfo file(QLatin1String("../testdata/small.mp4"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
     QSignalSpy spy(&p, &QAVPlayer::filterChanged);
     QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
     QAVVideoFrame frame;
@@ -2220,7 +2222,7 @@ void tst_QAVPlayer::changeSourceFilter()
     QAVPlayer p;
 
     QFileInfo file1(QLatin1String("../testdata/small.mp4"));
-    p.setSource(QUrl::fromLocalFile(file1.absoluteFilePath()));
+    p.setSource(file1.absoluteFilePath());
     QSignalSpy spy(&p, &QAVPlayer::filterChanged);
     QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
     QAVVideoFrame frame;
@@ -2233,7 +2235,7 @@ void tst_QAVPlayer::changeSourceFilter()
     QCOMPARE(frame.size(), QSize(560 / 2, 320 / 2));
 
     QFileInfo file2(QLatin1String("../testdata/colors.mp4"));
-    p.setSource(QUrl::fromLocalFile(file2.absoluteFilePath()));
+    p.setSource(file2.absoluteFilePath());
 
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QCOMPARE(p.filter(), desc);
@@ -2243,7 +2245,7 @@ void tst_QAVPlayer::changeSourceFilter()
     p.play();
     QTRY_COMPARE(frame.size(), QSize(160 / 2, 120 / 2));
 
-    p.setSource(QUrl::fromLocalFile(file1.absoluteFilePath()));
+    p.setSource(file1.absoluteFilePath());
     p.play();
     QTRY_COMPARE(frame.size(), QSize(560 / 2, 320 / 2));
 }
@@ -2306,7 +2308,7 @@ void tst_QAVPlayer::filter()
     QAVPlayer p;
 
     QFileInfo file(QLatin1String("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv"));
-    p.setSource(QUrl::fromLocalFile(file.absoluteFilePath()));
+    p.setSource(file.absoluteFilePath());
 
     QSignalSpy spyVideoFilterChanged(&p, &QAVPlayer::filterChanged);
     QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
@@ -2404,13 +2406,13 @@ void tst_QAVPlayer::filesIO()
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
     QObject::connect(&p, &QAVPlayer::errorOccurred, &p, [&](QAVPlayer::Error err, const QString &) {
         if (err == QAVPlayer::ResourceError) {
-            p.setSource(QUrl());
-            p.setSource(QUrl(fileInfo.fileName()), &buffer);
+            p.setSource(QLatin1String());
+            p.setSource(fileInfo.fileName(), &buffer);
             p.play();
         }
     });
 
-    p.setSource(QUrl(fileInfo.fileName()), &buffer);
+    p.setSource(fileInfo.fileName(), &buffer);
     p.play();
 
     while(!file.atEnd()) {
@@ -2422,8 +2424,8 @@ void tst_QAVPlayer::filesIO()
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 20000);
     if (!frame) {
         buffer.seek(0);
-        p.setSource(QUrl());
-        p.setSource(QUrl(fileInfo.fileName()), &buffer);
+        p.setSource(QLatin1String());
+        p.setSource(fileInfo.fileName(), &buffer);
         p.play();
     }
     QTRY_VERIFY(frame);
@@ -2461,13 +2463,13 @@ void tst_QAVPlayer::filesIOSequential()
     QObject::connect(&p, &QAVPlayer::errorOccurred, &p, [&](QAVPlayer::Error err, const QString &) {
         if (err == QAVPlayer::ResourceError) {
             buffer.seek(0);
-            p.setSource(QUrl());
-            p.setSource(QUrl(fileInfo.fileName()), &buffer);
+            p.setSource(QLatin1String());
+            p.setSource(fileInfo.fileName(), &buffer);
             p.play();
         }
     });
 
-    p.setSource(QUrl(fileInfo.fileName()), &buffer);
+    p.setSource(fileInfo.fileName(), &buffer);
     p.play();
 
     while(!file.atEnd()) {
@@ -2479,8 +2481,8 @@ void tst_QAVPlayer::filesIOSequential()
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 20000);
     if (!frame) {
         buffer.seek(0);
-        p.setSource(QUrl());
-        p.setSource(QUrl(fileInfo.fileName()), &buffer);
+        p.setSource(QLatin1String());
+        p.setSource(fileInfo.fileName(), &buffer);
         p.play();
     }
     QTRY_VERIFY(frame);
@@ -2507,7 +2509,7 @@ void tst_QAVPlayer::filesIOSequentialDelay()
         auto bytes = file.read(1024);
         buffer.write(bytes);
         if (file.pos() >= 24 * 1024 && p.state() != QAVPlayer::PlayingState) {
-            p.setSource(QUrl(fileInfo.fileName()), &buffer);
+            p.setSource(fileInfo.fileName(), &buffer);
             p.play();
         }
         if (file.pos() < 64 * 1024)
@@ -2517,6 +2519,42 @@ void tst_QAVPlayer::filesIOSequentialDelay()
     QTRY_VERIFY(frame);
     QTRY_VERIFY(framesCount > 10);
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 20000);
+}
+
+void tst_QAVPlayer::subfile()
+{
+    QAVPlayer p;
+
+    QFileInfo fileInfo(QLatin1String("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv"));
+    QString src = QLatin1String("subfile,,start,0,end,0,,:") + fileInfo.absoluteFilePath();
+    p.setSource(src);
+
+    QAVVideoFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+
+    p.play();
+    QTRY_VERIFY(frame);
+    QTRY_VERIFY(framesCount > 40);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 10000);
+}
+
+void tst_QAVPlayer::subfileTar()
+{
+    QAVPlayer p;
+
+    QFileInfo fileInfo(QLatin1String("../testdata/dv.tar"));
+    QString src = QLatin1String("subfile,,start,1000,end,0,,:") + fileInfo.absoluteFilePath();
+    p.setSource(src);
+
+    QAVVideoFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+
+    p.play();
+    QTRY_VERIFY(frame);
+    QTRY_VERIFY(framesCount > 5);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 10000);
 }
 
 QTEST_MAIN(tst_QAVPlayer)

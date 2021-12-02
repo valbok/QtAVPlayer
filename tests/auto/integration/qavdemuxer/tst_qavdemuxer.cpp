@@ -63,7 +63,7 @@ void tst_QAVDemuxer::construction()
 void tst_QAVDemuxer::loadIncorrect()
 {
     QAVDemuxer d;
-    QVERIFY(d.load(QUrl("unknown.mp4")) < 0);
+    QVERIFY(d.load(QLatin1String("unknown.mp4")) < 0);
     QVERIFY(d.currentVideoStreamIndex() < 0);
     QVERIFY(d.currentAudioStreamIndex() < 0);
     QVERIFY(d.currentSubtitleStreamIndex() < 0);
@@ -77,7 +77,7 @@ void tst_QAVDemuxer::loadAudio()
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
 
-    QVERIFY(d.load(QUrl::fromLocalFile(file.absoluteFilePath())) >= 0);
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(d.currentVideoStreamIndex() < 0);
     QVERIFY(d.currentAudioStreamIndex() >= 0);
     QVERIFY(d.currentSubtitleStreamIndex() < 0);
@@ -157,7 +157,7 @@ void tst_QAVDemuxer::loadVideo()
 
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
 
-    QVERIFY(d.load(QUrl::fromLocalFile(file.absoluteFilePath())) >= 0);
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(d.currentVideoStreamIndex() >= 0);
     QVERIFY(d.currentAudioStreamIndex() >= 0);
     QVERIFY(d.currentSubtitleStreamIndex() < 0);
@@ -209,7 +209,7 @@ void tst_QAVDemuxer::fileIO()
     }
 
     QAVIODevice dev(file);
-    QVERIFY(d.load(QUrl("colors.mp4"), &dev) >= 0);
+    QVERIFY(d.load(QLatin1String("colors.mp4"), &dev) >= 0);
 
     QVERIFY(d.currentVideoStreamIndex() >= 0);
     QVERIFY(d.currentAudioStreamIndex() >= 0);
@@ -255,14 +255,14 @@ void tst_QAVDemuxer::qrcIO()
 {
     QAVDemuxer d;
 
-    QFile file(":/test.wav");
+    QFile file(QLatin1String(":/test.wav"));
     if (!file.open(QIODevice::ReadOnly)) {
         QFAIL("Could not open");
         return;
     }
 
     QAVIODevice dev(file);
-    QVERIFY(d.load(QUrl("test.wav"), &dev) >= 0);
+    QVERIFY(d.load(QLatin1String("test.wav"), &dev) >= 0);
     QVERIFY(d.currentVideoStreamIndex() < 0);
     QVERIFY(d.currentAudioStreamIndex() >= 0);
     QVERIFY(d.currentSubtitleStreamIndex() < 0);
