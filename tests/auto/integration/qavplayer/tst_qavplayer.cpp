@@ -66,6 +66,8 @@ private slots:
     void filesIO();
     void filesIOSequential();
     void filesIOSequentialDelay();
+    void subfile();
+    void subfileTar();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -2517,6 +2519,42 @@ void tst_QAVPlayer::filesIOSequentialDelay()
     QTRY_VERIFY(frame);
     QTRY_VERIFY(framesCount > 10);
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 20000);
+}
+
+void tst_QAVPlayer::subfile()
+{
+    QAVPlayer p;
+
+    QFileInfo fileInfo(QLatin1String("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv"));
+    QString src = QLatin1String("subfile,,start,0,end,0,,:") + fileInfo.absoluteFilePath();
+    p.setSource(src);
+
+    QAVVideoFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+
+    p.play();
+    QTRY_VERIFY(frame);
+    QTRY_VERIFY(framesCount > 40);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 10000);
+}
+
+void tst_QAVPlayer::subfileTar()
+{
+    QAVPlayer p;
+
+    QFileInfo fileInfo(QLatin1String("../testdata/dv.tar"));
+    QString src = QLatin1String("subfile,,start,1000,end,0,,:") + fileInfo.absoluteFilePath();
+    p.setSource(src);
+
+    QAVVideoFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+
+    p.play();
+    QTRY_VERIFY(frame);
+    QTRY_VERIFY(framesCount > 5);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 10000);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
