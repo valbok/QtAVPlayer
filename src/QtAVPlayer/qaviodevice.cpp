@@ -15,6 +15,15 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
+struct ReadRequest
+{
+    ReadRequest() = default;
+    ReadRequest(unsigned char *data, int maxSize): data(data), maxSize(maxSize) { }
+    int wroteBytes = 0;
+    unsigned char *data = nullptr;
+    int maxSize = 0;
+};
+
 class QAVIODevicePrivate
 {
     Q_DECLARE_PUBLIC(QAVIODevice)
@@ -34,6 +43,21 @@ public:
         av_free(ctx);
     }
 
+    void readData()
+    {
+        QMutexLocker locker(&mutex);
+        // if no request or it is being processed
+        if (readRequest.data == nullptr || readRequest.wroteBytes)
+            return;
+
+        readRequest.wroteBytes = !device.atEnd() ? device.read((char *)readRequest.data, readRequest.maxSize) : AVERROR_EOF;
+        // Unblock the decoder thread when there is available bytes
+        if (readRequest.wroteBytes) {
+            waitCond.wakeAll();
+            wakeRead = true;
+        }
+    }
+
     static int read(void *opaque, unsigned char *data, int maxSize)
     {
         auto d = static_cast<QAVIODevicePrivate *>(opaque);
@@ -41,20 +65,19 @@ public:
         if (d->aborted)
             return ECANCELED;
 
-        int bytes = 0;
-        bool wake = false;
+        d->readRequest = { data, maxSize };
+        // When decoder thread is the same as current
+        d->wakeRead = false;
         locker.unlock();
-        QMetaObject::invokeMethod(d->q_ptr, [&] {
-            QMutexLocker locker(&d->mutex);
-            bytes = !d->device.atEnd() ? d->device.read((char *)data, maxSize) : AVERROR_EOF;
-            d->waitCond.wakeAll();
-            wake = true;
-        }, nullptr);
-
+        // Reading is done on thread where the object is created
+        QMetaObject::invokeMethod(d->q_ptr, [d] { d->readData(); }, nullptr);
         locker.relock();
-        if (!wake)
+        // Blocks until data is available
+        if (!d->wakeRead)
             d->waitCond.wait(&d->mutex);
 
+        int bytes = d->readRequest.wroteBytes;
+        d->readRequest = {};
         return bytes;
     }
 
@@ -99,12 +122,18 @@ public:
     QMutex mutex;
     QWaitCondition waitCond;
     bool aborted = false;
+    bool wakeRead = false;
+    ReadRequest readRequest;
 };
 
 QAVIODevice::QAVIODevice(QIODevice &device, QObject *parent)
     : QObject(parent)
     , d_ptr(new QAVIODevicePrivate(this, device))
 {
+    connect(&device, &QIODevice::readyRead, this, [this] {
+        Q_D(QAVIODevice);
+        d->readData();
+    });
 }
 
 QAVIODevice::~QAVIODevice()
