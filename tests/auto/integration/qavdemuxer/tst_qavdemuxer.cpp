@@ -27,6 +27,7 @@ private slots:
     void loadVideo();
     void fileIO();
     void qrcIO();
+    void supported();
 };
 
 void tst_QAVDemuxer::construction()
@@ -334,6 +335,12 @@ void tst_QAVDemuxer::qrcIO()
 
     QCOMPARE(d.eof(), true);
     QVERIFY(d.seek(0) >= 0);
+}
+
+void tst_QAVDemuxer::supported()
+{
+    QVERIFY(!QAVDemuxer::supportedFormats().isEmpty());
+    QVERIFY(!QAVDemuxer::supportedProtocols().isEmpty());
 }
 
 QTEST_MAIN(tst_QAVDemuxer)

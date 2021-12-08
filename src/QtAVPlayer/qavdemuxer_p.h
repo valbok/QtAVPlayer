@@ -71,6 +71,9 @@ public:
     QSharedPointer<QAVAudioCodec> audioCodec() const;
     AVRational frameRate() const;
 
+    static QStringList supportedFormats();
+    static QStringList supportedProtocols();
+
 protected:
     QScopedPointer<QAVDemuxerPrivate> d_ptr;
 

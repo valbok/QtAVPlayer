@@ -46,6 +46,7 @@ extern "C" {
 
 extern "C" {
 #include <libavformat/avformat.h>
+#include <libavdevice/avdevice.h>
 #include <libavcodec/avcodec.h>
 }
 
@@ -103,14 +104,15 @@ QAVDemuxer::QAVDemuxer(QObject *parent)
     : QObject(parent)
     , d_ptr(new QAVDemuxerPrivate(this))
 {
-#if (LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58,9,100))
     static bool loaded = false;
     if (!loaded) {
+#if (LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58,9,100))
         av_register_all();
         avcodec_register_all();
+#endif
+        avdevice_register_all();
         loaded = true;
     }
-#endif
 }
 
 QAVDemuxer::~QAVDemuxer()
@@ -216,6 +218,37 @@ static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
     va_end(vl2);
 
     qDebug() << "FFmpeg:" << line;
+}
+
+QStringList QAVDemuxer::supportedFormats()
+{
+    static QStringList values;
+    if (values.isEmpty()) {
+        QStringList e, f;
+        const AVInputFormat *i = NULL;
+        void* it = NULL;
+        while ((i = av_demuxer_iterate(&it))) {
+            if (i->name)
+                values << QString::fromLatin1(i->name).split(QLatin1Char(','), QString::SkipEmptyParts);
+        }
+    }
+
+    return values;
+}
+
+QStringList QAVDemuxer::supportedProtocols()
+{
+    static QStringList values;
+    if (values.isEmpty()) {
+        void* opq = 0;
+        const char* value = avio_enum_protocols(&opq, 0);
+        while (value) {
+            values << QString::fromUtf8(value);
+            value = avio_enum_protocols(&opq, 0);
+        }
+    }
+
+    return values;
 }
 
 int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
