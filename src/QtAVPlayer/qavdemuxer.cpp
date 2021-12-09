@@ -224,12 +224,11 @@ QStringList QAVDemuxer::supportedFormats()
 {
     static QStringList values;
     if (values.isEmpty()) {
-        QStringList e, f;
-        const AVInputFormat *i = NULL;
-        void* it = NULL;
-        while ((i = av_demuxer_iterate(&it))) {
-            if (i->name)
-                values << QString::fromLatin1(i->name).split(QLatin1Char(','), QString::SkipEmptyParts);
+        const AVInputFormat *fmt = nullptr;
+        void *it = nullptr;
+        while ((fmt = av_demuxer_iterate(&it))) {
+            if (fmt->name)
+                values << QString::fromLatin1(fmt->name).split(QLatin1Char(','), QString::SkipEmptyParts);
         }
     }
 
@@ -240,12 +239,10 @@ QStringList QAVDemuxer::supportedProtocols()
 {
     static QStringList values;
     if (values.isEmpty()) {
-        void* opq = 0;
-        const char* value = avio_enum_protocols(&opq, 0);
-        while (value) {
+        void *opq = 0;
+        const char *value = nullptr;
+        while ((value = avio_enum_protocols(&opq, 0)))
             values << QString::fromUtf8(value);
-            value = avio_enum_protocols(&opq, 0);
-        }
     }
 
     return values;
