@@ -27,7 +27,7 @@ private slots:
     void loadVideo();
     void fileIO();
     void qrcIO();
-    void supported();
+    void supportedFormats();
 };
 
 void tst_QAVDemuxer::construction()
@@ -337,10 +337,36 @@ void tst_QAVDemuxer::qrcIO()
     QVERIFY(d.seek(0) >= 0);
 }
 
-void tst_QAVDemuxer::supported()
+void tst_QAVDemuxer::supportedFormats()
 {
-    QVERIFY(!QAVDemuxer::supportedFormats().isEmpty());
+    QAVDemuxer d;
+    auto fmts = QAVDemuxer::supportedFormats();
+    QVERIFY(!fmts.isEmpty());
     QVERIFY(!QAVDemuxer::supportedProtocols().isEmpty());
+    if (fmts.contains(QLatin1String("v4l2"))) {
+        QFileInfo file(QLatin1String("/dev/video0"));
+        if (file.exists()) {
+            QVERIFY(d.load(QLatin1String("-f   v4l2   -i /dev/video0")) >= 0);
+            d.unload();
+            QVERIFY(d.load(QLatin1String("-f v4l2 -i /dev/video0")) >= 0);
+            d.unload();
+            QVERIFY(d.load(QLatin1String("-i /dev/video0 -f v4l2")) >= 0);
+            d.unload();
+            QVERIFY(d.load(QLatin1String("/dev/video0")) >= 0);
+            d.unload();
+            QVERIFY(d.load(QLatin1String("-i /dev/video0")) >= 0);
+            d.unload();
+            QVERIFY(d.load(QLatin1String("-f v4l2")) < 0);
+            d.unload();
+        }
+    }
+
+    QVERIFY(d.load(QLatin1String("-f v4l2 -i /dev/dummy")) < 0);
+    d.unload();
+    QVERIFY(d.load(QLatin1String("/dev/dummy")) < 0);
+    d.unload();
+    QVERIFY(d.load(QLatin1String("-i /dev/dummy")) < 0);
+    d.unload();
 }
 
 QTEST_MAIN(tst_QAVDemuxer)
