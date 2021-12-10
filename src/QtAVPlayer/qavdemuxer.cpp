@@ -42,6 +42,7 @@ extern "C" {
 #include <QDir>
 #include <QSharedPointer>
 #include <QMutexLocker>
+#include <QCommandLineParser>
 #include <QDebug>
 
 extern "C" {
@@ -228,7 +229,13 @@ QStringList QAVDemuxer::supportedFormats()
         void *it = nullptr;
         while ((fmt = av_demuxer_iterate(&it))) {
             if (fmt->name)
-                values << QString::fromLatin1(fmt->name).split(QLatin1Char(','), QString::SkipEmptyParts);
+                values << QString::fromLatin1(fmt->name).split(QLatin1Char(','),
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+                    QString::SkipEmptyParts
+#else
+                    Qt::SkipEmptyParts
+#endif
+                );
         }
     }
 
@@ -248,6 +255,30 @@ QStringList QAVDemuxer::supportedProtocols()
     return values;
 }
 
+struct ParsedURL
+{
+    QString input;
+    QString format;
+};
+
+static ParsedURL parse_url(const QString &url)
+{
+    QCommandLineParser parser;
+    QCommandLineOption formatOption(QStringList() << QLatin1String("f"), QLatin1String(), QLatin1String("format"));
+    parser.addOption(formatOption);
+    QCommandLineOption inputOption(QStringList() << QLatin1String("i"), QLatin1String(), QLatin1String("input"));
+    parser.addOption(inputOption);
+
+    parser.process(QStringList() << QString() << url.split(' '));
+    ParsedURL parsed;
+    parsed.format = parser.value(formatOption);
+    parsed.input = parser.value(inputOption);
+    if (parsed.input.isEmpty() && parsed.format.isEmpty())
+        parsed.input = url;
+
+    return parsed;
+}
+
 int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
 {
     Q_D(QAVDemuxer);
@@ -263,7 +294,20 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
         d->ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
     }
 
-    int ret = avformat_open_input(&d->ctx, url.toUtf8().constData(), nullptr, nullptr);
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 0, 0)
+    const
+#endif
+    AVInputFormat *inputFormat = nullptr;
+    ParsedURL parsed = parse_url(url);
+    if (!parsed.format.isEmpty()) {
+        inputFormat = av_find_input_format(parsed.format.toUtf8().constData());
+        if (inputFormat == nullptr) {
+            qWarning() << "Could not find input format:" << parsed.format;
+            return AVERROR(EINVAL);
+        }
+    }
+
+    int ret = avformat_open_input(&d->ctx, parsed.input.toUtf8().constData(), inputFormat, nullptr);
     if (ret < 0)
         return ret;
 
