@@ -346,7 +346,7 @@ void tst_QAVDemuxer::supportedFormats()
     if (fmts.contains(QLatin1String("v4l2"))) {
         QFileInfo file(QLatin1String("/dev/video0"));
         if (file.exists()) {
-            QVERIFY(d.load(QLatin1String("-f   v4l2   -i /dev/video0")) >= 0);
+            QVERIFY(d.load(QLatin1String(" -f   v4l2   -i /dev/video0")) >= 0);
             d.unload();
             QVERIFY(d.load(QLatin1String("-f v4l2 -i /dev/video0")) >= 0);
             d.unload();
@@ -367,6 +367,11 @@ void tst_QAVDemuxer::supportedFormats()
     d.unload();
     QVERIFY(d.load(QLatin1String("-i /dev/dummy")) < 0);
     d.unload();
+
+    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QVERIFY(d.load("-i " + file.absoluteFilePath()) >= 0);
+    d.unload();
+    QVERIFY(d.load(" -i " + file.absoluteFilePath()) >= 0);
 }
 
 QTEST_MAIN(tst_QAVDemuxer)

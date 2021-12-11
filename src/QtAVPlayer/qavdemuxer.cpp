@@ -42,7 +42,6 @@ extern "C" {
 #include <QDir>
 #include <QSharedPointer>
 #include <QMutexLocker>
-#include <QCommandLineParser>
 #include <QDebug>
 
 extern "C" {
@@ -263,18 +262,24 @@ struct ParsedURL
 
 static ParsedURL parse_url(const QString &url)
 {
-    QCommandLineParser parser;
-    QCommandLineOption formatOption(QStringList() << QLatin1String("f"), QLatin1String(), QLatin1String("format"));
-    parser.addOption(formatOption);
-    QCommandLineOption inputOption(QStringList() << QLatin1String("i"), QLatin1String(), QLatin1String("input"));
-    parser.addOption(inputOption);
-
-    parser.process(QStringList() << QString() << url.split(' '));
     ParsedURL parsed;
-    parsed.format = parser.value(formatOption);
-    parsed.input = parser.value(inputOption);
-    if (parsed.input.isEmpty() && parsed.format.isEmpty())
-        parsed.input = url;
+    parsed.input = url.trimmed();
+    if (parsed.input[0] != QLatin1Char('-'))
+        return parsed;
+
+    QString fn = QLatin1Char(' ') + parsed.input;
+    auto parts = fn.split(QLatin1String(" -"));
+    QString input;
+    QString format;
+    for (auto &item : parts) {
+        if (item[0] == QLatin1Char('i'))
+            input = item.mid(1).trimmed();
+        else if (item[0] == QLatin1Char('f'))
+            format = item.mid(1).trimmed();
+    }
+
+    parsed.input = input;
+    parsed.format = format;
 
     return parsed;
 }
@@ -300,6 +305,7 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
     AVInputFormat *inputFormat = nullptr;
     ParsedURL parsed = parse_url(url);
     if (!parsed.format.isEmpty()) {
+        qDebug() << "Loading: -f" << parsed.format << "-i" << parsed.input;
         inputFormat = av_find_input_format(parsed.format.toUtf8().constData());
         if (inputFormat == nullptr) {
             qWarning() << "Could not find input format:" << parsed.format;
