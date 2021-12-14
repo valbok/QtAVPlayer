@@ -53,11 +53,24 @@ Free and open-source Qt Media Player library based on FFmpeg with a predictable 
 
 3. Each action is confirmed by a signal:
 
+       // All signals are added to a queue and guaranteed to be emitted in proper order.
        QObject::connect(&player, &QAVPlayer::played, [&](qint64 pos) { qDebug() << "Playing started from pos" << pos;  });
        QObject::connect(&player, &QAVPlayer::paused, [&](qint64 pos) { qDebug() << "Paused at pos" << pos; });
        QObject::connect(&player, &QAVPlayer::stopped, [&](qint64 pos) { qDebug() << "Stopped at pos" << pos; });
        QObject::connect(&player, &QAVPlayer::seeked, [&](qint64 pos) { qDebug() << "Seeked to pos" << pos; });
        QObject::connect(&player, &QAVPlayer::stepped, [&](qint64 pos) { qDebug() << "Made a step to pos" << pos; });
+       QObject::connect(&player, &QAVPlayer::mediaStatusChanged, [&](QAVPlayer::MediaStatus status) { 
+           switch (status) {
+               case QAVplayer::EndOfMedia:
+                   qDebug() << "Finished to play, no frames in queue"; 
+                   break;
+               case QAVplayer::NoMedia:
+                   qDebug() << "Demuxer threads are finished";
+                   break;
+               default:
+                   break;
+              }
+        });
     
 5. Accurate seek:
 
