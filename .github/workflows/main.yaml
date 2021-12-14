@@ -68,7 +68,7 @@ jobs:
         include:
           - compiler: clang-9
             packages: llvm@9
-            env: { 'CC': 'clang', 'CXX': 'clang++' }
+            env: { 'CC': 'clang', 'CXX': 'clang++', 'CXXFLAGS': '-DNS_FORMAT_ARGUMENT\(A\)= -fapplication-extension' }
 
     runs-on: macos-latest
 
@@ -89,14 +89,14 @@ jobs:
       - name: Build
         run: |
           qmake
-          make -j12 CC=$CC CXX=$CXX
+          make CC=$CC CXX=$CXX CXXFLAGS="$CXXFLAGS"
           make install
 
       - name: Test
         run: |
           cd tests/
           qmake
-          make -j12 CC=$CC CXX=$CXX
+          make CC=$CC CXX=$CXX
           export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
           cd auto/integration/qavdemuxer
           ./tst_qavdemuxer --platform minimal
