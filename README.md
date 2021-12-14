@@ -93,13 +93,12 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
 9. HW accelerations:
 
-* VA-API decoding for Linux: DRM with EGL or X11 with GLX.
-* Video Toolbox for macOS and iOS.
-* D3D11 for Windows. 
-* MediaCodec for Android. 
+   * VA-API decoding for Linux: DRM with EGL or X11 with GLX.
+   * Video Toolbox for macOS and iOS.
+   * D3D11 for Windows. 
+   * MediaCodec for Android. 
 
-QT_AVPLAYER_NO_HWDEVICE can be used to force using software decoding.
-The video codec is negotiated automatically.
+   QT_AVPLAYER_NO_HWDEVICE can be used to force using software decoding. The video codec is negotiated automatically.
 
 10. QtMultimedia5 could be used to render video frames to QML or Widgets. See [examples](examples).
 
