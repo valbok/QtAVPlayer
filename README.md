@@ -1,6 +1,6 @@
 # Qt AVPlayer
 
-Free and open-source Qt Media Player library based on FFmpeg.
+Free and open-source Qt Media Player library based on FFmpeg with a predictable behavior and control.
 
 # Features
 
