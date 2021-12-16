@@ -254,7 +254,7 @@ QAVVideoFrame::operator QVideoFrame() const
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
             format = VideoFrame::Format_RGB32;
 #else
-            format = QVideoFrameFormat::Format_ARGB8888;       
+            format = QVideoFrameFormat::Format_BGRA8888;
 #endif
             break;
         case AV_PIX_FMT_YUV420P:

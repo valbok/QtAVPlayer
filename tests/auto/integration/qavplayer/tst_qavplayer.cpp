@@ -47,10 +47,8 @@ private slots:
     void convert();
     void map_data();
     void map();
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     void cast2QVideoFrame_data();
     void cast2QVideoFrame();
-#endif
     void stepForward();
     void stepBackward();
     void audioStreams();
@@ -1371,7 +1369,6 @@ void tst_QAVPlayer::map()
     QVERIFY(mapData.data[1] != nullptr);
 }
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 void tst_QAVPlayer::cast2QVideoFrame_data()
 {
     QTest::addColumn<QString>("path");
@@ -1404,11 +1401,16 @@ void tst_QAVPlayer::cast2QVideoFrame()
     QVERIFY(q.isValid());
     QVERIFY(!q.size().isEmpty());
     QCOMPARE(q.size(), size);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     q.map(QAbstractVideoBuffer::ReadOnly);
     QVERIFY(q.bits() != nullptr);
     QVERIFY(q.bytesPerLine() > 0);
-}
+#else
+    q.map(QVideoFrame::ReadOnly);
+    QVERIFY(q.bits(0) != nullptr);
+    QVERIFY(q.bytesPerLine(0) > 0);
 #endif
+}
 
 void tst_QAVPlayer::stepForward()
 {

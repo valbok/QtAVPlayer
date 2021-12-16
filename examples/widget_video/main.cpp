@@ -8,14 +8,16 @@
 #include <QtAVPlayer/qavplayer.h>
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QtAVPlayer/qavaudiooutput.h>
+#include <QVideoWidget>
+#include <QApplication>
+#include <QDebug>
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QAbstractVideoSurface>
 #include <QVideoSurfaceFormat>
 #include <QMediaService>
 #include <QMediaObject>
-#include <QVideoWidget>
 #include <QVideoRendererControl>
-#include <QApplication>
-#include <QDebug>
 
 class VideoRenderer : public QVideoRendererControl
 {
@@ -75,10 +77,14 @@ public:
         return QVideoWidget::setMediaObject(object);
     }
 };
+#else
+#include <QVideoSink>
+#endif
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     VideoRenderer vr;
 
     VideoWidget w;
@@ -86,6 +92,10 @@ int main(int argc, char *argv[])
 
     MediaObject mo(&vr);
     w.setMediaObject(&mo);
+#else
+    QVideoWidget w;
+    w.show();
+#endif
 
     QAVPlayer p;
     QString file = argc > 1 ? QLatin1String(argv[1]) : QLatin1String("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
@@ -95,17 +105,22 @@ int main(int argc, char *argv[])
     QAVAudioOutput audioOutput;
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); });
 
-    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&vr](const QAVVideoFrame &frame) {
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         if (vr.m_surface == nullptr)
             return;
-
+#endif
         QVideoFrame videoFrame = frame.convertTo(AV_PIX_FMT_RGB32);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         if (!vr.m_surface->isActive() || vr.m_surface->surfaceFormat().frameSize() != videoFrame.size()) {
             QVideoSurfaceFormat f(videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType());
             vr.m_surface->start(f);
         }
         if (vr.m_surface->isActive())
             vr.m_surface->present(videoFrame);
+#else
+        w.videoSink()->setVideoFrame(videoFrame);
+#endif
     });
 
     return app.exec();
