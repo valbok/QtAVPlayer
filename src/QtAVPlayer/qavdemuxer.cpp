@@ -272,6 +272,8 @@ static ParsedURL parse_url(const QString &url)
     QString input;
     QString format;
     for (auto &item : parts) {
+        if (item.isEmpty())
+            continue;
         if (item[0] == QLatin1Char('i'))
             input = item.mid(1).trimmed();
         else if (item[0] == QLatin1Char('f'))
