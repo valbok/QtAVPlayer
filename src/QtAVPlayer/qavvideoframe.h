@@ -10,9 +10,7 @@
 
 #include <QtAVPlayer/qavframe.h>
 #include <QVariant>
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QVideoFrame>
-#endif
 
 QT_BEGIN_NAMESPACE
 
@@ -54,9 +52,7 @@ public:
     QString formatName() const;
     QAVVideoFrame convertTo(AVPixelFormat fmt) const;
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     operator QVideoFrame() const;
-#endif
 
 protected:
     Q_DECLARE_PRIVATE(QAVVideoFrame)

@@ -8,9 +8,16 @@
 #include <QtAVPlayer/qavplayer.h>
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QtAVPlayer/qavaudiooutput.h>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QAbstractVideoSurface>
 #include <private/qdeclarativevideooutput_p.h>
+#else
+#include <QVideoSink>
+#include <QtMultimediaQuick/private/qquickvideooutput_p.h>
+#endif
+
 #include <QtQuick/QQuickView>
+#include <QtQuick/QQuickItem>
 #include <QtQml/QQmlEngine>
 #include <QGuiApplication>
 #include <QDebug>
@@ -44,7 +51,14 @@ int main(int argc, char *argv[])
     QObject::connect(viewer.engine(), SIGNAL(quit()), &viewer, SLOT(close()));
 
     QQuickItem *rootObject = viewer.rootObject();
-    auto vo = rootObject->findChild<QDeclarativeVideoOutput *>("videoOutput");
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    using VideoOutput = QDeclarativeVideoOutput;
+#else
+    using VideoOutput = QQuickVideoOutput;
+#endif
+
+    auto vo = rootObject->findChild<VideoOutput *>("videoOutput");
 
     QAVAudioOutput audioOutput;
     QAVPlayer p;
@@ -55,19 +69,24 @@ int main(int argc, char *argv[])
     auto videoSurface = src.m_surface;
 #elif QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     auto videoSurface = vo->videoSurface();
-#endif
-
     // Make sure that render geometry has been updated after a frame
     QObject::connect(vo, &QDeclarativeVideoOutput::sourceRectChanged, &p, [&] {
         vo->update();
     });
+#else
+    auto videoSurface = vo->videoSink();
+#endif
 
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&videoSurface](const QAVVideoFrame &frame) {
         QVideoFrame videoFrame = frame;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         if (!videoSurface->isActive())
             videoSurface->start({videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType()});
         if (videoSurface->isActive())
             videoSurface->present(videoFrame);
+#else
+        videoSurface->setVideoFrame(videoFrame);
+#endif
     });
 
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); });

@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="main.qml">main_qt6.qml</file>
+    </qresource>
+</RCC>

@@ -2,6 +2,7 @@ TARGET = QtAVPlayer
 MODULE = QtAVPlayer
 
 QT = multimedia concurrent
+equals(QT_MAJOR_VERSION, 6): QT += multimedia-private
 QT_PRIVATE += gui-private
 
 QMAKE_USE += ffmpeg
