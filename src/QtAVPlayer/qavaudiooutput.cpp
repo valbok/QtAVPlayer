@@ -22,33 +22,50 @@ QT_BEGIN_NAMESPACE
 static QAudioFormat format(const QAVAudioFormat &from)
 {
     QAudioFormat out;
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+
     out.setSampleRate(from.sampleRate());
     out.setChannelCount(from.channelCount());
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     out.setByteOrder(QAudioFormat::LittleEndian);
     out.setCodec(QLatin1String("audio/pcm"));
+#endif
     switch (from.sampleFormat()) {
     case QAVAudioFormat::UInt8:
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         out.setSampleSize(8);
         out.setSampleType(QAudioFormat::UnSignedInt);
+#else
+        out.setSampleFormat(QAudioFormat::UInt8);
+#endif
         break;
     case QAVAudioFormat::Int16:
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         out.setSampleSize(16);
         out.setSampleType(QAudioFormat::SignedInt);
+#else
+        out.setSampleFormat(QAudioFormat::Int16);
+#endif
         break;
     case QAVAudioFormat::Int32:
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         out.setSampleSize(32);
         out.setSampleType(QAudioFormat::SignedInt);
+#else
+        out.setSampleFormat(QAudioFormat::Int32);
+#endif
         break;
     case QAVAudioFormat::Float:
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         out.setSampleSize(32);
         out.setSampleType(QAudioFormat::Float);
+#else
+        out.setSampleFormat(QAudioFormat::Float);
+#endif
         break;
     default:
         qWarning() << "Could not negotiate output format";
         return {};
     }
-#endif
 
     return out;
 }
@@ -57,7 +74,13 @@ class QAVAudioOutputPrivate
 {
 public:
     QFuture<void> audioPlayFuture;
-    QScopedPointer<QAudioOutput> audioOutput;
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    using AudioOutput = QAudioOutput;
+#else
+    using AudioOutput = QAudioSink;
+#endif
+    QScopedPointer<AudioOutput> audioOutput;
     QIODevice *device = nullptr;
     qreal volume = 1.0;
     bool quit = 0;
@@ -69,8 +92,8 @@ public:
     {
         auto fmt = format(frame.format());
         if (!audioOutput || audioOutput->format() != fmt || audioOutput->state() == QAudio::StoppedState) {
-            audioOutput.reset(new QAudioOutput(fmt));
-            QObject::connect(audioOutput.data(), &QAudioOutput::stateChanged, audioOutput.data(),
+            audioOutput.reset(new AudioOutput(fmt));
+            QObject::connect(audioOutput.data(), &AudioOutput::stateChanged, audioOutput.data(),
                 [&](QAudio::State state) {
                     switch (state) {
                         case QAudio::StoppedState:
@@ -91,13 +114,21 @@ public:
         int pos = 0;
         int size = data.size();
         while (!quit && size) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
             if (audioOutput->bytesFree() < audioOutput->periodSize()) {
+#else
+            if (audioOutput->bytesFree() == 0) {
+#endif
                 const double refreshRate = 0.01;
                 av_usleep((int64_t)(refreshRate * 1000000.0));
                 continue;
             }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
             int chunk = qMin(size, audioOutput->periodSize());
+#else
+            int chunk = qMin(size, audioOutput->bytesFree());
+#endif
             QByteArray decodedChunk = QByteArray::fromRawData(static_cast<const char *>(data.constData()) + pos, chunk);
             int wrote = device->write(decodedChunk);
             if (wrote > 0) {

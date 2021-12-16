@@ -13,6 +13,8 @@
 #include <QSize>
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QAbstractVideoSurface>
+#else
+#include <QtMultimedia/private/qabstractvideobuffer_p.h>
 #endif
 #include <QDebug>
 
@@ -193,6 +195,46 @@ private:
     QAVVideoFrame m_frame;
     MapMode m_mode = NotMapped;
 };
+#else
+class PlanarVideoBuffer : public QAbstractVideoBuffer
+{
+public:
+    PlanarVideoBuffer(const QAVVideoFrame &frame, QVideoFrame::HandleType type = QVideoFrame::NoHandle)
+        : QAbstractVideoBuffer(type), m_frame(frame)
+    {
+    }
+
+    QVideoFrame::MapMode mapMode() const override { return m_mode; }
+    MapData map(QVideoFrame::MapMode mode) override
+    {
+        MapData res;
+        if (m_mode != QVideoFrame::NotMapped || mode == QVideoFrame::NotMapped)
+            return res;
+
+        m_mode = mode;
+        auto mapData = m_frame.map();
+        int nPlanes = 0;
+        for (;nPlanes < 4; ++nPlanes) {
+            if (!mapData.bytesPerLine[nPlanes])
+                break;
+
+            res.bytesPerLine[nPlanes] = mapData.bytesPerLine[nPlanes];
+            res.data[nPlanes] = mapData.data[nPlanes];
+            // TODO: Check if size can be different
+            res.size[nPlanes] = mapData.bytesPerLine[nPlanes];
+        }
+
+        res.nPlanes = nPlanes;
+        return res;
+    }
+    void unmap() override { m_mode = QVideoFrame::NotMapped; }
+
+private:
+    QAVVideoFrame m_frame;
+    QVideoFrame::MapMode m_mode = QVideoFrame::NotMapped;
+};
+
+#endif
 
 QAVVideoFrame::operator QVideoFrame() const
 {
@@ -200,35 +242,48 @@ QAVVideoFrame::operator QVideoFrame() const
     if (!result)
         return QVideoFrame();
 
-    QVideoFrame::PixelFormat format = QVideoFrame::Format_Invalid;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    using VideoFrame = QVideoFrame;
+#else
+    using VideoFrame = QVideoFrameFormat;
+#endif
+
+    VideoFrame::PixelFormat format = VideoFrame::Format_Invalid;
     switch (frame()->format) {
         case AV_PIX_FMT_RGB32:
-            format = QVideoFrame::Format_RGB32;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+            format = VideoFrame::Format_RGB32;
+#else
+            format = QVideoFrameFormat::Format_ARGB8888;       
+#endif
             break;
         case AV_PIX_FMT_YUV420P:
-            format = QVideoFrame::Format_YUV420P;
+            format = VideoFrame::Format_YUV420P;
             break;
         case AV_PIX_FMT_YUV422P:
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
             result = convertTo(AV_PIX_FMT_YUV420P);
-            format = QVideoFrame::Format_YUV420P;
+            format = VideoFrame::Format_YUV420P;
 #else
-            format = QVideoFrame::Format_YUV422P;
+            format = VideoFrame::Format_YUV422P;
 #endif
             break;
         case AV_PIX_FMT_VAAPI:
         case AV_PIX_FMT_D3D11:
         case AV_PIX_FMT_NV12:
-            format = QVideoFrame::Format_NV12;
+            format = VideoFrame::Format_NV12;
             break;
         default:
             result = convertTo(AV_PIX_FMT_YUV420P);
-            format = QVideoFrame::Format_YUV420P;
+            format = VideoFrame::Format_YUV420P;
             break;        
     }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     return QVideoFrame(new PlanarVideoBuffer(result), size(), format);
-}
+#else
+    return QVideoFrame(new PlanarVideoBuffer(result), {size(), format});
 #endif
+}
 
 QT_END_NAMESPACE
