@@ -113,9 +113,9 @@ Free and open-source Qt Media Player library based on FFmpeg with a predictable 
 
    QT_AVPLAYER_NO_HWDEVICE can be used to force using software decoding. The video codec is negotiated automatically.
 
-10. QtMultimedia5 could be used to render video frames to QML or Widgets. See [examples](examples).
+10. QtMultimedia could be used to render video frames to QML or Widgets. See [examples](examples).
 
-At least Qt 5.12 is supported.
+11. Qt 5.12 - 6.x is supported
 
 # Build
 
