@@ -79,6 +79,8 @@ Free and open-source Qt Media Player library based on FFmpeg with a predictable 
        player.seek(5000)
        QTRY_COMPARE(seekPosition, 5000);
        QTRY_COMPARE(seekFrame.pts(), 5.0);
+       
+   No, propbably, you don't get it, it is real accurate seek. If there is a frame with needed pts, it will be returned as first frame.
 
 6. FFmpeg filters:
 
@@ -115,7 +117,7 @@ Free and open-source Qt Media Player library based on FFmpeg with a predictable 
 
 10. QtMultimedia could be used to render video frames to QML or Widgets. See [examples](examples).
 
-11. Qt 5.12 - 6.x is supported
+11. Qt 5.12 - **6**.x is supported
 
 # Build
 
@@ -131,29 +133,6 @@ qmake:
 Install ffmpeg visible with pkg-config.
 
     $ cd QtAVPlayer && qmake && make -j8
-    Info: creating stash file QtAVPlayer/.qmake.stash
-    Info: creating cache file QtAVPlayer/.qmake.cache
-
-    Running configuration tests...
-    Checking for FFmpeg... yes
-    Checking for va_drm... yes
-    Checking for va_x11... yes
-    Done running configuration tests.
-
-    Configure summary:
-
-    Qt AVPlayer:
-    FFmpeg ................................. yes
-    va_x11 ................................. yes
-    va_drm ................................. yes
-
-    Qt is now configured for building. Just run 'make'.
-    Once everything is built, Qt is installed.
-    You should NOT run 'make install'.
-    Note that this build cannot be deployed to other machines or devices.
-
-    Prior to reconfiguration, make sure you remove any leftovers from
-    the previous build.
 
 macOS and iOS:
 
