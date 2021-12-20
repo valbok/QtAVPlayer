@@ -80,7 +80,7 @@ Free and open-source Qt Media Player library based on FFmpeg with a predictable 
        QTRY_COMPARE(seekPosition, 5000);
        QTRY_COMPARE(seekFrame.pts(), 5.0);
        
-   No, propbably, you don't get it, it is real accurate seek. If there is a frame with needed pts, it will be returned as first frame.
+   If there is a frame with needed pts, it will be returned as first frame.
 
 6. FFmpeg filters:
 
