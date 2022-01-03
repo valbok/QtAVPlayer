@@ -24,7 +24,7 @@ Free and open-source Qt Media Player library based on FFmpeg with a predictable 
        player.setSource("-f android_camera -i 0:0");
     
        // Using various protocols
-       player.setSource("subfile,,start,0,end,0,,:/root/Downloads/qtmm-must-die.mkv");
+       player.setSource("subfile,,start,0,end,0,,:/root/Downloads/why-qtmm-must-die.mkv");
 
 2. Easy getting video and audio frames:
 
