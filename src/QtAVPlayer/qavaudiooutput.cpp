@@ -6,12 +6,16 @@
  *********************************************************/
 
 #include "qavaudiooutput.h"
-#include <QAudioOutput>
 #include <QAudioFormat>
 #include <QDebug>
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <QFuture>
 #include <QWaitCondition>
+#if QT_VERSION < QT_VERSION_CHECK(6, 3, 0)
+#include <QAudioOutput>
+#else
+#include <QAudioSink>
+#endif
 
 extern "C" {
 #include "libavutil/time.h"
