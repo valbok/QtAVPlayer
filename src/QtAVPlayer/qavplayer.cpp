@@ -307,8 +307,10 @@ void QAVPlayerPrivate::step(bool hasFrame)
         if (!doStep(status, hasFrame))
             break;
         locker.relock();
-        if (!pendingMediaStatuses.isEmpty())
+        if (!pendingMediaStatuses.isEmpty()) {
             pendingMediaStatuses.removeFirst();
+            qCDebug(lcAVPlayer) << "Step done:" << status << ", pending" << pendingMediaStatuses;
+        }
     }
 
     if (pendingMediaStatuses.isEmpty()) {
