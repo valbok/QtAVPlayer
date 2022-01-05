@@ -26,7 +26,7 @@ QT_BEGIN_NAMESPACE
 
 struct AVPacket;
 class QAVPacketPrivate;
-class QAVCodec;
+class QAVStream;
 class Q_AVPLAYER_EXPORT QAVPacket : public QObject
 {
 public:
@@ -42,7 +42,7 @@ public:
     int bytes() const;
     int streamIndex() const;
 
-    void setCodec(const QSharedPointer<QAVCodec> &codec);
+    void setStream(const QAVStream &stream);
     QAVFrame decode();
 
 protected:

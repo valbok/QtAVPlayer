@@ -7,6 +7,7 @@
 
 #include "qavpacket_p.h"
 #include "qavcodec_p.h"
+#include "qavstream.h"
 #include <QSharedPointer>
 #include <QDebug>
 
@@ -21,7 +22,7 @@ QT_BEGIN_NAMESPACE
 class QAVPacketPrivate
 {
 public:
-    QSharedPointer<QAVCodec> codec;
+    QAVStream stream;
     AVPacket *pkt = nullptr;
 };
 
@@ -45,7 +46,7 @@ QAVPacket &QAVPacket::operator=(const QAVPacket &other)
     av_packet_unref(d_ptr->pkt);
     av_packet_ref(d_ptr->pkt, other.d_ptr->pkt);
 
-    d_ptr->codec = other.d_ptr->codec;
+    d_ptr->stream = other.d_ptr->stream;
 
     return *this;
 }
@@ -70,19 +71,19 @@ AVPacket *QAVPacket::packet()
 double QAVPacket::duration() const
 {
     Q_D(const QAVPacket);
-    if (!d->codec || !d->codec->stream())
+    if (!d->stream)
         return 0;
 
-    return d->pkt->duration * av_q2d(d->codec->stream()->time_base);
+    return d->pkt->duration * av_q2d(d->stream.stream()->time_base);
 }
 
 double QAVPacket::pts() const
 {
     Q_D(const QAVPacket);
-    if (!d->codec || !d->codec->stream())
+    if (!d->stream)
         return 0;
 
-    return d->pkt->pts * av_q2d(d->codec->stream()->time_base);
+    return d->pkt->pts * av_q2d(d->stream.stream()->time_base);
 }
 
 int QAVPacket::bytes() const
@@ -95,20 +96,20 @@ int QAVPacket::streamIndex() const
     return d_func()->pkt->stream_index;
 }
 
-void QAVPacket::setCodec(const QSharedPointer<QAVCodec> &codec)
+void QAVPacket::setStream(const QAVStream &stream)
 {
     Q_D(QAVPacket);
-    d->codec = codec;
+    d->stream = stream;
 }
 
 QAVFrame QAVPacket::decode()
 {
     Q_D(QAVPacket);
-    if (!d->codec)
+    if (!d->stream)
         return {};
 
-    QAVFrame frame(d->codec);
-    if (d->codec->decode(d->pkt, frame))
+    QAVFrame frame(d->stream);
+    if (d->stream.codec()->decode(d->pkt, frame))
         return frame;
     return {};
 }

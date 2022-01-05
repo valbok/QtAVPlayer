@@ -6,7 +6,6 @@
  *********************************************************/
 
 #include "qavhwdevice_mediacodec_p.h"
-#include "qavvideocodec_p.h"
 #include "qavvideobuffer_cpu_p.h"
 
 extern "C" {

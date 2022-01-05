@@ -21,6 +21,7 @@ set(SOURCES
     qavvideooutputfilter.cpp
     qavaudiooutputfilter.cpp
     qaviodevice.cpp
+    qavstream.cpp
 )
 set(PUBLIC_HEADERS
     qavframe.h
@@ -30,6 +31,7 @@ set(PUBLIC_HEADERS
     qavplayer.h
     qavaudiooutput.h
     qtavplayerglobal.h
+    qtavstream.h
 )
 
 if(Qt6_FOUND)

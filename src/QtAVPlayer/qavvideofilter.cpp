@@ -9,6 +9,7 @@
 #include "qavfilter_p_p.h"
 #include "qavcodec_p.h"
 #include "qavvideoframe.h"
+#include "qavstream.h"
 #include <QDebug>
 
 extern "C" {
@@ -40,7 +41,7 @@ QAVVideoFilter::QAVVideoFilter(const QList<QAVVideoInputFilter> &inputs, const Q
 int QAVVideoFilter::write(const QAVFrame &frame)
 {
     Q_D(QAVVideoFilter);
-    if (frame.codec()->stream()->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
+    if (frame.stream().stream()->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
         qWarning() << "Frame is not video";
         return AVERROR(EINVAL);
     }

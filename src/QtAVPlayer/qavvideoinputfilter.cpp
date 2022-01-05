@@ -54,7 +54,7 @@ QAVVideoInputFilter &QAVVideoInputFilter::operator=(const QAVVideoInputFilter &o
 int QAVVideoInputFilter::configure(AVFilterGraph *graph, AVFilterInOut *in)
 {
     Q_D(QAVVideoInputFilter);
-    AVStream *stream = d->demuxer ? d->demuxer->videoStream() : nullptr;
+    AVStream *stream = d->demuxer ? d->demuxer->videoStream().stream() : nullptr;
     if (!stream)
         return AVERROR(EINVAL);
 

@@ -59,7 +59,7 @@ QAVAudioInputFilter &QAVAudioInputFilter::operator=(const QAVAudioInputFilter &o
 int QAVAudioInputFilter::configure(AVFilterGraph *graph, AVFilterInOut *in)
 {
     Q_D(QAVAudioInputFilter);
-    AVStream *stream = d->demuxer ? d->demuxer->audioStream() : nullptr;
+    AVStream *stream = d->demuxer ? d->demuxer->audioStream().stream() : nullptr;
     if (!stream)
         return AVERROR(EINVAL);
     

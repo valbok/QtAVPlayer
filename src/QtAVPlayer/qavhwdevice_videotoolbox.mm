@@ -6,7 +6,6 @@
  *********************************************************/
 
 #include "qavhwdevice_videotoolbox_p.h"
-#include "qavvideocodec_p.h"
 #include "qavvideobuffer_gpu_p.h"
 
 #import <CoreVideo/CoreVideo.h>

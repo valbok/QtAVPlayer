@@ -8,6 +8,7 @@
 #include "qavaudiofilter_p.h"
 #include "qavfilter_p_p.h"
 #include "qavcodec_p.h"
+#include "qavstream.h"
 #include <QDebug>
 
 extern "C" {
@@ -39,7 +40,7 @@ QAVAudioFilter::QAVAudioFilter(const QList<QAVAudioInputFilter> &inputs, const Q
 int QAVAudioFilter::write(const QAVFrame &frame)
 {
     Q_D(QAVAudioFilter);
-    if (frame.codec()->stream()->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
+    if (frame.stream().stream()->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
         qWarning() << "Frame is not audio";
         return AVERROR(EINVAL);
     }

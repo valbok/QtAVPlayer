@@ -13,22 +13,24 @@
 #include <QScopedPointer>
 #include <QtAVPlayer/qtavplayerglobal.h>
 
-QT_BEGIN_NAMESPACE
-
 extern "C" {
 #include <libavutil/frame.h>
 }
 
+QT_BEGIN_NAMESPACE
+
+struct AVFrame;
+struct AVRational;
 class QAVFramePrivate;
-class QAVCodec;
+class QAVStream;
 class Q_AVPLAYER_EXPORT QAVFrame : public QObject
 {
 public:
     QAVFrame(QObject *parent = nullptr);
-    QAVFrame(const QSharedPointer<QAVCodec> &codec, QObject *parent = nullptr);
+    QAVFrame(const QAVStream &stream, QObject *parent = nullptr);
     ~QAVFrame();
     QAVFrame(const QAVFrame &other);
-    QSharedPointer<QAVCodec> codec() const;
+    QAVStream stream() const;
     QAVFrame &operator=(const QAVFrame &other);
     operator bool() const;
     AVFrame *frame() const;
