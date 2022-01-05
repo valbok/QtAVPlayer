@@ -2069,6 +2069,7 @@ void tst_QAVPlayer::lastFrame()
     p.seek(0);
     QTRY_COMPARE(framesCount, 1);
 
+    p.play();
     framesCount = 0;
     seekPosition = -1;
 
