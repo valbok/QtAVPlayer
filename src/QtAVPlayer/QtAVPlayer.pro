@@ -40,6 +40,7 @@ PUBLIC_HEADERS += \
     qavaudioframe.h \    
     qtavplayerglobal.h \
     qavaudiooutput.h \
+    qavstream.h \
     qavplayer.h
 
 SOURCES += \
@@ -64,7 +65,8 @@ SOURCES += \
     qavaudioinputfilter.cpp \
     qavvideooutputfilter.cpp \
     qavaudiooutputfilter.cpp \
-    qaviodevice.cpp
+    qaviodevice.cpp \
+    qavstream.cpp
 
 qtConfig(va_x11):qtConfig(opengl): {
     QMAKE_USE += va_x11 x11

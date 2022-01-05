@@ -96,8 +96,8 @@ int main(int argc, char *argv[])
     QObject::connect(&p, &QAVPlayer::mediaStatusChanged, [&](auto status) {
         qDebug() << "mediaStatusChanged"<< status << p.state();
         if (status == QAVPlayer::LoadedMedia) {
-            qDebug() << "Video streams:" << p.videoStreamsCount();
-            qDebug() << "Audio streams:" << p.audioStreamsCount();
+            qDebug() << "Video streams:" << p.videoStreams().size();
+            qDebug() << "Audio streams:" << p.audioStreams().size();
         }
     });
     QObject::connect(&p, &QAVPlayer::durationChanged, [&](auto d) { qDebug() << "durationChanged" << d; });

@@ -6,8 +6,8 @@
  *********************************************************/
 
 #include "qavframe.h"
+#include "qavstream.h"
 #include "qavframe_p.h"
-#include "qavcodec_p.h"
 #include <QDebug>
 
 extern "C" {
@@ -21,10 +21,10 @@ QAVFrame::QAVFrame(QObject *parent)
 {
 }
 
-QAVFrame::QAVFrame(const QSharedPointer<QAVCodec> &codec, QObject *parent)
+QAVFrame::QAVFrame(const QAVStream &stream, QObject *parent)
     : QAVFrame(*new QAVFramePrivate, parent)
 {
-    d_ptr->codec = codec;
+    d_ptr->stream = stream;
 }
 
 QAVFrame::QAVFrame(const QAVFrame &other)
@@ -40,9 +40,9 @@ QAVFrame::QAVFrame(QAVFramePrivate &d, QObject *parent)
     d_ptr->frame = av_frame_alloc();
 }
 
-QSharedPointer<QAVCodec> QAVFrame::codec() const
+QAVStream QAVFrame::stream() const
 {
-    return d_ptr->codec;
+    return d_ptr->stream;
 }
 
 QAVFrame &QAVFrame::operator=(const QAVFrame &other)
@@ -54,7 +54,7 @@ QAVFrame &QAVFrame::operator=(const QAVFrame &other)
     if (d_ptr->frame->pts < 0)
         d_ptr->frame->pts = pts;
 
-    d_ptr->codec = other.d_ptr->codec;
+    d_ptr->stream = other.d_ptr->stream;
     d_ptr->frameRate = other.d_ptr->frameRate;
     d_ptr->timeBase = other.d_ptr->timeBase;
     return *this;
@@ -63,7 +63,7 @@ QAVFrame &QAVFrame::operator=(const QAVFrame &other)
 QAVFrame::operator bool() const
 {
     Q_D(const QAVFrame);
-    return d->codec && d->frame && (d->frame->data[0] || d->frame->data[1] || d->frame->data[2] || d->frame->data[3]);
+    return d->stream && d->frame && (d->frame->data[0] || d->frame->data[1] || d->frame->data[2] || d->frame->data[3]);
 }
 
 QAVFrame::~QAVFrame()
@@ -93,22 +93,22 @@ void QAVFrame::setTimeBase(const AVRational &value)
 double QAVFrame::pts() const
 {
     Q_D(const QAVFrame);
-    if (!d->frame || !d->codec)
+    if (!d->frame || !d->stream)
         return NAN;
 
-    AVRational tb = d->timeBase.num && d->timeBase.den ? d->timeBase : d->codec->stream()->time_base;
+    AVRational tb = d->timeBase.num && d->timeBase.den ? d->timeBase : d->stream.stream()->time_base;
     return d->frame->pts == AV_NOPTS_VALUE ? NAN : d->frame->pts * av_q2d(tb);
 }
 
 double QAVFrame::duration() const
 {
     Q_D(const QAVFrame);
-    if (!d->frame || !d->codec)
+    if (!d->frame || !d->stream)
         return 0.0;
 
     return d->frameRate.den && d->frameRate.num
            ? av_q2d(AVRational{d->frameRate.den, d->frameRate.num})
-           : d->frame->pkt_duration * av_q2d(d->codec->stream()->time_base);
+           : d->frame->pkt_duration * av_q2d(d->stream.stream()->time_base);
 }
 
 QT_END_NAMESPACE

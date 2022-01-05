@@ -1736,37 +1736,37 @@ void tst_QAVPlayer::audioStreams()
     p.setSource(file.absoluteFilePath());
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
-    QCOMPARE(p.videoStreamsCount(), 1);
-    QCOMPARE(p.audioStreamsCount(), 2);
-    QCOMPARE(p.videoStream(), 0);
-    QCOMPARE(p.audioStream(), 0);
-    QCOMPARE(p.subtitleStreamsCount(), 0);
-    QTRY_COMPARE(spy.count(), 1); // -1 -> 0
+    QCOMPARE(p.videoStreams().size(), 1);
+    QCOMPARE(p.audioStreams().size(), 2);
+    QCOMPARE(p.audioStreams()[0].index(), 1);
+    QCOMPARE(p.audioStreams()[1].index(), 2);
+    QCOMPARE(p.videoStream().index(), 0);
+    QCOMPARE(p.audioStream().index(), 1);
 
     spy.clear();
 
-    p.setAudioStream(-1);
-    QCOMPARE(p.audioStream(), 0);
-    p.setVideoStream(-1);
-    QCOMPARE(p.videoStream(), 0);
+    p.setAudioStream({ -1 });
+    QCOMPARE(p.audioStream().index(), 1);
+    p.setVideoStream({ -1 });
+    QCOMPARE(p.videoStream().index(), 0);
     QCOMPARE(spy.count(), 0);
 
-    p.setAudioStream(2);
-    QCOMPARE(p.audioStream(), 0);
+    p.setAudioStream({ 3 });
+    QCOMPARE(p.audioStream().index(), 1);
     QCOMPARE(spy.count(), 0);
 
-    p.setAudioStream(1);
-    QCOMPARE(p.audioStream(), 1);
+    p.setAudioStream({ 2 });
+    QCOMPARE(p.audioStream().index(), 2);
     QTRY_COMPARE(spy.count(), 1);
 
     p.pause();
-    QCOMPARE(p.audioStream(), 1);
+    QCOMPARE(p.audioStream().index(), 2);
 
     p.play();
     QTRY_VERIFY(frame);
     QVERIFY(framesCount > 0);
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
-    QCOMPARE(p.audioStream(), 1);
+    QCOMPARE(p.audioStream().index(), 2);
 
     framesCount = 0;
 
@@ -1776,10 +1776,10 @@ void tst_QAVPlayer::audioStreams()
     framesCount = 0;
     spy.clear();
 
-    p.setAudioStream(0);
+    p.setAudioStream({ 1 });
     QTRY_COMPARE(spy.count(), 1);
     QTRY_VERIFY(framesCount > 3);
-    QCOMPARE(p.audioStream(), 0);
+    QCOMPARE(p.audioStream().index(), 1);
 
     framesCount = 0;
 
@@ -1788,7 +1788,7 @@ void tst_QAVPlayer::audioStreams()
     p.pause();
     p.play();
     QTRY_VERIFY(framesCount > 3);
-    QCOMPARE(p.audioStream(), 0);
+    QCOMPARE(p.audioStream().index(), 1);
 }
 
 void tst_QAVPlayer::audioOutput()

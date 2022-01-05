@@ -20,8 +20,9 @@
 //
 
 #include "qavpacket_p.h"
+#include "qavstream.h"
 #include <QObject>
-#include <QUrl>
+#include <QMap>
 #include <QScopedPointer>
 
 QT_BEGIN_NAMESPACE
@@ -33,7 +34,7 @@ class QAVIODevice;
 struct AVStream;
 struct AVCodecContext;
 struct AVFormatContext;
-class Q_AVPLAYER_EXPORT QAVDemuxer : public QObject
+class Q_AVPLAYER_EXPORT QAVDemuxer : public QObject, public std::enable_shared_from_this<QAVDemuxer>
 {
 public:
     QAVDemuxer(QObject *parent = nullptr);
@@ -43,19 +44,17 @@ public:
     int load(const QString &url, QAVIODevice *dev = nullptr);
     void unload();
 
-    QList<int> videoStreams() const;
-    int currentVideoStreamIndex() const;
-    QList<int> audioStreams() const;
-    int currentAudioStreamIndex() const;
-    QList<int> subtitleStreams() const;
-    int currentSubtitleStreamIndex() const;
+    QList<QAVStream> videoStreams() const;
+    QAVStream videoStream() const;
+    bool setVideoStream(const QAVStream &stream);
+    QList<QAVStream> audioStreams() const;
+    QAVStream audioStream() const;
+    bool setAudioStream(const QAVStream &stream);
 
-    int videoStreamIndex() const;
-    void setVideoStreamIndex(int stream);
-    int audioStreamIndex() const;
-    void setAudioStreamIndex(int stream);
-    int subtitleStreamIndex() const;
-    void setSubtitleStreamIndex(int stream);
+    QList<QAVStream> subtitleStreams() const;
+
+    AVStream *stream(int index) const;
+    QAVCodec *codec(int index) const;
 
     QAVPacket read();
 
@@ -65,11 +64,9 @@ public:
     bool eof() const;
     double videoFrameRate() const;
 
-    AVStream *videoStream() const;
-    AVStream *audioStream() const;
-    QSharedPointer<QAVVideoCodec> videoCodec() const;
-    QSharedPointer<QAVAudioCodec> audioCodec() const;
     AVRational frameRate() const;
+
+    QMap<QString, QString> metadata() const;
 
     static QStringList supportedFormats();
     static QStringList supportedProtocols();

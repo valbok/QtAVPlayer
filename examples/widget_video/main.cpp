@@ -35,7 +35,6 @@ public:
     QAbstractVideoSurface *m_surface = nullptr;
 };
 
-class MediaObject;
 class MediaService : public QMediaService
 {
 public:

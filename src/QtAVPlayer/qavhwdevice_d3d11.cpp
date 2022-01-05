@@ -6,7 +6,6 @@
  *********************************************************/
 
 #include "qavhwdevice_d3d11_p.h"
-#include "qavvideocodec_p.h"
 #include "qavvideobuffer_gpu_p.h"
 
 QT_BEGIN_NAMESPACE

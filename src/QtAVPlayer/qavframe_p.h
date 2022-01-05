@@ -19,19 +19,19 @@
 // We mean it.
 //
 
+#include "qavstream.h"
 #include <QSharedPointer>
 
 QT_BEGIN_NAMESPACE
 
 struct AVFrame;
 class QAVFrame;
-class QAVCodec;
 class QAVFramePrivate
 {
 public:
     virtual ~QAVFramePrivate() = default;
 
-    QSharedPointer<QAVCodec> codec;
+    QAVStream stream;
     AVFrame *frame = nullptr;
     // Overridden data from filters if any
     AVRational frameRate{};

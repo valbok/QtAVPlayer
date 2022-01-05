@@ -68,14 +68,11 @@ public:
     mutable QMutex mutex;
 
     bool seekable = false;
-    QList<int> audioStreams;
-    QList<int> videoStreams;
-    QList<int> subtitleStreams;
-    int audioStream = -1;
-    int videoStream = -1;
-    int subtitleStream = -1;
-    QList<QSharedPointer<QAVAudioCodec>> audioCodecs;
-    QList<QSharedPointer<QAVVideoCodec>> videoCodecs;
+    QList<QAVStream> streams;
+    QList<QAVCodec *> codecs;
+    int currentAudioStreamIndex = -1;
+    int currentVideoStreamIndex = -1;
+    int currentSubtitleStreamIndex = -1;
 
     AVPacket audioPacket;
     AVPacket videoPacket;
@@ -88,16 +85,6 @@ static int decode_interrupt_cb(void *ctx)
     auto d = reinterpret_cast<QAVDemuxerPrivate *>(ctx);
     QMutexLocker locker(&d->mutex);
     return d ? int(d->abortRequest) : 0;
-}
-
-static int streamIndex(const QList<int> &list, int stream)
-{
-    for (int i = 0; i < list.size(); ++i) {
-        if (list[i] == stream)
-            return i;
-    }
-
-    return -1;
 }
 
 QAVDemuxer::QAVDemuxer(QObject *parent)
@@ -117,6 +104,7 @@ QAVDemuxer::QAVDemuxer(QObject *parent)
 
 QAVDemuxer::~QAVDemuxer()
 {
+    abort(false);
     unload();
 }
 
@@ -126,12 +114,13 @@ void QAVDemuxer::abort(bool stop)
     d->abortRequest = stop;
 }
 
-static void setup_video_codec(AVStream *stream, QAVVideoCodec &codec)
+static void setup_video_codec(AVStream *stream, QAVCodec *kodek)
 {
     QScopedPointer<QAVHWDevice> device;
     AVDictionary *opts = NULL;
     Q_UNUSED(opts);
     auto name = QGuiApplication::platformName();
+    QAVVideoCodec &codec = *reinterpret_cast<QAVVideoCodec *>(kodek);
 
 #if QT_CONFIG(va_x11) && QT_CONFIG(opengl)
     if (name == QLatin1String("xcb")) {
@@ -289,6 +278,7 @@ static ParsedURL parse_url(const QString &url)
 int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
 {
     Q_D(QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
 
     if (!d->ctx)
         d->ctx = avformat_alloc_context();
@@ -314,7 +304,7 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
             return AVERROR(EINVAL);
         }
     }
-
+    locker.unlock();
     int ret = avformat_open_input(&d->ctx, parsed.input.toUtf8().constData(), inputFormat, nullptr);
     if (ret < 0)
         return ret;
@@ -323,41 +313,40 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
     if (ret < 0)
         return ret;
 
-    for (unsigned i = 0; i < d->ctx->nb_streams; ++i) {
-        enum AVMediaType type = d->ctx->streams[i]->codecpar->codec_type;
-        if (type == AVMEDIA_TYPE_VIDEO)
-            d->videoStreams.push_back(i);
-        else if (type == AVMEDIA_TYPE_AUDIO)
-            d->audioStreams.push_back(i);
-        else if (type == AVMEDIA_TYPE_SUBTITLE)
-            d->subtitleStreams.push_back(i);
-    }
-
-    d->videoStream = av_find_best_stream(d->ctx, AVMEDIA_TYPE_VIDEO,
-                                         d->videoStream, -1, nullptr, 0);
-    d->audioStream = av_find_best_stream(d->ctx, AVMEDIA_TYPE_AUDIO,
-                                         d->audioStream,
-                                         d->videoStream,
+    locker.relock();
+    d->currentVideoStreamIndex = av_find_best_stream(d->ctx, AVMEDIA_TYPE_VIDEO,
+                                         d->currentVideoStreamIndex, -1, nullptr, 0);
+    d->currentAudioStreamIndex = av_find_best_stream(d->ctx, AVMEDIA_TYPE_AUDIO,
+                                         d->currentAudioStreamIndex,
+                                         d->currentVideoStreamIndex,
                                          nullptr, 0);
-    d->subtitleStream = av_find_best_stream(d->ctx, AVMEDIA_TYPE_SUBTITLE,
-                                            d->subtitleStream,
-                                            d->audioStream >= 0 ? d->audioStream : d->videoStream,
+    d->currentSubtitleStreamIndex = av_find_best_stream(d->ctx, AVMEDIA_TYPE_SUBTITLE,
+                                            d->currentSubtitleStreamIndex,
+                                            d->currentAudioStreamIndex >= 0 ? d->currentAudioStreamIndex : d->currentVideoStreamIndex,
                                             nullptr, 0);
     av_log_set_callback(log_callback);
 
-    for (int i = 0; i < d->audioStreams.size(); ++i) {
-        const int stream = d->audioStreams[i];
-        auto codec = new QAVAudioCodec;
-        if (!codec->open(d->ctx->streams[stream]))
-            qWarning() << "Could not open audio codec for stream:" << stream;
-        d->audioCodecs.push_back(QSharedPointer<QAVAudioCodec>(codec));
-    }
-
-    for (int i = 0; i < d->videoStreams.size(); ++i) {
-        const int stream = d->videoStreams[i];
-        auto codec = new QAVVideoCodec;
-        setup_video_codec(d->ctx->streams[stream], *codec);
-        d->videoCodecs.push_back(QSharedPointer<QAVVideoCodec>(codec));
+    for (std::size_t i = 0; i < d->ctx->nb_streams; ++i) {
+        enum AVMediaType type = d->ctx->streams[i]->codecpar->codec_type;
+        switch (type) {
+            case AVMEDIA_TYPE_VIDEO:
+                d->codecs.push_back(new QAVVideoCodec);
+                d->streams.push_back({ int(i), shared_from_this() });
+                setup_video_codec(d->ctx->streams[i], d->codecs.last());
+                break;
+            case AVMEDIA_TYPE_AUDIO:
+                d->codecs.push_back(new QAVAudioCodec);
+                d->streams.push_back({ int(i), shared_from_this() });
+                if (!d->codecs.last()->open(d->ctx->streams[i]))
+                    qWarning() << "Could not open audio codec for stream:" << i;
+                break;
+            case AVMEDIA_TYPE_SUBTITLE:
+                d->codecs.push_back(nullptr);
+                d->streams.push_back({ int(i), shared_from_this() });
+                break;
+            default:
+                break;
+        }
     }
 
     d->seekable = d->ctx->iformat->read_seek || d->ctx->iformat->read_seek2;
@@ -367,91 +356,103 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
     return 0;
 }
 
-QList<int> QAVDemuxer::videoStreams() const
+AVStream *QAVDemuxer::stream(int index) const
 {
-    return d_func()->videoStreams;
+    Q_D(const QAVDemuxer);
+    return std::size_t(index) < d->ctx->nb_streams ? d->ctx->streams[index] : nullptr;
 }
 
-int QAVDemuxer::currentVideoStreamIndex() const
+QAVCodec *QAVDemuxer::codec(int index) const
+{
+    Q_D(const QAVDemuxer);
+    return index < d->codecs.size() ? d->codecs[index] : nullptr;
+}
+
+QList<QAVStream> QAVDemuxer::videoStreams() const
 {
     Q_D(const QAVDemuxer);
     QMutexLocker locker(&d->mutex);
-    return d->videoStream;
+    QList<QAVStream> result;
+    for (auto &stream : d->streams) {
+        if (stream.stream()->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+            result.push_back(stream);
+    }
+
+    return result;
 }
 
-QList<int> QAVDemuxer::audioStreams() const
-{
-    return d_func()->audioStreams;
-}
-
-int QAVDemuxer::currentAudioStreamIndex() const
-{
-    Q_D(const QAVDemuxer);
-    QMutexLocker locker(&d->mutex);
-    return d->audioStream;
-}
-
-QList<int> QAVDemuxer::subtitleStreams() const
-{
-    return d_func()->subtitleStreams;
-}
-
-int QAVDemuxer::currentSubtitleStreamIndex() const
+QAVStream QAVDemuxer::videoStream() const
 {
     Q_D(const QAVDemuxer);
     QMutexLocker locker(&d->mutex);
-    return d->subtitleStream;
+    return d->currentVideoStreamIndex >= 0 && d->currentVideoStreamIndex < d->streams.size()
+           ? d->streams[d->currentVideoStreamIndex]
+           : QAVStream{};
 }
 
-int QAVDemuxer::videoStreamIndex() const
-{
-    Q_D(const QAVDemuxer);
-    QMutexLocker locker(&d->mutex);
-    return streamIndex(d->videoStreams, d->videoStream);
-}
-
-void QAVDemuxer::setVideoStreamIndex(int stream)
+bool QAVDemuxer::setVideoStream(const QAVStream &stream)
 {
     Q_D(QAVDemuxer);
     QMutexLocker locker(&d->mutex);
-    if (stream < 0 || stream >= d->videoStreams.size())
-        return;
+    if (stream.index() >= 0 && stream.index() < d->streams.size()
+        && d->currentVideoStreamIndex != stream.index()
+        && d->streams[stream.index()].stream()->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+    {
+        d->currentVideoStreamIndex = stream.index();
+        return true;
+    }
 
-    d->videoStream = d->videoStreams[stream];
+    return false;
 }
 
-int QAVDemuxer::audioStreamIndex() const
+QList<QAVStream> QAVDemuxer::audioStreams() const
 {
     Q_D(const QAVDemuxer);
     QMutexLocker locker(&d->mutex);
-    return streamIndex(d->audioStreams, d->audioStream);
+    QList<QAVStream> result;
+    for (auto &stream : d->streams) {
+        if (stream.stream()->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+            result.push_back(stream);
+    }
+
+    return result;
 }
 
-void QAVDemuxer::setAudioStreamIndex(int stream)
-{
-    Q_D(QAVDemuxer);
-    QMutexLocker locker(&d->mutex);
-    if (stream < 0 || stream >= d->audioStreams.size())
-        return;
-
-    d->audioStream = d->audioStreams[stream];
-}
-
-int QAVDemuxer::subtitleStreamIndex() const
+QAVStream QAVDemuxer::audioStream() const
 {
     Q_D(const QAVDemuxer);
     QMutexLocker locker(&d->mutex);
-    return streamIndex(d->subtitleStreams, d->subtitleStream);
+    return d->currentAudioStreamIndex >= 0 && d->currentAudioStreamIndex < d->streams.size()
+           ? d->streams[d->currentAudioStreamIndex]
+           : QAVStream{};
 }
 
-void QAVDemuxer::setSubtitleStreamIndex(int stream)
+bool QAVDemuxer::setAudioStream(const QAVStream &stream)
 {
     Q_D(QAVDemuxer);
     QMutexLocker locker(&d->mutex);
-    if (stream < 0 || stream >= d->subtitleStreams.size())
-        return;
+    if (stream.index() >= 0 && stream.index() < d->streams.size()
+        && d->currentAudioStreamIndex != stream.index()
+        && d->streams[stream.index()].stream()->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+    {
+        d->currentAudioStreamIndex = stream.index();
+        return true;
+    }
 
-    d->subtitleStream = d->subtitleStreams[stream];
+    return false;
+}
+
+QList<QAVStream> QAVDemuxer::subtitleStreams() const
+{
+    Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    QList<QAVStream> result;
+    for (auto &stream : d->streams) {
+        if (stream.stream()->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
+            result.push_back(stream);
+    }
+
+    return result;
 }
 
 void QAVDemuxer::unload()
@@ -462,14 +463,12 @@ void QAVDemuxer::unload()
         avformat_close_input(&d->ctx);
     d->eof = false;
     d->abortRequest = 0;
-    d->videoStream = -1;
-    d->videoStreams.clear();
-    d->audioStream = -1;
-    d->audioStreams.clear();
-    d->subtitleStream = -1;
-    d->subtitleStreams.clear();
-    d->audioCodecs.clear();
-    d->videoCodecs.clear();
+    d->currentVideoStreamIndex = -1;
+    d->currentAudioStreamIndex = -1;
+    d->currentSubtitleStreamIndex = -1;
+    d->streams.clear();
+    qDeleteAll(d->codecs);
+    d->codecs.clear();
 }
 
 bool QAVDemuxer::eof() const
@@ -482,8 +481,6 @@ bool QAVDemuxer::eof() const
 QAVPacket QAVDemuxer::read()
 {
     Q_D(QAVDemuxer);
-    const int videoStreamIdx = videoStreamIndex();
-    const int audioStreamIdx = audioStreamIndex();
     QMutexLocker locker(&d->mutex);
     if (!d->ctx || d->eof)
         return {};
@@ -499,12 +496,13 @@ QAVPacket QAVDemuxer::read()
 
         return {};
     }
+
     locker.relock();
 
-    if (pkt.packet()->stream_index == d->videoStream)
-        pkt.setCodec(d->videoCodecs[videoStreamIdx]);
-    else if (pkt.packet()->stream_index == d->audioStream)
-        pkt.setCodec(d->audioCodecs[audioStreamIdx]);
+    if (pkt.packet()->stream_index == d->currentVideoStreamIndex)
+        pkt.setStream(d->streams[d->currentVideoStreamIndex]);
+    else if (pkt.packet()->stream_index == d->currentAudioStreamIndex)
+        pkt.setStream(d->streams[d->currentAudioStreamIndex]);
 
     return pkt;
 }
@@ -541,45 +539,31 @@ double QAVDemuxer::videoFrameRate() const
 {
     Q_D(const QAVDemuxer);
     QMutexLocker locker(&d->mutex);
-    if (d->videoStream < 0)
+    if (d->currentVideoStreamIndex < 0)
         return 1 / 24.0;
 
-    AVRational fr = av_guess_frame_rate(d->ctx, d->ctx->streams[d->videoStream], NULL);
+    AVRational fr = av_guess_frame_rate(d->ctx, d->ctx->streams[d->currentVideoStreamIndex], NULL);
     return fr.num && fr.den ? av_q2d({fr.den, fr.num}) : 0.0;
 }
 
 AVRational QAVDemuxer::frameRate() const
 {
     Q_D(const QAVDemuxer);
-    return av_guess_frame_rate(d->ctx, d->ctx->streams[d->videoStream], NULL);
+    return av_guess_frame_rate(d->ctx, d->ctx->streams[d->currentVideoStreamIndex], NULL);
 }
 
-QSharedPointer<QAVVideoCodec> QAVDemuxer::videoCodec() const
+QMap<QString, QString> QAVDemuxer::metadata() const
 {
     Q_D(const QAVDemuxer);
-    const int videoStreamIdx = videoStreamIndex();
-    QMutexLocker locker(&d->mutex);
-    return videoStreamIdx >= 0 ? d->videoCodecs[videoStreamIdx] : QSharedPointer<QAVVideoCodec>();
-}
+    QMap<QString, QString> result;
+    if (d->ctx == nullptr)
+        return result;
 
-QSharedPointer<QAVAudioCodec> QAVDemuxer::audioCodec() const
-{
-    Q_D(const QAVDemuxer);
-    const int audioStreamIdx = audioStreamIndex();
-    QMutexLocker locker(&d->mutex);
-    return audioStreamIdx >= 0 ? d->audioCodecs[audioStreamIdx] : QSharedPointer<QAVAudioCodec>();
-}
+    AVDictionaryEntry *tag = nullptr;
+    while ((tag = av_dict_get(d->ctx->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
+        result[QLatin1String(tag->key)] = QLatin1String(tag->value);
 
-AVStream *QAVDemuxer::videoStream() const
-{
-    Q_D(const QAVDemuxer);
-    return d->videoStream >= 0 && d->videoStream < static_cast<int>(d->ctx->nb_streams) ? d->ctx->streams[d->videoStream] : nullptr;
-}
-
-AVStream *QAVDemuxer::audioStream() const
-{
-    Q_D(const QAVDemuxer);
-    return d->audioStream >= 0 && d->audioStream < static_cast<int>(d->ctx->nb_streams) ? d->ctx->streams[d->audioStream] : nullptr;
+    return result;
 }
 
 QT_END_NAMESPACE
