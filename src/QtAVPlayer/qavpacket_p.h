@@ -40,7 +40,6 @@ public:
     double duration() const;
     double pts() const;
     int bytes() const;
-    int streamIndex() const;
 
     void setStream(const QAVStream &stream);
     QAVFrame decode();

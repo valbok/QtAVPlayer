@@ -91,11 +91,6 @@ int QAVPacket::bytes() const
     return d_func()->pkt->size;
 }
 
-int QAVPacket::streamIndex() const
-{
-    return d_func()->pkt->stream_index;
-}
-
 void QAVPacket::setStream(const QAVStream &stream)
 {
     Q_D(QAVPacket);
