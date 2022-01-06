@@ -63,7 +63,7 @@ QAVPacket::~QAVPacket()
     av_packet_free(&d->pkt);
 }
 
-AVPacket *QAVPacket::packet()
+AVPacket *QAVPacket::packet() const
 {
     return d_func()->pkt;
 }
@@ -84,16 +84,6 @@ double QAVPacket::pts() const
         return 0;
 
     return d->pkt->pts * av_q2d(d->stream.stream()->time_base);
-}
-
-int QAVPacket::bytes() const
-{
-    return d_func()->pkt->size;
-}
-
-int QAVPacket::streamIndex() const
-{
-    return d_func()->pkt->stream_index;
 }
 
 void QAVPacket::setStream(const QAVStream &stream)

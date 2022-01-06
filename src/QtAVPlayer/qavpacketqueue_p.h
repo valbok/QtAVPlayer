@@ -108,7 +108,7 @@ public:
     {
         QMutexLocker locker(&m_mutex);
         m_packets.append(packet);
-        m_bytes += packet.bytes() + sizeof(packet);
+        m_bytes += packet.packet()->size + sizeof(packet);
         m_duration += packet.duration();
         m_consumerWaiter.wakeAll();
         m_abort = false;
@@ -139,7 +139,7 @@ public:
             return {};
 
         auto packet = m_packets.takeFirst();
-        m_bytes -= packet.bytes() + sizeof(packet);
+        m_bytes -= packet.packet()->size + sizeof(packet);
         m_duration -= packet.duration();
         return packet;
     }

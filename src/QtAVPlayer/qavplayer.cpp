@@ -531,9 +531,9 @@ void QAVPlayerPrivate::doDemux()
         auto packet = demuxer->read();
         if (packet) {
             endOfFile(false);
-            if (packet.streamIndex() == demuxer->videoStream().index())
+            if (packet.packet()->stream_index == demuxer->videoStream().index())
                 videoQueue.enqueue(packet);
-            else if (packet.streamIndex() == demuxer->audioStream().index())
+            else if (packet.packet()->stream_index == demuxer->audioStream().index())
                 audioQueue.enqueue(packet);
         } else {
             if (demuxer->eof() && videoQueue.isEmpty() && audioQueue.isEmpty() && !isEndOfFile()) {

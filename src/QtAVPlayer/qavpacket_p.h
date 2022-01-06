@@ -36,11 +36,9 @@ public:
     QAVPacket &operator=(const QAVPacket &other);
     operator bool() const;
 
-    AVPacket *packet();
+    AVPacket *packet() const;
     double duration() const;
     double pts() const;
-    int bytes() const;
-    int streamIndex() const;
 
     void setStream(const QAVStream &stream);
     QAVFrame decode();
