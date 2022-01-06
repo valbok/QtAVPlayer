@@ -92,7 +92,10 @@ public:
 class QAVPacketQueue
 {
 public:
-    QAVPacketQueue() = default;
+    QAVPacketQueue(const QAVDemuxer &demuxer) : m_demuxer(demuxer) 
+    {
+
+    }
     ~QAVPacketQueue()
     {
         abort();
@@ -182,7 +185,7 @@ public:
             const bool decode = !m_filter || m_filter->eof();
             if (decode) {
                 locker.unlock();
-                frame = dequeue().decode();
+                frame = m_demuxer.decode(dequeue());
                 locker.relock();
                 if (m_filter && frame) {
                     m_ret = m_filter->write(frame);
@@ -259,6 +262,7 @@ private:
         m_clock.frameTimer = 0;
     }
 
+    const QAVDemuxer &m_demuxer;
     QList<QAVPacket> m_packets;
     mutable QMutex m_mutex;
     QWaitCondition m_consumerWaiter;

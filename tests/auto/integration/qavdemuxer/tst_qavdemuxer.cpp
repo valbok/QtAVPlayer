@@ -33,21 +33,21 @@ private slots:
 
 void tst_QAVDemuxer::construction()
 {
-    auto d = std::make_shared<QAVDemuxer>();
-    QVERIFY(!d->videoStream());
-    QVERIFY(!d->audioStream());
-    QCOMPARE(d->duration(), 0);
-    QCOMPARE(d->seekable(), false);
-    QCOMPARE(d->eof(), false);
-    QVERIFY(!d->read());
-    QVERIFY(d->seek(0) < 0);
+    QAVDemuxer d;
+    QVERIFY(!d.videoStream());
+    QVERIFY(!d.audioStream());
+    QCOMPARE(d.duration(), 0);
+    QCOMPARE(d.seekable(), false);
+    QCOMPARE(d.eof(), false);
+    QVERIFY(!d.read());
+    QVERIFY(d.seek(0) < 0);
 
     QAVPacket p;
     QVERIFY(!p);
     QCOMPARE(p.duration(), 0);
     QCOMPARE(p.packet()->size, 0);
     QVERIFY(p.packet()->stream_index < 0);
-    QVERIFY(!p.decode());
+    QVERIFY(!d.decode(p));
 
     QAVFrame f;
     QVERIFY(!f);
@@ -63,37 +63,37 @@ void tst_QAVDemuxer::construction()
 
 void tst_QAVDemuxer::loadIncorrect()
 {
-    auto d = std::make_shared<QAVDemuxer>();
-    QVERIFY(d->load(QLatin1String("unknown.mp4")) < 0);
-    QVERIFY(!d->videoStream());
-    QVERIFY(!d->audioStream());
-    QVERIFY(!d->read());
-    QVERIFY(d->seek(0) < 0);
+    QAVDemuxer d;
+    QVERIFY(d.load(QLatin1String("unknown.mp4")) < 0);
+    QVERIFY(!d.videoStream());
+    QVERIFY(!d.audioStream());
+    QVERIFY(!d.read());
+    QVERIFY(d.seek(0) < 0);
 }
 
 void tst_QAVDemuxer::loadAudio()
 {
-    auto d = std::make_shared<QAVDemuxer>();
+    QAVDemuxer d;
 
     QFileInfo file(QLatin1String("../testdata/test.wav"));
 
-    QVERIFY(d->load(file.absoluteFilePath()) >= 0);
-    QVERIFY(!d->videoStream());
-    QVERIFY(d->audioStream());
-    QVERIFY(d->duration() > 0);
-    QCOMPARE(d->seekable(), true);
-    QCOMPARE(d->eof(), false);
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
+    QVERIFY(!d.videoStream());
+    QVERIFY(d.audioStream());
+    QVERIFY(d.duration() > 0);
+    QCOMPARE(d.seekable(), true);
+    QCOMPARE(d.eof(), false);
 
     QAVPacket p;
     QAVPacket p2;
     QAVFrame f2;
-    while ((p = d->read())) {
+    while ((p = d.read())) {
         QVERIFY(p);
         QVERIFY(p.packet());
         QVERIFY(p.duration() > 0);
         QVERIFY(p.pts() >= 0);
         QVERIFY(p.packet()->size > 0);
-        QCOMPARE(p.packet()->stream_index, d->audioStream().index());
+        QCOMPARE(p.packet()->stream_index, d.audioStream().index());
 
         p2 = p;
         QVERIFY(p2);
@@ -107,7 +107,7 @@ void tst_QAVDemuxer::loadAudio()
         QCOMPARE(p2.packet()->size, p.packet()->size);
         QCOMPARE(p2.packet()->stream_index, p.packet()->stream_index);
 
-        auto f = p.decode();
+        auto f = d.decode(p);
         QVERIFY(f);
         QVERIFY(f.frame());
         QVERIFY(f.pts() >= 0);
@@ -133,54 +133,54 @@ void tst_QAVDemuxer::loadAudio()
         auto data = af.data();
         QVERIFY(!data.isEmpty());
 
-        QCOMPARE(d->eof(), false);
+        QCOMPARE(d.eof(), false);
     }
 
     QVERIFY(p2);
     QVERIFY(p2.packet());
     QVERIFY(p2.duration() > 0);
     QVERIFY(p2.packet()->size > 0);
-    QCOMPARE(p2.packet()->stream_index, d->audioStream().index());
+    QCOMPARE(p2.packet()->stream_index, d.audioStream().index());
 
     QVERIFY(f2);
     QVERIFY(f2.frame());
     QVERIFY(f2.pts() > 0);
 
-    QCOMPARE(d->eof(), true);
-    QVERIFY(d->seek(0) >= 0);
+    QCOMPARE(d.eof(), true);
+    QVERIFY(d.seek(0) >= 0);
 }
 
 void tst_QAVDemuxer::loadVideo()
 {
-    auto d = std::make_shared<QAVDemuxer>();
+    QAVDemuxer d;
 
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
 
-    QVERIFY(d->load(file.absoluteFilePath()) >= 0);
-    QVERIFY(d->videoStream());
-    QVERIFY(d->audioStream());
-    QVERIFY(d->duration() > 0);
-    QCOMPARE(d->seekable(), true);
-    QCOMPARE(d->eof(), false);
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
+    QVERIFY(d.videoStream());
+    QVERIFY(d.audioStream());
+    QVERIFY(d.duration() > 0);
+    QCOMPARE(d.seekable(), true);
+    QCOMPARE(d.eof(), false);
 
-    auto p = d->read();
+    auto p = d.read();
     QVERIFY(p);
     QVERIFY(p.packet());
     QVERIFY(p.duration() > 0);
     QVERIFY(p.packet()->size > 0);
     QVERIFY(p.packet()->stream_index >= 0);
 
-    auto f = p.decode();
+    auto f = d.decode(p);
     QVERIFY(f);
     QVERIFY(f.frame());
     QVERIFY(f.pts() >= 0);
-    QCOMPARE(d->eof(), false);
+    QCOMPARE(d.eof(), false);
 
-    QVERIFY(d->seek(0) >= 0);
-    while ((p = d->read())) {
-        QCOMPARE(d->eof(), false);
-        if (p.packet()->stream_index == d->videoStream().index()) {
-            auto f = p.decode();
+    QVERIFY(d.seek(0) >= 0);
+    while ((p = d.read())) {
+        QCOMPARE(d.eof(), false);
+        if (p.packet()->stream_index == d.videoStream().index()) {
+            auto f = d.decode(p);
             QVERIFY(f);
             QVERIFY(f.frame());
             QVERIFY(f.pts() >= 0);
@@ -193,12 +193,12 @@ void tst_QAVDemuxer::loadVideo()
         }
     }
 
-    QCOMPARE(d->eof(), true);
+    QCOMPARE(d.eof(), true);
 }
 
 void tst_QAVDemuxer::fileIO()
 {
-    auto d = std::make_shared<QAVDemuxer>();
+    QAVDemuxer d;
 
     QFile file(QLatin1String("../testdata/colors.mp4"));
     if (!file.open(QIODevice::ReadOnly)) {
@@ -207,32 +207,32 @@ void tst_QAVDemuxer::fileIO()
     }
 
     QAVIODevice dev(file);
-    QVERIFY(d->load(QLatin1String("colors.mp4"), &dev) >= 0);
+    QVERIFY(d.load(QLatin1String("colors.mp4"), &dev) >= 0);
 
-    QVERIFY(d->videoStream());
-    QVERIFY(d->audioStream());
-    QVERIFY(d->duration() > 0);
-    QCOMPARE(d->seekable(), true);
-    QCOMPARE(d->eof(), false);
+    QVERIFY(d.videoStream());
+    QVERIFY(d.audioStream());
+    QVERIFY(d.duration() > 0);
+    QCOMPARE(d.seekable(), true);
+    QCOMPARE(d.eof(), false);
 
-    auto p = d->read();
+    auto p = d.read();
     QVERIFY(p);
     QVERIFY(p.packet());
     QVERIFY(p.duration() > 0);
     QVERIFY(p.packet()->size > 0);
     QVERIFY(p.packet()->stream_index >= 0);
 
-    auto f = p.decode();
+    auto f = d.decode(p);
     QVERIFY(f);
     QVERIFY(f.frame());
     QVERIFY(f.pts() >= 0);
-    QCOMPARE(d->eof(), false);
+    QCOMPARE(d.eof(), false);
 
-    QVERIFY(d->seek(0) >= 0);
-    while ((p = d->read())) {
-        QCOMPARE(d->eof(), false);
-        if (p.packet()->stream_index == d->videoStream().index()) {
-            auto f = p.decode();
+    QVERIFY(d.seek(0) >= 0);
+    while ((p = d.read())) {
+        QCOMPARE(d.eof(), false);
+        if (p.packet()->stream_index == d.videoStream().index()) {
+            auto f = d.decode(p);
             QVERIFY(f);
             QVERIFY(f.frame());
             QVERIFY(f.pts() >= 0);
@@ -245,12 +245,12 @@ void tst_QAVDemuxer::fileIO()
         }
     }
 
-    QCOMPARE(d->eof(), true);
+    QCOMPARE(d.eof(), true);
 }
 
 void tst_QAVDemuxer::qrcIO()
 {
-    auto d = std::make_shared<QAVDemuxer>();
+    QAVDemuxer d;
 
     QFile file(QLatin1String(":/test.wav"));
     if (!file.open(QIODevice::ReadOnly)) {
@@ -259,23 +259,23 @@ void tst_QAVDemuxer::qrcIO()
     }
 
     QAVIODevice dev(file);
-    QVERIFY(d->load(QLatin1String("test.wav"), &dev) >= 0);
-    QVERIFY(!d->videoStream());
-    QVERIFY(d->audioStream());
-    QVERIFY(d->duration() > 0);
-    QCOMPARE(d->seekable(), true);
-    QCOMPARE(d->eof(), false);
+    QVERIFY(d.load(QLatin1String("test.wav"), &dev) >= 0);
+    QVERIFY(!d.videoStream());
+    QVERIFY(d.audioStream());
+    QVERIFY(d.duration() > 0);
+    QCOMPARE(d.seekable(), true);
+    QCOMPARE(d.eof(), false);
 
     QAVPacket p;
     QAVPacket p2;
     QAVFrame f2;
-    while ((p = d->read())) {
+    while ((p = d.read())) {
         QVERIFY(p);
         QVERIFY(p.packet());
         QVERIFY(p.duration() > 0);
         QVERIFY(p.pts() >= 0);
         QVERIFY(p.packet()->size > 0);
-        QCOMPARE(p.packet()->stream_index, d->audioStream().index());
+        QCOMPARE(p.packet()->stream_index, d.audioStream().index());
 
         p2 = p;
         QVERIFY(p2);
@@ -289,7 +289,7 @@ void tst_QAVDemuxer::qrcIO()
         QCOMPARE(p2.packet()->size, p.packet()->size);
         QCOMPARE(p2.packet()->stream_index, p.packet()->stream_index);
 
-        auto f = p.decode();
+        auto f = d.decode(p);
         QVERIFY(f);
         QVERIFY(f.frame());
         QVERIFY(f.pts() >= 0);
@@ -315,73 +315,73 @@ void tst_QAVDemuxer::qrcIO()
         auto data = af.data();
         QVERIFY(!data.isEmpty());
 
-        QCOMPARE(d->eof(), false);
+        QCOMPARE(d.eof(), false);
     }
 
     QVERIFY(p2);
     QVERIFY(p2.packet());
     QVERIFY(p2.duration() > 0);
     QVERIFY(p2.packet()->size > 0);
-    QCOMPARE(p2.packet()->stream_index, d->audioStream().index());
+    QCOMPARE(p2.packet()->stream_index, d.audioStream().index());
 
     QVERIFY(f2);
     QVERIFY(f2.frame());
     QVERIFY(f2.pts() > 0);
 
-    QCOMPARE(d->eof(), true);
-    QVERIFY(d->seek(0) >= 0);
+    QCOMPARE(d.eof(), true);
+    QVERIFY(d.seek(0) >= 0);
 }
 
 void tst_QAVDemuxer::supportedFormats()
 {
-    auto d = std::make_shared<QAVDemuxer>();
+    QAVDemuxer d;
     auto fmts = QAVDemuxer::supportedFormats();
     QVERIFY(!fmts.isEmpty());
     QVERIFY(!QAVDemuxer::supportedProtocols().isEmpty());
     if (fmts.contains(QLatin1String("v4l2"))) {
         QFileInfo file(QLatin1String("/dev/video0"));
         if (file.exists()) {
-            QVERIFY(d->load(QLatin1String(" -f   v4l2   -i /dev/video0")) >= 0);
-            d->unload();
-            QVERIFY(d->load(QLatin1String("-f v4l2 -i /dev/video0")) >= 0);
-            d->unload();
-            QVERIFY(d->load(QLatin1String("-i /dev/video0 -f v4l2")) >= 0);
-            d->unload();
-            QVERIFY(d->load(QLatin1String("/dev/video0")) >= 0);
-            d->unload();
-            QVERIFY(d->load(QLatin1String("-i /dev/video0")) >= 0);
-            d->unload();
-            QVERIFY(d->load(QLatin1String("-f v4l2")) < 0);
-            d->unload();
+            QVERIFY(d.load(QLatin1String(" -f   v4l2   -i /dev/video0")) >= 0);
+            d.unload();
+            QVERIFY(d.load(QLatin1String("-f v4l2 -i /dev/video0")) >= 0);
+            d.unload();
+            QVERIFY(d.load(QLatin1String("-i /dev/video0 -f v4l2")) >= 0);
+            d.unload();
+            QVERIFY(d.load(QLatin1String("/dev/video0")) >= 0);
+            d.unload();
+            QVERIFY(d.load(QLatin1String("-i /dev/video0")) >= 0);
+            d.unload();
+            QVERIFY(d.load(QLatin1String("-f v4l2")) < 0);
+            d.unload();
         }
     }
 
-    QVERIFY(d->load(QLatin1String("-f v4l2 -i /dev/dummy")) < 0);
-    d->unload();
-    QVERIFY(d->load(QLatin1String("/dev/dummy")) < 0);
-    d->unload();
-    QVERIFY(d->load(QLatin1String("-i /dev/dummy")) < 0);
-    d->unload();
+    QVERIFY(d.load(QLatin1String("-f v4l2 -i /dev/dummy")) < 0);
+    d.unload();
+    QVERIFY(d.load(QLatin1String("/dev/dummy")) < 0);
+    d.unload();
+    QVERIFY(d.load(QLatin1String("-i /dev/dummy")) < 0);
+    d.unload();
 
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
-    QVERIFY(d->load("-i " + file.absoluteFilePath()) >= 0);
-    d->unload();
-    QVERIFY(d->load(" -i " + file.absoluteFilePath()) >= 0);
+    QVERIFY(d.load("-i " + file.absoluteFilePath()) >= 0);
+    d.unload();
+    QVERIFY(d.load(" -i " + file.absoluteFilePath()) >= 0);
 }
 
 void tst_QAVDemuxer::metadata()
 {
-    auto d = std::make_shared<QAVDemuxer>();
+    QAVDemuxer d;
 
     QFileInfo file(QLatin1String("../testdata/colors.mp4"));
 
-    QVERIFY(d->load(file.absoluteFilePath()) >= 0);
-    QVERIFY(!d->metadata().isEmpty());
-    QVERIFY(!d->videoStream().metadata().isEmpty());
-    QVERIFY(!d->audioStream().metadata().isEmpty());
-    for (auto &stream : d->audioStreams())
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
+    QVERIFY(!d.metadata().isEmpty());
+    QVERIFY(!d.videoStream().metadata().isEmpty());
+    QVERIFY(!d.audioStream().metadata().isEmpty());
+    for (auto &stream : d.audioStreams())
         QVERIFY(!stream.metadata().isEmpty());
-    for (auto &stream : d->videoStreams())
+    for (auto &stream : d.videoStreams())
         QVERIFY(!stream.metadata().isEmpty());
 }
 
