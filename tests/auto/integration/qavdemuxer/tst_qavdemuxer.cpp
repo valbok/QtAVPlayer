@@ -45,7 +45,7 @@ void tst_QAVDemuxer::construction()
     QAVPacket p;
     QVERIFY(!p);
     QCOMPARE(p.duration(), 0);
-    QCOMPARE(p.bytes(), 0);
+    QCOMPARE(p.packet()->size, 0);
     QVERIFY(p.packet()->stream_index < 0);
     QVERIFY(!p.decode());
 
@@ -92,19 +92,19 @@ void tst_QAVDemuxer::loadAudio()
         QVERIFY(p.packet());
         QVERIFY(p.duration() > 0);
         QVERIFY(p.pts() >= 0);
-        QVERIFY(p.bytes() > 0);
+        QVERIFY(p.packet()->size > 0);
         QCOMPARE(p.packet()->stream_index, d->audioStream().index());
 
         p2 = p;
         QVERIFY(p2);
         QCOMPARE(p2.duration(), p.duration());
-        QCOMPARE(p2.bytes(), p.bytes());
+        QCOMPARE(p2.packet()->size, p.packet()->size);
         QCOMPARE(p2.packet()->stream_index, p.packet()->stream_index);
 
         QAVPacket p3 = p2;
         QVERIFY(p2);
         QCOMPARE(p2.duration(), p.duration());
-        QCOMPARE(p2.bytes(), p.bytes());
+        QCOMPARE(p2.packet()->size, p.packet()->size);
         QCOMPARE(p2.packet()->stream_index, p.packet()->stream_index);
 
         auto f = p.decode();
@@ -139,7 +139,7 @@ void tst_QAVDemuxer::loadAudio()
     QVERIFY(p2);
     QVERIFY(p2.packet());
     QVERIFY(p2.duration() > 0);
-    QVERIFY(p2.bytes() > 0);
+    QVERIFY(p2.packet()->size > 0);
     QCOMPARE(p2.packet()->stream_index, d->audioStream().index());
 
     QVERIFY(f2);
@@ -167,7 +167,7 @@ void tst_QAVDemuxer::loadVideo()
     QVERIFY(p);
     QVERIFY(p.packet());
     QVERIFY(p.duration() > 0);
-    QVERIFY(p.bytes() > 0);
+    QVERIFY(p.packet()->size > 0);
     QVERIFY(p.packet()->stream_index >= 0);
 
     auto f = p.decode();
@@ -219,7 +219,7 @@ void tst_QAVDemuxer::fileIO()
     QVERIFY(p);
     QVERIFY(p.packet());
     QVERIFY(p.duration() > 0);
-    QVERIFY(p.bytes() > 0);
+    QVERIFY(p.packet()->size > 0);
     QVERIFY(p.packet()->stream_index >= 0);
 
     auto f = p.decode();
@@ -274,19 +274,19 @@ void tst_QAVDemuxer::qrcIO()
         QVERIFY(p.packet());
         QVERIFY(p.duration() > 0);
         QVERIFY(p.pts() >= 0);
-        QVERIFY(p.bytes() > 0);
+        QVERIFY(p.packet()->size > 0);
         QCOMPARE(p.packet()->stream_index, d->audioStream().index());
 
         p2 = p;
         QVERIFY(p2);
         QCOMPARE(p2.duration(), p.duration());
-        QCOMPARE(p2.bytes(), p.bytes());
+        QCOMPARE(p2.packet()->size, p.packet()->size);
         QCOMPARE(p2.packet()->stream_index, p.packet()->stream_index);
 
         QAVPacket p3 = p2;
         QVERIFY(p2);
         QCOMPARE(p2.duration(), p.duration());
-        QCOMPARE(p2.bytes(), p.bytes());
+        QCOMPARE(p2.packet()->size, p.packet()->size);
         QCOMPARE(p2.packet()->stream_index, p.packet()->stream_index);
 
         auto f = p.decode();
@@ -321,7 +321,7 @@ void tst_QAVDemuxer::qrcIO()
     QVERIFY(p2);
     QVERIFY(p2.packet());
     QVERIFY(p2.duration() > 0);
-    QVERIFY(p2.bytes() > 0);
+    QVERIFY(p2.packet()->size > 0);
     QCOMPARE(p2.packet()->stream_index, d->audioStream().index());
 
     QVERIFY(f2);
