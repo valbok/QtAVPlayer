@@ -23,7 +23,8 @@ public:
 
     QAVStream *q_ptr = nullptr;
     int index = -1;
-    std::shared_ptr<QAVDemuxer> demuxer;
+    AVStream *stream = nullptr;
+    QSharedPointer<QAVCodec> codec;
 };
 
 QAVStream::QAVStream(QObject *parent)
@@ -32,11 +33,12 @@ QAVStream::QAVStream(QObject *parent)
 {
 }
 
-QAVStream::QAVStream(int index, const std::shared_ptr<QAVDemuxer> &demuxer, QObject *parent)
+QAVStream::QAVStream(int index, AVStream *stream, QAVCodec *codec, QObject *parent)
     : QAVStream(parent)
 {
     d_ptr->index = index;
-    d_ptr->demuxer = demuxer;
+    d_ptr->stream = stream;
+    d_ptr->codec.reset(codec);
 }
 
 QAVStream::~QAVStream()
@@ -52,20 +54,21 @@ QAVStream::QAVStream(const QAVStream &other)
 QAVStream &QAVStream::operator=(const QAVStream &other)
 {
     d_ptr->index = other.d_ptr->index;
-    d_ptr->demuxer = other.d_ptr->demuxer;
+    d_ptr->stream = other.d_ptr->stream;
+    d_ptr->codec = other.d_ptr->codec;
     return *this;
 }
 
 QAVStream::operator bool() const
 {
     Q_D(const QAVStream);
-    return bool(d->demuxer);
+    return d->index >= 0;
 }
 
 AVStream *QAVStream::stream() const
 {
     Q_D(const QAVStream);
-    return d->demuxer ? d->demuxer->stream(d->index) : nullptr;
+    return d->stream;
 }
 
 int QAVStream::index() const
@@ -75,28 +78,30 @@ int QAVStream::index() const
 
 QMap<QString, QString> QAVStream::metadata() const
 {
+    Q_D(const QAVStream);
     QMap<QString, QString> result;
     AVDictionaryEntry *tag = nullptr;
-    if (stream() != nullptr) {
-        while ((tag = av_dict_get(stream()->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
+    if (d->stream != nullptr) {
+        while ((tag = av_dict_get(d->stream->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
             result[QLatin1String(tag->key)] = QLatin1String(tag->value);
     }
 
     return result;
 }
 
-QAVCodec *QAVStream::codec() const
+QSharedPointer<QAVCodec> QAVStream::codec() const
 {
     Q_D(const QAVStream);
-    return d->demuxer ? d->demuxer->codec(d->index) : nullptr;
+    return d->codec;
 }
 
 double QAVStream::duration() const
 {
-    if (!stream())
+    Q_D(const QAVStream);
+    if (!d->stream)
         return 0.0;
 
-    return stream()->duration * av_q2d(stream()->time_base);
+    return d->stream->duration * av_q2d(d->stream->time_base);
 }
 
 QT_END_NAMESPACE

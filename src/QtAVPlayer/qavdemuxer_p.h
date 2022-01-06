@@ -34,7 +34,7 @@ class QAVIODevice;
 struct AVStream;
 struct AVCodecContext;
 struct AVFormatContext;
-class Q_AVPLAYER_EXPORT QAVDemuxer : public QObject, public std::enable_shared_from_this<QAVDemuxer>
+class Q_AVPLAYER_EXPORT QAVDemuxer : public QObject
 {
 public:
     QAVDemuxer(QObject *parent = nullptr);
@@ -53,10 +53,8 @@ public:
 
     QList<QAVStream> subtitleStreams() const;
 
-    AVStream *stream(int index) const;
-    QAVCodec *codec(int index) const;
-
     QAVPacket read();
+    QAVFrame decode(const QAVPacket &pkt) const;
 
     double duration() const;
     bool seekable() const;

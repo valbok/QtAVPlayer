@@ -75,10 +75,11 @@ static const QAVAudioCodec *audioCodec(const QAVCodec *c)
 
 QAVAudioFormat QAVAudioFrame::format() const
 {
-    if (!stream())
+    Q_D(const QAVAudioFrame);
+    if (!d->stream)
         return {};
 
-    auto c = audioCodec(stream().codec());
+    auto c = audioCodec(d->stream.codec().data());
     if (!c)
         return {};
 

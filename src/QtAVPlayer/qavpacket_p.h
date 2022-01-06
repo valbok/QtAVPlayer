@@ -36,12 +36,10 @@ public:
     QAVPacket &operator=(const QAVPacket &other);
     operator bool() const;
 
+    void setTimeBase(const AVRational &value);
     AVPacket *packet() const;
     double duration() const;
     double pts() const;
-
-    void setStream(const QAVStream &stream);
-    QAVFrame decode();
 
 protected:
     QScopedPointer<QAVPacketPrivate> d_ptr;

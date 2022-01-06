@@ -88,13 +88,13 @@ const AVCodec *QAVCodec::codec() const
     return d_func()->codec;
 }
 
-bool QAVCodec::decode(const AVPacket *pkt, QAVFrame &frame) const
+bool QAVCodec::decode(const QAVPacket &pkt, QAVFrame &frame) const
 {
     Q_D(const QAVCodec);
     if (!d->avctx)
         return false;
 
-    int ret = avcodec_send_packet(d->avctx, pkt);
+    int ret = avcodec_send_packet(d->avctx, pkt.packet());
     if (ret < 0 && ret != AVERROR(EAGAIN))
         return false;
 

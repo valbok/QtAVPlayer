@@ -20,6 +20,7 @@
 //
 
 #include "qavframe.h"
+#include "qavpacket_p.h"
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QObject>
 
@@ -42,7 +43,7 @@ public:
     void setCodec(AVCodec *c);
     const AVCodec *codec() const;
 
-    bool decode(const AVPacket *pkt, QAVFrame &frame) const;
+    bool decode(const QAVPacket &pkt, QAVFrame &frame) const;
 
 protected:
     QAVCodec(QObject *parent = nullptr);

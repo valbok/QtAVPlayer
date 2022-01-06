@@ -18,13 +18,12 @@ QT_BEGIN_NAMESPACE
 
 struct AVStream;
 class QAVCodec;
-class QAVDemuxer;
 class QAVStreamPrivate;
 class Q_AVPLAYER_EXPORT QAVStream : public QObject
 {
 public:
     QAVStream(QObject *parent = nullptr);
-    QAVStream(int index, const std::shared_ptr<QAVDemuxer> &demuxer = std::shared_ptr<QAVDemuxer>(), QObject *parent = nullptr);
+    QAVStream(int index, AVStream *stream = nullptr, QAVCodec *codec = nullptr, QObject *parent = nullptr);
     QAVStream(const QAVStream &other);
     ~QAVStream();
     QAVStream &operator=(const QAVStream &other);
@@ -35,7 +34,7 @@ public:
     double duration() const;
     QMap<QString, QString> metadata() const;
 
-    QAVCodec *codec() const;
+    QSharedPointer<QAVCodec> codec() const;
 
 private:
     QScopedPointer<QAVStreamPrivate> d_ptr;
