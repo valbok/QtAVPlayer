@@ -11,6 +11,8 @@
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <QFuture>
 #include <QWaitCondition>
+#include <QCoreApplication>
+#include <QThreadPool>
 #if QT_VERSION < QT_VERSION_CHECK(6, 3, 0)
 #include <QAudioOutput>
 #else
@@ -74,9 +76,15 @@ static QAudioFormat format(const QAVAudioFormat &from)
     return out;
 }
 
-class QAVAudioOutputPrivate
+class QAVAudioOutputPrivate : public QIODevice
 {
 public:
+    QAVAudioOutputPrivate()
+    {
+        open(QIODevice::ReadOnly);
+        threadPool.setMaxThreadCount(1);
+    }
+
     QFuture<void> audioPlayFuture;
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -84,20 +92,64 @@ public:
 #else
     using AudioOutput = QAudioSink;
 #endif
-    QScopedPointer<AudioOutput> audioOutput;
-    QIODevice *device = nullptr;
+    AudioOutput *audioOutput = nullptr;
     qreal volume = 1.0;
+    QList<QAVAudioFrame> frames;
+    qint64 offset = 0;
     bool quit = 0;
     QMutex mutex;
     QWaitCondition cond;
-    QList<QAVAudioFrame> frames;
+    QThreadPool threadPool;
 
-    void play(const QAVAudioFrame &frame)
+    qint64 readData(char *data, qint64 len) override
     {
-        auto fmt = format(frame.format());
+        if (!len)
+            return 0;
+
+        QMutexLocker locker(&mutex);
+        qint64 bytesWritten = 0;
+        while (len && !quit) {
+            if (frames.isEmpty()) {
+                // Wait for more frames
+                if (bytesWritten == 0)
+                    cond.wait(&mutex);
+                if (frames.isEmpty())
+                    break;
+            }
+
+            auto frame = frames.front();
+            auto sampleData = frame.data();
+            const int toWrite = qMin(sampleData.size() - offset, len);
+            memcpy(data, sampleData.constData() + offset, toWrite);
+            bytesWritten += toWrite;
+            data += toWrite;
+            len -= toWrite;
+            offset += toWrite;
+
+            if (offset >= sampleData.size()) {
+                offset = 0;
+                frames.removeFirst();
+            }
+        }
+
+        return bytesWritten;
+    }
+
+    qint64 writeData(const char *, qint64) override { return 0; }
+    qint64 size() const override { return 0; }
+    qint64 bytesAvailable() const override { return std::numeric_limits<qint64>::max(); }
+    bool isSequential() const override { return true; }
+    bool atEnd() const override { return false; }
+
+    void init(const QAudioFormat &fmt)
+    {
         if (!audioOutput || audioOutput->format() != fmt || audioOutput->state() == QAudio::StoppedState) {
-            audioOutput.reset(new AudioOutput(fmt));
-            QObject::connect(audioOutput.data(), &AudioOutput::stateChanged, audioOutput.data(),
+            if (audioOutput) {
+                audioOutput->deleteLater();
+                audioOutput = nullptr;
+            }
+            audioOutput = new AudioOutput(fmt);
+            QObject::connect(audioOutput, &AudioOutput::stateChanged, audioOutput,
                 [&](QAudio::State state) {
                     switch (state) {
                         case QAudio::StoppedState:
@@ -108,56 +160,29 @@ public:
                             break;
                     }
                 });
-            device = audioOutput->start();
+
+            audioOutput->start(this);
         }
-        if (!device || audioOutput->state() == QAudio::StoppedState)
-            return;
 
         audioOutput->setVolume(volume);
-        auto data = frame.data();
-        int pos = 0;
-        int size = data.size();
-        while (!quit && size) {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-            if (audioOutput->bytesFree() < audioOutput->periodSize()) {
-#else
-            if (audioOutput->bytesFree() == 0) {
-#endif
-                const double refreshRate = 0.01;
-                av_usleep((int64_t)(refreshRate * 1000000.0));
-                continue;
-            }
-
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-            int chunk = qMin(size, audioOutput->periodSize());
-#else
-            int chunk = qMin(size, audioOutput->bytesFree());
-#endif
-            QByteArray decodedChunk = QByteArray::fromRawData(static_cast<const char *>(data.constData()) + pos, chunk);
-            int wrote = device->write(decodedChunk);
-            if (wrote > 0) {
-                pos += chunk;
-                size -= chunk;
-            }
-        }
     }
 
     void doPlayAudio()
     {
         while (!quit) {
             QMutexLocker locker(&mutex);
-            cond.wait(&mutex);
-
-            while (!quit && !frames.isEmpty()) {
-                QAVAudioFrame frame = frames.takeFirst();
-                locker.unlock();
-                play(frame);
-                locker.relock();
-            }
+            cond.wait(&mutex, 10);
+            auto fmt =  !frames.isEmpty() ? format(frames.first().format()) : QAudioFormat();
+            locker.unlock();
+            if (fmt.isValid())
+                init(fmt);
+            QCoreApplication::processEvents();
         }
-        audioOutput.reset();
-    }
 
+        audioOutput->stop();
+        audioOutput->deleteLater();
+        audioOutput = nullptr;
+    }
 };
 
 QAVAudioOutput::QAVAudioOutput(QObject *parent)
@@ -165,9 +190,9 @@ QAVAudioOutput::QAVAudioOutput(QObject *parent)
     , d_ptr(new QAVAudioOutputPrivate)
 {
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    d_ptr->audioPlayFuture = QtConcurrent::run(d_ptr.data(), &QAVAudioOutputPrivate::doPlayAudio);
+    d_ptr->audioPlayFuture = QtConcurrent::run(&d_ptr->threadPool, d_ptr.data(), &QAVAudioOutputPrivate::doPlayAudio);
 #else
-    d_ptr->audioPlayFuture = QtConcurrent::run(&QAVAudioOutputPrivate::doPlayAudio, d_ptr.data());
+    d_ptr->audioPlayFuture = QtConcurrent::run(&d_ptr->threadPool, &QAVAudioOutputPrivate::doPlayAudio, d_ptr.data());
 #endif
 }
 
