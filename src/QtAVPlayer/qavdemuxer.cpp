@@ -113,13 +113,13 @@ void QAVDemuxer::abort(bool stop)
     d->abortRequest = stop;
 }
 
-static void setup_video_codec(AVStream *stream, QAVCodec *kodek)
+static void setup_video_codec(AVStream *stream, QAVCodec *base)
 {
     QScopedPointer<QAVHWDevice> device;
     AVDictionary *opts = NULL;
     Q_UNUSED(opts);
     auto name = QGuiApplication::platformName();
-    QAVVideoCodec &codec = *reinterpret_cast<QAVVideoCodec *>(kodek);
+    QAVVideoCodec &codec = *reinterpret_cast<QAVVideoCodec *>(base);
 
 #if QT_CONFIG(va_x11) && QT_CONFIG(opengl)
     if (name == QLatin1String("xcb")) {

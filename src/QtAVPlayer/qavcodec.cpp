@@ -35,7 +35,7 @@ QAVCodec::~QAVCodec()
         avcodec_free_context(&d->avctx);
 }
 
-void QAVCodec::setCodec(AVCodec *c)
+void QAVCodec::setCodec(const AVCodec *c)
 {
     d_func()->codec = c;
 }
