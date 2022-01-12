@@ -40,7 +40,7 @@ public:
 
     bool open(AVStream *stream);
     AVCodecContext *avctx() const;
-    void setCodec(AVCodec *c);
+    void setCodec(const AVCodec *c);
     const AVCodec *codec() const;
 
     bool decode(const QAVPacket &pkt, QAVFrame &frame) const;
