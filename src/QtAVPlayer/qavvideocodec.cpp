@@ -30,6 +30,7 @@ static bool supportedPixelFormat(AVPixelFormat from)
 {
     switch (from) {
     case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV420P10LE:
     case AV_PIX_FMT_NV12:
     case AV_PIX_FMT_BGRA:
     case AV_PIX_FMT_ARGB:
@@ -77,7 +78,8 @@ static AVPixelFormat negotiate_pixel_format(AVCodecContext *c, const AVPixelForm
     }
 
     auto dsc = av_pix_fmt_desc_get(pf);
-    qDebug() << "Using" << decStr << "decoding in" << dsc->name;
+    if (dsc)
+        qDebug() << "Using" << decStr << "decoding in" << dsc->name;
 
     return pf;
 }
