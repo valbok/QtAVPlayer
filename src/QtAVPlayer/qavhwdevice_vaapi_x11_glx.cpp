@@ -16,6 +16,7 @@
 
 extern "C" {
 #include <libavutil/hwcontext_vaapi.h>
+#include <libavcodec/avcodec.h>
 }
 
 typedef void (*glXBindTexImageEXT_)(Display *dpy, GLXDrawable drawable, int buffer, const int *attrib_list);

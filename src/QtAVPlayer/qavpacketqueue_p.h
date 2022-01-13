@@ -22,6 +22,9 @@
 #include "qavpacket_p.h"
 #include "qavfilter_p.h"
 #include "qavfiltergraph_p.h"
+#include "qavframe.h"
+#include "qavsubtitleframe.h"
+#include "qavstreamframe.h"
 #include <QMutex>
 #include <QWaitCondition>
 #include <QList>
@@ -30,6 +33,7 @@
 
 extern "C" {
 #include <libavutil/time.h>
+#include <libavcodec/avcodec.h>
 }
 
 QT_BEGIN_NAMESPACE
@@ -94,9 +98,9 @@ class QAVPacketQueue
 public:
     QAVPacketQueue(const QAVDemuxer &demuxer) : m_demuxer(demuxer) 
     {
-
     }
-    ~QAVPacketQueue()
+
+    virtual ~QAVPacketQueue()
     {
         abort();
     }
@@ -104,7 +108,7 @@ public:
     bool isEmpty() const
     {
         QMutexLocker locker(&m_mutex);
-        return m_packets.isEmpty() && !m_frame && (!m_filter || m_filter->eof());
+        return m_packets.isEmpty() && !m_frame && isEmptyData();
     }
 
     void enqueue(const QAVPacket &packet)
@@ -174,49 +178,10 @@ public:
         QMutexLocker locker(&m_mutex);
         clearPackets();
         clearTimers();
-        m_filter.reset();
+        clearData();
     }
 
-    int frame(bool sync, double speed, double master, QAVFrame &frame)
-    {
-        QMutexLocker locker(&m_mutex);
-        frame = m_frame;
-        if (!frame) {
-            const bool decode = !m_filter || m_filter->eof();
-            if (decode) {
-                locker.unlock();
-                frame = m_demuxer.decode(dequeue());
-                locker.relock();
-                if (m_filter && frame) {
-                    m_ret = m_filter->write(frame);
-                    if (m_ret < 0) {
-                        if (m_ret != AVERROR_EOF)
-                            return m_ret;
-                    }
-                }
-            }
-            if (m_filter) {
-                m_ret = m_filter->read(frame);
-                if (m_ret < 0) {
-                    if (m_ret != AVERROR(EAGAIN))
-                        return m_ret;
-                }
-            } else {
-                m_ret = 0;
-            }
-            m_frame = frame;
-        }
-        locker.unlock();
-
-        if (frame && m_clock.sync(sync, frame.pts(), speed, master)) {
-            locker.relock();
-            m_frame = QAVFrame();
-            return m_ret;
-        }
-
-        frame = {};
-        return AVERROR(EAGAIN);
-    }
+    virtual int frame(bool sync, double speed, double master, QAVStreamFrame &frame) = 0;
 
     double pts() const
     {
@@ -238,14 +203,7 @@ public:
         m_wake = wake;
     }
 
-    void setFilter(QAVFilter *filter)
-    {
-        QMutexLocker locker(&m_mutex);
-        m_filter.reset(filter);
-        m_frame = {};
-    }
-
-private:
+protected:
     Q_DISABLE_COPY(QAVPacketQueue)
 
     void clearPackets()
@@ -253,13 +211,22 @@ private:
         m_packets.clear();
         m_bytes = 0;
         m_duration = 0;
-        m_frame = QAVFrame();
+        m_frame.reset();
     }
 
     void clearTimers()
     {
         m_clock.prevPts = 0;
         m_clock.frameTimer = 0;
+    }
+
+    virtual void clearData()
+    {
+    }
+
+    virtual bool isEmptyData() const
+    {
+        return true;
     }
 
     const QAVDemuxer &m_demuxer;
@@ -274,11 +241,114 @@ private:
     int m_bytes = 0;
     int m_duration = 0;
 
-    QAVFrame m_frame;
-    int m_ret = 0;
+    QScopedPointer<QAVStreamFrame> m_frame;
     QAVQueueClock m_clock;
+};
+
+class QAVPacketFrameQueue : public QAVPacketQueue
+{
+public:
+    QAVPacketFrameQueue(const QAVDemuxer &demuxer) : QAVPacketQueue(demuxer)
+    {
+    }
+
+    int frame(bool sync, double speed, double master, QAVStreamFrame &baseFrame) override
+    {
+        QMutexLocker locker(&m_mutex);
+        QAVFrame &frame = static_cast<QAVFrame &>(baseFrame);
+        frame = m_frame ? static_cast<QAVFrame &>(*m_frame) : QAVFrame{};
+        if (!frame) {
+            const bool decode = !m_filter || m_filter->eof();
+            if (decode) {
+                locker.unlock();
+                m_demuxer.decode(dequeue(), frame);
+                locker.relock();
+                if (m_filter && frame) {
+                    m_ret = m_filter->write(frame);
+                    if (m_ret < 0) {
+                        if (m_ret != AVERROR_EOF)
+                            return m_ret;
+                    }
+                }
+            }
+            if (m_filter) {
+                m_ret = m_filter->read(frame);
+                if (m_ret < 0) {
+                    if (m_ret != AVERROR(EAGAIN))
+                        return m_ret;
+                }
+            } else {
+                m_ret = 0;
+            }
+
+            if (frame)
+                m_frame.reset(new QAVFrame(frame));
+        }
+        locker.unlock();
+
+        if (frame && m_clock.sync(sync, frame.pts(), speed, master)) {
+            frame.frame()->sample_rate *= speed;
+            locker.relock();
+            m_frame.reset();
+            return m_ret;
+        }
+
+        frame = {};
+        return AVERROR(EAGAIN);
+    }
+
+    void setFilter(QAVFilter *filter)
+    {
+        QMutexLocker locker(&m_mutex);
+        m_filter.reset(filter);
+        m_frame.reset();
+    }
+
+private:
+    void clearData() override
+    {
+        m_filter.reset();
+    }
+
+    bool isEmptyData() const override
+    {
+        return !m_filter || m_filter->eof();
+    }
 
     QScopedPointer<QAVFilter> m_filter;
+    int m_ret = 0;
+};
+
+class QAVPacketSubtitleQueue : public QAVPacketQueue
+{
+public:
+    QAVPacketSubtitleQueue(const QAVDemuxer &demuxer) : QAVPacketQueue(demuxer)
+    {
+    }
+
+    int frame(bool sync, double speed, double master, QAVStreamFrame &baseFrame) override
+    {
+        QMutexLocker locker(&m_mutex);
+        QAVSubtitleFrame &frame = static_cast<QAVSubtitleFrame &>(baseFrame);
+        frame = m_frame ? static_cast<QAVSubtitleFrame &>(*m_frame) : QAVSubtitleFrame{};
+        if (!frame) {
+            locker.unlock();
+            if (!m_demuxer.decode(dequeue(), frame))
+                return 0;
+            locker.relock();
+            if (frame)
+                m_frame.reset(new QAVSubtitleFrame(frame));
+        }
+
+        if (frame && m_clock.sync(sync, frame.pts(), speed, master)) {
+            locker.relock();
+            m_frame.reset();
+            return 0;
+        }
+
+        frame = {};
+        return AVERROR(EAGAIN);
+    }
 };
 
 QT_END_NAMESPACE

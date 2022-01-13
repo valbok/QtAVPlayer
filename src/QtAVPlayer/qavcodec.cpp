@@ -12,6 +12,8 @@
 
 extern "C" {
 #include <libavutil/opt.h>
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
 }
 
 QT_BEGIN_NAMESPACE
@@ -86,20 +88,6 @@ AVCodecContext *QAVCodec::avctx() const
 const AVCodec *QAVCodec::codec() const
 {
     return d_func()->codec;
-}
-
-bool QAVCodec::decode(const QAVPacket &pkt, QAVFrame &frame) const
-{
-    Q_D(const QAVCodec);
-    if (!d->avctx)
-        return false;
-
-    int ret = avcodec_send_packet(d->avctx, pkt.packet());
-    if (ret < 0 && ret != AVERROR(EAGAIN))
-        return false;
-
-    avcodec_receive_frame(d->avctx, frame.frame());
-    return true;
 }
 
 QT_END_NAMESPACE

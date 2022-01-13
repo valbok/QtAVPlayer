@@ -5,8 +5,8 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#ifndef QAVFRAME_P_H
-#define QAVFRAME_P_H
+#ifndef QAVSUBTITLECODEC_P_H
+#define QAVSUBTITLECODEC_P_H
 
 //
 //  W A R N I N G
@@ -19,26 +19,21 @@
 // We mean it.
 //
 
-#include "qavstreamframe_p.h"
-
-extern "C" {
-#include <libavutil/frame.h>
-}
+#include "qavcodec_p.h"
 
 QT_BEGIN_NAMESPACE
 
-struct AVFrame;
-class QAVFramePrivate : public QAVStreamFramePrivate
+struct AVSubtitle;
+struct AVPacket;
+class Q_AVPLAYER_EXPORT QAVSubtitleCodec : public QAVCodec
 {
 public:
+    QAVSubtitleCodec(QObject *parent = nullptr);
 
-    double pts() const override;
-    double duration() const override;
+    bool decode(const AVPacket *pkt, AVSubtitle *frame) const;
 
-    AVFrame *frame = nullptr;
-    // Overridden data from filters if any
-    AVRational frameRate{};
-    AVRational timeBase{};
+private:
+    Q_DISABLE_COPY(QAVSubtitleCodec)
 };
 
 QT_END_NAMESPACE

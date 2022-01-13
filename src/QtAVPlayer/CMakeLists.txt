@@ -2,14 +2,18 @@ set(SOURCES
     qavdemuxer.cpp
     qavplayer.cpp
     qavcodec.cpp
+    qavframecodec.cpp
     qavaudiocodec.cpp
     qavvideocodec.cpp
+    qavsubtitlecodec.cpp
     qavpacket.cpp
     qavvideobuffer_gpu.cpp
     qavvideobuffer_cpu.cpp
+    qavstreamframe.cpp
     qavframe.cpp
     qavvideoframe.cpp
     qavaudioframe.cpp
+    qavsubtitleframe.cpp
     qavaudiooutput.cpp
     qavfilter.cpp
     qavvideofilter.cpp
@@ -25,8 +29,10 @@ set(SOURCES
 )
 set(PUBLIC_HEADERS
     qavframe.h
+    qavstreamframe.h
     qavvideoframe.h
     qavaudioframe.h
+    qavsubtitleframe.h
     qavaudioformat.h
     qavplayer.h
     qavaudiooutput.h

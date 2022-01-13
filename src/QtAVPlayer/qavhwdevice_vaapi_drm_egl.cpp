@@ -19,6 +19,7 @@
 
 extern "C" {
 #include <libavutil/hwcontext_vaapi.h>
+#include <libavcodec/avcodec.h>
 }
 
 static PFNEGLCREATEIMAGEKHRPROC s_eglCreateImageKHR = nullptr;

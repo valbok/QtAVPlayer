@@ -12,6 +12,7 @@
 #include "qavaudiocodec_p.h"
 #include "qavvideoframe.h"
 #include "qavaudioframe.h"
+#include "qavsubtitleframe.h"
 #include "qavpacketqueue_p.h"
 #include "qavfiltergraph_p.h"
 #include "qavvideofilter_p.h"
@@ -47,6 +48,7 @@ public:
         : q_ptr(q)
         , videoQueue(demuxer)
         , audioQueue(demuxer)
+        , subtitleQueue(demuxer)
     {
         threadPool.setMaxThreadCount(4);
     }
@@ -74,10 +76,11 @@ public:
     void wait(bool v);
     void doLoad();
     void doDemux();
-    bool skipFrame(const QAVFrame &frame, const QAVPacketQueue &queue, bool master);
-    bool doPlayStep(double refPts, bool master, QAVPacketQueue &queue, bool &sync, QAVFrame &frame);
+    bool skipFrame(const QAVStreamFrame &frame, const QAVPacketQueue &queue, bool master);
+    bool doPlayStep(double refPts, bool master, QAVPacketQueue &queue, bool &sync, QAVStreamFrame &frame);
     void doPlayVideo();
     void doPlayAudio();
+    void doPlaySubtitle();
 
     template <class T>
     void dispatch(T fn);
@@ -113,10 +116,13 @@ public:
     QFuture<void> demuxerFuture;
 
     QFuture<void> videoPlayFuture;
-    QAVPacketQueue videoQueue;
+    QAVPacketFrameQueue videoQueue;
 
     QFuture<void> audioPlayFuture;
-    QAVPacketQueue audioQueue;
+    QAVPacketFrameQueue audioQueue;
+
+    QFuture<void> subtitlePlayFuture;
+    QAVPacketSubtitleQueue subtitleQueue;
 
     bool quit = 0;
     bool isWaiting = false;
@@ -283,6 +289,8 @@ void QAVPlayerPrivate::terminate()
     videoQueue.abort();
     audioQueue.clear();
     audioQueue.abort();
+    subtitleQueue.clear();
+    subtitleQueue.abort();
     if (dev)
         dev->abort(true);
     loaderFuture.waitForFinished();
@@ -317,6 +325,7 @@ void QAVPlayerPrivate::step(bool hasFrame)
     if (pendingMediaStatuses.isEmpty()) {
         videoQueue.wake(false);
         audioQueue.wake(false);
+        subtitleQueue.wake(false);
     } else {
         wait(false);
     }
@@ -421,6 +430,7 @@ void QAVPlayerPrivate::wait(bool v)
         waitCond.wakeAll();
     videoQueue.wake(true);
     audioQueue.wake(true);
+    subtitleQueue.wake(true);
 }
 
 void QAVPlayerPrivate::applyFilter(bool reset)
@@ -478,12 +488,16 @@ void QAVPlayerPrivate::doLoad()
         videoPlayFuture = QtConcurrent::run(&threadPool, this, &QAVPlayerPrivate::doPlayVideo);
     if (q_ptr->hasAudio())
         audioPlayFuture = QtConcurrent::run(&threadPool, this, &QAVPlayerPrivate::doPlayAudio);
+    if (!q_ptr->subtitleStreams().isEmpty())
+        audioPlayFuture = QtConcurrent::run(&threadPool, this, &QAVPlayerPrivate::doPlaySubtitle);
 #else
     demuxerFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doDemux, this);
     if (q_ptr->hasVideo())
         videoPlayFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doPlayVideo, this);
     if (q_ptr->hasAudio())
         audioPlayFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doPlayAudio, this);
+    if (!q_ptr->subtitleStreams().isEmpty())
+        audioPlayFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doPlaySubtitle, this);
 #endif
     qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
@@ -519,6 +533,8 @@ void QAVPlayerPrivate::doDemux()
                     videoQueue.waitForEmpty();
                     qCDebug(lcAVPlayer) << "Waiting audio thread finished processing packets";
                     audioQueue.waitForEmpty();
+                    qCDebug(lcAVPlayer) << "Waiting subtitle thread finished processing packets";
+                    subtitleQueue.waitForEmpty();
                     qCDebug(lcAVPlayer) << "Reset filters";
                     applyFilter(true);
                     qCDebug(lcAVPlayer) << "Start reading packets from" << pos * 1000;
@@ -538,8 +554,10 @@ void QAVPlayerPrivate::doDemux()
                 videoQueue.enqueue(packet);
             else if (packet.packet()->stream_index == demuxer.audioStream().index())
                 audioQueue.enqueue(packet);
+            else if (packet.packet()->stream_index == demuxer.subtitleStream().index())
+                subtitleQueue.enqueue(packet);
         } else {
-            if (demuxer.eof() && videoQueue.isEmpty() && audioQueue.isEmpty() && !isEndOfFile()) {
+            if (demuxer.eof() && videoQueue.isEmpty() && audioQueue.isEmpty() && subtitleQueue.isEmpty() && !isEndOfFile()) {
                 endOfFile(true);
                 qCDebug(lcAVPlayer) << "EndOfMedia";
                 setPendingMediaStatus(EndOfMedia);
@@ -554,7 +572,7 @@ void QAVPlayerPrivate::doDemux()
     qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
 
-static bool isLastFrame(const QAVFrame &frame, const QAVDemuxer &demuxer)
+static bool isLastFrame(const QAVStreamFrame &frame, const QAVDemuxer &demuxer)
 {
     bool result = false;
     if (!isnan(frame.duration()) && frame.duration() > 0) {
@@ -566,7 +584,7 @@ static bool isLastFrame(const QAVFrame &frame, const QAVDemuxer &demuxer)
     return result;
 }
 
-bool QAVPlayerPrivate::skipFrame(const QAVFrame &frame, const QAVPacketQueue &queue, bool master = true)
+bool QAVPlayerPrivate::skipFrame(const QAVStreamFrame &frame, const QAVPacketQueue &queue, bool master = true)
 {
     QMutexLocker locker(&positionMutex);
     bool result = pendingSeek;
@@ -597,15 +615,15 @@ bool QAVPlayerPrivate::skipFrame(const QAVFrame &frame, const QAVPacketQueue &qu
     return result;
 }
 
-bool QAVPlayerPrivate::doPlayStep(double refPts, bool master, QAVPacketQueue &queue, bool &sync, QAVFrame &frame)
+bool QAVPlayerPrivate::doPlayStep(double refPts, bool master, QAVPacketQueue &queue, bool &sync, QAVStreamFrame &frame)
 {
     doWait();
     bool hasFrame = false;
     const int ret = queue.frame(sync, q_ptr->speed(), refPts, frame);
     if (ret < 0) {
-        if (ret != AVERROR(EAGAIN))
+        if (ret != AVERROR(EAGAIN)) {
             setError(QAVPlayer::FilterError, err_str(ret));
-        else {
+        } else {
             hasFrame = isLastFrame(frame, demuxer); // Always flush events on the latest frame if filters don't have enough though
             frame = {}; // Don't send the latest frame
         }
@@ -613,7 +631,6 @@ bool QAVPlayerPrivate::doPlayStep(double refPts, bool master, QAVPacketQueue &qu
         if (frame) {
             sync = !skipFrame(frame, queue, master);
             hasFrame = sync;
-            frame.frame()->sample_rate *= speed;
         }
     }
     if (master)
@@ -660,12 +677,31 @@ void QAVPlayerPrivate::doPlayAudio()
     qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
 
+void QAVPlayerPrivate::doPlaySubtitle()
+{
+    const bool master = false;
+    const double ref = -1;
+    bool sync = true;
+    QAVSubtitleFrame frame;
+
+    while (!quit) {
+        if (doPlayStep(ref, master, subtitleQueue, sync, frame)) {
+            if (frame)
+                emit q_ptr->subtitleFrame(frame);
+        }
+    }
+
+    subtitleQueue.clear();
+    qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
+}
+
 QAVPlayer::QAVPlayer(QObject *parent)
     : QObject(parent)
     , d_ptr(new QAVPlayerPrivate(this))
 {
     qRegisterMetaType<QAVAudioFrame>();
     qRegisterMetaType<QAVVideoFrame>();
+    qRegisterMetaType<QAVSubtitleFrame>();
     qRegisterMetaType<State>();
     qRegisterMetaType<MediaStatus>();
     qRegisterMetaType<Error>();
@@ -760,6 +796,27 @@ void QAVPlayer::setAudioStream(const QAVStream &stream)
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << d->demuxer.audioStream().index() << "->" << stream.index();
     if (d->demuxer.setAudioStream(stream))
         emit audioStreamChanged(stream);
+}
+
+QList<QAVStream> QAVPlayer::subtitleStreams() const
+{
+    Q_D(const QAVPlayer);
+    return d->demuxer.subtitleStreams();
+}
+
+QAVStream QAVPlayer::subtitleStream() const
+{
+    Q_D(const QAVPlayer);
+    return d->demuxer.subtitleStream();
+}
+
+void QAVPlayer::setSubtitleStream(const QAVStream &stream)
+{
+    Q_D(QAVPlayer);
+
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << d->demuxer.subtitleStream().index() << "->" << stream.index();
+    if (d->demuxer.setSubtitleStream(stream))
+        emit subtitleStreamChanged(stream);
 }
 
 QAVPlayer::State QAVPlayer::state() const

@@ -12,6 +12,10 @@
 #include <QVariant>
 #include <QVideoFrame>
 
+extern "C" {
+#include <libavutil/frame.h>
+}
+
 QT_BEGIN_NAMESPACE
 
 class QAVVideoFramePrivate;
