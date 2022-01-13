@@ -562,7 +562,7 @@ QMap<QString, QString> QAVDemuxer::metadata() const
 
     AVDictionaryEntry *tag = nullptr;
     while ((tag = av_dict_get(d->ctx->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
-        result[QLatin1String(tag->key)] = QLatin1String(tag->value);
+        result[QString::fromUtf8(tag->key)] = QString::fromUtf8(tag->value);
 
     return result;
 }
