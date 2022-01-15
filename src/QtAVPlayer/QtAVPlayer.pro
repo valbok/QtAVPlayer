@@ -10,11 +10,14 @@ QMAKE_USE += ffmpeg
 PRIVATE_HEADERS += \
     qavcodec_p.h \
     qavcodec_p_p.h \
+    qavframecodec_p.h \
     qavaudiocodec_p.h \
     qavvideocodec_p.h \
+    qavsubtitlecodec_p.h \
     qavhwdevice_p.h \
     qavdemuxer_p.h \
     qavpacket_p.h \
+    qavstreamframe_p.h \
     qavframe_p.h \
     qavpacketqueue_p.h \
     qavvideobuffer_p.h \
@@ -35,9 +38,11 @@ PRIVATE_HEADERS += \
 
 PUBLIC_HEADERS += \
     qavaudioformat.h \
+    qavstreamframe.h \
     qavframe.h \
     qavvideoframe.h \
-    qavaudioframe.h \    
+    qavaudioframe.h \
+    qavsubtitleframe.h \
     qtavplayerglobal.h \
     qavaudiooutput.h \
     qavstream.h \
@@ -47,13 +52,17 @@ SOURCES += \
     qavaudiooutput.cpp \
     qavplayer.cpp \
     qavcodec.cpp \
+    qavframecodec.cpp \
     qavaudiocodec.cpp \
     qavvideocodec.cpp \
+    qavsubtitlecodec.cpp \
     qavdemuxer.cpp \
     qavpacket.cpp \
     qavframe.cpp \
+    qavstreamframe.cpp \
     qavvideoframe.cpp \
     qavaudioframe.cpp \
+    qavsubtitleframe.cpp \
     qavvideobuffer_cpu.cpp \
     qavvideobuffer_gpu.cpp \
     qavfilter.cpp \

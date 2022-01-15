@@ -5,8 +5,8 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#ifndef QAVFRAME_P_H
-#define QAVFRAME_P_H
+#ifndef QAVSTREAMFRAME_P_H
+#define QAVSTREAMFRAME_P_H
 
 //
 //  W A R N I N G
@@ -19,26 +19,20 @@
 // We mean it.
 //
 
-#include "qavstreamframe_p.h"
-
-extern "C" {
-#include <libavutil/frame.h>
-}
+#include "qavstream.h"
 
 QT_BEGIN_NAMESPACE
 
-struct AVFrame;
-class QAVFramePrivate : public QAVStreamFramePrivate
+class QAVStreamFramePrivate
 {
 public:
+    QAVStreamFramePrivate() = default;
+    virtual ~QAVStreamFramePrivate() = default;
 
-    double pts() const override;
-    double duration() const override;
+    virtual double pts() const { return 0.0; }
+    virtual double duration() const { return 0.0; }
 
-    AVFrame *frame = nullptr;
-    // Overridden data from filters if any
-    AVRational frameRate{};
-    AVRational timeBase{};
+    QAVStream stream;
 };
 
 QT_END_NAMESPACE

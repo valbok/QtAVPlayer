@@ -16,6 +16,7 @@ extern "C" {
 #include <libavfilter/buffersink.h>
 #include <libavutil/avassert.h>
 #include <libavutil/bprint.h>
+#include <libavformat/avformat.h>
 }
 
 QT_BEGIN_NAMESPACE

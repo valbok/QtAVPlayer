@@ -21,6 +21,8 @@
 
 #include "qavpacket_p.h"
 #include "qavstream.h"
+#include "qavframe.h"
+#include "qavsubtitleframe.h"
 #include <QObject>
 #include <QMap>
 #include <QScopedPointer>
@@ -44,6 +46,7 @@ public:
     int load(const QString &url, QAVIODevice *dev = nullptr);
     void unload();
 
+    QAVStream stream(int index) const;
     QList<QAVStream> videoStreams() const;
     QAVStream videoStream() const;
     bool setVideoStream(const QAVStream &stream);
@@ -52,9 +55,13 @@ public:
     bool setAudioStream(const QAVStream &stream);
 
     QList<QAVStream> subtitleStreams() const;
+    QAVStream subtitleStream() const;
+    bool setSubtitleStream(const QAVStream &stream);
 
     QAVPacket read();
-    QAVFrame decode(const QAVPacket &pkt) const;
+
+    bool decode(const QAVPacket &pkt, QAVFrame &frame) const;
+    bool decode(const QAVPacket &pkt, QAVSubtitleFrame &frame) const;
 
     double duration() const;
     bool seekable() const;

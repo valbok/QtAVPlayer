@@ -17,14 +17,8 @@ extern "C" {
 QT_BEGIN_NAMESPACE
 
 QAVFrame::QAVFrame(QObject *parent)
-    : QAVFrame(nullptr, parent)
-{
-}
-
-QAVFrame::QAVFrame(const QAVStream &stream, QObject *parent)
     : QAVFrame(*new QAVFramePrivate, parent)
 {
-    d_ptr->stream = stream;
 }
 
 QAVFrame::QAVFrame(const QAVFrame &other)
@@ -34,36 +28,33 @@ QAVFrame::QAVFrame(const QAVFrame &other)
 }
 
 QAVFrame::QAVFrame(QAVFramePrivate &d, QObject *parent)
-    : QObject(parent)
-    , d_ptr(&d)
+    : QAVStreamFrame(d, parent)
 {
-    d_ptr->frame = av_frame_alloc();
-}
-
-QAVStream QAVFrame::stream() const
-{
-    return d_ptr->stream;
+    d.frame = av_frame_alloc();
 }
 
 QAVFrame &QAVFrame::operator=(const QAVFrame &other)
 {
-    int64_t pts = d_ptr->frame->pts;
-    av_frame_unref(d_ptr->frame);
-    av_frame_ref(d_ptr->frame, other.d_ptr->frame);
+    Q_D(QAVFrame);
+    QAVStreamFrame::operator=(other);
 
-    if (d_ptr->frame->pts < 0)
-        d_ptr->frame->pts = pts;
+    auto other_priv = static_cast<QAVFramePrivate *>(other.d_ptr.data());
+    int64_t pts = d->frame->pts;
+    av_frame_unref(d->frame);
+    av_frame_ref(d->frame, other_priv->frame);
 
-    d_ptr->stream = other.d_ptr->stream;
-    d_ptr->frameRate = other.d_ptr->frameRate;
-    d_ptr->timeBase = other.d_ptr->timeBase;
+    if (d->frame->pts < 0)
+        d->frame->pts = pts;
+
+    d->frameRate = other_priv->frameRate;
+    d->timeBase = other_priv->timeBase;
     return *this;
 }
 
 QAVFrame::operator bool() const
 {
     Q_D(const QAVFrame);
-    return d->stream && d->frame && (d->frame->data[0] || d->frame->data[1] || d->frame->data[2] || d->frame->data[3]);
+    return QAVStreamFrame::operator bool() && d->frame && (d->frame->data[0] || d->frame->data[1] || d->frame->data[2] || d->frame->data[3]);
 }
 
 QAVFrame::~QAVFrame()
@@ -90,25 +81,23 @@ void QAVFrame::setTimeBase(const AVRational &value)
     d->timeBase = value;
 }
 
-double QAVFrame::pts() const
+double QAVFramePrivate::pts() const
 {
-    Q_D(const QAVFrame);
-    if (!d->frame || !d->stream)
+    if (!frame || !stream)
         return NAN;
 
-    AVRational tb = d->timeBase.num && d->timeBase.den ? d->timeBase : d->stream.stream()->time_base;
-    return d->frame->pts == AV_NOPTS_VALUE ? NAN : d->frame->pts * av_q2d(tb);
+    AVRational tb = timeBase.num && timeBase.den ? timeBase : stream.stream()->time_base;
+    return frame->pts == AV_NOPTS_VALUE ? NAN : frame->pts * av_q2d(tb);
 }
 
-double QAVFrame::duration() const
+double QAVFramePrivate::duration() const
 {
-    Q_D(const QAVFrame);
-    if (!d->frame || !d->stream)
+    if (!frame || !stream)
         return 0.0;
 
-    return d->frameRate.den && d->frameRate.num
-           ? av_q2d(AVRational{d->frameRate.den, d->frameRate.num})
-           : d->frame->pkt_duration * av_q2d(d->stream.stream()->time_base);
+    return frameRate.den && frameRate.num
+           ? av_q2d(AVRational{frameRate.den, frameRate.num})
+           : frame->pkt_duration * av_q2d(stream.stream()->time_base);
 }
 
 QT_END_NAMESPACE

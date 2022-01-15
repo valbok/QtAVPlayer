@@ -19,19 +19,14 @@
 // We mean it.
 //
 
-#include "qavframe.h"
-#include "qavpacket_p.h"
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QObject>
 
 QT_BEGIN_NAMESPACE
 
-extern "C" {
-#include <libavformat/avformat.h>
-#include <libavcodec/avcodec.h>
-}
-
-// @TODO: Must be public?
+struct AVCodec;
+struct AVCodecContext;
+struct AVStream;
 class QAVCodecPrivate;
 class Q_AVPLAYER_EXPORT QAVCodec : public QObject
 {
@@ -42,8 +37,6 @@ public:
     AVCodecContext *avctx() const;
     void setCodec(const AVCodec *c);
     const AVCodec *codec() const;
-
-    bool decode(const QAVPacket &pkt, QAVFrame &frame) const;
 
 protected:
     QAVCodec(QObject *parent = nullptr);

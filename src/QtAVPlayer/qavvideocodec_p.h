@@ -19,14 +19,13 @@
 // We mean it.
 //
 
-#include "qavcodec_p.h"
+#include "qavframecodec_p.h"
 
 QT_BEGIN_NAMESPACE
 
 class QAVVideoCodecPrivate;
-class QAbstractVideoSurface;
 class QAVHWDevice;
-class Q_AVPLAYER_EXPORT QAVVideoCodec : public QAVCodec
+class Q_AVPLAYER_EXPORT QAVVideoCodec : public QAVFrameCodec
 {
 public:
     QAVVideoCodec(QObject *parent = nullptr);

@@ -15,6 +15,7 @@
 
 extern "C" {
 #include <libavutil/pixdesc.h>
+#include <libavcodec/avcodec.h>
 }
 
 QT_BEGIN_NAMESPACE
@@ -23,7 +24,6 @@ class QAVVideoCodecPrivate : public QAVCodecPrivate
 {
 public:
     QScopedPointer<QAVHWDevice> hw_device;
-    QAbstractVideoSurface *videoSurface = nullptr;
 };
 
 static bool supportedPixelFormat(AVPixelFormat from)
@@ -85,7 +85,7 @@ static AVPixelFormat negotiate_pixel_format(AVCodecContext *c, const AVPixelForm
 }
 
 QAVVideoCodec::QAVVideoCodec(QObject *parent)
-    : QAVCodec(*new QAVVideoCodecPrivate, parent)
+    : QAVFrameCodec(*new QAVVideoCodecPrivate, parent)
 {
     d_ptr->avctx->opaque = d_ptr.data();
     d_ptr->avctx->get_format = negotiate_pixel_format;

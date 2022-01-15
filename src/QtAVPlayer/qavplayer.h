@@ -10,6 +10,7 @@
 
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QtAVPlayer/qavaudioframe.h>
+#include <QtAVPlayer/qavsubtitleframe.h>
 #include <QtAVPlayer/qavstream.h>
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QString>
@@ -66,6 +67,10 @@ public:
     QAVStream audioStream() const;
     void setAudioStream(const QAVStream &stream);
 
+    QList<QAVStream> subtitleStreams() const;
+    QAVStream subtitleStream() const;
+    void setSubtitleStream(const QAVStream &stream);
+
     State state() const;
     MediaStatus mediaStatus() const;
     qint64 duration() const;
@@ -98,6 +103,7 @@ Q_SIGNALS:
     void videoFrameRateChanged(double rate);
     void videoStreamChanged(const QAVStream &stream);
     void audioStreamChanged(const QAVStream &stream);
+    void subtitleStreamChanged(const QAVStream &stream);
     void played(qint64 pos);
     void paused(qint64 pos);
     void stopped(qint64 pos);
@@ -107,6 +113,7 @@ Q_SIGNALS:
 
     void videoFrame(const QAVVideoFrame &frame);
     void audioFrame(const QAVAudioFrame &frame);
+    void subtitleFrame(const QAVSubtitleFrame &frame);
 
 protected:
     QScopedPointer<QAVPlayerPrivate> d_ptr;
