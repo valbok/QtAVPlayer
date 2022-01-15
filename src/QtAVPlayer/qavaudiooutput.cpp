@@ -143,7 +143,7 @@ public:
 
     void init(const QAudioFormat &fmt)
     {
-        if (!audioOutput || audioOutput->format() != fmt || audioOutput->state() == QAudio::StoppedState) {
+        if (!audioOutput || (fmt.isValid() && audioOutput->format() != fmt) || audioOutput->state() == QAudio::StoppedState) {
             audioOutput.reset(new AudioOutput(fmt));
             QObject::connect(audioOutput.data(), &AudioOutput::stateChanged, audioOutput.data(),
                 [&](QAudio::State state) {
@@ -174,7 +174,6 @@ public:
                 init(fmt);
             QCoreApplication::processEvents();
         }
-        audioOutput->stop();
         audioOutput.reset();
     }
 };
