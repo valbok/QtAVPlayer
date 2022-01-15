@@ -174,6 +174,7 @@ public:
                 init(fmt);
             QCoreApplication::processEvents();
         }
+        audioOutput->stop();
         audioOutput.reset();
     }
 };
