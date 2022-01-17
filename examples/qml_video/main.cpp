@@ -22,6 +22,9 @@
 #include <QGuiApplication>
 #include <QDebug>
 
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
 class Source : public QObject
 {
@@ -90,22 +93,49 @@ int main(int argc, char *argv[])
     });
 
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); });
-    QString file = argc > 1 ? QLatin1String(argv[1]) : QLatin1String("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
+    QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QLatin1String("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
 
     QObject::connect(&p, &QAVPlayer::stateChanged, [&](auto s) { qDebug() << "stateChanged" << s << p.mediaStatus(); });
     QObject::connect(&p, &QAVPlayer::mediaStatusChanged, [&](auto status) {
         qDebug() << "mediaStatusChanged"<< status << p.state();
         if (status == QAVPlayer::LoadedMedia) {
-            qDebug() << "Video streams:" << p.videoStreams().size();
+            auto videoStreams = p.videoStreams();
+            auto videoStream = p.videoStream();
+            qDebug() << "Video streams:" << videoStreams.size();
             for (auto &s : p.videoStreams())
-                qDebug() << s.metadata();
-            qDebug() << "Audio streams:" << p.audioStreams().size();
-            for (auto &s : p.audioStreams())
-                qDebug() << s.metadata();
+                qDebug() << "[" << s.index() << "]" << s.metadata() << (s.index() == videoStream.index() ? "---current" : "");
+
+            auto audioStreams = p.audioStreams();
+            auto audioStream = p.audioStream();
+            qDebug() << "Audio streams:" << audioStreams.size();
+            for (auto &s : audioStreams)
+                qDebug() << "[" << s.index() << "]" << s.metadata() << (s.index() == audioStream.index() ? "---current" : "");
+
+            auto subtitleStreams = p.subtitleStreams();
+            qDebug() << "Subtitle streams:" << subtitleStreams.size();
+            for (auto &s : subtitleStreams) {
+                if (s.metadata()["language"] == "eng") {
+                    p.setSubtitleStream(s);
+                    break;
+                }
+            }
+
+            auto subtitleStream = p.subtitleStream();
+            for (auto &s : subtitleStreams) {
+                qDebug() << "[" << s.index() << "]" << s.metadata() << (s.index() == subtitleStream.index() ? "---current" : "");
+            }
         }
     });
     QObject::connect(&p, &QAVPlayer::durationChanged, [&](auto d) { qDebug() << "durationChanged" << d; });
 
+    QObject::connect(&p, &QAVPlayer::subtitleFrame, &p, [](const QAVSubtitleFrame &frame) {
+        for (unsigned i = 0; i < frame.subtitle()->num_rects; ++i) {
+            if (frame.subtitle()->rects[i]->type == SUBTITLE_TEXT)
+                qDebug()<<"text:"<<frame.subtitle()->rects[i]->text;
+            else
+                qDebug()<<"ass:"<<frame.subtitle()->rects[i]->ass;
+        }
+    });
     p.setSource(file);
     p.play();
 

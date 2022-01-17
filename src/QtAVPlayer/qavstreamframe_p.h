@@ -20,6 +20,7 @@
 //
 
 #include "qavstream.h"
+#include <cmath>
 
 QT_BEGIN_NAMESPACE
 
@@ -29,7 +30,7 @@ public:
     QAVStreamFramePrivate() = default;
     virtual ~QAVStreamFramePrivate() = default;
 
-    virtual double pts() const { return 0.0; }
+    virtual double pts() const { return NAN; }
     virtual double duration() const { return 0.0; }
 
     QAVStream stream;

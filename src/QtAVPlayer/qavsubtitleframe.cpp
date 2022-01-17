@@ -11,6 +11,7 @@
 
 extern "C" {
 #include "libavcodec/avcodec.h"
+#include "libavformat/avformat.h"
 }
 
 QT_BEGIN_NAMESPACE
@@ -19,6 +20,9 @@ class QAVSubtitleFramePrivate : public QAVStreamFramePrivate
 {
 public:
     QSharedPointer<AVSubtitle> subtitle;
+
+    double pts() const override;
+    double duration() const override;
 };
 
 static void subtitle_free(AVSubtitle *subtitle)
@@ -57,6 +61,23 @@ AVSubtitle *QAVSubtitleFrame::subtitle() const
 {
     Q_D(const QAVSubtitleFrame);
     return d->subtitle.data();
+}
+
+double QAVSubtitleFramePrivate::pts() const
+{
+    if (!stream)
+        return NAN;
+    AVRational tb;
+    tb.num = 1;
+    tb.den = AV_TIME_BASE;
+    return subtitle->pts == AV_NOPTS_VALUE ? NAN : subtitle->pts * av_q2d(tb);
+}
+
+double QAVSubtitleFramePrivate::duration() const
+{
+    if (!stream)
+        return 0.0;
+    return (subtitle->end_display_time - subtitle->start_display_time) / 1000.0;
 }
 
 QT_END_NAMESPACE
