@@ -12,6 +12,10 @@
 #include <QDebug>
 #include <QtTest/QtTest>
 
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
+
 QT_USE_NAMESPACE
 
 class tst_QAVPlayer : public QObject
@@ -67,6 +71,7 @@ private slots:
     void filesIOSequential();
     void subfile();
     void subfileTar();
+    void subtitles();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -2512,6 +2517,58 @@ void tst_QAVPlayer::subfileTar()
     QTRY_VERIFY(frame);
     QTRY_VERIFY(framesCount > 5);
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 10000);
+}
+
+void tst_QAVPlayer::subtitles()
+{
+    QAVPlayer p;
+
+    QFileInfo file(QLatin1String("../testdata/colors_subtitles.mp4"));
+    p.setSource(file.absoluteFilePath());
+
+    QSignalSpy spy(&p, &QAVPlayer::subtitleStreamChanged);
+
+    QAVSubtitleFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::subtitleFrame, &p, [&](const QAVSubtitleFrame &f) { frame = f; ++framesCount; });
+
+    p.play();
+
+    QTRY_VERIFY(!p.subtitleStreams().isEmpty());
+    QCOMPARE(p.subtitleStreams().size(), 2);
+    QCOMPARE(p.subtitleStreams()[0].index(), 2);
+    QCOMPARE(p.subtitleStreams()[1].index(), 3);
+    QVERIFY(p.subtitleStream());
+    QCOMPARE(p.subtitleStream().index(), 2);
+    QVERIFY(p.subtitleStream().stream() != nullptr);
+    QCOMPARE(p.subtitleStream().duration(), 45.809);
+    QVERIFY(!p.subtitleStream().metadata().isEmpty());
+    QCOMPARE(p.subtitleStream().metadata()["language"], QStringLiteral("eng"));
+    QTRY_VERIFY(frame);
+    QVERIFY(frame.subtitle() != nullptr);
+    QCOMPARE(frame.subtitle()->num_rects, 1u);
+    QCOMPARE(spy.count(), 0);
+    QTRY_VERIFY_WITH_TIMEOUT(framesCount > 3, 20000);
+
+    frame = QAVSubtitleFrame();
+
+    p.seek(0);
+    p.setSpeed(3);
+    p.setSubtitleStream({3});
+
+    QCOMPARE(p.subtitleStream().index(), 3);
+    QVERIFY(p.subtitleStream().stream() != nullptr);
+    QCOMPARE(p.subtitleStream().duration(), 45.809);
+    QVERIFY(!p.subtitleStream().metadata().isEmpty());
+    QCOMPARE(p.subtitleStream().metadata()["language"], QStringLiteral("nor"));
+
+    p.play();
+
+    QTRY_VERIFY(frame);
+    QTRY_COMPARE(spy.count(), 1);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 20000);
+    QVERIFY(frame.subtitle() != nullptr);
+    QVERIFY(frame.subtitle()->rects != nullptr);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
