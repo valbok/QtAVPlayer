@@ -180,7 +180,7 @@ static void setup_video_codec(AVStream *stream, QAVCodec *base)
 
     if (!device) {
         if (!supported.isEmpty())
-            qWarning() << "None of the hardware accelerations was implemented";
+            qWarning() << name << ": none of the hardware accelerations was implemented";
         return;
     }
 
