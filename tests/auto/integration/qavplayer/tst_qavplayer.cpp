@@ -2599,7 +2599,7 @@ void tst_QAVPlayer::synced()
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
     QCOMPARE(spy.count(), 1);
     QCOMPARE(p.position(), p.duration());
-    QVERIFY(framesCount > 150);
+    QTRY_VERIFY(framesCount > 200);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
