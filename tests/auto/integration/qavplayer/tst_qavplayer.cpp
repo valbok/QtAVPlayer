@@ -72,6 +72,7 @@ private slots:
     void subfile();
     void subfileTar();
     void subtitles();
+    void synced();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -2569,6 +2570,36 @@ void tst_QAVPlayer::subtitles()
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 20000);
     QVERIFY(frame.subtitle() != nullptr);
     QVERIFY(frame.subtitle()->rects != nullptr);
+}
+
+void tst_QAVPlayer::synced()
+{
+    QAVPlayer p;
+
+    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    p.setSource(file.absoluteFilePath());
+
+    QSignalSpy spy(&p, &QAVPlayer::syncedChanged);
+
+    QAVVideoFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+
+    QVERIFY(p.isSynced());
+    p.setSynced(true);
+
+    p.play();
+
+    QTRY_VERIFY(p.position() > 500);
+    QCOMPARE(spy.count(), 0);
+
+    p.setSynced(false);
+
+    QVERIFY(!p.isSynced());
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(p.position(), p.duration());
+    QVERIFY(framesCount > 300);
 }
 
 QTEST_MAIN(tst_QAVPlayer)

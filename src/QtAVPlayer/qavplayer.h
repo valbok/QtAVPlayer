@@ -80,6 +80,9 @@ public:
 
     bool isSeekable() const;
 
+    bool isSynced() const;
+    void setSynced(bool sync);
+
 public Q_SLOTS:
     void play();
     void pause();
@@ -107,6 +110,7 @@ Q_SIGNALS:
     void stepped(qint64 pos);
     void seeked(qint64 pos);
     void filterChanged(const QString &desc);
+    void syncedChanged(bool sync);
 
     void videoFrame(const QAVVideoFrame &frame);
     void audioFrame(const QAVAudioFrame &frame);
