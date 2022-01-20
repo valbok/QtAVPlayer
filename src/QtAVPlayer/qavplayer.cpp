@@ -254,7 +254,7 @@ void QAVPlayerPrivate::setVideoFrameRate(double v)
 double QAVPlayerPrivate::pts() const
 {
     Q_Q(const QAVPlayer);
-    return q->hasVideo() ? videoQueue.pts() : audioQueue.pts();
+    return !q->videoStreams().isEmpty() ? videoQueue.pts() : audioQueue.pts();
 }
 
 template <class T>
@@ -484,17 +484,17 @@ void QAVPlayerPrivate::doLoad()
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     demuxerFuture = QtConcurrent::run(&threadPool, this, &QAVPlayerPrivate::doDemux);
-    if (q_ptr->hasVideo())
+    if (!q_ptr->videoStreams().isEmpty())
         videoPlayFuture = QtConcurrent::run(&threadPool, this, &QAVPlayerPrivate::doPlayVideo);
-    if (q_ptr->hasAudio())
+    if (!q_ptr->audioStreams().isEmpty())
         audioPlayFuture = QtConcurrent::run(&threadPool, this, &QAVPlayerPrivate::doPlayAudio);
     if (!q_ptr->subtitleStreams().isEmpty())
         audioPlayFuture = QtConcurrent::run(&threadPool, this, &QAVPlayerPrivate::doPlaySubtitle);
 #else
     demuxerFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doDemux, this);
-    if (q_ptr->hasVideo())
+    if (!q_ptr->videoStreams().isEmpty())
         videoPlayFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doPlayVideo, this);
-    if (q_ptr->hasAudio())
+    if (!q_ptr->audioStreams().isEmpty())
         audioPlayFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doPlayAudio, this);
     if (!q_ptr->subtitleStreams().isEmpty())
         audioPlayFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doPlaySubtitle, this);
@@ -659,7 +659,7 @@ void QAVPlayerPrivate::doPlayVideo()
 
 void QAVPlayerPrivate::doPlayAudio()
 {
-    const bool master = !q_ptr->hasVideo();
+    const bool master = q_ptr->videoStreams().isEmpty();
     const double ref = -1;
     bool sync = true;
     QAVAudioFrame frame;
@@ -744,16 +744,6 @@ void QAVPlayer::setSource(const QString &url, QIODevice *dev)
 QString QAVPlayer::source() const
 {
     return d_func()->url;
-}
-
-bool QAVPlayer::hasAudio() const
-{
-    return audioStreams().size() > 0;
-}
-
-bool QAVPlayer::hasVideo() const
-{
-    return videoStreams().size() > 0;
 }
 
 QList<QAVStream> QAVPlayer::videoStreams() const

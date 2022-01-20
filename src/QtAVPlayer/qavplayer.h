@@ -56,9 +56,6 @@ public:
     void setSource(const QString &url, QIODevice *dev = nullptr);
     QString source() const;
 
-    bool hasVideo() const;
-    bool hasAudio() const;
-
     QList<QAVStream> videoStreams() const;
     QAVStream videoStream() const;
     void setVideoStream(const QAVStream &stream);
