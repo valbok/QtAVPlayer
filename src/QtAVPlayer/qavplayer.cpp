@@ -102,6 +102,7 @@ public:
     double pendingPosition = 0;
     bool pendingSeek = false;
     mutable QMutex positionMutex;
+    bool synced = true;
 
     int videoStream = -1;
     int audioStream = -1;
@@ -619,7 +620,7 @@ bool QAVPlayerPrivate::doPlayStep(double refPts, bool master, QAVPacketQueue &qu
 {
     doWait();
     bool hasFrame = false;
-    const int ret = queue.frame(sync, q_ptr->speed(), refPts, frame);
+    const int ret = queue.frame(synced ? sync : synced, q_ptr->speed(), refPts, frame);
     if (ret < 0) {
         if (ret != AVERROR(EAGAIN)) {
             setError(QAVPlayer::FilterError, err_str(ret));
@@ -1017,6 +1018,23 @@ QString QAVPlayer::filter() const
     Q_D(const QAVPlayer);
     QMutexLocker locker(&d->stateMutex);
     return d->filterDesc;
+}
+
+
+bool QAVPlayer::isSynced() const
+{
+    Q_D(const QAVPlayer);
+    return d->synced;
+}
+
+void QAVPlayer::setSynced(bool sync)
+{
+    Q_D(QAVPlayer);
+    if (d->synced == sync)
+        return;
+
+    d->synced = sync;
+    emit syncedChanged(sync);
 }
 
 #ifndef QT_NO_DEBUG_STREAM
