@@ -50,6 +50,16 @@ Free and open-source Qt Media Player library based on FFmpeg with a predictable 
             qDebug() << autioFrame.format() << autioFrame.data().size();
             audioOutput.play(frame);
        });
+       
+       QObject::connect(&p, &QAVPlayer::subtitleFrame, &p, [](const QAVSubtitleFrame &frame) {
+            for (unsigned i = 0; i < frame.subtitle()->num_rects; ++i) {
+                if (frame.subtitle()->rects[i]->type == SUBTITLE_TEXT)
+                    qDebug() << "text:" << frame.subtitle()->rects[i]->text;
+                else
+                    qDebug() << "ass:" << frame.subtitle()->rects[i]->ass;
+           }
+       });
+       
 
 3. Each action is confirmed by a signal:
 
@@ -85,6 +95,10 @@ Free and open-source Qt Media Player library based on FFmpeg with a predictable 
 6. FFmpeg filters:
 
        player.setFilter("crop=iw/2:ih:0:0,split[left][tmp];[tmp]hflip[right];[left][right] hstack");
+       // Render bundled subtitles
+       player.setFilter("subtitles=file.mkv");
+       // Render subtitles from srt file
+       player.setFilter("subtitles=file.srt");
 
 7. Step by step:
 
@@ -104,7 +118,7 @@ Free and open-source Qt Media Player library based on FFmpeg with a predictable 
 
        qDebug() << "Audio streams" << player.audioStreams().size();
        qDebug() << "Current audio stream" << player.audioStream().index() << player.audioStream().metadata();
-       player.setAudioStream(player.audioStream());
+       player.setAudioStream(player.audioStream());       
 
 9. HW accelerations:
 
