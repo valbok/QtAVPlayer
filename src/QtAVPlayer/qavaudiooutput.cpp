@@ -13,7 +13,7 @@
 #include <QWaitCondition>
 #include <QCoreApplication>
 #include <QThreadPool>
-#if QT_VERSION < QT_VERSION_CHECK(6, 3, 0)
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QAudioOutput>
 #else
 #include <QAudioSink>
