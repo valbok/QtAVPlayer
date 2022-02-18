@@ -1849,6 +1849,7 @@ void tst_QAVPlayer::accurateSeek_data()
     QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4");
     QTest::newRow("small.mp4") << QString("../testdata/small.mp4");
     QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov");
+    QTest::newRow("test6g100.mkv") << QString("../testdata/test6g100.mkv");
 }
 
 void tst_QAVPlayer::accurateSeek()

@@ -573,11 +573,20 @@ void QAVPlayerPrivate::doDemux()
     qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
 
+static double streamDuration(const QAVStreamFrame &frame, const QAVDemuxer &demuxer)
+{
+    double duration = demuxer.duration();
+    const double stream_duration = frame.stream().duration();
+    if (stream_duration > 0 && stream_duration < duration)
+        duration = stream_duration;
+    return duration;
+}
+
 static bool isLastFrame(const QAVStreamFrame &frame, const QAVDemuxer &demuxer)
 {
     bool result = false;
     if (!isnan(frame.duration()) && frame.duration() > 0) {
-        const double requestedPos = qMin(demuxer.duration(), frame.stream().duration());
+        const double requestedPos = streamDuration(frame, demuxer);
         const int frameNumber = frame.pts() / frame.duration();
         const int requestedFrameNumber = requestedPos / frame.duration();
         result = frameNumber + 1 >= requestedFrameNumber;
@@ -592,7 +601,7 @@ bool QAVPlayerPrivate::skipFrame(const QAVStreamFrame &frame, const QAVPacketQue
     if (!pendingSeek && pendingPosition > 0) {
         const bool isQueueEOF = demuxer.eof() && queue.isEmpty();
         // Assume that no frames will be sent after this duration
-        const double duration = qMin(demuxer.duration(), frame.stream().duration());
+        const double duration = streamDuration(frame, demuxer);
         const double requestedPos = qMin(pendingPosition, duration);
         double pos = frame.pts();
         // Show last frame if seeked to duration
