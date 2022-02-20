@@ -1104,6 +1104,7 @@ void tst_QAVPlayer::files_data()
     QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << 2000 << 49 << 49;
     QTest::newRow("small.mp4") << QString("../testdata/small.mp4") << 5568 << 165 << 259;
     QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov") << 6840 << 169 << 0;
+    QTest::newRow("star_trails.mpeg") << QString("../testdata/star_trails.mpeg") << 1050 << 12 << 40;
 }
 
 void tst_QAVPlayer::files()

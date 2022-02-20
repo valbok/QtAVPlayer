@@ -62,7 +62,7 @@ QAVStream &QAVStream::operator=(const QAVStream &other)
 QAVStream::operator bool() const
 {
     Q_D(const QAVStream);
-    return d->index >= 0;
+    return d->stream != nullptr && d->codec && d->index >= 0;
 }
 
 AVStream *QAVStream::stream() const

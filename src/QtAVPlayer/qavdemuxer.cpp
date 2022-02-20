@@ -344,6 +344,8 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
                     qWarning() << "Could not open subtitle codec for stream:" << i;
                 break;
             default:
+                // Adding default stream
+                d->streams.push_back({ int(i), d->ctx->streams[i], nullptr });
                 break;
         }
     }
