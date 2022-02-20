@@ -8,7 +8,7 @@
 #include "qavaudiooutput.h"
 #include <QAudioFormat>
 #include <QDebug>
-#include <QtConcurrent/qtconcurrentrun.h>
+#include <QtConcurrent>
 #include <QFuture>
 #include <QWaitCondition>
 #include <QCoreApplication>

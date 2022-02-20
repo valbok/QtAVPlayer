@@ -10,7 +10,13 @@
 #include "qavaudiocodec_p.h"
 #include "qavsubtitlecodec_p.h"
 #include "qavhwdevice_p.h"
-#include "qtQtAVPlayer-config_p.h"
+
+#ifdef _MSC_VER
+#include "qavplayer-config_p_windows.h"
+#else
+#include "qavplayer-config_p_linux.h"
+#endif
+
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include "qaviodevice_p.h"
 

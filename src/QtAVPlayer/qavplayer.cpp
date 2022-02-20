@@ -17,7 +17,7 @@
 #include "qavfiltergraph_p.h"
 #include "qavvideofilter_p.h"
 #include "qavaudiofilter_p.h"
-#include <QtConcurrent/qtconcurrentrun.h>
+#include <QtConcurrent>
 #include <QLoggingCategory>
 #include <functional>
 
