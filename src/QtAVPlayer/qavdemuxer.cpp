@@ -34,6 +34,7 @@
 
 #if defined(Q_OS_WIN)
 #include "qavhwdevice_d3d11_p.h"
+#include "qavhwdevice_dxva2_p.h"
 #endif
 
 #if defined(Q_OS_ANDROID)
@@ -142,9 +143,12 @@ static void setup_video_codec(AVStream *stream, QAVCodec *base)
     if (name == QLatin1String("cocoa") || name == QLatin1String("ios"))
         device.reset(new QAVHWDevice_VideoToolbox);
 #endif
-#if defined(Q_OS_WIN)
+#if defined(Q_OS_WIN) && defined(QT_AVPLAYER_USE_D3D11)
     if (name == QLatin1String("windows"))
         device.reset(new QAVHWDevice_D3D11);
+#elif defined(Q_OS_WIN)
+    if (name == QLatin1String("windows"))
+        device.reset(new QAVHWDevice_DXVA2);
 #endif
 #if defined(Q_OS_ANDROID)
     if (name == QLatin1String("android")) {
