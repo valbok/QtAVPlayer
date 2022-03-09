@@ -73,8 +73,12 @@ public:
 
     QMap<QString, QString> metadata() const;
 
+    QString bitstreamFilter() const;
+    int setBitstreamFilter(const QString &bsfs);
+
     static QStringList supportedFormats();
     static QStringList supportedProtocols();
+    static QStringList supportedBitstreamFilters();
 
 protected:
     QScopedPointer<QAVDemuxerPrivate> d_ptr;

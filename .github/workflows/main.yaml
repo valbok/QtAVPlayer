@@ -46,14 +46,14 @@ jobs:
       - name: Build
         run: |
           qmake
-          make -j12 CC=$CC CXX=$CXX
+          make CC=$CC CXX=$CXX
           make install
 
       - name: Test
         run: |
           cd tests/
           qmake
-          make -j12 CC=$CC CXX=$CXX
+          make CC=$CC CXX=$CXX
           export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
           cd auto/integration/qavdemuxer
           ./tst_qavdemuxer --platform minimal
@@ -88,6 +88,7 @@ jobs:
 
       - name: Build
         run: |
+          ffmpeg -version
           qmake
           make CC=$CC CXX=$CXX CXXFLAGS="$CXXFLAGS"
           make install
@@ -206,7 +207,7 @@ jobs:
         shell: cmd
         run: |
           qmake
-          mingw32-make -j4
+          mingw32-make
           mingw32-make install
 
       - name: Test
