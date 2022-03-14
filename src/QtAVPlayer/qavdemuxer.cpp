@@ -49,6 +49,9 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavdevice/avdevice.h>
 #include <libavcodec/avcodec.h>
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 0, 0)
+#include <libavcodec/bsf.h>
+#endif
 }
 
 QT_BEGIN_NAMESPACE
@@ -64,6 +67,7 @@ public:
 
     QAVDemuxer *q_ptr = nullptr;
     AVFormatContext *ctx = nullptr;
+    AVBSFContext *bsf_ctx = nullptr;
 
     bool abortRequest = false;
     mutable QMutex mutex;
@@ -74,10 +78,9 @@ public:
     int currentVideoStreamIndex = -1;
     int currentSubtitleStreamIndex = -1;
 
-    AVPacket audioPacket;
-    AVPacket videoPacket;
-    AVPacket subtitlePacket;
     bool eof = false;
+    QList<QAVPacket> packets;
+    QString bsfs;
 };
 
 static int decode_interrupt_cb(void *ctx)
@@ -275,6 +278,55 @@ static ParsedURL parse_url(const QString &url)
     return parsed;
 }
 
+static int init_output_bsfs(AVBSFContext *ctx, AVStream *st)
+{
+    if (!ctx)
+        return 0;
+
+    int ret = avcodec_parameters_copy(ctx->par_in, st->codecpar);
+    if (ret < 0)
+        return ret;
+
+    ctx->time_base_in = st->time_base;
+
+    ret = av_bsf_init(ctx);
+    if (ret < 0) {
+        qWarning() << "Error initializing bitstream filter:" << ctx->filter->name;
+        return ret;
+    }
+
+    ret = avcodec_parameters_copy(st->codecpar, ctx->par_out);
+    if (ret < 0)
+        return ret;
+
+    st->time_base = ctx->time_base_out;
+    return 0;
+}
+
+static int apply_bsf(const QString &bsf, AVFormatContext *ctx, AVBSFContext *&bsf_ctx)
+{
+    int ret = !bsf.isEmpty() ? av_bsf_list_parse_str(bsf.toUtf8().constData(), &bsf_ctx) : 0;
+    if (ret < 0) {
+        qWarning() << "Error parsing bitstream filter sequence:" << bsf;
+        return ret;
+    }
+
+    for (std::size_t i = 0; i < ctx->nb_streams; ++i) {
+        switch (ctx->streams[i]->codecpar->codec_type) {
+            case AVMEDIA_TYPE_VIDEO:
+                ret = init_output_bsfs(bsf_ctx, ctx->streams[i]);
+                break;
+            case AVMEDIA_TYPE_AUDIO:
+                ret = init_output_bsfs(bsf_ctx, ctx->streams[i]);
+                break;
+            default:
+                break;
+        }
+    }
+
+    return ret;
+}
+
 int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
 {
     Q_D(QAVDemuxer);
@@ -353,6 +405,9 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
     d->seekable = d->ctx->iformat->read_seek || d->ctx->iformat->read_seek2;
     if (d->ctx->pb)
         d->seekable |= bool(d->ctx->pb->seekable);
+
+    if (!d->bsfs.isEmpty())
+        return apply_bsf(d->bsfs, d->ctx, d->bsf_ctx);
 
     return 0;
 }
@@ -472,14 +527,19 @@ void QAVDemuxer::unload()
 {
     Q_D(QAVDemuxer);
     QMutexLocker locker(&d->mutex);
-    if (d->ctx)
+    if (d->ctx) {
         avformat_close_input(&d->ctx);
+        avformat_free_context(d->ctx);
+    }
+    d->ctx = nullptr;
     d->eof = false;
     d->abortRequest = 0;
     d->currentVideoStreamIndex = -1;
     d->currentAudioStreamIndex = -1;
     d->currentSubtitleStreamIndex = -1;
     d->streams.clear();
+    av_bsf_free(&d->bsf_ctx);
+    d->bsf_ctx = nullptr;
 }
 
 bool QAVDemuxer::eof() const
@@ -493,6 +553,9 @@ QAVPacket QAVDemuxer::read()
 {
     Q_D(QAVDemuxer);
     QMutexLocker locker(&d->mutex);
+    if (!d->packets.isEmpty())
+        return d->packets.takeFirst();
+
     if (!d->ctx || d->eof)
         return {};
 
@@ -504,8 +567,6 @@ QAVPacket QAVDemuxer::read()
             locker.relock();
             d->eof = true;
         }
-
-        return {};
     }
 
     locker.relock();
@@ -521,7 +582,21 @@ QAVPacket QAVDemuxer::read()
     if (stream != nullptr)
         pkt.setTimeBase(stream->time_base);
 
-    return pkt;
+    if (d->bsf_ctx) {
+        ret = av_bsf_send_packet(d->bsf_ctx, d->eof ? NULL : pkt.packet());
+        if (ret >= 0) {
+            while ((ret = av_bsf_receive_packet(d->bsf_ctx, pkt.packet())) >= 0)
+                d->packets.append(pkt);
+        }
+        if (ret < 0 && ret != AVERROR_EOF && ret != AVERROR(EAGAIN)) {
+            qWarning() << "Error applying bitstream filters to an output:" << ret;
+            return {};
+        }
+    } else {
+        d->packets.append(pkt);
+    }
+
+    return !d->packets.isEmpty() ? d->packets.takeFirst() : QAVPacket{};
 }
 
 static bool decode_packet(const QAVDemuxer &demuxer, const QAVPacket &pkt, QAVFrame *frame, QAVSubtitleFrame *subtitle)
@@ -621,6 +696,39 @@ QMap<QString, QString> QAVDemuxer::metadata() const
     AVDictionaryEntry *tag = nullptr;
     while ((tag = av_dict_get(d->ctx->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
         result[QString::fromUtf8(tag->key)] = QString::fromUtf8(tag->value);
+
+    return result;
+}
+
+QString QAVDemuxer::bitstreamFilter() const
+{
+    Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    return d->bsfs;
+}
+
+int QAVDemuxer::setBitstreamFilter(const QString &bsfs)
+{
+    Q_D(QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    d->bsfs = bsfs;
+    int ret = 0;
+    if (d->ctx) {
+        av_bsf_free(&d->bsf_ctx);
+        d->bsf_ctx = nullptr;
+        ret = apply_bsf(d->bsfs, d->ctx, d->bsf_ctx);
+    }
+    return ret;
+}
+
+QStringList QAVDemuxer::supportedBitstreamFilters()
+{
+    QStringList result;
+    const AVBitStreamFilter *bsf = NULL;
+    void *opaque = NULL;
+
+    while ((bsf = av_bsf_iterate(&opaque)))
+        result.append(QString::fromUtf8(bsf->name));
 
     return result;
 }

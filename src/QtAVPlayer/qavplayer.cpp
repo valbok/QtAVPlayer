@@ -1019,6 +1019,25 @@ QString QAVPlayer::filter() const
     return d->filterDesc;
 }
 
+void QAVPlayer::setBitstreamFilter(const QString &desc)
+{
+    Q_D(QAVPlayer);
+    QString bsf = d->demuxer.bitstreamFilter();
+    if (bsf == desc)
+        return;
+
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << bsf << "->" << desc;
+    int ret = d->demuxer.setBitstreamFilter(desc);
+    emit bitstreamFilterChanged(desc);
+    if (ret < 0)
+        d->setError(QAVPlayer::FilterError, QLatin1String("Could not parse bitstream filter desc: ") + err_str(ret));
+}
+
+QString QAVPlayer::bitstreamFilter() const
+{
+    Q_D(const QAVPlayer);
+    return d->demuxer.bitstreamFilter();
+}
 
 bool QAVPlayer::isSynced() const
 {

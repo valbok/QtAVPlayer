@@ -78,6 +78,9 @@ public:
     void setFilter(const QString &desc);
     QString filter() const;
 
+    void setBitstreamFilter(const QString &desc);
+    QString bitstreamFilter() const;
+
     bool isSeekable() const;
 
     bool isSynced() const;
@@ -110,6 +113,7 @@ Q_SIGNALS:
     void stepped(qint64 pos);
     void seeked(qint64 pos);
     void filterChanged(const QString &desc);
+    void bitstreamFilterChanged(const QString &desc);
     void syncedChanged(bool sync);
 
     void videoFrame(const QAVVideoFrame &frame);
