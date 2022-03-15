@@ -314,8 +314,6 @@ static int apply_bsf(const QString &bsf, AVFormatContext *ctx, AVBSFContext *&bs
     for (std::size_t i = 0; i < ctx->nb_streams; ++i) {
         switch (ctx->streams[i]->codecpar->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
-                ret = init_output_bsfs(bsf_ctx, ctx->streams[i]);
-                break;
             case AVMEDIA_TYPE_AUDIO:
                 ret = init_output_bsfs(bsf_ctx, ctx->streams[i]);
                 break;
@@ -707,7 +705,7 @@ QString QAVDemuxer::bitstreamFilter() const
     return d->bsfs;
 }
 
-int QAVDemuxer::setBitstreamFilter(const QString &bsfs)
+int QAVDemuxer::applyBitstreamFilter(const QString &bsfs)
 {
     Q_D(QAVDemuxer);
     QMutexLocker locker(&d->mutex);

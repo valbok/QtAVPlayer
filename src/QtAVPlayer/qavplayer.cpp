@@ -1027,7 +1027,7 @@ void QAVPlayer::setBitstreamFilter(const QString &desc)
         return;
 
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << bsf << "->" << desc;
-    int ret = d->demuxer.setBitstreamFilter(desc);
+    int ret = d->demuxer.applyBitstreamFilter(desc);
     emit bitstreamFilterChanged(desc);
     if (ret < 0)
         d->setError(QAVPlayer::FilterError, QLatin1String("Could not parse bitstream filter desc: ") + err_str(ret));
