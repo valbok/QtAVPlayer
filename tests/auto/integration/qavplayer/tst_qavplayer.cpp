@@ -73,6 +73,8 @@ private slots:
     void subfileTar();
     void subtitles();
     void synced();
+    void bsf();
+    void bsfInvalid();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -1104,6 +1106,7 @@ void tst_QAVPlayer::files_data()
     QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << 2000 << 49 << 49;
     QTest::newRow("small.mp4") << QString("../testdata/small.mp4") << 5568 << 165 << 259;
     QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov") << 6840 << 169 << 0;
+    QTest::newRow("star_trails.mpeg") << QString("../testdata/star_trails.mpeg") << 1050 << 12 << 40;
 }
 
 void tst_QAVPlayer::files()
@@ -2601,6 +2604,138 @@ void tst_QAVPlayer::synced()
     QCOMPARE(spy.count(), 1);
     QCOMPARE(p.position(), p.duration());
     QTRY_VERIFY(framesCount > 200);
+}
+
+void tst_QAVPlayer::bsf()
+{
+    QAVPlayer p;
+    QFileInfo file(QLatin1String("../testdata/test.mov"));
+    p.setSource(file.absoluteFilePath());
+
+    QSignalSpy spy(&p, &QAVPlayer::bitstreamFilterChanged);
+
+    QAVVideoFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+
+    p.setBitstreamFilter("noise");
+    p.play();
+    QTRY_COMPARE(spy.count(), 1);
+    QTRY_VERIFY(framesCount > 0);
+    QVERIFY(frame);
+
+    spy.clear();
+    framesCount = 0;
+    frame = QAVVideoFrame();
+
+    p.setBitstreamFilter("noise");
+    QTRY_VERIFY(framesCount > 0);
+    QVERIFY(frame);
+
+    spy.clear();
+    framesCount = 0;
+    frame = QAVVideoFrame();
+
+    p.setBitstreamFilter("");
+    QTRY_COMPARE(spy.count(), 1);
+    p.setSource("");
+    p.setSource(file.absoluteFilePath());
+
+    spy.clear();
+
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QVERIFY(p.bitstreamFilter().isEmpty());
+
+    p.setBitstreamFilter("noise");
+    p.play();
+
+    QVERIFY(!p.bitstreamFilter().isEmpty());
+    QTRY_VERIFY(framesCount > 0);
+    QVERIFY(frame);
+
+    spy.clear();
+    framesCount = 0;
+    frame = QAVVideoFrame();
+
+    p.setBitstreamFilter("noise");
+    QTRY_VERIFY(framesCount > 0);
+    QVERIFY(frame);
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+}
+
+void tst_QAVPlayer::bsfInvalid()
+{
+    QAVPlayer p;
+    QFileInfo file(QLatin1String("../testdata/test.mov"));
+    p.setSource(file.absoluteFilePath());
+
+    QSignalSpy spy(&p, &QAVPlayer::bitstreamFilterChanged);
+    QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
+
+    QAVVideoFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+
+    p.setBitstreamFilter("obey=666");
+    p.play();
+
+    QTRY_COMPARE(spy.count(), 1);
+    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+
+    QCOMPARE(framesCount, 0);
+    QVERIFY(!frame);
+
+    spy.clear();
+    spyErrorOccurred.clear();
+    framesCount = 0;
+    frame = QAVVideoFrame();
+
+    p.setBitstreamFilter("");
+    QTRY_COMPARE(spy.count(), 1);
+    p.setSource("");
+    p.setSource(file.absoluteFilePath());
+
+    spy.clear();
+    spyErrorOccurred.clear();
+
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QVERIFY(p.bitstreamFilter().isEmpty());
+
+    p.setBitstreamFilter("makeluv=69");
+    p.play();
+
+    QVERIFY(!p.bitstreamFilter().isEmpty());
+    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+    QCOMPARE(framesCount, 0);
+    QVERIFY(!frame);
+
+    spyErrorOccurred.clear();
+
+    p.setBitstreamFilter("");
+    p.play();
+    QTRY_VERIFY(frame);
+    QVERIFY(framesCount > 0);
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+    QCOMPARE(spyErrorOccurred.count(), 0);
+
+    p.setBitstreamFilter("not=war");
+    p.play();
+
+    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::InvalidMedia);
+
+    spy.clear();
+    spyErrorOccurred.clear();
+    framesCount = 0;
+    frame = QAVVideoFrame();
+
+    p.setBitstreamFilter("noise");
+    p.play();
+
+    QTRY_VERIFY(frame);
+    QVERIFY(framesCount > 0);
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+    QCOMPARE(spyErrorOccurred.count(), 0);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
