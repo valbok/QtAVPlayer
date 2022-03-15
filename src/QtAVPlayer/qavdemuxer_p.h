@@ -74,7 +74,7 @@ public:
     QMap<QString, QString> metadata() const;
 
     QString bitstreamFilter() const;
-    int setBitstreamFilter(const QString &bsfs);
+    int applyBitstreamFilter(const QString &bsfs);
 
     static QStringList supportedFormats();
     static QStringList supportedProtocols();
