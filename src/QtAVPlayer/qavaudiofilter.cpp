@@ -71,6 +71,8 @@ int QAVAudioFilter::read(QAVFrame &frame)
         for (auto &filter: d->outputs) {
             while (true) {
                 QAVFrame out = d->sourceFrame;
+                // av_buffersink_get_frame_flags allocates frame's data
+                av_frame_unref(out.frame());
                 ret = av_buffersink_get_frame_flags(filter.ctx(), out.frame(), 0);
                 if (ret < 0)
                     break;
