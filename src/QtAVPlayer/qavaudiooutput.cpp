@@ -176,8 +176,10 @@ public:
                 init(fmt);
             QCoreApplication::processEvents();
         }
-        audioOutput->stop();
-        audioOutput->deleteLater();
+        if (audioOutput) {
+            audioOutput->stop();
+            audioOutput->deleteLater();
+        }
         audioOutput = nullptr;
     }
 };
