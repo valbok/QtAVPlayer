@@ -21,6 +21,7 @@
 #include <QtQml/QQmlEngine>
 #include <QGuiApplication>
 #include <QDebug>
+#include <QOpenGLContext>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -80,7 +81,11 @@ int main(int argc, char *argv[])
     auto videoSurface = vo->videoSink();
 #endif
 
-    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&videoSurface](const QAVVideoFrame &frame) {
+    QOpenGLContext context;
+    context.create();
+
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
+        context.makeCurrent(&viewer);
         QVideoFrame videoFrame = frame;
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         if (!videoSurface->isActive())

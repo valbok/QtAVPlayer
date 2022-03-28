@@ -23,7 +23,7 @@ QT_BEGIN_NAMESPACE
 class QAVVideoCodecPrivate : public QAVCodecPrivate
 {
 public:
-    QScopedPointer<QAVHWDevice> hw_device;
+    QSharedPointer<QAVHWDevice> hw_device;
 };
 
 static bool isSoftwarePixelFormat(AVPixelFormat from)
@@ -104,9 +104,14 @@ QAVVideoCodec::QAVVideoCodec(QObject *parent)
     d_ptr->avctx->get_format = negotiate_pixel_format;
 }
 
-void QAVVideoCodec::setDevice(QAVHWDevice *d)
+QAVVideoCodec::~QAVVideoCodec()
 {
-    d_func()->hw_device.reset(d);
+    av_buffer_unref(&avctx()->hw_device_ctx);
+}
+
+void QAVVideoCodec::setDevice(const QSharedPointer<QAVHWDevice> &d)
+{
+    d_func()->hw_device = d;
 }
 
 QAVHWDevice *QAVVideoCodec::device() const

@@ -100,6 +100,11 @@ win32 {
     SOURCES += qavhwdevice_d3d11.cpp
 }
 
+qtConfig(vdpau) {
+    PRIVATE_HEADERS += qavhwdevice_vdpau_p.h
+    SOURCES += qavhwdevice_vdpau.cpp
+}
+
 android {
     PRIVATE_HEADERS += qavhwdevice_mediacodec_p.h
     SOURCES += qavhwdevice_mediacodec.cpp

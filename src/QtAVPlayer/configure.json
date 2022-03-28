@@ -54,6 +54,17 @@
                 { "type": "pkgConfig", "args": "egl" },
                 { "type": "makeSpec", "spec": "EGL" }
             ]
+        },
+        "vdpau": {
+            "label": "vdpau",
+            "export": "vdpau",
+            "test":  {
+                "include": "vdpau/vdpau.h"
+            },
+            "sources": [
+                { "type": "pkgConfig",
+                  "args": "vdpau" }
+            ]
         }
     },
 
@@ -77,6 +88,11 @@
             "label": "egl",
             "condition": "libs.egl",
             "output": [ "privateFeature" ]
+        },
+        "vdpau": {
+            "label": "vdpau",
+            "condition": "libs.vdpau",
+            "output": [ "privateFeature" ]
         }
     },
 
@@ -87,7 +103,8 @@
                 "ffmpeg",
                 "va_x11",
                 "va_drm",
-                "egl"
+                "egl",
+                "vdpau"
             ]
         }
     ]

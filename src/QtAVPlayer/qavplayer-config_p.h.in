@@ -14,3 +14,9 @@
 #else
 #define QT_FEATURE_va_drm -1
 #endif
+
+#if defined(vdpau)
+#define QT_FEATURE_vdpau 1
+#else
+#define QT_FEATURE_vdpau -1
+#endif
