@@ -63,6 +63,10 @@ if(WIN32)
     set(SOURCES ${SOURCES} qavhwdevice_d3d11.cpp)
 endif()
 
+if(vdpau)
+    set(SOURCES ${SOURCES} qavhwdevice_vdpau.cpp)
+endif()
+
 if(ANDROID)
     set(SOURCES ${SOURCES} qavhwdevice_mediacodec.cpp)
 endif()
