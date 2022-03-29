@@ -11,6 +11,7 @@
 
 extern "C" {
 #include <libavformat/avio.h>
+#include <libavutil/mem.h>
 }
 
 QT_BEGIN_NAMESPACE
