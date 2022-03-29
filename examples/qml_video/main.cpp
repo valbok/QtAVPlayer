@@ -81,11 +81,7 @@ int main(int argc, char *argv[])
     auto videoSurface = vo->videoSink();
 #endif
 
-    QOpenGLContext context;
-    context.create();
-
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
-        context.makeCurrent(&viewer);
         QVideoFrame videoFrame = frame;
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         if (!videoSurface->isActive())
