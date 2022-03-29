@@ -209,9 +209,9 @@ public:
     {
     }
 
-    QVariant handle() const override
+    quint64 textureHandle(int /*plane*/) const override
     {
-        return m_frame.handle();
+        return m_frame.handle().toULongLong();
     }
 
     QVideoFrame::MapMode mapMode() const override { return m_mode; }
@@ -280,7 +280,11 @@ QAVVideoFrame::operator QVideoFrame() const
             break;
         case AV_PIX_FMT_VAAPI:
         case AV_PIX_FMT_VDPAU:
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
             format = VideoFrame::Format_BGRA32;
+#else
+            format = QVideoFrameFormat::Format_RGBA8888;
+#endif
             break;
         case AV_PIX_FMT_D3D11:
         case AV_PIX_FMT_NV12:
