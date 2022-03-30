@@ -38,7 +38,7 @@ static bool isSoftwarePixelFormat(AVPixelFormat from)
     case AV_PIX_FMT_OPENCL:
     case AV_PIX_FMT_CUDA:
     case AV_PIX_FMT_DXVA2_VLD:
-#if FF_API_XVMC
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(52, 58, 101)
     case AV_PIX_FMT_XVMC:
 #endif
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(58, 134, 0)
