@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  linux-qmake-default:
+  linux-default:
     strategy:
       matrix:
         compiler: ['gcc-9']
@@ -48,13 +48,20 @@ jobs:
           version: ${{ matrix.qt_version }}
           modules: ${{ matrix.qt_modules }}
 
-      - name: Build
+      - name: QMake Build
         run: |
           qmake
           make CC=$CC CXX=$CXX
           make install
 
-      - name: Test
+      - name: CMake Build
+        run: |
+          mkdir build
+          cd build
+          cmake ../
+          make
+
+      - name: QMake Test
         run: |
           cd tests/
           qmake
