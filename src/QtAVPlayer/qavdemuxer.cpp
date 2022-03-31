@@ -229,6 +229,7 @@ QStringList QAVDemuxer::supportedFormats()
 {
     static QStringList values;
     if (values.isEmpty()) {
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 0, 0)
         const AVInputFormat *fmt = nullptr;
         void *it = nullptr;
         while ((fmt = av_demuxer_iterate(&it))) {
@@ -241,6 +242,7 @@ QStringList QAVDemuxer::supportedFormats()
 #endif
                 );
         }
+#endif
     }
 
     return values;
@@ -735,12 +737,13 @@ int QAVDemuxer::applyBitstreamFilter(const QString &bsfs)
 QStringList QAVDemuxer::supportedBitstreamFilters()
 {
     QStringList result;
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(58, 0, 0)
     const AVBitStreamFilter *bsf = NULL;
     void *opaque = NULL;
 
     while ((bsf = av_bsf_iterate(&opaque)))
         result.append(QString::fromUtf8(bsf->name));
-
+#endif
     return result;
 }
 
