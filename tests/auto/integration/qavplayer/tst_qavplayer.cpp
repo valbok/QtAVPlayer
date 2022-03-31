@@ -1890,7 +1890,7 @@ void tst_QAVPlayer::accurateSeek()
     p.seek(3000);
     QTRY_COMPARE(seekPosition, 3000);
     QTRY_VERIFY(framesCount < 3);
-    QCOMPARE(frame.pts(), 3.0);
+    QTRY_COMPARE(frame.pts(), 3.0);
 
     frame = QAVVideoFrame();
     framesCount = 0;
@@ -1898,7 +1898,7 @@ void tst_QAVPlayer::accurateSeek()
     p.seek(2000);
     QTRY_COMPARE(seekPosition, 2000);
     QTRY_VERIFY(framesCount < 3);
-    QCOMPARE(frame.pts(), 2.0);
+    QTRY_COMPARE(frame.pts(), 2.0);
 
     frame = QAVVideoFrame();
     framesCount = 0;
@@ -1914,7 +1914,7 @@ void tst_QAVPlayer::accurateSeek()
     p.seek(0);
     QTRY_COMPARE(seekPosition, 0);
     QTRY_VERIFY(framesCount < 3);
-    QCOMPARE(frame.pts(), 0.0);
+    QTRY_COMPARE(frame.pts(), 0.0);
 
     seekPosition = -1;
     frame = QAVVideoFrame();
