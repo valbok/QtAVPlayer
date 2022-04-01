@@ -19,7 +19,7 @@ Item {
         border.width: 1
         border.color: "black"
         width: 5.5 * fps.textSize
-        height: 3.0 * fps.textSize
+        height: 2.5 * fps.textSize
         color: "black"
         opacity: 0.5
         radius: 0
@@ -30,8 +30,8 @@ Item {
         Text {
             id: labelText
             anchors {
-                left: parent.left
                 top: parent.top
+                left: parent.left
                 margins: 10
             }
             color: fps.textColor
@@ -44,8 +44,8 @@ Item {
         Text {
             id: labelTextQML
             anchors {
-                left: labelText.left
-                top: labelText.bottom
+                bottom: parent.bottom
+                left: parent.left
                 margins: 10
             }
             color: fps.textColor
@@ -58,22 +58,23 @@ Item {
         Text {
             id: fpsTextVideo
             anchors {
+                top: parent.top
                 right: parent.right
                 margins: 10
             }
             color: fps.textColor
-            font.pixelSize: fps.textSize
+            font.pixelSize: 0.6 * fps.textSize
         }
 
         Text {
             id: fpsTextQML
             anchors {
-                right: parent.right
                 bottom: parent.bottom
+                right: parent.right
                 margins: 10
             }
             color: fps.textColor
-            font.pixelSize: fps.textSize
+            font.pixelSize: 0.6 * fps.textSize
         }
     }
 }
