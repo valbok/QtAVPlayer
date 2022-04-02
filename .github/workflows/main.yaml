@@ -7,14 +7,18 @@ on:
     branches: [ master ]
 
 jobs:
-  linux-qmake-default:
+  linux-default:
     strategy:
       matrix:
         compiler: ['gcc-9']
+        qt_version: ["5.15.2", "6.3.0"]        
         include:
           - compiler: gcc-9
             packages: gcc-9 g++-9
             env: { 'CC': 'gcc-9', 'CXX': 'g++-9' }
+          - qt_version: "6.3.0"
+            qt_modules: "qtmultimedia"
+            qt_packages: "libxkbcommon-dev libgstreamer-plugins-base1.0-0 libgstreamer-gl1.0-0"
 
     runs-on: ubuntu-latest
 
@@ -26,7 +30,7 @@ jobs:
       - name: Install compiler and FFmpeg dependencies
         run: |
           sudo apt-get update &&
-          sudo apt-get install -y ${{ matrix.packages }} \
+          sudo apt-get install -y ${{ matrix.packages }} ${{ matrix.qt_packages }} \
                                   libavcodec-dev \
                                   libavformat-dev \
                                   libavdevice-dev \
@@ -38,18 +42,26 @@ jobs:
                                   libva-x11-2 \
                                   libva-drm2
 
-      - name: Install Qt 5.15
-        uses: jurplel/install-qt-action@v2
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
         with:
-          version: 5.15.2
+          version: ${{ matrix.qt_version }}
+          modules: ${{ matrix.qt_modules }}
 
-      - name: Build
+      - name: QMake Build
         run: |
           qmake
           make CC=$CC CXX=$CXX
           make install
 
-      - name: Test
+      - name: CMake Build
+        run: |
+          mkdir build
+          cd build
+          cmake ../
+          make
+
+      - name: QMake Test
         run: |
           cd tests/
           qmake

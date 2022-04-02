@@ -92,7 +92,7 @@ public:
 #else
     using AudioOutput = QAudioSink;
 #endif
-    QScopedPointer<AudioOutput> audioOutput;
+    AudioOutput *audioOutput = nullptr;
     qreal volume = 1.0;
     QList<QAVAudioFrame> frames;
     qint64 offset = 0;
@@ -144,8 +144,10 @@ public:
     void init(const QAudioFormat &fmt)
     {
         if (!audioOutput || (fmt.isValid() && audioOutput->format() != fmt) || audioOutput->state() == QAudio::StoppedState) {
-            audioOutput.reset(new AudioOutput(fmt));
-            QObject::connect(audioOutput.data(), &AudioOutput::stateChanged, audioOutput.data(),
+            if (audioOutput)
+                audioOutput->deleteLater();
+            audioOutput = new AudioOutput(fmt);
+            QObject::connect(audioOutput, &AudioOutput::stateChanged, audioOutput,
                 [&](QAudio::State state) {
                     switch (state) {
                         case QAudio::StoppedState:
@@ -174,8 +176,11 @@ public:
                 init(fmt);
             QCoreApplication::processEvents();
         }
-        audioOutput->stop();
-        audioOutput.reset();
+        if (audioOutput) {
+            audioOutput->stop();
+            audioOutput->deleteLater();
+        }
+        audioOutput = nullptr;
     }
 };
 

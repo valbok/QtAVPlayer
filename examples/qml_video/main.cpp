@@ -21,6 +21,7 @@
 #include <QtQml/QQmlEngine>
 #include <QGuiApplication>
 #include <QDebug>
+#include <QElapsedTimer>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -80,7 +81,14 @@ int main(int argc, char *argv[])
     auto videoSurface = vo->videoSink();
 #endif
 
-    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&videoSurface](const QAVVideoFrame &frame) {
+    QElapsedTimer frameElapsed;
+    frameElapsed.start();
+    int frameCount = 0;
+
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
+        const int fps = frameCount++ * 1000 / frameElapsed.elapsed();
+        rootObject->setProperty("frame_fps", fps);
+
         QVideoFrame videoFrame = frame;
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         if (!videoSurface->isActive())
@@ -142,6 +150,15 @@ int main(int argc, char *argv[])
     viewer.setMinimumSize(QSize(300, 360));
     viewer.resize(1960, 1086);
     viewer.show();
+
+    QElapsedTimer qmlElapsed;
+    qmlElapsed.start();
+    int qmlCount = 0;
+
+    QObject::connect(&viewer, &QQuickView::afterRendering, &viewer, [&] {
+        const int fps = qmlCount++ * 1000 / qmlElapsed.elapsed();
+        rootObject->setProperty("qml_fps", fps);
+    });
 
     return app.exec();
 }

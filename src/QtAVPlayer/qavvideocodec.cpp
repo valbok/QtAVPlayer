@@ -23,7 +23,7 @@ QT_BEGIN_NAMESPACE
 class QAVVideoCodecPrivate : public QAVCodecPrivate
 {
 public:
-    QScopedPointer<QAVHWDevice> hw_device;
+    QSharedPointer<QAVHWDevice> hw_device;
 };
 
 static bool isSoftwarePixelFormat(AVPixelFormat from)
@@ -35,10 +35,12 @@ static bool isSoftwarePixelFormat(AVPixelFormat from)
     case AV_PIX_FMT_VIDEOTOOLBOX:
     case AV_PIX_FMT_D3D11:
     case AV_PIX_FMT_D3D11VA_VLD:
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(56, 0, 0)
     case AV_PIX_FMT_OPENCL:
+#endif
     case AV_PIX_FMT_CUDA:
     case AV_PIX_FMT_DXVA2_VLD:
-#if FF_API_XVMC
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(52, 58, 101)
     case AV_PIX_FMT_XVMC:
 #endif
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(58, 134, 0)
@@ -104,9 +106,14 @@ QAVVideoCodec::QAVVideoCodec(QObject *parent)
     d_ptr->avctx->get_format = negotiate_pixel_format;
 }
 
-void QAVVideoCodec::setDevice(QAVHWDevice *d)
+QAVVideoCodec::~QAVVideoCodec()
 {
-    d_func()->hw_device.reset(d);
+    av_buffer_unref(&avctx()->hw_device_ctx);
+}
+
+void QAVVideoCodec::setDevice(const QSharedPointer<QAVHWDevice> &d)
+{
+    d_func()->hw_device = d;
 }
 
 QAVHWDevice *QAVVideoCodec::device() const

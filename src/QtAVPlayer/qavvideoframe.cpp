@@ -167,6 +167,11 @@ public:
     {
     }
 
+    QVariant handle() const override
+    {
+        return m_frame.handle();
+    }
+
     MapMode mapMode() const override { return m_mode; }
     int map(MapMode mode, int *numBytes, int bytesPerLine[4], uchar *data[4]) override
     {
@@ -202,6 +207,11 @@ public:
     PlanarVideoBuffer(const QAVVideoFrame &frame, QVideoFrame::HandleType type = QVideoFrame::NoHandle)
         : QAbstractVideoBuffer(type), m_frame(frame)
     {
+    }
+
+    quint64 textureHandle(int /*plane*/) const override
+    {
+        return m_frame.handle().toULongLong();
     }
 
     QVideoFrame::MapMode mapMode() const override { return m_mode; }
@@ -269,6 +279,13 @@ QAVVideoFrame::operator QVideoFrame() const
 #endif
             break;
         case AV_PIX_FMT_VAAPI:
+        case AV_PIX_FMT_VDPAU:
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+            format = VideoFrame::Format_BGRA32;
+#else
+            format = QVideoFrameFormat::Format_RGBA8888;
+#endif
+            break;
         case AV_PIX_FMT_D3D11:
         case AV_PIX_FMT_NV12:
             format = VideoFrame::Format_NV12;
@@ -276,13 +293,32 @@ QAVVideoFrame::operator QVideoFrame() const
         default:
             result = convertTo(AV_PIX_FMT_YUV420P);
             format = VideoFrame::Format_YUV420P;
-            break;        
+            break;
     }
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    return QVideoFrame(new PlanarVideoBuffer(result), size(), format);
+    using HandleType = QAbstractVideoBuffer::HandleType;
 #else
-    return QVideoFrame(new PlanarVideoBuffer(result), {size(), format});
+    using HandleType = QVideoFrame::HandleType;
+#endif
+
+    HandleType type = HandleType::NoHandle;
+    switch (handleType()) {
+        case GLTextureHandle:
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+            type = HandleType::GLTextureHandle;
+#else
+            type = HandleType::RhiTextureHandle;
+#endif
+            break;
+        default:
+            break;
+    }
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    return QVideoFrame(new PlanarVideoBuffer(result, type), size(), format);
+#else
+    return QVideoFrame(new PlanarVideoBuffer(result, type), {size(), format});
 #endif
 }
 

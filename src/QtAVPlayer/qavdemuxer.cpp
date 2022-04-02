@@ -28,6 +28,10 @@
 #include "qavhwdevice_vaapi_drm_egl_p.h"
 #endif
 
+#if QT_CONFIG(vdpau)
+#include "qavhwdevice_vdpau_p.h"
+#endif
+
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
 #include "qavhwdevice_videotoolbox_p.h"
 #endif
@@ -126,7 +130,7 @@ void QAVDemuxer::abort(bool stop)
 
 static void setup_video_codec(AVStream *stream, QAVCodec *base)
 {
-    QScopedPointer<QAVHWDevice> device;
+    QList<QSharedPointer<QAVHWDevice>> devices;
     AVDictionary *opts = NULL;
     Q_UNUSED(opts);
     auto name = QGuiApplication::platformName();
@@ -134,28 +138,28 @@ static void setup_video_codec(AVStream *stream, QAVCodec *base)
 
 #if QT_CONFIG(va_x11) && QT_CONFIG(opengl)
     if (name == QLatin1String("xcb")) {
-        device.reset(new QAVHWDevice_VAAPI_X11_GLX);
+        devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VAAPI_X11_GLX));
         av_dict_set(&opts, "connection_type", "x11", 0);
     }
 #endif
 #if QT_CONFIG(va_drm) && QT_CONFIG(egl)
     if (name == QLatin1String("eglfs"))
-        device.reset(new QAVHWDevice_VAAPI_DRM_EGL);
+        devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VAAPI_DRM_EGL));
+#endif
+#if QT_CONFIG(vdpau)
+    devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VDPAU));
 #endif
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
     if (name == QLatin1String("cocoa") || name == QLatin1String("ios"))
-        device.reset(new QAVHWDevice_VideoToolbox);
+        devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VideoToolbox));
 #endif
 #if defined(Q_OS_WIN) && defined(QT_AVPLAYER_USE_D3D11)
     if (name == QLatin1String("windows"))
-        device.reset(new QAVHWDevice_D3D11);
-#elif defined(Q_OS_WIN)
-    if (name == QLatin1String("windows"))
-        device.reset(new QAVHWDevice_DXVA2);
+        devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_D3D11));
 #endif
 #if defined(Q_OS_ANDROID)
     if (name == QLatin1String("android")) {
-        device.reset(new QAVHWDevice_MediaCodec);
+        devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_MediaCodec));
         codec.setCodec(avcodec_find_decoder_by_name("h264_mediacodec"));
         auto vm = QtAndroidPrivate::javaVM();
         av_jni_set_java_vm(vm, NULL);
@@ -191,18 +195,24 @@ static void setup_video_codec(AVStream *stream, QAVCodec *base)
     }
 #endif
 
-    if (!device) {
+    if (devices.isEmpty()) {
         if (!supported.isEmpty())
             qWarning() << name << ": none of the hardware accelerations was implemented";
         return;
     }
 
     AVBufferRef *hw_device_ctx = nullptr;
-    if (av_hwdevice_ctx_create(&hw_device_ctx, device->type(), nullptr, opts, 0) >= 0) {
-        qDebug() << "Found hardware device context:" << av_hwdevice_get_type_name(device->type());
-        codec.avctx()->hw_device_ctx = hw_device_ctx;
-        codec.avctx()->pix_fmt = device->format();
-        codec.setDevice(device.take());
+    for (auto &device : devices) {
+        auto deviceName = av_hwdevice_get_type_name(device->type());
+        qDebug() << "Creating hardware device context:" << deviceName;
+        if (av_hwdevice_ctx_create(&hw_device_ctx, device->type(), nullptr, opts, 0) >= 0) {
+            qDebug() << "Using hardware device context:" << deviceName;
+            codec.avctx()->hw_device_ctx = hw_device_ctx;
+            codec.avctx()->pix_fmt = device->format();
+            codec.setDevice(device);
+            break;
+        }
+        av_buffer_unref(&hw_device_ctx);
     }
 }
 
@@ -226,6 +236,7 @@ QStringList QAVDemuxer::supportedFormats()
 {
     static QStringList values;
     if (values.isEmpty()) {
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 0, 0)
         const AVInputFormat *fmt = nullptr;
         void *it = nullptr;
         while ((fmt = av_demuxer_iterate(&it))) {
@@ -238,6 +249,7 @@ QStringList QAVDemuxer::supportedFormats()
 #endif
                 );
         }
+#endif
     }
 
     return values;
@@ -732,12 +744,13 @@ int QAVDemuxer::applyBitstreamFilter(const QString &bsfs)
 QStringList QAVDemuxer::supportedBitstreamFilters()
 {
     QStringList result;
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(58, 0, 0)
     const AVBitStreamFilter *bsf = NULL;
     void *opaque = NULL;
 
     while ((bsf = av_bsf_iterate(&opaque)))
         result.append(QString::fromUtf8(bsf->name));
-
+#endif
     return result;
 }
 
