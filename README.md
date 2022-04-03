@@ -122,7 +122,8 @@ Free and open-source Qt Media Player library based on FFmpeg with a predictable 
 
 9. HW accelerations:
 
-   * VA-API decoding for Linux: DRM with EGL or X11 with GLX.
+   * VA-API for Linux: DRM with EGL or X11 with GLX.
+   * VDPAU for Linux.
    * Video Toolbox for macOS and iOS.
    * D3D11 for Windows. 
    * MediaCodec for Android. 
