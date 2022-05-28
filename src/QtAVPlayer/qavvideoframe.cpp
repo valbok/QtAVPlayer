@@ -311,6 +311,11 @@ QAVVideoFrame::operator QVideoFrame() const
             type = HandleType::RhiTextureHandle;
 #endif
             break;
+        case MTLTextureHandle:
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            type = HandleType::RhiTextureHandle;
+#endif
+            break;
         default:
             break;
     }
