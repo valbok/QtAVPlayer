@@ -209,9 +209,15 @@ public:
     {
     }
 
-    quint64 textureHandle(int /*plane*/) const override
+    quint64 textureHandle(int plane) const override
     {
-        return m_frame.handle().toULongLong();
+        if (m_textures.isNull())
+            const_cast<PlanarVideoBuffer*>(this)->m_textures = m_frame.handle();
+        if (m_textures.canConvert<QList<QVariant>>()) {
+            auto textures = m_textures.toList();
+            return plane < textures.size() ? textures[plane].toULongLong() : 0;
+        }
+        return m_textures.toULongLong();
     }
 
     QVideoFrame::MapMode mapMode() const override { return m_mode; }
@@ -242,6 +248,7 @@ public:
 private:
     QAVVideoFrame m_frame;
     QVideoFrame::MapMode m_mode = QVideoFrame::NotMapped;
+    QVariant m_textures;
 };
 
 #endif
@@ -287,6 +294,7 @@ QAVVideoFrame::operator QVideoFrame() const
 #endif
             break;
         case AV_PIX_FMT_D3D11:
+        case AV_PIX_FMT_VIDEOTOOLBOX:
         case AV_PIX_FMT_NV12:
             format = VideoFrame::Format_NV12;
             break;
