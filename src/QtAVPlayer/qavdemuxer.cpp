@@ -579,6 +579,7 @@ QAVPacket QAVDemuxer::read()
         if (ret == AVERROR_EOF || avio_feof(d->ctx->pb)) {
             locker.relock();
             d->eof = true;
+            locker.unlock();
         }
     }
 
