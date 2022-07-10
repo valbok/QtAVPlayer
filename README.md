@@ -10,10 +10,11 @@ Free and open-source Qt Media Player library based on FFmpeg.
   * Video Toolbox for macOS and iOS.
   * D3D11 for Windows. 
   * MediaCodec for Android.
+  
   Note: Not all ffmpeg decoders support HW acceleration.
 - It is up to an application to decide how to process these frames.
   * But there is experimental support of converting video frames to `QtMultimedia's` [QVideoFrame](https://doc.qt.io/qt-5/qvideoframe.html) for copy-free rendering if possible. Note: Not all Qt's renders support such acceleration. For best performance decoding should use HW accelerator and rendering should be copy-free.
-  * Audio frames could be played by QAVAudioOutput which is a wrapper of QtMultimedia's [QAudioSink](https://doc-snapshots.qt.io/qt6-dev/qaudiosink.html)
+  * Audio frames could be played by QAVAudioOutput which is a wrapper of `QtMultimedia's` [QAudioSink](https://doc-snapshots.qt.io/qt6-dev/qaudiosink.html)
 
 # Features
 
