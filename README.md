@@ -1,6 +1,19 @@
 # Qt AVPlayer
 
-Free and open-source Qt Media Player library based on FFmpeg with a predictable behavior and control.
+Free and open-source Qt Media Player library based on FFmpeg.
+- `QAVPlayer` should be used to decode and provide video/audio/subtitle frames.
+- `QAVPlayer` supports [FFmpeg Bitstream Filters](https://ffmpeg.org/ffmpeg-bitstream-filters.html) and [FFmpeg Filters](https://ffmpeg.org/ffmpeg-filters.html) including simplified `filter_complex`.
+- Based on `Qt` version and the platform `QAVPlayer` sends frames in specific format. 
+  By default, `QAVPlayer` tries to decode video frames using hardware accelerations:
+  * VA-API for Linux: DRM with EGL or X11 with GLX.
+  * VDPAU for Linux.
+  * Video Toolbox for macOS and iOS.
+  * D3D11 for Windows. 
+  * MediaCodec for Android.
+  Note: Not all ffmpeg decoders support HW acceleration.
+- It is up to an application to decide how to process these frames.
+  * But there is experimental support of converting video frames to `QtMultimedia's` [QVideoFrame](https://doc.qt.io/qt-5/qvideoframe.html) for copy-free rendering if possible. Note: Not all Qt's renders support such acceleration. For best performance decoding should use HW accelerator and rendering should be copy-free.
+  * Audio frames could be played by QAVAudioOutput which is a wrapper of QtMultimedia's [QAudioSink](https://doc-snapshots.qt.io/qt6-dev/qaudiosink.html)
 
 # Features
 
