@@ -1,4 +1,5 @@
-# Qt AVPlayer
+# Qt AVPlayer 
+![example workflow](https://github.com/valbok/QtAVPlayer/actions/workflows/main.yaml/badge.svg)
 
 Free and open-source Qt Media Player library based on FFmpeg.
 - `QAVPlayer` should be used to decode and provide video/audio/subtitle frames.
