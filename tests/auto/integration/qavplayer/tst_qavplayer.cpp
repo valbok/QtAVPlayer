@@ -75,6 +75,7 @@ private slots:
     void synced();
     void bsf();
     void bsfInvalid();
+    void convertDirectConnection();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -2736,6 +2737,22 @@ void tst_QAVPlayer::bsfInvalid()
     QVERIFY(framesCount > 0);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
     QCOMPARE(spyErrorOccurred.count(), 0);
+}
+
+void tst_QAVPlayer::convertDirectConnection()
+{
+    QAVPlayer p;
+    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    p.setSource(file.absoluteFilePath());
+
+    int frameCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
+        QAVVideoFrame videoFrame = frame.convertTo(AVPixelFormat::AV_PIX_FMT_YUV420P);
+        ++frameCount;
+    }, Qt::DirectConnection);
+
+    p.play();
+    QTRY_VERIFY(frameCount > 3);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
