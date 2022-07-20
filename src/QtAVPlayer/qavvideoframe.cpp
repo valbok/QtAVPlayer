@@ -40,8 +40,8 @@ public:
     QAVVideoFramePrivate(QAVVideoFrame *q) : q_ptr(q) { }
 
     QAVVideoBuffer &videoBuffer() const
-    {
-        if (!buffer) {
+    {       
+        if (!buffer || q_ptr->frame() != buffer->frame().frame()) {
             auto c = videoCodec(stream.codec().data());
             auto buf = c && c->device() && frame->format == c->device()->format() ? c->device()->videoBuffer(*q_ptr) : new QAVVideoBuffer_CPU(*q_ptr);
             const_cast<QAVVideoFramePrivate*>(this)->buffer.reset(buf);
