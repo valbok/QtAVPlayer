@@ -30,7 +30,7 @@ public:
     ~QAVVideoBuffer_CPU() = default;
     explicit QAVVideoBuffer_CPU(const QAVVideoFrame &frame) : QAVVideoBuffer(frame) { }
 
-    QAVVideoFrame::MapData map() const override;
+    QAVVideoFrame::MapData map() override;
 };
 
 QT_END_NAMESPACE

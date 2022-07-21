@@ -14,10 +14,12 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-QAVVideoFrame::MapData QAVVideoBuffer_CPU::map() const
+QAVVideoFrame::MapData QAVVideoBuffer_CPU::map()
 {
     QAVVideoFrame::MapData mapData;
     auto frame = m_frame.frame();
+    if (frame->format == AV_PIX_FMT_NONE)
+        return mapData;
 
     mapData.size = av_image_get_buffer_size(AVPixelFormat(frame->format), frame->width, frame->height, 1);
     mapData.format = AVPixelFormat(frame->format);
