@@ -31,7 +31,7 @@ public:
     explicit QAVVideoBuffer_GPU(const QAVVideoFrame &frame) : QAVVideoBuffer(frame) { }
     ~QAVVideoBuffer_GPU() = default;
 
-    QAVVideoFrame::MapData map() const override;
+    QAVVideoFrame::MapData map() override;
 
 protected:
     QAVVideoBuffer_CPU m_cpu;
