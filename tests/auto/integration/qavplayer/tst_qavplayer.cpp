@@ -77,6 +77,7 @@ private slots:
     void bsfInvalid();
     void convertDirectConnection();
     void mapTwice();
+    void changeFormat();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -1098,27 +1099,25 @@ void tst_QAVPlayer::files_data()
 {
     QTest::addColumn<QString>("path");
     QTest::addColumn<int>("duration");
-    QTest::addColumn<int>("videoFrames");
-    QTest::addColumn<int>("audioFrames");
+    QTest::addColumn<bool>("hasVideo");
+    QTest::addColumn<bool>("hasAudio");
 
-    QTest::newRow("test.wav") << QString("../testdata/test.wav") << 999 << 0 << 21;
-    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4") << 15019 << 374 << 702;
-    QTest::newRow("shots0000.dv") << QString("../testdata/shots0000.dv") << 40 << 1 << 0;
-    QTest::newRow("dv_dsf_1_stype_1.dv") << QString("../testdata/dv_dsf_1_stype_1.dv") << 600 << 14 << 14;
-    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << 2000 << 49 << 49;
-    QTest::newRow("small.mp4") << QString("../testdata/small.mp4") << 5568 << 165 << 259;
-    QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov") << 6840 << 169 << 0;
-    QTest::newRow("star_trails.mpeg") << QString("../testdata/star_trails.mpeg") << 1050 << 12 << 40;
+    QTest::newRow("test.wav") << QString("../testdata/test.wav") << 999 << false << true;
+    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4") << 15019 << true << true;
+    QTest::newRow("shots0000.dv") << QString("../testdata/shots0000.dv") << 40 << true << false;
+    QTest::newRow("dv_dsf_1_stype_1.dv") << QString("../testdata/dv_dsf_1_stype_1.dv") << 600 << true << true;
+    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << 2000 << true << true;
+    QTest::newRow("small.mp4") << QString("../testdata/small.mp4") << 5568 << true << true;
+    QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov") << 6840 << true << false;
+    QTest::newRow("star_trails.mpeg") << QString("../testdata/star_trails.mpeg") << 1050 << true << true;
 }
 
 void tst_QAVPlayer::files()
 {
     QFETCH(QString, path);
     QFETCH(int, duration);
-    QFETCH(int, videoFrames);
-    QFETCH(int, audioFrames);
-    const bool hasVideo = videoFrames > 0;
-    const bool hasAudio = audioFrames > 0;
+    QFETCH(bool, hasVideo);
+    QFETCH(bool, hasAudio);
 
     QAVPlayer p;
 
@@ -1323,6 +1322,7 @@ void tst_QAVPlayer::convert_data()
     QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << AV_PIX_FMT_YUV420P;
     QTest::newRow("small.mp4") << QString("../testdata/small.mp4") << AV_PIX_FMT_YUV422P;
     QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov") << AV_PIX_FMT_NV12;
+    QTest::newRow("1.dv") << QString("../testdata/1.dv") << AV_PIX_FMT_YUV422P;
 }
 
 void tst_QAVPlayer::convert()
@@ -2333,7 +2333,7 @@ void tst_QAVPlayer::filter()
 
     p.setFilter(filter);
     p.pause();
-    QTRY_VERIFY(frame);
+    QTRY_VERIFY_WITH_TIMEOUT(frame, 10000);
     QTRY_COMPARE(spyVideoFilterChanged.count(), 1);
 
     frame = QAVVideoFrame();
@@ -2772,6 +2772,22 @@ void tst_QAVPlayer::mapTwice()
     QTRY_VERIFY(md1.format != AV_PIX_FMT_NONE);
     QTRY_VERIFY(md2.format != AV_PIX_FMT_NONE);
     QCOMPARE(md1.format, md2.format);
+}
+
+void tst_QAVPlayer::changeFormat()
+{
+    QAVPlayer p;
+    QFileInfo file(QLatin1String("../testdata/1.dv"));
+    p.setSource(file.absoluteFilePath());
+    p.setFilter("drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36");
+    QAVVideoFrame videoFrame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
+        videoFrame = frame;
+    });
+
+    p.play();
+    QTRY_VERIFY_WITH_TIMEOUT(videoFrame, 30000);
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
 }
 
 QTEST_MAIN(tst_QAVPlayer)

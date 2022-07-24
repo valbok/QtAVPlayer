@@ -9,10 +9,10 @@
 #include "qavcodec_p.h"
 #include "qavvideocodec_p.h"
 #include "qavaudiocodec_p.h"
-#include "qavdemuxer_p.h"
 #include <QDebug>
 
 extern "C" {
+#include <libavformat/avformat.h>
 #include <libavfilter/avfilter.h>
 #include <libavfilter/buffersrc.h>
 #include <libavfilter/buffersink.h>
@@ -24,23 +24,24 @@ class QAVFilterGraphPrivate
 {
     Q_DECLARE_PUBLIC(QAVFilterGraph)
 public:
-    QAVFilterGraphPrivate(QAVFilterGraph *q, const QAVDemuxer &d) : q_ptr(q), demuxer(d) { }
+    QAVFilterGraphPrivate(QAVFilterGraph *q) : q_ptr(q) { }
 
     int read();
 
     QAVFilterGraph *q_ptr = nullptr;
-    const QAVDemuxer &demuxer;
     QString desc;
-    AVFilterGraph *graph = nullptr;    
+    AVFilterGraph *graph = nullptr;
+    AVFilterInOut *outputs = nullptr;
+    AVFilterInOut *inputs = nullptr;
     QList<QAVVideoInputFilter> videoInputFilters;
     QList<QAVVideoOutputFilter> videoOutputFilters;
     QList<QAVAudioInputFilter> audioInputFilters;
     QList<QAVAudioOutputFilter> audioOutputFilters;
 };
 
-QAVFilterGraph::QAVFilterGraph(const QAVDemuxer &demuxer, QObject *parent)
+QAVFilterGraph::QAVFilterGraph(QObject *parent)
     : QObject(parent)
-    , d_ptr(new QAVFilterGraphPrivate(this, demuxer))
+    , d_ptr(new QAVFilterGraphPrivate(this))
 {    
 }
 
@@ -48,78 +49,98 @@ QAVFilterGraph::~QAVFilterGraph()
 {
     Q_D(QAVFilterGraph);
     avfilter_graph_free(&d->graph);
+    avfilter_inout_free(&d->inputs);
+    avfilter_inout_free(&d->outputs);
 }
 
 int QAVFilterGraph::parse(const QString &desc)
 {
     Q_D(QAVFilterGraph);
     d->desc = desc;
-    AVFilterInOut *outputs = nullptr;
-    AVFilterInOut *inputs = nullptr;
-    struct InOutDeleter {
-        AVFilterInOut **io = nullptr;
-        InOutDeleter(AVFilterInOut **o) : io(o) { }
-        ~InOutDeleter() { avfilter_inout_free(io); }
-    } inDeleter{ &inputs }, outDeleter{ &outputs };
-
     avfilter_graph_free(&d->graph);
+    avfilter_inout_free(&d->inputs);
+    avfilter_inout_free(&d->outputs);
     d->graph = avfilter_graph_alloc();
-    int ret = avfilter_graph_parse2(d->graph, desc.toUtf8().constData(), &inputs, &outputs);
-    if (ret < 0)
-        return ret;
+    return avfilter_graph_parse2(d->graph, desc.toUtf8().constData(), &d->inputs, &d->outputs);
+}
 
-    d->videoInputFilters.clear();
-    d->audioInputFilters.clear();
+int QAVFilterGraph::apply(const QAVFrame &frame)
+{
+    Q_D(QAVFilterGraph);
+    const AVMediaType codec_type = frame.stream().stream()->codecpar->codec_type;
+    switch (codec_type) {
+    case AVMEDIA_TYPE_VIDEO:
+        d->videoInputFilters.clear();
+        d->videoOutputFilters.clear();
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        d->audioInputFilters.clear();
+        d->audioOutputFilters.clear();
+        break;
+    default:
+        qWarning() << "Could not apply frame: Unsupported codec type:" << codec_type;
+        return AVERROR(EINVAL);
+    }
+
+    int ret = 0;
     int i = 0;
     AVFilterInOut *cur = nullptr;
-    for (cur = inputs, i = 0; cur; cur = cur->next, ++i) {
+    for (cur = d->inputs, i = 0; cur; cur = cur->next, ++i) {
         switch (avfilter_pad_get_type(cur->filter_ctx->input_pads, cur->pad_idx)) {
-            case AVMEDIA_TYPE_VIDEO: {
-                QAVVideoInputFilter filter(&d->demuxer);
+        case AVMEDIA_TYPE_VIDEO: {
+            if (codec_type == AVMEDIA_TYPE_VIDEO) {
+                QAVVideoInputFilter filter(frame);
                 ret = filter.configure(d->graph, cur);
                 if (ret < 0)
                     return ret;
                 d->videoInputFilters.push_back(filter);
-            } break;
-
-            case AVMEDIA_TYPE_AUDIO: {
-                QAVAudioInputFilter filter(&d->demuxer);
-                int ret = filter.configure(d->graph, cur);
+            }
+        } break;
+        case AVMEDIA_TYPE_AUDIO: {
+            if (codec_type == AVMEDIA_TYPE_AUDIO) {
+                QAVAudioInputFilter filter(frame);
+                ret = filter.configure(d->graph, cur);
                 if (ret < 0)
                     return ret;
                 d->audioInputFilters.push_back(filter);
-            } break;
-
-            default:
-                return AVERROR(EINVAL);
+            }
+        } break;
+        default:
+            return AVERROR(EINVAL);
         }
     }
 
-    d->videoOutputFilters.clear();
-    d->audioOutputFilters.clear();
-    for (cur = outputs, i = 0; cur; cur = cur->next, ++i) {
+    for (cur = d->outputs, i = 0; cur; cur = cur->next, ++i) {
         switch (avfilter_pad_get_type(cur->filter_ctx->input_pads, cur->pad_idx)) {
-            case AVMEDIA_TYPE_VIDEO: {
+        case AVMEDIA_TYPE_VIDEO: {
+            if (codec_type == AVMEDIA_TYPE_VIDEO) {
                 QAVVideoOutputFilter filter;
                 ret = filter.configure(d->graph, cur);
                 if (ret < 0)
                     return ret;
                 d->videoOutputFilters.push_back(filter);
-            } break;
-
-            case AVMEDIA_TYPE_AUDIO: {
+            }
+        } break;
+        case AVMEDIA_TYPE_AUDIO: {
+            if (codec_type == AVMEDIA_TYPE_AUDIO) {
                 QAVAudioOutputFilter filter;
                 int ret = filter.configure(d->graph, cur);
                 if (ret < 0)
                     return ret;
                 d->audioOutputFilters.push_back(filter);
-            } break;
-
-            default:
-                return AVERROR(EINVAL);
+            }
+        } break;
+        default:
+            return AVERROR(EINVAL);
         }
     }
 
+    return ret;
+}
+
+int QAVFilterGraph::config()
+{
+    Q_D(QAVFilterGraph);
     return avfilter_graph_config(d->graph, nullptr);
 }
 

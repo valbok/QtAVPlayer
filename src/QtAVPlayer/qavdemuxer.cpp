@@ -392,6 +392,10 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
     av_log_set_callback(log_callback);
 
     for (std::size_t i = 0; i < d->ctx->nb_streams; ++i) {
+        if (!d->ctx->streams[i]->codecpar) {
+            qWarning() << "Could not find codecpar";
+            return AVERROR(EINVAL);
+        }
         enum AVMediaType type = d->ctx->streams[i]->codecpar->codec_type;
         switch (type) {
             case AVMEDIA_TYPE_VIDEO:

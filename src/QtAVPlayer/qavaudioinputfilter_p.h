@@ -23,13 +23,12 @@
 
 QT_BEGIN_NAMESPACE
 
-class QAVDemuxer;
+class QAVFrame;
 class QAVAudioInputFilterPrivate;
 class Q_AVPLAYER_EXPORT QAVAudioInputFilter : public QAVInOutFilter
 {
 public:
-    QAVAudioInputFilter(QObject *parent = nullptr);
-    QAVAudioInputFilter(const QAVDemuxer *demuxer, QObject *parent = nullptr);
+    QAVAudioInputFilter(const QAVFrame &frame, QObject *parent = nullptr);
     QAVAudioInputFilter(const QAVAudioInputFilter &other);
     ~QAVAudioInputFilter();
     QAVAudioInputFilter &operator=(const QAVAudioInputFilter &other);
@@ -37,6 +36,7 @@ public:
     int configure(AVFilterGraph *graph, AVFilterInOut *in) override;
 
 protected:
+    QAVAudioInputFilter(QObject *parent = nullptr);
     Q_DECLARE_PRIVATE(QAVAudioInputFilter)
 };
 

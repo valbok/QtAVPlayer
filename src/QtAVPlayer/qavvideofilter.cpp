@@ -60,6 +60,10 @@ int QAVVideoFilter::write(const QAVFrame &frame)
 
     d->sourceFrame = videoFrame;
     for (auto &filter : d->inputs) {
+        if (!filter.supports(d->sourceFrame)) {
+            d->sourceFrame = {};
+            return AVERROR(ENOTSUP);
+        }
         QAVFrame ref = d->sourceFrame;
         int ret = av_buffersrc_add_frame_flags(filter.ctx(), ref.frame(), 0);
         if (ret < 0)
