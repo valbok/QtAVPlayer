@@ -37,10 +37,12 @@ class QAVDemuxer;
 class Q_AVPLAYER_EXPORT QAVFilterGraph : public QObject
 {
 public:
-    QAVFilterGraph(const QAVDemuxer &demuxer, QObject *parent = nullptr);
+    QAVFilterGraph(QObject *parent = nullptr);
     ~QAVFilterGraph();
 
     int parse(const QString &desc);
+    int apply(const QAVFrame &frame);
+    int config();
     QString desc() const;
 
     AVFilterGraph *graph() const;

@@ -23,20 +23,21 @@
 
 QT_BEGIN_NAMESPACE
 
-class QAVDemuxer;
+class QAVFrame;
 class QAVVideoInputFilterPrivate;
 class Q_AVPLAYER_EXPORT QAVVideoInputFilter : public QAVInOutFilter
 {
 public:
-    QAVVideoInputFilter(QObject *parent = nullptr);
-    QAVVideoInputFilter(const QAVDemuxer *demuxer, QObject *parent = nullptr);
+    QAVVideoInputFilter(const QAVFrame &frame, QObject *parent = nullptr);
     QAVVideoInputFilter(const QAVVideoInputFilter &other);
     ~QAVVideoInputFilter();
     QAVVideoInputFilter &operator=(const QAVVideoInputFilter &other);
     
     int configure(AVFilterGraph *graph, AVFilterInOut *in) override;
+    bool supports(const QAVFrame &frame) const;
 
 protected:
+    QAVVideoInputFilter(QObject *parent = nullptr);
     Q_DECLARE_PRIVATE(QAVVideoInputFilter)
 };
 

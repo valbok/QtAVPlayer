@@ -68,7 +68,8 @@ public:
     void endOfFile(bool v);
     void setVideoFrameRate(double v);
     double pts() const;
-    void applyFilter(bool reset = false);
+    void applyFilter();
+    void applyFilter(bool reset, const QAVFrame &frame);
 
     void terminate();
 
@@ -434,25 +435,70 @@ void QAVPlayerPrivate::wait(bool v)
     subtitleQueue.wake(true);
 }
 
-void QAVPlayerPrivate::applyFilter(bool reset)
+void QAVPlayerPrivate::applyFilter()
+{
+    applyFilter(false, {});
+}
+
+void QAVPlayerPrivate::applyFilter(bool reset, const QAVFrame &frame)
 {
     QMutexLocker locker(&stateMutex);
     if ((filterDesc.isEmpty() && !filterGraph) || (!reset && filterGraph && filterGraph->desc() == filterDesc))
         return;
 
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << filterDesc;
-    QScopedPointer<QAVFilterGraph> graph(!filterDesc.isEmpty() ? new QAVFilterGraph(demuxer) : nullptr);
-    int ret = graph ? graph->parse(filterDesc) : 0;
-    if (ret < 0) {
-        locker.unlock();
-        setError(QAVPlayer::FilterError, QLatin1String("Could not parse filter desc: ") + err_str(ret));
-        return;
+    videoQueue.setFilter(nullptr);
+    audioQueue.setFilter(nullptr);
+    QScopedPointer<QAVFilterGraph> graph(!filterDesc.isEmpty() ? new QAVFilterGraph : nullptr);
+    if (graph) {
+        auto setFilterError = [&](const QString &err, int ret) {
+            locker.unlock();
+            setError(QAVPlayer::FilterError, err + ": " + err_str(ret));
+        };
+        int ret = graph->parse(filterDesc);
+        if (ret < 0) {
+            setFilterError(QLatin1String("Could not parse filter desc"), ret);
+            return;
+        }
+        QAVFrame videoFrame;
+        QAVFrame audioFrame;
+        videoFrame.setStream(demuxer.videoStream());
+        audioFrame.setStream(demuxer.audioStream());
+        auto stream = frame.stream().stream();
+        if (stream) {
+            switch (stream->codecpar->codec_type) {
+            case AVMEDIA_TYPE_VIDEO:
+                videoFrame = frame;
+                break;
+            case AVMEDIA_TYPE_AUDIO:
+                audioFrame = frame;
+                break;
+            default:
+                qWarning() << "Unsupported codec type:" << stream->codecpar->codec_type;
+                return;
+            }
+        }
+        ret = graph->apply(videoFrame);
+        if (ret < 0) {
+            setFilterError(QLatin1String("Could not create video filters"), ret);
+            return;
+        }
+        ret = graph->apply(audioFrame);
+        if (ret < 0) {
+            setFilterError(QLatin1String("Could not create audio filters"), ret);
+            return;
+        }
+        ret = graph->config();
+        if (ret < 0) {
+            setFilterError(QLatin1String("Could not configure filter grapth"), ret);
+            return;
+        }
+
+        videoQueue.setFilter(new QAVVideoFilter(graph->videoInputFilters(), graph->videoOutputFilters()));
+        audioQueue.setFilter(new QAVAudioFilter(graph->audioInputFilters(), graph->audioOutputFilters()));
     }
 
-    videoQueue.setFilter(graph ? new QAVVideoFilter(graph->videoInputFilters(), graph->videoOutputFilters()) : nullptr);
-    audioQueue.setFilter(graph ? new QAVAudioFilter(graph->audioInputFilters(), graph->audioOutputFilters()) : nullptr);
     filterGraph.reset(graph.take());
-
     if (error == QAVPlayer::FilterError) {
         locker.unlock();
         setMediaStatus(QAVPlayer::LoadedMedia);
@@ -537,7 +583,7 @@ void QAVPlayerPrivate::doDemux()
                     qCDebug(lcAVPlayer) << "Waiting subtitle thread finished processing packets";
                     subtitleQueue.waitForEmpty();
                     qCDebug(lcAVPlayer) << "Reset filters";
-                    applyFilter(true);
+                    applyFilter(true, {});
                     qCDebug(lcAVPlayer) << "Start reading packets from" << pos * 1000;
                 } else {
                     qWarning() << "Could not seek:" << ret << ":" << err_str(ret);
@@ -631,11 +677,13 @@ bool QAVPlayerPrivate::doPlayStep(double refPts, bool master, QAVPacketQueue &qu
     bool hasFrame = false;
     const int ret = queue.frame(synced ? sync : synced, q_ptr->speed(), refPts, frame);
     if (ret < 0) {
-        if (ret != AVERROR(EAGAIN)) {
-            setError(QAVPlayer::FilterError, err_str(ret));
-        } else {
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR(ENOTSUP)) {
+            if (ret == AVERROR(ENOTSUP))
+                applyFilter(true, static_cast<QAVFrame &>(frame));
             hasFrame = isLastFrame(frame, demuxer); // Always flush events on the latest frame if filters don't have enough though
             frame = {}; // Don't send the latest frame
+        } else {
+            setError(QAVPlayer::FilterError, err_str(ret));
         }
     } else {
         if (frame) {
