@@ -15,6 +15,7 @@
 #include <QAbstractVideoSurface>
 #else
 #include <QtMultimedia/private/qabstractvideobuffer_p.h>
+#include <QtMultimedia/private/qvideotexturehelper_p.h>
 #endif
 #include <QDebug>
 
@@ -135,11 +136,15 @@ QAVVideoFrame QAVVideoFrame::convertTo(AVPixelFormat fmt) const
         return *this;
 
     auto mapData = map();
+    if (mapData.format == AV_PIX_FMT_NONE) {
+        qWarning() << __FUNCTION__ << "Could not map:" << formatName();
+        return QAVVideoFrame();
+    }
     auto ctx = sws_getContext(size().width(), size().height(), mapData.format,
                               size().width(), size().height(), fmt,
                               SWS_BICUBIC, NULL, NULL, NULL);
     if (ctx == nullptr) {
-        qWarning() << __FUNCTION__ << ": Could not get sws context:" << av_pix_fmt_desc_get(AVPixelFormat(frame()->format))->name;
+        qWarning() << __FUNCTION__ << ": Could not get sws context:" << formatName();
         return QAVVideoFrame();
     }
 
@@ -204,14 +209,23 @@ private:
 class PlanarVideoBuffer : public QAbstractVideoBuffer
 {
 public:
-    PlanarVideoBuffer(const QAVVideoFrame &frame, QVideoFrame::HandleType type = QVideoFrame::NoHandle)
-        : QAbstractVideoBuffer(type), m_frame(frame)
+    PlanarVideoBuffer(const QAVVideoFrame &frame, QVideoFrameFormat::PixelFormat format
+        , QVideoFrame::HandleType type = QVideoFrame::NoHandle)
+        : QAbstractVideoBuffer(type)
+        , m_frame(frame)
+        , m_pixelFormat(format)
     {
     }
 
-    quint64 textureHandle(int /*plane*/) const override
+    quint64 textureHandle(int plane) const override
     {
-        return m_frame.handle().toULongLong();
+        if (m_textures.isNull())
+            const_cast<PlanarVideoBuffer*>(this)->m_textures = m_frame.handle();
+        if (m_textures.canConvert<QList<QVariant>>()) {
+            auto textures = m_textures.toList();
+            return plane < textures.size() ? textures[plane].toULongLong() : 0;
+        }
+        return m_textures.toULongLong();
     }
 
     QVideoFrame::MapMode mapMode() const override { return m_mode; }
@@ -223,25 +237,26 @@ public:
 
         m_mode = mode;
         auto mapData = m_frame.map();
-        int nPlanes = 0;
-        for (;nPlanes < 4; ++nPlanes) {
-            if (!mapData.bytesPerLine[nPlanes])
+        auto *desc = QVideoTextureHelper::textureDescription(m_pixelFormat);
+        res.nPlanes = desc->nplanes;
+        for (int i = 0; i < res.nPlanes; ++i) {
+            if (!mapData.bytesPerLine[i])
                 break;
 
-            res.bytesPerLine[nPlanes] = mapData.bytesPerLine[nPlanes];
-            res.data[nPlanes] = mapData.data[nPlanes];
-            // TODO: Check if size can be different
-            res.size[nPlanes] = mapData.bytesPerLine[nPlanes];
+            res.data[i] = mapData.data[i];
+            res.bytesPerLine[i] = mapData.bytesPerLine[i];
+            // TODO: Reimplement heightForPlane
+            res.size[i] = mapData.bytesPerLine[i] * desc->heightForPlane(m_frame.size().height(), i);
         }
-
-        res.nPlanes = nPlanes;
         return res;
     }
     void unmap() override { m_mode = QVideoFrame::NotMapped; }
 
 private:
     QAVVideoFrame m_frame;
+    QVideoFrameFormat::PixelFormat m_pixelFormat = QVideoFrameFormat::Format_Invalid;
     QVideoFrame::MapMode m_mode = QVideoFrame::NotMapped;
+    QVariant m_textures;
 };
 
 #endif
@@ -287,10 +302,12 @@ QAVVideoFrame::operator QVideoFrame() const
 #endif
             break;
         case AV_PIX_FMT_D3D11:
+        case AV_PIX_FMT_VIDEOTOOLBOX:
         case AV_PIX_FMT_NV12:
             format = VideoFrame::Format_NV12;
             break;
         default:
+            // TODO: Add more supported formats instead of converting
             result = convertTo(AV_PIX_FMT_YUV420P);
             format = VideoFrame::Format_YUV420P;
             break;
@@ -311,6 +328,11 @@ QAVVideoFrame::operator QVideoFrame() const
             type = HandleType::RhiTextureHandle;
 #endif
             break;
+        case MTLTextureHandle:
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            type = HandleType::RhiTextureHandle;
+#endif
+            break;
         default:
             break;
     }
@@ -318,7 +340,7 @@ QAVVideoFrame::operator QVideoFrame() const
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     return QVideoFrame(new PlanarVideoBuffer(result, type), size(), format);
 #else
-    return QVideoFrame(new PlanarVideoBuffer(result, type), {size(), format});
+    return QVideoFrame(new PlanarVideoBuffer(result, format, type), {size(), format});
 #endif
 }
 

@@ -1,6 +1,22 @@
-# Qt AVPlayer
+# Qt AVPlayer 
+![example workflow](https://github.com/valbok/QtAVPlayer/actions/workflows/main.yaml/badge.svg)
 
-Free and open-source Qt Media Player library based on FFmpeg with a predictable behavior and control.
+Free and open-source Qt Media Player library based on FFmpeg.
+- `QAVPlayer` should be used to decode and fetch video/audio/subtitle frames.
+- `QAVPlayer` supports [FFmpeg Bitstream Filters](https://ffmpeg.org/ffmpeg-bitstream-filters.html) and [FFmpeg Filters](https://ffmpeg.org/ffmpeg-filters.html) including simplified `filter_complex`.
+- Based on Qt platform `QAVPlayer` sends the video frames in specific format.
+  By default, `QAVPlayer` tries to decode the video frames using hardware accelerations:
+  * `VA-API` for Linux: DRM with EGL or X11 with GLX.
+  * `VDPAU` for Linux.
+  * `Video Toolbox` for macOS and iOS.
+  * `D3D11` for Windows. 
+  * `MediaCodec` for Android.
+  
+  Note: Not all ffmpeg decoders support HW acceleration. In this case software decoders are used.
+- It is up to an application to decide how to process the frames.
+  * But there is _experimental_ support of converting video frames to QtMultimedia's [QVideoFrame](https://doc.qt.io/qt-5/qvideoframe.html) for copy-free rendering if possible.
+  Note: Not all Qt's renders support copy-free rendering. Also QtMultimedia does not always provide public API to render the video frames. And, of course, for best performance both decoding and rendering should be accelerated.
+  * Audio frames could be played by `QAVAudioOutput` which is a wrapper of QtMultimedia's [QAudioSink](https://doc-snapshots.qt.io/qt6-dev/qaudiosink.html)
 
 # Features
 
@@ -122,7 +138,8 @@ Free and open-source Qt Media Player library based on FFmpeg with a predictable 
 
 9. HW accelerations:
 
-   * VA-API decoding for Linux: DRM with EGL or X11 with GLX.
+   * VA-API for Linux: DRM with EGL or X11 with GLX.
+   * VDPAU for Linux.
    * Video Toolbox for macOS and iOS.
    * D3D11 for Windows. 
    * MediaCodec for Android. 

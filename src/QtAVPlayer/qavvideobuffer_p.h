@@ -32,7 +32,7 @@ public:
     virtual ~QAVVideoBuffer() = default;
     const QAVVideoFrame &frame() const { return m_frame; }
 
-    virtual QAVVideoFrame::MapData map() const = 0;
+    virtual QAVVideoFrame::MapData map() = 0;
     virtual QAVVideoFrame::HandleType handleType() const { return QAVVideoFrame::NoHandle; }
     virtual QVariant handle() const { return {}; }
 

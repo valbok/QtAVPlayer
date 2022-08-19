@@ -10,6 +10,7 @@
 #endif
 #include <inttypes.h>
 
+#include "qavframe.h"
 #include "qavaudioinputfilter_p.h"
 #include "qavinoutfilter_p_p.h"
 #include "qavdemuxer_p.h"
@@ -26,18 +27,31 @@ QT_BEGIN_NAMESPACE
 class QAVAudioInputFilterPrivate : public QAVInOutFilterPrivate
 {
 public:
-    QAVAudioInputFilterPrivate(QAVInOutFilter *q, const QAVDemuxer *demuxer) : QAVInOutFilterPrivate(q), demuxer(demuxer) { }
-    const QAVDemuxer *demuxer = nullptr;
+    QAVAudioInputFilterPrivate(QAVInOutFilter *q)
+        : QAVInOutFilterPrivate(q)
+    { }
+
+    AVSampleFormat format = AV_SAMPLE_FMT_NONE;
+    int sample_rate = 0;
+    uint64_t channel_layout = 0;
+    int channels = 0;
 };
 
 QAVAudioInputFilter::QAVAudioInputFilter(QObject *parent)
-    : QAVAudioInputFilter(nullptr, parent)
+    : QAVInOutFilter(*new QAVAudioInputFilterPrivate(this), parent)
 {
 }
 
-QAVAudioInputFilter::QAVAudioInputFilter(const QAVDemuxer *demuxer, QObject *parent)
-    : QAVInOutFilter(*new QAVAudioInputFilterPrivate(this, demuxer), parent)
+QAVAudioInputFilter::QAVAudioInputFilter(const QAVFrame &frame, QObject *parent)
+    : QAVAudioInputFilter(parent)
 {
+    Q_D(QAVAudioInputFilter);
+    const auto & frm = frame.frame();
+    const auto & stream = frame.stream().stream();
+    d->format = frm->format != AV_SAMPLE_FMT_NONE ? AVSampleFormat(frm->format) : AVSampleFormat(stream->codecpar->format);
+    d->sample_rate = frm->sample_rate ? frm->sample_rate : stream->codecpar->sample_rate;
+    d->channel_layout = frm->channel_layout ? frm->channel_layout : stream->codecpar->channel_layout;
+    d->channels = frm->channels ? frm->channels : stream->codecpar->channels;
 }
 
 QAVAudioInputFilter::QAVAudioInputFilter(const QAVAudioInputFilter &other)
@@ -52,27 +66,26 @@ QAVAudioInputFilter &QAVAudioInputFilter::operator=(const QAVAudioInputFilter &o
 {
     Q_D(QAVAudioInputFilter);
     QAVInOutFilter::operator=(other);
-    d->demuxer = other.d_func()->demuxer;
+    d->format = other.d_func()->format;
+    d->sample_rate = other.d_func()->sample_rate;
+    d->channel_layout = other.d_func()->channel_layout;
+    d->channels = other.d_func()->channels;
     return *this;
 }
 
 int QAVAudioInputFilter::configure(AVFilterGraph *graph, AVFilterInOut *in)
 {
     Q_D(QAVAudioInputFilter);
-    AVStream *stream = d->demuxer ? d->demuxer->audioStream().stream() : nullptr;
-    if (!stream)
-        return AVERROR(EINVAL);
-    
     AVBPrint args;
     av_bprint_init(&args, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprintf(&args, "time_base=%d/%d:sample_rate=%d:sample_fmt=%s",
-             1, stream->codecpar->sample_rate,
-             stream->codecpar->sample_rate,
-             av_get_sample_fmt_name(AVSampleFormat(stream->codecpar->format)));
-    if (stream->codecpar->channel_layout)
-        av_bprintf(&args, ":channel_layout=0x%" PRIx64, stream->codecpar->channel_layout);
+             1, d->sample_rate,
+             d->sample_rate,
+             av_get_sample_fmt_name(AVSampleFormat(d->format)));
+    if (d->channel_layout)
+        av_bprintf(&args, ":channel_layout=0x%" PRIx64, d->channel_layout);
     else
-        av_bprintf(&args, ":channels=%d", stream->codecpar->channels);
+        av_bprintf(&args, ":channels=%d", d->channels);
 
     char name[255];
     static int index = 0;

@@ -15,14 +15,20 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-QAVVideoFrame::MapData QAVVideoBuffer_GPU::map() const
+QAVVideoFrame::MapData QAVVideoBuffer_GPU::map()
 {
-    int ret = av_hwframe_transfer_data(m_cpu.frame().frame(), m_frame.frame(), 0);
-    if (ret < 0)
-        return {};
+    auto mapData = m_cpu.map();
+    if (mapData.format == AV_PIX_FMT_NONE) {
+        int ret = av_hwframe_transfer_data(m_cpu.frame().frame(), m_frame.frame(), 0);
+        if (ret < 0) {
+            qWarning() << "Could not av_hwframe_transfer_data:" << ret;
+            return {};
+        }
+        m_frame = QAVVideoFrame();
+        mapData = m_cpu.map();
+    }
 
-    const_cast<QAVVideoBuffer_GPU*>(this)->m_frame = QAVVideoFrame();
-    return m_cpu.map();
+    return mapData;
 }
 
 QT_END_NAMESPACE
