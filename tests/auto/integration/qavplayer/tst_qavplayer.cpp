@@ -2313,7 +2313,7 @@ void tst_QAVPlayer::filter_data()
     QTest::newRow("lutyuv_drawbox_green") << QString("split[a][b];            [a]lutyuv=y=val/4,scale=720:576,setsar=1/1,format=yuv444p|yuv444p10le,drawbox=w=121:h=121:x=20:y=20:color=invert:thickness=1[a1];            [b]crop=121:121:20:20,            waveform=intensity=0.8:mode=column:mirror=1:c=1:f=0:graticule=green:flags=numbers+dots:scale=0,scale=720:576,setsar=1/1[b1];            [a1][b1]blend=addition");
     QTest::newRow("crop_neighbor") << QString("crop=x=200:y=200:w=120:h=120,scale=720:576:flags=neighbor,histeq=strength=0,setsar=1/1");
     QTest::newRow("pad_negate_edgedetect_overlay") << QString("[0:v]pad=iw*2:ih*2[a];  [1:v]negate[b];  [2:v]hflip[c];  [3:v]edgedetect[d];  [a][b]overlay=w[x];  [x][c]overlay=0:h[y];  [y][d]overlay=w:h[out]");
-    QTest::newRow("waveform_audio_video") << QString("[0:v]waveform[v];[1:a]showwaves[a];[v][a]xstack");
+    QTest::newRow("waveform_audio_video") << QString("[0:v]waveform[v];[1:a]showwaves=s=640x256[a];[v][a]xstack");
     QTest::newRow("negate_hflip_edgedetect_hstack") << QString("[1:v]negate[a];  [2:v]hflip[b];  [3:v]edgedetect[c];  [0:v][a]hstack=inputs=2[top];  [b][c]hstack=inputs=2[bottom];  [top][bottom]vstack=inputs=2[out]");
     QTest::newRow("crop_black") << QString("crop=in_w-2*150:in_h,pad=980:980:x=0:y=0:color=black");
 }
@@ -2763,15 +2763,22 @@ void tst_QAVPlayer::mapTwice()
     p.setSource(file.absoluteFilePath());
     QAVVideoFrame::MapData md1;
     QAVVideoFrame::MapData md2;
+    QAVVideoFrame::MapData md3;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
         md1 = frame.map();
         md2 = frame.map();
     });
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
+        md3 = frame.map();
+        md3 = frame.map();
+    }, Qt::DirectConnection);
 
     p.pause();
     QTRY_VERIFY(md1.format != AV_PIX_FMT_NONE);
-    QTRY_VERIFY(md2.format != AV_PIX_FMT_NONE);
+    QVERIFY(md2.format != AV_PIX_FMT_NONE);
     QCOMPARE(md1.format, md2.format);
+    QTRY_VERIFY(md3.format != AV_PIX_FMT_NONE);
+    QVERIFY(md3.format != AV_PIX_FMT_NONE);
 }
 
 void tst_QAVPlayer::changeFormat()
