@@ -38,7 +38,7 @@ QAVFrame &QAVFrame::operator=(const QAVFrame &other)
     Q_D(QAVFrame);
     QAVStreamFrame::operator=(other);
 
-    auto other_priv = static_cast<QAVFramePrivate *>(other.d_ptr.data());
+    auto other_priv = static_cast<QAVFramePrivate *>(other.d_ptr.get());
     int64_t pts = d->frame->pts;
     av_frame_unref(d->frame);
     av_frame_ref(d->frame, other_priv->frame);

@@ -25,7 +25,7 @@
 #include "qavsubtitleframe.h"
 #include <QObject>
 #include <QMap>
-#include <QScopedPointer>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
@@ -81,7 +81,7 @@ public:
     static QStringList supportedBitstreamFilters();
 
 protected:
-    QScopedPointer<QAVDemuxerPrivate> d_ptr;
+    std::unique_ptr<QAVDemuxerPrivate> d_ptr;
 
 private:
     Q_DISABLE_COPY(QAVDemuxer)

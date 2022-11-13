@@ -10,7 +10,7 @@
 
 #include <QtAVPlayer/qavaudioframe.h>
 #include <QtAVPlayer/qtavplayerglobal.h>
-#include <QScopedPointer>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
@@ -25,7 +25,7 @@ public:
     bool play(const QAVAudioFrame &frame);
 
 protected:
-    QScopedPointer<QAVAudioOutputPrivate> d_ptr;
+    std::unique_ptr<QAVAudioOutputPrivate> d_ptr;
 
 private:
     Q_DISABLE_COPY(QAVAudioOutput)

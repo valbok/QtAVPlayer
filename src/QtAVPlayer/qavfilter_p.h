@@ -22,7 +22,7 @@
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QtAVPlayer/qavframe.h>
 #include <QObject>
-#include <QScopedPointer>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
@@ -38,7 +38,7 @@ public:
 
 protected:
     QAVFilter(QAVFilterPrivate &d, QObject *parent = nullptr);
-    QScopedPointer<QAVFilterPrivate> d_ptr;
+    std::unique_ptr<QAVFilterPrivate> d_ptr;
     Q_DECLARE_PRIVATE(QAVFilter)
 private:
     Q_DISABLE_COPY(QAVFilter)

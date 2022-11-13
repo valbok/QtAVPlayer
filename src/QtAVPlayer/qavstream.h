@@ -10,8 +10,8 @@
 
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QMap>
-#include <QSharedPointer>
 #include <QObject>
+#include <QSharedPointer>
 #include <memory>
 
 QT_BEGIN_NAMESPACE
@@ -37,7 +37,7 @@ public:
     QSharedPointer<QAVCodec> codec() const;
 
 private:
-    QScopedPointer<QAVStreamPrivate> d_ptr;
+    std::unique_ptr<QAVStreamPrivate> d_ptr;
     Q_DECLARE_PRIVATE(QAVStream)
 };
 

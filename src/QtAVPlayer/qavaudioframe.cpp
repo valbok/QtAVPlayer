@@ -92,7 +92,7 @@ QAVAudioFormat QAVAudioFrame::format() const
 
 QByteArray QAVAudioFrame::data() const
 {
-    auto d = const_cast<QAVAudioFramePrivate *>(reinterpret_cast<QAVAudioFramePrivate *>(d_ptr.data()));
+    auto d = const_cast<QAVAudioFramePrivate *>(reinterpret_cast<QAVAudioFramePrivate *>(d_ptr.get()));
     auto frame = d->frame;
     if (!frame)
         return {};

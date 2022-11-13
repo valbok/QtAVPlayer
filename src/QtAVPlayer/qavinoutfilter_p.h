@@ -21,6 +21,7 @@
 
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QObject>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
@@ -39,7 +40,7 @@ public:
     AVFilterContext *ctx() const;
 
 protected:
-    QScopedPointer<QAVInOutFilterPrivate> d_ptr;
+    std::unique_ptr<QAVInOutFilterPrivate> d_ptr;
     QAVInOutFilter(QAVInOutFilterPrivate &d, QObject *parent = nullptr);
     Q_DECLARE_PRIVATE(QAVInOutFilter)
 };

@@ -11,7 +11,7 @@
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QtAVPlayer/qavstream.h>
 #include <QObject>
-#include <QScopedPointer>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
@@ -34,7 +34,7 @@ public:
 protected:
     QAVStreamFrame(QAVStreamFramePrivate &d, QObject *parent = nullptr);
 
-    QScopedPointer<QAVStreamFramePrivate> d_ptr;
+    std::unique_ptr<QAVStreamFramePrivate> d_ptr;
     Q_DECLARE_PRIVATE(QAVStreamFrame)
 };
 

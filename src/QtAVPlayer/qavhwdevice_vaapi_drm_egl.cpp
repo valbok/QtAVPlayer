@@ -156,7 +156,7 @@ public:
 
 QAVVideoBuffer *QAVHWDevice_VAAPI_DRM_EGL::videoBuffer(const QAVVideoFrame &frame) const
 {
-    return new VideoBuffer_EGL(d_ptr.data(), frame);
+    return new VideoBuffer_EGL(d_ptr.get(), frame);
 }
 
 QT_END_NAMESPACE

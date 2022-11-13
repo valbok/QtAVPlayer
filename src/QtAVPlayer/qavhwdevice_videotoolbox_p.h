@@ -20,6 +20,7 @@
 //
 
 #include "qavhwdevice_p.h"
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
@@ -35,7 +36,7 @@ public:
     QAVVideoBuffer *videoBuffer(const QAVVideoFrame &frame) const override;
 
 private:
-    QScopedPointer<QAVHWDevice_VideoToolboxPrivate> d_ptr;
+    std::unique_ptr<QAVHWDevice_VideoToolboxPrivate> d_ptr;
     Q_DISABLE_COPY(QAVHWDevice_VideoToolbox)
     Q_DECLARE_PRIVATE(QAVHWDevice_VideoToolbox)
 };
