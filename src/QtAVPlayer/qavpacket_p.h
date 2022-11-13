@@ -21,6 +21,7 @@
 
 #include "qavframe.h"
 #include <QObject>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
@@ -42,7 +43,7 @@ public:
     double pts() const;
 
 protected:
-    QScopedPointer<QAVPacketPrivate> d_ptr;
+    std::unique_ptr<QAVPacketPrivate> d_ptr;
 
 private:
     Q_DECLARE_PRIVATE(QAVPacket)

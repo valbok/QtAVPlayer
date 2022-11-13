@@ -29,7 +29,7 @@
 #include <QWaitCondition>
 #include <QList>
 #include <math.h>
-#include <QSharedPointer>
+#include <memory>
 
 extern "C" {
 #include <libavutil/time.h>
@@ -241,7 +241,7 @@ protected:
     int m_bytes = 0;
     int m_duration = 0;
 
-    QScopedPointer<QAVStreamFrame> m_frame;
+    std::unique_ptr<QAVStreamFrame> m_frame;
     QAVQueueClock m_clock;
 };
 
@@ -315,7 +315,7 @@ private:
         return !m_filter || m_filter->eof();
     }
 
-    QScopedPointer<QAVFilter> m_filter;
+    std::unique_ptr<QAVFilter> m_filter;
     int m_ret = 0;
 };
 

@@ -52,7 +52,7 @@ QAVSubtitleFrame &QAVSubtitleFrame::operator=(const QAVSubtitleFrame &other)
 {
     Q_D(QAVSubtitleFrame);
     QAVStreamFrame::operator=(other);
-    d->subtitle = static_cast<QAVSubtitleFramePrivate *>(other.d_ptr.data())->subtitle;
+    d->subtitle = static_cast<QAVSubtitleFramePrivate *>(other.d_ptr.get())->subtitle;
 
     return *this;
 }

@@ -20,6 +20,7 @@
 //
 
 #include "qavhwdevice_p.h"
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
@@ -35,7 +36,7 @@ public:
     QAVVideoBuffer *videoBuffer(const QAVVideoFrame &frame) const override;
 
 private:
-    QScopedPointer<QAVHWDevice_VAAPI_DRM_EGLPrivate> d_ptr;
+    std::unique_ptr<QAVHWDevice_VAAPI_DRM_EGLPrivate> d_ptr;
     Q_DISABLE_COPY(QAVHWDevice_VAAPI_DRM_EGL)
     Q_DECLARE_PRIVATE(QAVHWDevice_VAAPI_DRM_EGL)
 };

@@ -20,8 +20,8 @@
 //
 
 #include <QtAVPlayer/qtavplayerglobal.h>
-#include <QScopedPointer>
 #include <QIODevice>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
@@ -37,7 +37,7 @@ public:
     void abort(bool aborted);
 
 protected:
-    QScopedPointer<QAVIODevicePrivate> d_ptr;
+    std::unique_ptr<QAVIODevicePrivate> d_ptr;
 
 private:
     Q_DECLARE_PRIVATE(QAVIODevice)

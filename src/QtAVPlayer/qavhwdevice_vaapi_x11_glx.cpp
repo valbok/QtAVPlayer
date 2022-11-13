@@ -175,7 +175,7 @@ public:
 
 QAVVideoBuffer *QAVHWDevice_VAAPI_X11_GLX::videoBuffer(const QAVVideoFrame &frame) const
 {
-    return new VideoBuffer_GLX(d_ptr.data(), frame);
+    return new VideoBuffer_GLX(d_ptr.get(), frame);
 }
 
 QT_END_NAMESPACE

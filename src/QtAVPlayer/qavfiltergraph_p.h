@@ -28,7 +28,7 @@
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QtAVPlayer/qavaudioframe.h>
 #include <QObject>
-#include <QScopedPointer>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
@@ -52,7 +52,7 @@ public:
     QList<QAVAudioOutputFilter> audioOutputFilters() const;
 
 protected:
-    QScopedPointer<QAVFilterGraphPrivate> d_ptr;
+    std::unique_ptr<QAVFilterGraphPrivate> d_ptr;
     Q_DECLARE_PRIVATE(QAVFilterGraph)
 private:
     Q_DISABLE_COPY(QAVFilterGraph)

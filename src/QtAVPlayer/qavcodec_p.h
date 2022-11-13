@@ -21,6 +21,7 @@
 
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QObject>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
@@ -41,7 +42,7 @@ public:
 protected:
     QAVCodec(QObject *parent = nullptr);
     QAVCodec(QAVCodecPrivate &d, QObject *parent = nullptr);
-    QScopedPointer<QAVCodecPrivate> d_ptr;
+    std::unique_ptr<QAVCodecPrivate> d_ptr;
     Q_DECLARE_PRIVATE(QAVCodec)
 private:
     Q_DISABLE_COPY(QAVCodec)
