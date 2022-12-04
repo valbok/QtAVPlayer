@@ -78,6 +78,7 @@ private slots:
     void convertDirectConnection();
     void mapTwice();
     void changeFormat();
+    void filterName();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -2099,7 +2100,7 @@ void tst_QAVPlayer::configureFilter()
 
     QFileInfo file(QLatin1String("../testdata/small.mp4"));
     p.setSource(file.absoluteFilePath());
-    QSignalSpy spy(&p, &QAVPlayer::filterChanged);
+    QSignalSpy spy(&p, &QAVPlayer::filtersChanged);
     QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
     QAVVideoFrame frame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; });
@@ -2112,7 +2113,7 @@ void tst_QAVPlayer::configureFilter()
 
     QString desc = "scale=iw/2:-1";
     p.setFilter(desc);
-    QCOMPARE(p.filter(), desc);
+    QCOMPARE(p.filters(), {desc});
     QTRY_COMPARE(spy.count(), 1);
     QCOMPARE(spyErrorOccurred.count(), 0);
 
@@ -2125,12 +2126,12 @@ void tst_QAVPlayer::configureFilter()
 
     p.stop();
     p.setFilter(desc);
-    QCOMPARE(p.filter(), desc);
+    QCOMPARE(p.filters(), {desc});
     QCOMPARE(spy.count(), 0);
     QCOMPARE(spyErrorOccurred.count(), 0);
 
     p.setFilter("");
-    QCOMPARE(p.filter(), "");
+    QCOMPARE(p.filters(), {});
     QTRY_COMPARE(spy.count(), 1);
     QCOMPARE(spyErrorOccurred.count(), 0);
 
@@ -2148,7 +2149,7 @@ void tst_QAVPlayer::configureFilter()
 
     p.stop();
     p.setFilter("wrong");
-    QCOMPARE(p.filter(), "wrong");
+    QCOMPARE(p.filters(), {"wrong"});
     QTRY_COMPARE(spyErrorOccurred.count(), 1);
 
     spyErrorOccurred.clear();
@@ -2160,7 +2161,7 @@ void tst_QAVPlayer::configureFilter()
     spyErrorOccurred.clear();
 
     p.pause();
-    QCOMPARE(p.filter(), "wrong");
+    QCOMPARE(p.filters(), {"wrong"});
     QTRY_COMPARE(spyErrorOccurred.count(), 1);
     QVERIFY(!frame);
 
@@ -2168,7 +2169,7 @@ void tst_QAVPlayer::configureFilter()
     spyErrorOccurred.clear();
 
     p.setFilter(desc);
-    QCOMPARE(p.filter(), desc);
+    QCOMPARE(p.filters(), {desc});
     QTRY_COMPARE(spy.count(), 1);
 
     p.pause();
@@ -2180,7 +2181,7 @@ void tst_QAVPlayer::configureFilter()
     spyErrorOccurred.clear();
 
     p.setFilter("wrong");
-    QCOMPARE(p.filter(), "wrong");
+    QCOMPARE(p.filters(), {"wrong"});
     QTRY_COMPARE(spy.count(), 1);
     QTRY_COMPARE(spyErrorOccurred.count(), 1);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
@@ -2199,7 +2200,7 @@ void tst_QAVPlayer::configureFilter()
     spyErrorOccurred.clear();
 
     p.setFilter("wrong2");
-    QCOMPARE(p.filter(), "wrong2");
+    QCOMPARE(p.filters(), {"wrong2"});
     QTRY_COMPARE(spy.count(), 1);
     QTRY_COMPARE(spyErrorOccurred.count(), 1);
 
@@ -2218,7 +2219,7 @@ void tst_QAVPlayer::configureFilter()
     frame = QAVVideoFrame();
 
     p.setFilter("");
-    QCOMPARE(p.filter(), "");
+    QCOMPARE(p.filters(), {});
     QTRY_COMPARE(spy.count(), 1);
     QCOMPARE(spyErrorOccurred.count(), 0);
 
@@ -2240,7 +2241,7 @@ void tst_QAVPlayer::changeSourceFilter()
 
     QFileInfo file1(QLatin1String("../testdata/small.mp4"));
     p.setSource(file1.absoluteFilePath());
-    QSignalSpy spy(&p, &QAVPlayer::filterChanged);
+    QSignalSpy spy(&p, &QAVPlayer::filtersChanged);
     QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
     QAVVideoFrame frame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; });
@@ -2255,7 +2256,7 @@ void tst_QAVPlayer::changeSourceFilter()
     p.setSource(file2.absoluteFilePath());
 
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
-    QCOMPARE(p.filter(), desc);
+    QCOMPARE(p.filters(), {desc});
 
     frame = QAVVideoFrame();
 
@@ -2314,7 +2315,7 @@ void tst_QAVPlayer::filter_data()
     QTest::newRow("lutyuv_drawbox_green") << QString("split[a][b];            [a]lutyuv=y=val/4,scale=720:576,setsar=1/1,format=yuv444p|yuv444p10le,drawbox=w=121:h=121:x=20:y=20:color=invert:thickness=1[a1];            [b]crop=121:121:20:20,            waveform=intensity=0.8:mode=column:mirror=1:c=1:f=0:graticule=green:flags=numbers+dots:scale=0,scale=720:576,setsar=1/1[b1];            [a1][b1]blend=addition");
     QTest::newRow("crop_neighbor") << QString("crop=x=200:y=200:w=120:h=120,scale=720:576:flags=neighbor,histeq=strength=0,setsar=1/1");
     QTest::newRow("pad_negate_edgedetect_overlay") << QString("[0:v]pad=iw*2:ih*2[a];  [1:v]negate[b];  [2:v]hflip[c];  [3:v]edgedetect[d];  [a][b]overlay=w[x];  [x][c]overlay=0:h[y];  [y][d]overlay=w:h[out]");
-    QTest::newRow("waveform_audio_video") << QString("[0:v]waveform[v];[1:a]showwaves=s=640x256[a];[v][a]xstack");
+    //QTest::newRow("waveform_audio_video") << QString("[0:v]waveform[v];[1:a]showwaves=s=640x256[a];[v][a]xstack");
     QTest::newRow("negate_hflip_edgedetect_hstack") << QString("[1:v]negate[a];  [2:v]hflip[b];  [3:v]edgedetect[c];  [0:v][a]hstack=inputs=2[top];  [b][c]hstack=inputs=2[bottom];  [top][bottom]vstack=inputs=2[out]");
     QTest::newRow("crop_black") << QString("crop=in_w-2*150:in_h,pad=980:980:x=0:y=0:color=black");
 }
@@ -2327,7 +2328,7 @@ void tst_QAVPlayer::filter()
     QFileInfo file(QLatin1String("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv"));
     p.setSource(file.absoluteFilePath());
 
-    QSignalSpy spyVideoFilterChanged(&p, &QAVPlayer::filterChanged);
+    QSignalSpy spyVideoFilterChanged(&p, &QAVPlayer::filtersChanged);
     QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
     QAVVideoFrame frame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; });
@@ -2341,7 +2342,7 @@ void tst_QAVPlayer::filter()
 
     p.play();
     QTRY_VERIFY(frame);
-    QCOMPARE(p.filter(), filter);
+    QCOMPARE(p.filters(), {filter});
     QCOMPARE(spyErrorOccurred.count(), 0);
 
     QTest::qWait(100);
@@ -2796,6 +2797,48 @@ void tst_QAVPlayer::changeFormat()
     p.play();
     QTRY_VERIFY_WITH_TIMEOUT(videoFrame, 30000);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+}
+
+void tst_QAVPlayer::filterName()
+{
+    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
+    QAVPlayer p;
+    QFileInfo file(QLatin1String("../testdata/small.mp4"));
+    p.setSource(file.absoluteFilePath());
+    p.setFilter("drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36");
+    QSet<QString> set;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
+        qDebug() << frame.pts() << frame.filterName();
+        if (!frame.filterName().isEmpty())
+            set.insert(frame.filterName());
+    });
+
+    p.play();
+    QTRY_COMPARE_WITH_TIMEOUT(set.size(), 1, 30000);
+    QVERIFY(set.contains("0:0"));
+    set.clear();
+    p.setFilter("[0:v]split=2[in1][in2];[in1]boxblur[out1];[in2]negate[out2]");
+    QTRY_VERIFY_WITH_TIMEOUT(set.size() >= 2, 30000);
+    QTRY_VERIFY(set.contains("out1"));
+    QTRY_VERIFY(set.contains("out2"));
+    set.clear();
+    p.setFilter("[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[out3]");
+    QTRY_VERIFY_WITH_TIMEOUT(set.size() >= 3, 30000);
+    QTRY_VERIFY(set.contains("out1"));
+    QTRY_VERIFY(set.contains("out2"));
+    QTRY_VERIFY(set.contains("out3"));
+    set.clear();
+    p.setFilters({
+            "drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[drawtext]",
+            "negate[negate]",
+            "[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[out3]"
+        });
+    QTRY_VERIFY_WITH_TIMEOUT(set.size() >= 5, 30000);
+    QTRY_VERIFY(set.contains("drawtext"));
+    QTRY_VERIFY(set.contains("negate"));
+    QTRY_VERIFY(set.contains("out1"));
+    QTRY_VERIFY(set.contains("out2"));
+    QTRY_VERIFY(set.contains("out3"));
 }
 
 QTEST_MAIN(tst_QAVPlayer)

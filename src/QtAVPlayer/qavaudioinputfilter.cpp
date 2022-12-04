@@ -75,6 +75,7 @@ QAVAudioInputFilter &QAVAudioInputFilter::operator=(const QAVAudioInputFilter &o
 
 int QAVAudioInputFilter::configure(AVFilterGraph *graph, AVFilterInOut *in)
 {
+    QAVInOutFilter::configure(graph, in);
     Q_D(QAVAudioInputFilter);
     AVBPrint args;
     av_bprint_init(&args, 0, AV_BPRINT_SIZE_AUTOMATIC);

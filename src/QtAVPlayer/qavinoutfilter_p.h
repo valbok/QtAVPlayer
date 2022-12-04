@@ -36,8 +36,9 @@ public:
     ~QAVInOutFilter();
     QAVInOutFilter(const QAVInOutFilter &other);
     QAVInOutFilter &operator=(const QAVInOutFilter &other);
-    virtual int configure(AVFilterGraph *graph, AVFilterInOut *in) = 0;
+    virtual int configure(AVFilterGraph *graph, AVFilterInOut *in);
     AVFilterContext *ctx() const;
+    QString name() const;
 
 protected:
     std::unique_ptr<QAVInOutFilterPrivate> d_ptr;

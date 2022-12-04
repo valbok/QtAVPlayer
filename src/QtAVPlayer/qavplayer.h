@@ -76,7 +76,8 @@ public:
     double videoFrameRate() const;
 
     void setFilter(const QString &desc);
-    QString filter() const;
+    void setFilters(const QList<QString> &filters);
+    QList<QString> filters() const;
 
     void setBitstreamFilter(const QString &desc);
     QString bitstreamFilter() const;
@@ -112,7 +113,7 @@ Q_SIGNALS:
     void stopped(qint64 pos);
     void stepped(qint64 pos);
     void seeked(qint64 pos);
-    void filterChanged(const QString &desc);
+    void filtersChanged(const QList<QString> &filters);
     void bitstreamFilterChanged(const QString &desc);
     void syncedChanged(bool sync);
 

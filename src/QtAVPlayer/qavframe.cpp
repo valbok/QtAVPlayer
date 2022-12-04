@@ -48,6 +48,7 @@ QAVFrame &QAVFrame::operator=(const QAVFrame &other)
 
     d->frameRate = other_priv->frameRate;
     d->timeBase = other_priv->timeBase;
+    d->filterName = other_priv->filterName;
     return *this;
 }
 
@@ -79,6 +80,17 @@ void QAVFrame::setTimeBase(const AVRational &value)
 {
     Q_D(QAVFrame);
     d->timeBase = value;
+}
+
+QString QAVFrame::filterName() const
+{
+    return d_func()->filterName;
+}
+
+void QAVFrame::setFilterName(const QString &name)
+{
+    Q_D(QAVFrame);
+    d->filterName = name;
 }
 
 double QAVFramePrivate::pts() const
