@@ -76,6 +76,7 @@ QAVVideoInputFilter &QAVVideoInputFilter::operator=(const QAVVideoInputFilter &o
 
 int QAVVideoInputFilter::configure(AVFilterGraph *graph, AVFilterInOut *in)
 {
+    QAVInOutFilter::configure(graph, in);
     Q_D(QAVVideoInputFilter);
     AVBPrint args;
     av_bprint_init(&args, 0, AV_BPRINT_SIZE_AUTOMATIC);
@@ -97,7 +98,7 @@ int QAVVideoInputFilter::configure(AVFilterGraph *graph, AVFilterInOut *in)
                                            name, args.str, nullptr, graph);
     if (ret < 0)
         return ret;
-    
+
     return avfilter_link(d->ctx, 0, in->filter_ctx, in->pad_idx);
 }
 

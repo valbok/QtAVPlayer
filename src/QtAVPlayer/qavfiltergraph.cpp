@@ -67,6 +67,8 @@ int QAVFilterGraph::parse(const QString &desc)
 int QAVFilterGraph::apply(const QAVFrame &frame)
 {
     Q_D(QAVFilterGraph);
+    if (!frame.stream())
+        return 0;
     const AVMediaType codec_type = frame.stream().stream()->codecpar->codec_type;
     switch (codec_type) {
     case AVMEDIA_TYPE_VIDEO:

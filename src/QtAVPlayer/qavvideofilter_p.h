@@ -29,7 +29,7 @@ class QAVVideoFilterPrivate;
 class Q_AVPLAYER_EXPORT QAVVideoFilter : public QAVFilter
 {
 public:
-    QAVVideoFilter(const QList<QAVVideoInputFilter> &inputs, const QList<QAVVideoOutputFilter> &outputs, QObject *parent = nullptr);
+    QAVVideoFilter(const QString &name, const QList<QAVVideoInputFilter> &inputs, const QList<QAVVideoOutputFilter> &outputs, QObject *parent = nullptr);
 
     int write(const QAVFrame &frame) override;
     int read(QAVFrame &frame) override;

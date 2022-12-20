@@ -33,6 +33,7 @@ public:
     virtual ~QAVFilterPrivate() = default;
 
     QAVFilter *q_ptr = nullptr;
+    QString name;
     QAVFrame sourceFrame;
     QList<QAVFrame> outputFrames;
 };

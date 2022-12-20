@@ -258,27 +258,26 @@ public:
         QAVFrame &frame = static_cast<QAVFrame &>(baseFrame);
         frame = m_frame ? static_cast<QAVFrame &>(*m_frame) : QAVFrame{};
         if (!frame) {
-            const bool decode = !m_filter || m_filter->eof();
-            if (decode) {
+            if (isEmptyData()) {
                 locker.unlock();
                 m_demuxer.decode(dequeue(), frame);
                 locker.relock();
-                if (m_filter && frame) {
-                    m_ret = m_filter->write(frame);
+                for (auto &filter : m_filters) {
+                    m_ret = filter->write(frame);
                     if (m_ret < 0) {
                         if (m_ret != AVERROR_EOF)
                             return m_ret;
                     }
                 }
             }
-            if (m_filter) {
-                m_ret = m_filter->read(frame);
+            for (auto &filter : m_filters) {
+                m_ret = filter->read(frame);
                 if (m_ret < 0) {
                     if (m_ret != AVERROR(EAGAIN))
                         return m_ret;
                 }
-            } else {
-                m_ret = 0;
+                if (frame)
+                    break;
             }
 
             if (frame)
@@ -297,25 +296,37 @@ public:
         return AVERROR(EAGAIN);
     }
 
-    void setFilter(QAVFilter *filter)
+    void clearFilters()
     {
         QMutexLocker locker(&m_mutex);
-        m_filter.reset(filter);
+        m_filters.clear();
+        m_frame.reset();
+        m_ret = 0;
+    }
+
+    void appendFilter(std::unique_ptr<QAVFilter> filter)
+    {
+        QMutexLocker locker(&m_mutex);
+        m_filters.emplace_back(std::move(filter));
         m_frame.reset();
     }
 
 private:
     void clearData() override
     {
-        m_filter.reset();
+        m_filters.clear();
     }
 
     bool isEmptyData() const override
     {
-        return !m_filter || m_filter->eof();
+        for (auto &filter : m_filters) {
+            if (!filter->eof())
+                return false;
+        }
+        return true;
     }
 
-    std::unique_ptr<QAVFilter> m_filter;
+    std::vector<std::unique_ptr<QAVFilter>> m_filters;
     int m_ret = 0;
 };
 
@@ -339,6 +350,7 @@ public:
             if (frame)
                 m_frame.reset(new QAVSubtitleFrame(frame));
         }
+        locker.unlock();
 
         if (frame && m_clock.sync(sync, frame.pts(), speed, master)) {
             locker.relock();

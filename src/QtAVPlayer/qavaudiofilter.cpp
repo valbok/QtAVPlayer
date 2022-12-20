@@ -30,8 +30,8 @@ public:
     QList<QAVAudioOutputFilter> outputs;
 };
 
-QAVAudioFilter::QAVAudioFilter(const QList<QAVAudioInputFilter> &inputs, const QList<QAVAudioOutputFilter> &outputs, QObject *parent)
-    : QAVFilter(*new QAVAudioFilterPrivate(this), parent)
+QAVAudioFilter::QAVAudioFilter(const QString &name, const QList<QAVAudioInputFilter> &inputs, const QList<QAVAudioOutputFilter> &outputs, QObject *parent)
+    : QAVFilter(name, *new QAVAudioFilterPrivate(this), parent)
 {
     Q_D(QAVAudioFilter);
     d->inputs = inputs;
@@ -41,6 +41,8 @@ QAVAudioFilter::QAVAudioFilter(const QList<QAVAudioInputFilter> &inputs, const Q
 int QAVAudioFilter::write(const QAVFrame &frame)
 {
     Q_D(QAVAudioFilter);
+    if (!frame)
+        return 0;
     if (frame.stream().stream()->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
         qWarning() << "Frame is not audio";
         return AVERROR(EINVAL);
@@ -68,7 +70,8 @@ int QAVAudioFilter::read(QAVFrame &frame)
 
     int ret = 0;
     if (d->outputFrames.isEmpty()) {
-        for (auto &filter: d->outputs) {
+        for (int i = 0; i < d->outputs.size(); ++i) {
+            auto &filter = d->outputs[i];
             while (true) {
                 QAVFrame out = d->sourceFrame;
                 // av_buffersink_get_frame_flags allocates frame's data
@@ -80,6 +83,10 @@ int QAVAudioFilter::read(QAVFrame &frame)
                 if (!out.frame()->pkt_duration)
                     out.frame()->pkt_duration = d->sourceFrame.frame()->pkt_duration;
                 frame.setTimeBase(av_buffersink_get_time_base(filter.ctx()));
+                out.setFilterName(
+                    !filter.name().isEmpty()
+                    ? filter.name()
+                    : QString(QLatin1String("%1:%2")).arg(d->name).arg(QString::number(i)));
                 d->outputFrames.push_back(out);
             }
         }

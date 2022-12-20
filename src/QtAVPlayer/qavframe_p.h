@@ -39,6 +39,8 @@ public:
     // Overridden data from filters if any
     AVRational frameRate{};
     AVRational timeBase{};
+    // Name of a filter the frame has retrieved from
+    QString filterName;
 };
 
 QT_END_NAMESPACE

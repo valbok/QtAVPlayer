@@ -38,13 +38,28 @@ QAVInOutFilter::QAVInOutFilter(const QAVInOutFilter &other)
 QAVInOutFilter &QAVInOutFilter::operator=(const QAVInOutFilter &other)
 {
     d_ptr->ctx = other.d_ptr->ctx;
+    d_ptr->name = other.d_ptr->name;
     return *this;
+}
+
+int QAVInOutFilter::configure(AVFilterGraph *graph, AVFilterInOut *in)
+{
+    Q_D(QAVInOutFilter);
+    Q_UNUSED(graph);
+    if (in->name)
+        d->name = QString::fromUtf8(in->name);
+    return 0;
 }
 
 AVFilterContext *QAVInOutFilter::ctx() const
 {
     Q_D(const QAVInOutFilter);
     return d->ctx;
+}
+
+QString QAVInOutFilter::name() const
+{
+    return d_func()->name;
 }
 
 QT_END_NAMESPACE

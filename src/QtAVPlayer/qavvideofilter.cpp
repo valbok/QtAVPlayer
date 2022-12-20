@@ -31,8 +31,8 @@ public:
     QList<QAVVideoOutputFilter> outputs;
 };
 
-QAVVideoFilter::QAVVideoFilter(const QList<QAVVideoInputFilter> &inputs, const QList<QAVVideoOutputFilter> &outputs, QObject *parent)
-    : QAVFilter(*new QAVVideoFilterPrivate(this), parent)
+QAVVideoFilter::QAVVideoFilter(const QString &name, const QList<QAVVideoInputFilter> &inputs, const QList<QAVVideoOutputFilter> &outputs, QObject *parent)
+    : QAVFilter(name, *new QAVVideoFilterPrivate(this), parent)
 {
     Q_D(QAVVideoFilter);
     d->inputs = inputs;
@@ -42,6 +42,8 @@ QAVVideoFilter::QAVVideoFilter(const QList<QAVVideoInputFilter> &inputs, const Q
 int QAVVideoFilter::write(const QAVFrame &frame)
 {
     Q_D(QAVVideoFilter);
+    if (!frame)
+        return 0;
     if (frame.stream().stream()->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
         qWarning() << "Frame is not video";
         return AVERROR(EINVAL);
@@ -51,6 +53,7 @@ int QAVVideoFilter::write(const QAVFrame &frame)
     switch (frame.frame()->format) {
         case AV_PIX_FMT_D3D11:
         case AV_PIX_FMT_VAAPI:
+        case AV_PIX_FMT_VDPAU:
         case AV_PIX_FMT_VIDEOTOOLBOX:
             videoFrame = videoFrame.convertTo(AV_PIX_FMT_YUV420P);
             break;
@@ -84,7 +87,8 @@ int QAVVideoFilter::read(QAVFrame &frame)
 
     int ret = 0;
     if (d->outputFrames.isEmpty()) {
-        for (auto &filter: d->outputs) {
+        for (int i = 0; i < d->outputs.size(); ++i) {
+            auto &filter = d->outputs[i];
             while (true) {
                 QAVFrame out = d->sourceFrame;
                 // av_buffersink_get_frame_flags allocates frame's data
@@ -97,6 +101,10 @@ int QAVVideoFilter::read(QAVFrame &frame)
                     out.frame()->pkt_duration = d->sourceFrame.frame()->pkt_duration;
                 out.setFrameRate(av_buffersink_get_frame_rate(filter.ctx()));
                 out.setTimeBase(av_buffersink_get_time_base(filter.ctx()));
+                out.setFilterName(
+                    !filter.name().isEmpty()
+                    ? filter.name()
+                    : QString(QLatin1String("%1:%2")).arg(d->name).arg(QString::number(i)));
                 d->outputFrames.push_back(out);
             }
         }

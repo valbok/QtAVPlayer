@@ -11,12 +11,12 @@ jobs:
     strategy:
       matrix:
         compiler: ['gcc-9']
-        qt_version: ["5.15.2", "6.3.0"]        
+        qt_version: ["5.15.2", "6.4.0"]
         include:
           - compiler: gcc-9
             packages: gcc-9 g++-9
             env: { 'CC': 'gcc-9', 'CXX': 'g++-9' }
-          - qt_version: "6.3.0"
+          - qt_version: "6.4.0"
             qt_modules: "qtmultimedia"
             qt_packages: "libxkbcommon-dev libgstreamer-plugins-base1.0-0 libgstreamer-gl1.0-0"
 
@@ -65,13 +65,13 @@ jobs:
         run: |
           cd tests/
           qmake
-          make CC=$CC CXX=$CXX
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17 -fPIC'
           export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
           cd auto/integration/qavdemuxer
-          ./tst_qavdemuxer --platform minimal
+          ./tst_qavdemuxer
           cd ../
           cd qavplayer
-          ./tst_qavplayer --platform minimal -maxwarnings 100000
+          ./tst_qavplayer -maxwarnings 100000
 
   macos-qmake-default:
     strategy:

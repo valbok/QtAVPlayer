@@ -11,10 +11,11 @@
 
 QT_BEGIN_NAMESPACE
 
-QAVFilter::QAVFilter(QAVFilterPrivate &d, QObject *parent)
+QAVFilter::QAVFilter(const QString &name, QAVFilterPrivate &d, QObject *parent)
     : QObject(parent)
     , d_ptr(&d)
-{    
+{
+    d.name = name;
 }
 
 QAVFilter::~QAVFilter() = default;

@@ -26,6 +26,7 @@ QAVAudioOutputFilter::~QAVAudioOutputFilter() = default;
 
 int QAVAudioOutputFilter::configure(AVFilterGraph *graph, AVFilterInOut *out)
 {
+    QAVInOutFilter::configure(graph, out);
     Q_D(QAVInOutFilter);
     char name[255];
     static int index = 0;

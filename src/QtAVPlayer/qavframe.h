@@ -28,6 +28,8 @@ public:
 
     void setFrameRate(const AVRational &value);
     void setTimeBase(const AVRational &value);
+    QString filterName() const;
+    void setFilterName(const QString &name);
 
 protected:
     QAVFrame(QAVFramePrivate &d, QObject *parent = nullptr);

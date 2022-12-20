@@ -37,7 +37,7 @@ public:
     bool eof() const;
 
 protected:
-    QAVFilter(QAVFilterPrivate &d, QObject *parent = nullptr);
+    QAVFilter(const QString &name, QAVFilterPrivate &d, QObject *parent = nullptr);
     std::unique_ptr<QAVFilterPrivate> d_ptr;
     Q_DECLARE_PRIVATE(QAVFilter)
 private:

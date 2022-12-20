@@ -31,6 +31,7 @@ public:
 
     QAVInOutFilter *q_ptr = nullptr;
     AVFilterContext *ctx = nullptr;
+    QString name;
 };
 
 QT_END_NAMESPACE

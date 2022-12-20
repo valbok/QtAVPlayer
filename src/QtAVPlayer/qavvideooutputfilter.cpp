@@ -24,6 +24,7 @@ QAVVideoOutputFilter::~QAVVideoOutputFilter() = default;
 
 int QAVVideoOutputFilter::configure(AVFilterGraph *graph, AVFilterInOut *out)
 {
+    QAVInOutFilter::configure(graph, out);
     Q_D(QAVInOutFilter);
     static int index = 0;
     char name[255];
