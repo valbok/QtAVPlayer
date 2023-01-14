@@ -79,6 +79,7 @@ private slots:
     void mapTwice();
     void changeFormat();
     void filterName();
+    void filterNameStep();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -2839,6 +2840,73 @@ void tst_QAVPlayer::filterName()
     QTRY_VERIFY(set.contains("out1"));
     QTRY_VERIFY(set.contains("out2"));
     QTRY_VERIFY(set.contains("out3"));
+}
+
+void tst_QAVPlayer::filterNameStep()
+{
+    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
+    QAVPlayer p;
+    QFileInfo file(QLatin1String("../testdata/small.mp4"));
+    p.setSource(file.absoluteFilePath());
+    p.setFilter("[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[out3]");
+    QSet<QString> set;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
+        qDebug() << frame.pts() << frame.filterName();
+        if (!frame.filterName().isEmpty())
+            set.insert(frame.filterName());
+        ++framesCount;
+    });
+
+    p.pause();
+    QTRY_VERIFY_WITH_TIMEOUT(set.size() == 3, 5000);
+    QTRY_VERIFY(set.contains("out1"));
+    QTRY_VERIFY(set.contains("out2"));
+    QTRY_VERIFY(set.contains("out3"));
+    QCOMPARE(framesCount, 3);
+
+    set.clear();
+    framesCount = 0;
+    p.setFilters({
+            "drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[drawtext]",
+            "negate[negate]",
+            "[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[out3]"
+        });
+
+    p.stepForward();
+    QTRY_VERIFY_WITH_TIMEOUT(set.size() >= 5, 30000);
+    QTRY_VERIFY(set.contains("drawtext"));
+    QTRY_VERIFY(set.contains("negate"));
+    QTRY_VERIFY(set.contains("out1"));
+    QTRY_VERIFY(set.contains("out2"));
+    QTRY_VERIFY(set.contains("out3"));
+    QCOMPARE(framesCount, 5);
+
+    set.clear();
+    framesCount = 0;
+
+    p.stepBackward();
+    QTRY_VERIFY_WITH_TIMEOUT(set.size() >= 5, 30000);
+    QTRY_VERIFY(set.contains("drawtext"));
+    QTRY_VERIFY(set.contains("negate"));
+    QTRY_VERIFY(set.contains("out1"));
+    QTRY_VERIFY(set.contains("out2"));
+    QTRY_VERIFY(set.contains("out3"));
+    QCOMPARE(framesCount, 5);
+
+    set.clear();
+    framesCount = 0;
+
+    p.setFilter("");
+    p.stepForward();
+    QTRY_COMPARE(framesCount, 1);
+    QVERIFY(set.isEmpty());
+    set.clear();
+    framesCount = 0;
+
+    p.stepForward();
+    QTRY_COMPARE(framesCount, 1);
+    QVERIFY(set.isEmpty());
 }
 
 QTEST_MAIN(tst_QAVPlayer)
