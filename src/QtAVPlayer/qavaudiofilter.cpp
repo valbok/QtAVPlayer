@@ -99,6 +99,8 @@ int QAVAudioFilter::read(QAVFrame &frame)
     }
 
     frame = d->outputFrames.takeFirst();
+    if (d->outputFrames.isEmpty())
+        d->sourceFrame = {};
     return 0;
 }
 

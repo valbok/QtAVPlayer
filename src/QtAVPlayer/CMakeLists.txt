@@ -26,6 +26,7 @@ set(SOURCES
     qavaudiooutputfilter.cpp
     qaviodevice.cpp
     qavstream.cpp
+    qavfilters.cpp
 )
 set(PUBLIC_HEADERS
     qavframe.h
@@ -67,7 +68,9 @@ set(PRIVATE_HEADERS
     qavaudioinputfilter_p.h
     qavvideooutputfilter_p.h
     qavaudiooutputfilter_p.h
-    qaviodevice_p.h)
+    qaviodevice_p.h
+    qavfilters_p.h
+)
 
 if(Qt6_FOUND)
     if(QT_FEATURE_egl AND va_drm)
