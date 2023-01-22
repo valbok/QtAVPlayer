@@ -2,6 +2,7 @@ TARGET = QtAVPlayer
 MODULE = QtAVPlayer
 
 QT = multimedia concurrent
+# Needed for QAbstractVideoBuffer
 equals(QT_MAJOR_VERSION, 6): QT += multimedia-private
 QT_PRIVATE += gui-private
 CONFIG += C++1z
