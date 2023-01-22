@@ -81,6 +81,7 @@ private slots:
     void filterName();
     void filterNameStep();
     void inputFormat();
+    void inputVideoCodec();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -2918,6 +2919,16 @@ void tst_QAVPlayer::inputFormat()
     p.setInputFormat("v4l2");
     QCOMPARE(spy.count(), 1);
     QCOMPARE(p.inputFormat(), "v4l2");
+}
+
+void tst_QAVPlayer::inputVideoCodec()
+{
+    QAVPlayer p;
+    QSignalSpy spy(&p, &QAVPlayer::inputVideoCodecChanged);
+    QCOMPARE(p.inputVideoCodec(), "");
+    p.setInputVideoCodec("h264");
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(p.inputVideoCodec(), "h264");
 }
 
 QTEST_MAIN(tst_QAVPlayer)

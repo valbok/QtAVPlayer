@@ -32,6 +32,7 @@ private slots:
     void qrcIO();
     void supportedFormats();
     void metadata();
+    void videoCodecs();
 };
 
 void tst_QAVDemuxer::construction()
@@ -382,6 +383,21 @@ void tst_QAVDemuxer::metadata()
         QVERIFY(!stream.metadata().isEmpty());
     for (auto &stream : d.videoStreams())
         QVERIFY(!stream.metadata().isEmpty());
+}
+
+void tst_QAVDemuxer::videoCodecs()
+{
+    QAVDemuxer d;
+    auto codecs = QAVDemuxer::supportedVideoCodecs();
+    QVERIFY(!codecs.isEmpty());
+    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
+    d.unload();
+    d.setInputVideoCodec("h264");
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
+    d.unload();
+    d.setInputVideoCodec("unknown");
+    QVERIFY(d.load(file.absoluteFilePath()) < 0);
 }
 
 QTEST_MAIN(tst_QAVDemuxer)
