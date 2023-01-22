@@ -23,7 +23,7 @@ class Q_AVPLAYER_EXPORT QAVStream : public QObject
 {
 public:
     QAVStream(QObject *parent = nullptr);
-    QAVStream(int index, AVStream *stream = nullptr, QAVCodec *codec = nullptr, QObject *parent = nullptr);
+    QAVStream(int index, AVStream *stream = nullptr, const QSharedPointer<QAVCodec> &codec = {}, QObject *parent = nullptr);
     QAVStream(const QAVStream &other);
     ~QAVStream();
     QAVStream &operator=(const QAVStream &other);

@@ -122,13 +122,12 @@ void QAVDemuxer::abort(bool stop)
     d->abortRequest = stop;
 }
 
-static void setup_video_codec(AVStream *stream, QAVCodec *base)
+static void setup_video_codec(AVStream *stream, QAVVideoCodec &codec)
 {
     QList<QSharedPointer<QAVHWDevice>> devices;
     AVDictionary *opts = NULL;
     Q_UNUSED(opts);
     auto name = QGuiApplication::platformName();
-    QAVVideoCodec &codec = *reinterpret_cast<QAVVideoCodec *>(base);
 
 #if QT_CONFIG(va_x11) && QT_CONFIG(opengl)
     if (name == QLatin1String("xcb")) {
@@ -367,16 +366,18 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
         enum AVMediaType type = d->ctx->streams[i]->codecpar->codec_type;
         switch (type) {
             case AVMEDIA_TYPE_VIDEO:
-                d->streams.push_back({ int(i), d->ctx->streams[i], new QAVVideoCodec });
-                setup_video_codec(d->ctx->streams[i], d->streams.last().codec().data());
-                break;
+            {
+                QSharedPointer<QAVCodec> codec(new QAVVideoCodec);
+                d->streams.push_back({ int(i), d->ctx->streams[i], codec });
+                setup_video_codec(d->ctx->streams[i], *static_cast<QAVVideoCodec *>(codec.data()));
+            } break;
             case AVMEDIA_TYPE_AUDIO:
-                d->streams.push_back({ int(i), d->ctx->streams[i], new QAVAudioCodec });
+                d->streams.push_back({ int(i), d->ctx->streams[i], QSharedPointer<QAVCodec>(new QAVAudioCodec) });
                 if (!d->streams.last().codec()->open(d->ctx->streams[i]))
                     qWarning() << "Could not open audio codec for stream:" << i;
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
-                d->streams.push_back({ int(i), d->ctx->streams[i], new QAVSubtitleCodec });
+                d->streams.push_back({ int(i), d->ctx->streams[i], QSharedPointer<QAVCodec>(new QAVSubtitleCodec) });
                 if (!d->streams.last().codec()->open(d->ctx->streams[i]))
                     qWarning() << "Could not open subtitle codec for stream:" << i;
                 break;
