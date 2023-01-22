@@ -81,6 +81,7 @@ public:
     int currentAudioStreamIndex = -1;
     int currentVideoStreamIndex = -1;
     int currentSubtitleStreamIndex = -1;
+    QString inputFormat;
 
     bool eof = false;
     QList<QAVPacket> packets;
@@ -261,38 +262,6 @@ QStringList QAVDemuxer::supportedProtocols()
     return values;
 }
 
-struct ParsedURL
-{
-    QString input;
-    QString format;
-};
-
-static ParsedURL parse_url(const QString &url)
-{
-    ParsedURL parsed;
-    parsed.input = url.trimmed();
-    if (parsed.input[0] != QLatin1Char('-'))
-        return parsed;
-
-    QString fn = QLatin1Char(' ') + parsed.input;
-    auto parts = fn.split(QLatin1String(" -"));
-    QString input;
-    QString format;
-    for (auto &item : parts) {
-        if (item.isEmpty())
-            continue;
-        if (item[0] == QLatin1Char('i'))
-            input = item.mid(1).trimmed();
-        else if (item[0] == QLatin1Char('f'))
-            format = item.mid(1).trimmed();
-    }
-
-    parsed.input = input;
-    parsed.format = format;
-
-    return parsed;
-}
-
 static int init_output_bsfs(AVBSFContext *ctx, AVStream *st)
 {
     if (!ctx)
@@ -359,18 +328,17 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 0, 0)
     const
 #endif
-    AVInputFormat *inputFormat = nullptr;
-    ParsedURL parsed = parse_url(url);
-    if (!parsed.format.isEmpty()) {
-        qDebug() << "Loading: -f" << parsed.format << "-i" << parsed.input;
-        inputFormat = av_find_input_format(parsed.format.toUtf8().constData());
-        if (inputFormat == nullptr) {
-            qWarning() << "Could not find input format:" << parsed.format;
+    AVInputFormat *avInputFormat = nullptr;
+    if (!d->inputFormat.isEmpty()) {
+        qDebug() << "Loading: -f" << d->inputFormat << "-i" << url;
+        avInputFormat = av_find_input_format(d->inputFormat.toUtf8().constData());
+        if (avInputFormat == nullptr) {
+            qWarning() << "Could not find input format:" << d->inputFormat;
             return AVERROR(EINVAL);
         }
     }
     locker.unlock();
-    int ret = avformat_open_input(&d->ctx, parsed.input.toUtf8().constData(), inputFormat, nullptr);
+    int ret = avformat_open_input(&d->ctx, url.toUtf8().constData(), avInputFormat, nullptr);
     if (ret < 0)
         return ret;
 
@@ -737,6 +705,20 @@ int QAVDemuxer::applyBitstreamFilter(const QString &bsfs)
         ret = apply_bsf(d->bsfs, d->ctx, d->bsf_ctx);
     }
     return ret;
+}
+
+QString QAVDemuxer::inputFormat() const
+{
+    Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    return d->inputFormat;
+}
+
+void QAVDemuxer::setInputFormat(const QString &format)
+{
+    Q_D(QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    d->inputFormat = format;
 }
 
 QStringList QAVDemuxer::supportedBitstreamFilters()

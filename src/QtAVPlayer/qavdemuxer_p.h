@@ -76,6 +76,9 @@ public:
     QString bitstreamFilter() const;
     int applyBitstreamFilter(const QString &bsfs);
 
+    QString inputFormat() const;
+    void setInputFormat(const QString &format);
+
     static QStringList supportedFormats();
     static QStringList supportedProtocols();
     static QStringList supportedBitstreamFilters();

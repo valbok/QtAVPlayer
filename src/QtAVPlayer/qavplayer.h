@@ -87,6 +87,9 @@ public:
     bool isSynced() const;
     void setSynced(bool sync);
 
+    QString inputFormat() const;
+    void setInputFormat(const QString &format);
+
 public Q_SLOTS:
     void play();
     void pause();
@@ -116,6 +119,7 @@ Q_SIGNALS:
     void filtersChanged(const QList<QString> &filters);
     void bitstreamFilterChanged(const QString &desc);
     void syncedChanged(bool sync);
+    void inputFormatChanged(const QString &format);
 
     void videoFrame(const QAVVideoFrame &frame);
     void audioFrame(const QAVAudioFrame &frame);
