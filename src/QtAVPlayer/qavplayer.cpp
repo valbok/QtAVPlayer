@@ -1226,6 +1226,24 @@ void QAVPlayer::setInputFormat(const QString &format)
     emit inputFormatChanged(format);
 }
 
+QString QAVPlayer::inputVideoCodec() const
+{
+    Q_D(const QAVPlayer);
+    return d->demuxer.inputVideoCodec();
+}
+
+void QAVPlayer::setInputVideoCodec(const QString &codec)
+{
+    Q_D(QAVPlayer);
+    QString curret = inputVideoCodec();
+    if (codec == curret)
+        return;
+
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << curret << "->" << codec;
+    d->demuxer.setInputVideoCodec(codec);
+    emit inputVideoCodecChanged(codec);
+}
+
 #ifndef QT_NO_DEBUG_STREAM
 QDebug operator<<(QDebug dbg, QAVPlayer::State state)
 {

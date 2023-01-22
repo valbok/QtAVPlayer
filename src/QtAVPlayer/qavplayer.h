@@ -90,6 +90,9 @@ public:
     QString inputFormat() const;
     void setInputFormat(const QString &format);
 
+    QString inputVideoCodec() const;
+    void setInputVideoCodec(const QString &codec);
+
 public Q_SLOTS:
     void play();
     void pause();
@@ -120,6 +123,7 @@ Q_SIGNALS:
     void bitstreamFilterChanged(const QString &desc);
     void syncedChanged(bool sync);
     void inputFormatChanged(const QString &format);
+    void inputVideoCodecChanged(const QString &codec);
 
     void videoFrame(const QAVVideoFrame &frame);
     void audioFrame(const QAVAudioFrame &frame);

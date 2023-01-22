@@ -82,6 +82,7 @@ public:
     int currentVideoStreamIndex = -1;
     int currentSubtitleStreamIndex = -1;
     QString inputFormat;
+    QString inputVideoCodec;
 
     bool eof = false;
     QList<QAVPacket> packets;
@@ -122,7 +123,7 @@ void QAVDemuxer::abort(bool stop)
     d->abortRequest = stop;
 }
 
-static void setup_video_codec(AVStream *stream, QAVVideoCodec &codec)
+static int setup_video_codec(AVStream *stream, QAVVideoCodec &codec)
 {
     QList<QSharedPointer<QAVHWDevice>> devices;
     AVDictionary *opts = NULL;
@@ -153,19 +154,20 @@ static void setup_video_codec(AVStream *stream, QAVVideoCodec &codec)
 #if defined(Q_OS_ANDROID)
     if (name == QLatin1String("android")) {
         devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_MediaCodec));
-        codec.setCodec(avcodec_find_decoder_by_name("h264_mediacodec"));
+        if (!codec.codec())
+            codec.setCodec(avcodec_find_decoder_by_name("h264_mediacodec"));
         auto vm = QtAndroidPrivate::javaVM();
         av_jni_set_java_vm(vm, NULL);
     }
 #endif
 
     if (!codec.open(stream)) {
-        qWarning() << "Could not open video codec for stream:" << stream;
-        return;
+        qWarning() << "Could not open video codec for stream";
+        return AVERROR(EINVAL);
     }
 
     if (qEnvironmentVariableIsSet("QT_AVPLAYER_NO_HWDEVICE"))
-        return;
+        return 0;
 
     QList<AVHWDeviceType> supported;
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(58, 0, 0)
@@ -184,14 +186,14 @@ static void setup_video_codec(AVStream *stream, QAVVideoCodec &codec)
             qDebug() << "   " << av_hwdevice_get_type_name(a);
     } else {
         qWarning() << "None of the hardware accelerations are supported";
-        return;
+        return 0;
     }
 #endif
 
     if (devices.isEmpty()) {
         if (!supported.isEmpty())
             qWarning() << name << ": none of the hardware accelerations was implemented";
-        return;
+        return 0;
     }
 
     AVBufferRef *hw_device_ctx = nullptr;
@@ -207,6 +209,7 @@ static void setup_video_codec(AVStream *stream, QAVVideoCodec &codec)
         }
         av_buffer_unref(&hw_device_ctx);
     }
+    return 0;
 }
 
 static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
@@ -243,6 +246,22 @@ QStringList QAVDemuxer::supportedFormats()
                 );
         }
 #endif
+    }
+
+    return values;
+}
+
+QStringList QAVDemuxer::supportedVideoCodecs()
+{
+    static QStringList values;
+    if (values.isEmpty()) {
+        const AVCodec *c = nullptr;
+        void *it = nullptr;
+        while ((c = av_codec_iterate(&it))) {
+            if (!av_codec_is_decoder(c) || c->type != AVMEDIA_TYPE_VIDEO)
+                continue;
+            values.append(QString::fromLatin1(c->name));
+        }
     }
 
     return values;
@@ -324,20 +343,30 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
         d->ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
     }
 
+    const AVCodec *videoCodec = nullptr;
+    if (!d->inputVideoCodec.isEmpty()) {
+        qDebug() << "Loading: -vcodec" << d->inputVideoCodec;
+        videoCodec = avcodec_find_decoder_by_name(d->inputVideoCodec.toUtf8().constData());
+        if (!videoCodec) {
+            qWarning() << "Could not find decoder:" << d->inputVideoCodec;
+            return AVERROR(EINVAL);
+        }
+    }
+
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 0, 0)
     const
 #endif
-    AVInputFormat *avInputFormat = nullptr;
+    AVInputFormat *inputFormat = nullptr;
     if (!d->inputFormat.isEmpty()) {
-        qDebug() << "Loading: -f" << d->inputFormat << "-i" << url;
-        avInputFormat = av_find_input_format(d->inputFormat.toUtf8().constData());
-        if (avInputFormat == nullptr) {
+        qDebug() << "Loading: -f" << d->inputFormat;
+        inputFormat = av_find_input_format(d->inputFormat.toUtf8().constData());
+        if (!inputFormat) {
             qWarning() << "Could not find input format:" << d->inputFormat;
             return AVERROR(EINVAL);
         }
     }
     locker.unlock();
-    int ret = avformat_open_input(&d->ctx, url.toUtf8().constData(), avInputFormat, nullptr);
+    int ret = avformat_open_input(&d->ctx, url.toUtf8().constData(), inputFormat, nullptr);
     if (ret < 0)
         return ret;
 
@@ -368,8 +397,10 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
             case AVMEDIA_TYPE_VIDEO:
             {
                 QSharedPointer<QAVCodec> codec(new QAVVideoCodec);
+                if (videoCodec)
+                    codec->setCodec(videoCodec);
                 d->streams.push_back({ int(i), d->ctx->streams[i], codec });
-                setup_video_codec(d->ctx->streams[i], *static_cast<QAVVideoCodec *>(codec.data()));
+                ret = setup_video_codec(d->ctx->streams[i], *static_cast<QAVVideoCodec *>(codec.data()));
             } break;
             case AVMEDIA_TYPE_AUDIO:
                 d->streams.push_back({ int(i), d->ctx->streams[i], QSharedPointer<QAVCodec>(new QAVAudioCodec) });
@@ -391,6 +422,9 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
     d->seekable = d->ctx->iformat->read_seek || d->ctx->iformat->read_seek2;
     if (d->ctx->pb)
         d->seekable |= bool(d->ctx->pb->seekable);
+
+    if (ret < 0)
+        return ret;
 
     if (!d->bsfs.isEmpty())
         return apply_bsf(d->bsfs, d->ctx, d->bsf_ctx);
@@ -720,6 +754,20 @@ void QAVDemuxer::setInputFormat(const QString &format)
     Q_D(QAVDemuxer);
     QMutexLocker locker(&d->mutex);
     d->inputFormat = format;
+}
+
+QString QAVDemuxer::inputVideoCodec() const
+{
+    Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    return d->inputVideoCodec;
+}
+
+void QAVDemuxer::setInputVideoCodec(const QString &codec)
+{
+    Q_D(QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    d->inputVideoCodec = codec;
 }
 
 QStringList QAVDemuxer::supportedBitstreamFilters()

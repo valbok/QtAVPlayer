@@ -79,7 +79,11 @@ public:
     QString inputFormat() const;
     void setInputFormat(const QString &format);
 
+    QString inputVideoCodec() const;
+    void setInputVideoCodec(const QString &codec);
+
     static QStringList supportedFormats();
+    static QStringList supportedVideoCodecs();
     static QStringList supportedProtocols();
     static QStringList supportedBitstreamFilters();
 
