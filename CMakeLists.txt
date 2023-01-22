@@ -54,5 +54,5 @@ configure_file(src/QtAVPlayer/qavplayer-config_p.h.in src/QtAVPlayer/qtQtAVPlaye
 include_directories(./src)
 
 add_subdirectory(src)
-add_subdirectory(examples)
+#add_subdirectory(examples)
 
