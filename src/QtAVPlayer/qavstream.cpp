@@ -33,12 +33,12 @@ QAVStream::QAVStream(QObject *parent)
 {
 }
 
-QAVStream::QAVStream(int index, AVStream *stream, QAVCodec *codec, QObject *parent)
+QAVStream::QAVStream(int index, AVStream *stream, const QSharedPointer<QAVCodec> &codec, QObject *parent)
     : QAVStream(parent)
 {
     d_ptr->index = index;
     d_ptr->stream = stream;
-    d_ptr->codec.reset(codec);
+    d_ptr->codec = codec;
 }
 
 QAVStream::~QAVStream()
