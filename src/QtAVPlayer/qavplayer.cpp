@@ -1208,6 +1208,24 @@ void QAVPlayer::setSynced(bool sync)
     emit syncedChanged(sync);
 }
 
+QString QAVPlayer::inputFormat() const
+{
+    Q_D(const QAVPlayer);
+    return d->demuxer.inputFormat();
+}
+
+void QAVPlayer::setInputFormat(const QString &format)
+{
+    Q_D(QAVPlayer);
+    QString curret = inputFormat();
+    if (format == curret)
+        return;
+
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << curret << "->" << format;
+    d->demuxer.setInputFormat(format);
+    emit inputFormatChanged(format);
+}
+
 #ifndef QT_NO_DEBUG_STREAM
 QDebug operator<<(QDebug dbg, QAVPlayer::State state)
 {

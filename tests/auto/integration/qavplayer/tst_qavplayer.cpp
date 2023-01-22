@@ -80,6 +80,7 @@ private slots:
     void changeFormat();
     void filterName();
     void filterNameStep();
+    void inputFormat();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -2907,6 +2908,16 @@ void tst_QAVPlayer::filterNameStep()
     p.stepForward();
     QTRY_COMPARE(framesCount, 1);
     QVERIFY(set.isEmpty());
+}
+
+void tst_QAVPlayer::inputFormat()
+{
+    QAVPlayer p;
+    QSignalSpy spy(&p, &QAVPlayer::inputFormatChanged);
+    QCOMPARE(p.inputFormat(), "");
+    p.setInputFormat("v4l2");
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(p.inputFormat(), "v4l2");
 }
 
 QTEST_MAIN(tst_QAVPlayer)
