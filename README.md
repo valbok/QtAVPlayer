@@ -31,13 +31,16 @@ Free and open-source Qt Media Player library based on FFmpeg.
        player.setSource("alarm", &file);
 
        // Getting frames from the camera in Linux
-       player.setSource("-f v4l2 -i /dev/video0");
+       player.setSource("/dev/video0");
        // Or Windows
-       player.setSource("-f dshow -i video=Integrated Camera");
+       player.setInputFormat("dshow");
+       player.setSource("video=Integrated Camera");
        // Or MacOS
-       player.setSource("-f avfoundation -i default");
+       player.setInputFormat("avfoundation");
+       player.setSource("default");
        // Or Android
-       player.setSource("-f android_camera -i 0:0");
+       player.setInputFormat("android_camera");
+       player.setSource("0:0");
     
        // Using various protocols
        player.setSource("subfile,,start,0,end,0,,:/root/Downloads/why-qtmm-must-die.mkv");
