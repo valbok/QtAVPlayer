@@ -695,16 +695,10 @@ double QAVDemuxer::videoFrameRate() const
     Q_D(const QAVDemuxer);
     QMutexLocker locker(&d->mutex);
     if (d->currentVideoStreamIndex < 0)
-        return 1 / 24.0;
+        return 0.0;
 
     AVRational fr = av_guess_frame_rate(d->ctx, d->ctx->streams[d->currentVideoStreamIndex], NULL);
     return fr.num && fr.den ? av_q2d({fr.den, fr.num}) : 0.0;
-}
-
-AVRational QAVDemuxer::frameRate() const
-{
-    Q_D(const QAVDemuxer);
-    return av_guess_frame_rate(d->ctx, d->ctx->streams[d->currentVideoStreamIndex], NULL);
 }
 
 QMap<QString, QString> QAVDemuxer::metadata() const
