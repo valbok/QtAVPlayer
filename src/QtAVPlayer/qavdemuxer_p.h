@@ -69,8 +69,6 @@ public:
     bool eof() const;
     double videoFrameRate() const;
 
-    AVRational frameRate() const;
-
     QMap<QString, QString> metadata() const;
 
     QString bitstreamFilter() const;
