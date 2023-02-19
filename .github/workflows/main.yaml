@@ -11,12 +11,12 @@ jobs:
     strategy:
       matrix:
         compiler: ['gcc-9']
-        qt_version: ["5.15.2", "6.4.0"]
+        qt_version: ["5.15.2", "6.5.0"]
         include:
           - compiler: gcc-9
             packages: gcc-9 g++-9
             env: { 'CC': 'gcc-9', 'CXX': 'g++-9' }
-          - qt_version: "6.4.0"
+          - qt_version: "6.5.0"
             qt_modules: "qtmultimedia"
             qt_packages: "libxkbcommon-dev libgstreamer-plugins-base1.0-0 libgstreamer-gl1.0-0"
 
