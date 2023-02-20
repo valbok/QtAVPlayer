@@ -2,17 +2,18 @@
 ![example workflow](https://github.com/valbok/QtAVPlayer/actions/workflows/main.yaml/badge.svg)
 
 Free and open-source Qt Media Player library based on FFmpeg.
-- `QAVPlayer` should be used to decode and fetch video/audio/subtitle frames.
-- `QAVPlayer` supports [FFmpeg Bitstream Filters](https://ffmpeg.org/ffmpeg-bitstream-filters.html) and [FFmpeg Filters](https://ffmpeg.org/ffmpeg-filters.html) including simplified `filter_complex`.
-- Based on Qt platform `QAVPlayer` sends the video frames in specific format.
-  By default, `QAVPlayer` tries to decode the video frames using hardware accelerations:
+- Should be used to decode and fetch _video_/_audio_/_subtitle_ frames.
+- Could be used to synchronize frames based on pts or ignore any synchronization and decode frames as soon as possible.
+- Supports [FFmpeg Bitstream Filters](https://ffmpeg.org/ffmpeg-bitstream-filters.html) and [FFmpeg Filters](https://ffmpeg.org/ffmpeg-filters.html) including simplified `filter_complex`.
+- Supports multiple parallel filters for one input.
+- Based on Qt platform the video frames are sent in specific format:
   * `VA-API` for Linux: DRM with EGL or X11 with GLX.
   * `VDPAU` for Linux.
   * `Video Toolbox` for macOS and iOS.
   * `D3D11` for Windows. 
   * `MediaCodec` for Android.
   
-  Note: Not all ffmpeg decoders support HW acceleration. In this case software decoders are used.
+  Note: Not all ffmpeg decoders or filters support HW acceleration. In this case software decoders are used.
 - It is up to an application to decide how to process the frames.
   * But there is _experimental_ support of converting video frames to QtMultimedia's [QVideoFrame](https://doc.qt.io/qt-5/qvideoframe.html) for copy-free rendering if possible.
   Note: Not all Qt's renders support copy-free rendering. Also QtMultimedia does not always provide public API to render the video frames. And, of course, for best performance both decoding and rendering should be accelerated.
@@ -140,12 +141,6 @@ Free and open-source Qt Media Player library based on FFmpeg.
        player.setAudioStream(player.audioStream());       
 
 9. HW accelerations:
-
-   * VA-API for Linux: DRM with EGL or X11 with GLX.
-   * VDPAU for Linux.
-   * Video Toolbox for macOS and iOS.
-   * D3D11 for Windows. 
-   * MediaCodec for Android. 
 
    QT_AVPLAYER_NO_HWDEVICE can be used to force using software decoding. The video codec is negotiated automatically.
 
