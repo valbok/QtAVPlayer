@@ -42,23 +42,24 @@ QAVVideoFilter::QAVVideoFilter(const QString &name, const QList<QAVVideoInputFil
 int QAVVideoFilter::write(const QAVFrame &frame)
 {
     Q_D(QAVVideoFilter);
-    if (!frame)
-        return 0;
-    if (frame.stream().stream()->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
-        qWarning() << "Frame is not video";
-        return AVERROR(EINVAL);
-    }
-
     QAVVideoFrame videoFrame = frame;
-    switch (frame.frame()->format) {
-        case AV_PIX_FMT_D3D11:
-        case AV_PIX_FMT_VAAPI:
-        case AV_PIX_FMT_VDPAU:
-        case AV_PIX_FMT_VIDEOTOOLBOX:
-            videoFrame = videoFrame.convertTo(AV_PIX_FMT_YUV420P);
-            break;
-        default:
-            break;
+    if (videoFrame) {
+        if (frame.stream().stream()->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
+            qWarning() << "Frame is not video";
+            return AVERROR(EINVAL);
+        }
+
+        // TODO: remove?
+        switch (frame.frame()->format) {
+            case AV_PIX_FMT_D3D11:
+            case AV_PIX_FMT_VAAPI:
+            case AV_PIX_FMT_VDPAU:
+            case AV_PIX_FMT_VIDEOTOOLBOX:
+                videoFrame = videoFrame.convertTo(AV_PIX_FMT_YUV420P);
+                break;
+            default:
+                break;
+        }
     }
 
     d->sourceFrame = videoFrame;
@@ -68,24 +69,25 @@ int QAVVideoFilter::write(const QAVFrame &frame)
             return AVERROR(ENOTSUP);
         }
         QAVFrame ref = d->sourceFrame;
-        int ret = av_buffersrc_add_frame_flags(filter.ctx(), ref.frame(), 0);
+        AVFrame *avFrame = ref ? ref.frame() : nullptr;
+        int ret = av_buffersrc_add_frame_flags(filter.ctx(), avFrame, 0);
         if (ret < 0)
             return ret;
     }
 
+    d->isEmpty = false;
     return 0;
 }
 
 int QAVVideoFilter::read(QAVFrame &frame)
 {
     Q_D(QAVVideoFilter);
-    if (d->outputs.isEmpty() || !d->sourceFrame) {
-        frame = d->sourceFrame;
+    if (d->outputs.isEmpty() || d->isEmpty) {
+        frame = {};
         d->sourceFrame = {};
         return 0;
     }
 
-    int ret = 0;
     if (d->outputFrames.isEmpty()) {
         for (int i = 0; i < d->outputs.size(); ++i) {
             auto &filter = d->outputs[i];
@@ -93,7 +95,7 @@ int QAVVideoFilter::read(QAVFrame &frame)
                 QAVFrame out = d->sourceFrame;
                 // av_buffersink_get_frame_flags allocates frame's data
                 av_frame_unref(out.frame());
-                ret = av_buffersink_get_frame_flags(filter.ctx(), out.frame(), 0);
+                int ret = av_buffersink_get_frame_flags(filter.ctx(), out.frame(), 0);
                 if (ret < 0)
                     break;
 
@@ -110,15 +112,13 @@ int QAVVideoFilter::read(QAVFrame &frame)
         }
     }
 
+    if (!d->outputFrames.isEmpty())
+        frame = d->outputFrames.takeFirst();
     if (d->outputFrames.isEmpty()) {
-        frame = d->sourceFrame;
         d->sourceFrame = {};
-        return ret;
+        d->isEmpty = true;
     }
 
-    frame = d->outputFrames.takeFirst();
-    if (d->outputFrames.isEmpty())
-        d->sourceFrame = {};
     return 0;
 }
 

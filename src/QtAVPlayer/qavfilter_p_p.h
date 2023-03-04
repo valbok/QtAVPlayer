@@ -36,6 +36,7 @@ public:
     QString name;
     QAVFrame sourceFrame;
     QList<QAVFrame> outputFrames;
+    bool isEmpty = true;
 };
 
 QT_END_NAMESPACE

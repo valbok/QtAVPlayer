@@ -41,9 +41,7 @@ QAVAudioFilter::QAVAudioFilter(const QString &name, const QList<QAVAudioInputFil
 int QAVAudioFilter::write(const QAVFrame &frame)
 {
     Q_D(QAVAudioFilter);
-    if (!frame)
-        return 0;
-    if (frame.stream().stream()->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
+    if (frame && frame.stream().stream()->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
         qWarning() << "Frame is not audio";
         return AVERROR(EINVAL);
     }
@@ -51,24 +49,24 @@ int QAVAudioFilter::write(const QAVFrame &frame)
     d->sourceFrame = frame;
     for (auto &filter : d->inputs) {
         QAVFrame ref = frame;
-        int ret = av_buffersrc_add_frame_flags(filter.ctx(), ref.frame(), 0);
+        AVFrame *avFrame = ref ? ref.frame() : nullptr;
+        int ret = av_buffersrc_add_frame_flags(filter.ctx(), avFrame, 0);
         if (ret < 0)
             return ret;
     }
-
+    d->isEmpty = false;
     return 0;
 }
 
 int QAVAudioFilter::read(QAVFrame &frame)
 {
     Q_D(QAVAudioFilter);
-    if (d->outputs.isEmpty() || !d->sourceFrame) {
-        frame = d->sourceFrame;
+    if (d->outputs.isEmpty() || d->isEmpty) {
+        frame = {};
         d->sourceFrame = {};
         return 0;
     }
 
-    int ret = 0;
     if (d->outputFrames.isEmpty()) {
         for (int i = 0; i < d->outputs.size(); ++i) {
             auto &filter = d->outputs[i];
@@ -76,7 +74,7 @@ int QAVAudioFilter::read(QAVFrame &frame)
                 QAVFrame out = d->sourceFrame;
                 // av_buffersink_get_frame_flags allocates frame's data
                 av_frame_unref(out.frame());
-                ret = av_buffersink_get_frame_flags(filter.ctx(), out.frame(), 0);
+                int ret = av_buffersink_get_frame_flags(filter.ctx(), out.frame(), 0);
                 if (ret < 0)
                     break;
 
@@ -92,15 +90,13 @@ int QAVAudioFilter::read(QAVFrame &frame)
         }
     }
 
+    if (!d->outputFrames.isEmpty())
+        frame = d->outputFrames.takeFirst();
     if (d->outputFrames.isEmpty()) {
-        frame = d->sourceFrame;
         d->sourceFrame = {};
-        return ret;
+        d->isEmpty = true;
     }
 
-    frame = d->outputFrames.takeFirst();
-    if (d->outputFrames.isEmpty())
-        d->sourceFrame = {};
     return 0;
 }
 

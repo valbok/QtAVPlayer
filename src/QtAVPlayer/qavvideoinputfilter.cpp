@@ -105,6 +105,8 @@ int QAVVideoInputFilter::configure(AVFilterGraph *graph, AVFilterInOut *in)
 bool QAVVideoInputFilter::supports(const QAVFrame &frame) const
 {
     Q_D(const QAVVideoInputFilter);
+    if (!frame)
+        return true;
     const auto & frm = frame.frame();
     return d->width == frm->width
            && d->height == frm->height
