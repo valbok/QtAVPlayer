@@ -18,7 +18,8 @@ QT_BEGIN_NAMESPACE
 
 int QAVFilters::createFilters(
     const QList<QString> &filterDescs,
-    const QAVFrame &frame, const QAVDemuxer &demuxer)
+    const QAVFrame &frame,
+    const QAVDemuxer &demuxer)
 {
     QMutexLocker locker(&m_mutex);
     m_videoFilters.clear();
@@ -86,8 +87,8 @@ int QAVFilters::createFilters(
                 );
             }
             qDebug() << __FUNCTION__ << ":" << filterDesc
-                << "video[" << videoInput.size() << "->" << videoOutput.size() << "]"
-                << "audio[" << audioInput.size() << "->" << audioOutput.size() << "]";
+                << "video[input:" << videoInput.size() << "-> output:" << videoOutput.size() << "]"
+                << "audio[input:" << audioInput.size() << "-> output:" << audioOutput.size() << "]";
         }
 
         m_filterGraphs.push_back(std::move(graph));
@@ -97,51 +98,72 @@ int QAVFilters::createFilters(
     return 0;
 }
 
-static int apply(
+static int writeFrame(
+    const QAVFrame &decodedFrame,
+    const std::vector<std::unique_ptr<QAVFilter>> &filters)
+{
+    int ret = 0;
+    for (size_t i = 0; i < filters.size() && ret >= 0; ++i)
+        ret = filters[i]->write(decodedFrame);
+    return ret;
+}
+
+int QAVFilters::write(
+    AVMediaType mediaType,
+    const QAVFrame &decodedFrame)
+{
+    QMutexLocker locker(&m_mutex);
+    switch (mediaType) {
+    case AVMEDIA_TYPE_VIDEO:
+        return writeFrame(decodedFrame, m_videoFilters);
+    case AVMEDIA_TYPE_AUDIO:
+        return writeFrame(decodedFrame, m_audioFilters);
+    default:
+        qWarning() << QLatin1String("Unsupported codec type:") << mediaType;
+        break;
+    }
+    return AVERROR(ENOTSUP);
+}
+
+static int readFrames(
     const QAVFrame &decodedFrame,
     const std::vector<std::unique_ptr<QAVFilter>> &filters,
     QList<QAVFrame> &filteredFrames)
 {
-    int ret = 0;
     QAVFrame frame;
     if (filters.empty()) {
         filteredFrames.append(decodedFrame);
-        return ret;
+        return 0;
     }
 
+    // Read all frames from all filters at once
+    int ret = 0;
     for (size_t i = 0; i < filters.size() && ret >= 0; ++i) {
         do {
-            ret = filters[i]->write(decodedFrame);
-        } while (ret == AVERROR(EAGAIN));
-        if (ret >= 0) {
-            do {
-                ret = filters[i]->read(frame);
-                if (ret >= 0 && frame)
-                    filteredFrames.append(frame);
-            } while (ret == AVERROR(EAGAIN) || !filters[i]->eof());
-        }
+            ret = filters[i]->read(frame);
+            if (ret >= 0 && frame)
+                filteredFrames.append(frame);
+        } while (!filters[i]->isEmpty());
     }
+
     return ret;
 }
 
-int QAVFilters::applyFilters(
+int QAVFilters::read(
+    AVMediaType mediaType,
     const QAVFrame &decodedFrame,
     QList<QAVFrame> &filteredFrames)
 {
     QMutexLocker locker(&m_mutex);
-    auto stream = decodedFrame.stream().stream();
-    if (stream) {
-        switch (stream->codecpar->codec_type) {
-        case AVMEDIA_TYPE_VIDEO:
-            return apply(decodedFrame, m_videoFilters, filteredFrames);
-        case AVMEDIA_TYPE_AUDIO:
-            return apply(decodedFrame, m_audioFilters, filteredFrames);
-        default:
-            qWarning() << QLatin1String("Unsupported codec type:") << stream->codecpar->codec_type;
-            break;
-        }
+    switch (mediaType) {
+    case AVMEDIA_TYPE_VIDEO:
+        return readFrames(decodedFrame, m_videoFilters, filteredFrames);
+    case AVMEDIA_TYPE_AUDIO:
+        return readFrames(decodedFrame, m_audioFilters, filteredFrames);
+    default:
+        qWarning() << QLatin1String("Unsupported codec type:") << mediaType;
+        break;
     }
-
     return AVERROR(ENOTSUP);
 }
 
@@ -154,7 +176,7 @@ QList<QString> QAVFilters::filterDescs() const
 static bool filtersEmpty(const std::vector<std::unique_ptr<QAVFilter>> &filters)
 {
     for (auto &filter : filters)
-        if (!filter->eof())
+        if (!filter->isEmpty())
             return false;
     return true;
 }

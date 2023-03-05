@@ -119,10 +119,19 @@ private:
 class QAVPacketQueue
 {
 public:
-    QAVPacketQueue() = default;
+    QAVPacketQueue(AVMediaType mediaType)
+        : m_mediaType(mediaType)
+    {
+    }
+
     ~QAVPacketQueue()
     {
         abort();
+    }
+
+    AVMediaType mediaType() const
+    {
+        return m_mediaType;
     }
 
     bool isEmpty() const
@@ -214,6 +223,7 @@ protected:
         m_duration = 0;
     }
 
+    const AVMediaType m_mediaType = AVMEDIA_TYPE_UNKNOWN;
     QList<QAVPacket> m_packets;
     mutable QMutex m_mutex;
     QWaitCondition m_consumerWaiter;

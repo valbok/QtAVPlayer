@@ -20,9 +20,9 @@ QAVFilter::QAVFilter(const QString &name, QAVFilterPrivate &d, QObject *parent)
 
 QAVFilter::~QAVFilter() = default;
 
-bool QAVFilter::eof() const
+bool QAVFilter::isEmpty() const
 {
-    return !d_func()->sourceFrame;
+    return d_func()->isEmpty;
 }
 
 QT_END_NAMESPACE

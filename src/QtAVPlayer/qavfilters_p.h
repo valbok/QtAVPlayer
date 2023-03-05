@@ -37,13 +37,14 @@ public:
     int createFilters(
         const QList<QString> &filterDescs,
         const QAVFrame &frame,
-        const QAVDemuxer &demuxer
-    );
-    int applyFilters(
+        const QAVDemuxer &demuxer);
+    int write(
+        AVMediaType mediaType,
+        const QAVFrame &decodedFrame);
+    int read(
+        AVMediaType mediaType,
         const QAVFrame &decodedFrame,
-        QList<QAVFrame> &filteredFrames
-    );
-
+        QList<QAVFrame> &filteredFrames);
     QList<QString> filterDescs() const;
     bool isEmpty() const;
     void clear();

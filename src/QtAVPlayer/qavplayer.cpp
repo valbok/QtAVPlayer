@@ -47,6 +47,9 @@ class QAVPlayerPrivate
 public:
     QAVPlayerPrivate(QAVPlayer *q)
         : q_ptr(q)
+        , videoQueue(AVMEDIA_TYPE_VIDEO)
+        , audioQueue(AVMEDIA_TYPE_AUDIO)
+        , subtitleQueue(AVMEDIA_TYPE_SUBTITLE)
     {
         threadPool.setMaxThreadCount(4);
     }
@@ -684,19 +687,21 @@ void QAVPlayerPrivate::doPlayStep(
         demuxer.decode(queue.dequeue(), decodedFrame);
 
     bool flushEvents = false;
+    int ret = 0;
     if (decodedFrame) {
         // 2. Filter decoded frame
         if (filteredFrames.isEmpty()) {
-            int ret = filters.applyFilters(decodedFrame, filteredFrames);
-            if (ret < 0) {
+            ret = filters.write(queue.mediaType(), decodedFrame);
+            if (ret >= 0)
+                ret = filters.read(queue.mediaType(), decodedFrame, filteredFrames);
+            if (ret < 0 && ret != AVERROR(EAGAIN)) {
                 // Try filters again
                 filteredFrames.clear();
-                if (ret == AVERROR(ENOTSUP)) {
-                    applyFilters(true, decodedFrame);
-                } else {
+                if (ret != AVERROR(ENOTSUP)) {
                     setError(QAVPlayer::FilterError, err_str(ret));
                     return;
                 }
+                applyFilters(true, decodedFrame);
             }
         }
 
