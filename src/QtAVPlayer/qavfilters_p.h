@@ -47,6 +47,7 @@ public:
         QList<QAVFrame> &filteredFrames);
     QList<QString> filterDescs() const;
     bool isEmpty() const;
+    void flush();
     void clear();
 
 private:

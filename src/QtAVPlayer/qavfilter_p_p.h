@@ -20,6 +20,7 @@
 //
 
 #include <QtAVPlayer/qavframe.h>
+#include <QtAVPlayer/qavstream.h>
 #include <QList>
 
 QT_BEGIN_NAMESPACE
@@ -33,6 +34,7 @@ public:
     virtual ~QAVFilterPrivate() = default;
 
     QAVFilter *q_ptr = nullptr;
+    QAVStream stream;
     QString name;
     QAVFrame sourceFrame;
     QList<QAVFrame> outputFrames;

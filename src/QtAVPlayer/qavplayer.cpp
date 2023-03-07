@@ -598,6 +598,7 @@ void QAVPlayerPrivate::doDemux()
                 && filters.isEmpty()
                 && !isEndOfFile())
             {
+                filters.flush();
                 endOfFile(true);
                 qCDebug(lcAVPlayer) << "EndOfMedia";
                 setPendingMediaStatus(EndOfMedia);
@@ -688,13 +689,14 @@ void QAVPlayerPrivate::doPlayStep(
 
     bool flushEvents = false;
     int ret = 0;
-    if (decodedFrame) {
-        // 2. Filter decoded frame
-        if (filteredFrames.isEmpty()) {
+    // 2. Filter decoded frame
+    if (filteredFrames.isEmpty()) {
+        if (decodedFrame)
             ret = filters.write(queue.mediaType(), decodedFrame);
-            if (ret >= 0)
-                ret = filters.read(queue.mediaType(), decodedFrame, filteredFrames);
-            if (ret < 0 && ret != AVERROR(EAGAIN)) {
+        if (ret >= 0 || ret == AVERROR(EAGAIN))
+            ret = filters.read(queue.mediaType(), decodedFrame, filteredFrames);
+        if (ret < 0) {
+            if (ret != AVERROR(EAGAIN)) {
                 // Try filters again
                 filteredFrames.clear();
                 if (ret != AVERROR(ENOTSUP)) {
@@ -703,32 +705,34 @@ void QAVPlayerPrivate::doPlayStep(
                 }
                 applyFilters(true, decodedFrame);
             }
+        } else {
+            // The frame is already filtered, decode next one
+            decodedFrame = {};
         }
+    }
 
-        // 3. Sync filtered frames
-        while (!quit && !filteredFrames.isEmpty()) {
-            auto &frame = filteredFrames.front();
-            if (clock.wait(
-                    synced ? sync : synced,
-                    frame.pts(),
-                    q_ptr->speed(),
-                    refPts))
-            {
-                if (frame) {
-                    sync = !skipFrame(master, frame, queue.isEmpty());
-                    if (sync) {
-                        if (!flushEvents)
-                            flushEvents = true;
-                        cb(frame);
-                    }
+    // 3. Sync filtered frames
+    while (!quit && !filteredFrames.isEmpty()) {
+        auto &frame = filteredFrames.front();
+        Q_ASSERT(frame);
+        if (clock.wait(
+                synced ? sync : synced,
+                frame.pts(),
+                q_ptr->speed(),
+                refPts))
+        {
+            if (frame) {
+                sync = !skipFrame(master, frame, queue.isEmpty());
+                if (sync) {
+                    if (!flushEvents)
+                        flushEvents = true;
+                    cb(frame);
                 }
-                filteredFrames.pop_front();
-            } else {
-                flushEvents = isLastFrame(frame, demuxer);
             }
+            filteredFrames.pop_front();
+        } else {
+            flushEvents = isLastFrame(frame, demuxer);
         }
-        // All frames have been landed, decode next one
-        decodedFrame = {};
     }
 
     if (master) {

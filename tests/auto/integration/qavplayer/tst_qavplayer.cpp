@@ -82,6 +82,7 @@ private slots:
     void filterNameStep();
     void inputFormat();
     void inputVideoCodec();
+    void flushFilters();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -2929,6 +2930,23 @@ void tst_QAVPlayer::inputVideoCodec()
     p.setInputVideoCodec("h264");
     QCOMPARE(spy.count(), 1);
     QCOMPARE(p.inputVideoCodec(), "h264");
+}
+
+void tst_QAVPlayer::flushFilters()
+{
+    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
+    QAVPlayer p;
+    QFileInfo file(QLatin1String("../testdata/BAVC1010958_DV000107.dv"));
+    p.setSource(file.absoluteFilePath());
+    p.setFilter("scale,format=rgb32,crop=1:ih:iw/2:0,tile=layout=512x1,setsar=1/1 [panel_0]");
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &) {
+        ++framesCount;
+    });
+    p.play();
+    p.setSynced(false);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
+    QTRY_COMPARE(framesCount, 1);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
