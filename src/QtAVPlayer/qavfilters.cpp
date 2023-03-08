@@ -139,11 +139,9 @@ static int readFrames(
     QList<QAVFrame> &filteredFrames)
 {
     QAVFrame frame;
-    if (filters.empty()) {
-        if (decodedFrame)
+    if (filters.empty())
             filteredFrames.append(decodedFrame);
         return 0;
-    }
 
     // Read all frames from all filters at once
     int ret = 0;

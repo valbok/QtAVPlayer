@@ -691,10 +691,11 @@ void QAVPlayerPrivate::doPlayStep(
     int ret = 0;
     // 2. Filter decoded frame
     if (filteredFrames.isEmpty()) {
-        if (decodedFrame)
+        if (decodedFrame) {
             ret = filters.write(queue.mediaType(), decodedFrame);
-        if (ret >= 0 || ret == AVERROR(EAGAIN))
-            ret = filters.read(queue.mediaType(), decodedFrame, filteredFrames);
+            if (ret >= 0 || ret == AVERROR(EAGAIN))
+                ret = filters.read(queue.mediaType(), decodedFrame, filteredFrames);
+        }
         if (ret < 0) {
             if (ret != AVERROR(EAGAIN)) {
                 // Try filters again
