@@ -73,7 +73,11 @@ int QAVFilters::createFilters(
             if (!videoInput.isEmpty() && !videoOutput.isEmpty()) {
                 m_videoFilters.emplace_back(
                     std::unique_ptr<QAVFilter>(
-                        new QAVVideoFilter(QString::number(i), videoInput, videoOutput)
+                        new QAVVideoFilter(
+                            demuxer.videoStream(),
+                            QString::number(i),
+                            videoInput,
+                            videoOutput)
                     )
                 );
             }
@@ -82,7 +86,11 @@ int QAVFilters::createFilters(
             if (!audioInput.isEmpty() && !audioOutput.isEmpty()) {
                 m_audioFilters.emplace_back(
                     std::unique_ptr<QAVFilter>(
-                        new QAVAudioFilter(QString::number(i), audioInput, audioOutput)
+                        new QAVAudioFilter(
+                            demuxer.audioStream(),
+                            QString::number(i),
+                            audioInput,
+                            audioOutput)
                     )
                 );
             }
@@ -132,7 +140,8 @@ static int readFrames(
 {
     QAVFrame frame;
     if (filters.empty()) {
-        filteredFrames.append(decodedFrame);
+        if (decodedFrame)
+            filteredFrames.append(decodedFrame);
         return 0;
     }
 
@@ -145,7 +154,6 @@ static int readFrames(
                 filteredFrames.append(frame);
         } while (!filters[i]->isEmpty());
     }
-
     return ret;
 }
 
@@ -175,7 +183,7 @@ QList<QString> QAVFilters::filterDescs() const
 
 static bool filtersEmpty(const std::vector<std::unique_ptr<QAVFilter>> &filters)
 {
-    for (auto &filter : filters)
+    for (const auto &filter : filters)
         if (!filter->isEmpty())
             return false;
     return true;
@@ -185,6 +193,19 @@ bool QAVFilters::isEmpty() const
 {
     QMutexLocker locker(&m_mutex);
     return filtersEmpty(m_videoFilters) && filtersEmpty(m_audioFilters);
+}
+
+static void flushFilters(const std::vector<std::unique_ptr<QAVFilter>> &filters)
+{
+    for (const auto &filter: filters)
+        filter->flush();
+}
+
+void QAVFilters::flush()
+{
+    QMutexLocker locker(&m_mutex);
+    flushFilters(m_videoFilters);
+    flushFilters(m_audioFilters);
 }
 
 void QAVFilters::clear()

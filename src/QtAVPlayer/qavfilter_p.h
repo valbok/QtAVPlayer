@@ -21,6 +21,7 @@
 
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QtAVPlayer/qavframe.h>
+#include <QtAVPlayer/qavstream.h>
 #include <QObject>
 #include <memory>
 
@@ -36,9 +37,14 @@ public:
     virtual int read(QAVFrame &frame) = 0;
     // Checks if all frames have been read
     bool isEmpty() const;
+    virtual void flush() = 0;
 
 protected:
-    QAVFilter(const QString &name, QAVFilterPrivate &d, QObject *parent = nullptr);
+    QAVFilter(
+        const QAVStream &stream,
+        const QString &name,
+        QAVFilterPrivate &d,
+        QObject *parent = nullptr);
     std::unique_ptr<QAVFilterPrivate> d_ptr;
     Q_DECLARE_PRIVATE(QAVFilter)
 private:

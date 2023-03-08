@@ -30,8 +30,17 @@ public:
     QList<QAVAudioOutputFilter> outputs;
 };
 
-QAVAudioFilter::QAVAudioFilter(const QString &name, const QList<QAVAudioInputFilter> &inputs, const QList<QAVAudioOutputFilter> &outputs, QObject *parent)
-    : QAVFilter(name, *new QAVAudioFilterPrivate(this), parent)
+QAVAudioFilter::QAVAudioFilter(
+    const QAVStream &stream,
+    const QString &name,
+    const QList<QAVAudioInputFilter> &inputs,
+    const QList<QAVAudioOutputFilter> &outputs,
+    QObject *parent)
+    : QAVFilter(
+        stream,
+        name,
+        *new QAVAudioFilterPrivate(this),
+        parent)
 {
     Q_D(QAVAudioFilter);
     d->inputs = inputs;
@@ -41,7 +50,7 @@ QAVAudioFilter::QAVAudioFilter(const QString &name, const QList<QAVAudioInputFil
 int QAVAudioFilter::write(const QAVFrame &frame)
 {
     Q_D(QAVAudioFilter);
-    if (frame && frame.stream().stream()->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
+    if (!frame || frame.stream().stream()->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
         qWarning() << "Frame is not audio";
         return AVERROR(EINVAL);
     }
@@ -49,8 +58,7 @@ int QAVAudioFilter::write(const QAVFrame &frame)
     d->sourceFrame = frame;
     for (auto &filter : d->inputs) {
         QAVFrame ref = frame;
-        AVFrame *avFrame = ref ? ref.frame() : nullptr;
-        int ret = av_buffersrc_add_frame_flags(filter.ctx(), avFrame, 0);
+        int ret = av_buffersrc_add_frame_flags(filter.ctx(), ref.frame(), 0);
         if (ret < 0)
             return ret;
     }
@@ -67,6 +75,7 @@ int QAVAudioFilter::read(QAVFrame &frame)
         return 0;
     }
 
+    int ret = 0;
     if (d->outputFrames.isEmpty()) {
         for (int i = 0; i < d->outputs.size(); ++i) {
             auto &filter = d->outputs[i];
@@ -74,7 +83,7 @@ int QAVAudioFilter::read(QAVFrame &frame)
                 QAVFrame out = d->sourceFrame;
                 // av_buffersink_get_frame_flags allocates frame's data
                 av_frame_unref(out.frame());
-                int ret = av_buffersink_get_frame_flags(filter.ctx(), out.frame(), 0);
+                ret = av_buffersink_get_frame_flags(filter.ctx(), out.frame(), 0);
                 if (ret < 0)
                     break;
 
@@ -85,6 +94,8 @@ int QAVAudioFilter::read(QAVFrame &frame)
                     !filter.name().isEmpty()
                     ? filter.name()
                     : QString(QLatin1String("%1:%2")).arg(d->name).arg(QString::number(i)));
+                if (!out.stream())
+                    out.setStream(d->stream);
                 d->outputFrames.push_back(out);
             }
         }
@@ -98,6 +109,17 @@ int QAVAudioFilter::read(QAVFrame &frame)
     }
 
     return 0;
+}
+
+void QAVAudioFilter::flush()
+{
+    Q_D(QAVAudioFilter);
+    for (const auto &filter : d->inputs) {
+        int ret = av_buffersrc_add_frame(filter.ctx(), nullptr);
+        if (ret < 0)
+            qWarning() << "Could not flush:" << ret;
+    }
+    d->isEmpty = false;
 }
 
 QT_END_NAMESPACE

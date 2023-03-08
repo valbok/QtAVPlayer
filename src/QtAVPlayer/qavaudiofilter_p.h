@@ -30,10 +30,16 @@ class QAVAudioFilterPrivate;
 class Q_AVPLAYER_EXPORT QAVAudioFilter : public QAVFilter
 {
 public:
-    QAVAudioFilter(const QString &name, const QList<QAVAudioInputFilter> &inputs, const QList<QAVAudioOutputFilter> &outputs, QObject *parent = nullptr);
+    QAVAudioFilter(
+        const QAVStream &stream,
+        const QString &name,
+        const QList<QAVAudioInputFilter> &inputs,
+        const QList<QAVAudioOutputFilter> &outputs,
+        QObject *parent = nullptr);
 
     int write(const QAVFrame &frame) override;
     int read(QAVFrame &frame) override;
+    void flush() override;
 
 protected:
     Q_DECLARE_PRIVATE(QAVAudioFilter)
