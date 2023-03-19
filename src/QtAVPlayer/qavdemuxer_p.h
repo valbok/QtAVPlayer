@@ -80,6 +80,9 @@ public:
     QString inputVideoCodec() const;
     void setInputVideoCodec(const QString &codec);
 
+    QMap<QString, QString> inputOptions() const;
+    void setInputOptions(const QMap<QString, QString> &opts);
+
     static QStringList supportedFormats();
     static QStringList supportedVideoCodecs();
     static QStringList supportedProtocols();

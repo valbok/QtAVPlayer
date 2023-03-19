@@ -83,6 +83,7 @@ public:
     int currentSubtitleStreamIndex = -1;
     QString inputFormat;
     QString inputVideoCodec;
+    QMap<QString, QString> inputOptions;
 
     bool eof = false;
     QList<QAVPacket> packets;
@@ -365,8 +366,12 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
             return AVERROR(EINVAL);
         }
     }
+
+    AVDictionary *opts = nullptr;
+    for (const auto & key: d->inputOptions.keys())
+        av_dict_set(&opts, key.toUtf8().constData(), d->inputOptions[key].toUtf8().constData(), 0);
     locker.unlock();
-    int ret = avformat_open_input(&d->ctx, url.toUtf8().constData(), inputFormat, nullptr);
+    int ret = avformat_open_input(&d->ctx, url.toUtf8().constData(), inputFormat, &opts);
     if (ret < 0)
         return ret;
 
@@ -762,6 +767,20 @@ void QAVDemuxer::setInputVideoCodec(const QString &codec)
     Q_D(QAVDemuxer);
     QMutexLocker locker(&d->mutex);
     d->inputVideoCodec = codec;
+}
+
+QMap<QString, QString> QAVDemuxer::inputOptions() const
+{
+    Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    return d->inputOptions;
+}
+
+void QAVDemuxer::setInputOptions(const QMap<QString, QString> &opts)
+{
+    Q_D(QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    d->inputOptions = opts;
 }
 
 QStringList QAVDemuxer::supportedBitstreamFilters()

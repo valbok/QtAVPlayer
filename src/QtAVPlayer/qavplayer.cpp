@@ -1226,11 +1226,11 @@ QString QAVPlayer::inputFormat() const
 void QAVPlayer::setInputFormat(const QString &format)
 {
     Q_D(QAVPlayer);
-    QString curret = inputFormat();
-    if (format == curret)
+    QString current = inputFormat();
+    if (format == current)
         return;
 
-    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << curret << "->" << format;
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << current << "->" << format;
     d->demuxer.setInputFormat(format);
     emit inputFormatChanged(format);
 }
@@ -1244,13 +1244,31 @@ QString QAVPlayer::inputVideoCodec() const
 void QAVPlayer::setInputVideoCodec(const QString &codec)
 {
     Q_D(QAVPlayer);
-    QString curret = inputVideoCodec();
-    if (codec == curret)
+    QString current = inputVideoCodec();
+    if (codec == current)
         return;
 
-    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << curret << "->" << codec;
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << current << "->" << codec;
     d->demuxer.setInputVideoCodec(codec);
     emit inputVideoCodecChanged(codec);
+}
+
+QMap<QString, QString> QAVPlayer::inputOptions() const
+{
+    Q_D(const QAVPlayer);
+    return d->demuxer.inputOptions();
+}
+
+void QAVPlayer::setInputOptions(const QMap<QString, QString>  &opts)
+{
+    Q_D(QAVPlayer);
+    auto current = inputOptions();
+    if (opts == current)
+        return;
+
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << current << "->" << opts;
+    d->demuxer.setInputOptions(opts);
+    emit inputOptionsChanged(opts);
 }
 
 #ifndef QT_NO_DEBUG_STREAM

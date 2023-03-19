@@ -33,6 +33,7 @@ private slots:
     void supportedFormats();
     void metadata();
     void videoCodecs();
+    void inputOptions();
 };
 
 void tst_QAVDemuxer::construction()
@@ -398,6 +399,14 @@ void tst_QAVDemuxer::videoCodecs()
     d.unload();
     d.setInputVideoCodec("unknown");
     QVERIFY(d.load(file.absoluteFilePath()) < 0);
+}
+
+void tst_QAVDemuxer::inputOptions()
+{
+    QAVDemuxer d;
+    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    d.setInputOptions({{"user_agent", "QAVPlayer"}});
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
 }
 
 QTEST_MAIN(tst_QAVDemuxer)

@@ -93,6 +93,9 @@ public:
     QString inputVideoCodec() const;
     void setInputVideoCodec(const QString &codec);
 
+    QMap<QString, QString> inputOptions() const;
+    void setInputOptions(const QMap<QString, QString> &opts);
+
 public Q_SLOTS:
     void play();
     void pause();
@@ -124,6 +127,7 @@ Q_SIGNALS:
     void syncedChanged(bool sync);
     void inputFormatChanged(const QString &format);
     void inputVideoCodecChanged(const QString &codec);
+    void inputOptionsChanged(const QMap<QString, QString> &opts);
 
     void videoFrame(const QAVVideoFrame &frame);
     void audioFrame(const QAVAudioFrame &frame);
