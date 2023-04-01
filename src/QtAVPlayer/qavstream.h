@@ -41,7 +41,13 @@ private:
     Q_DECLARE_PRIVATE(QAVStream)
 };
 
+bool operator==(const QAVStream &lhs, const QAVStream &rhs);
+
 Q_DECLARE_METATYPE(QAVStream)
+
+#ifndef QT_NO_DEBUG_STREAM
+Q_AVPLAYER_EXPORT QDebug operator<<(QDebug, const QAVStream &);
+#endif
 
 QT_END_NAMESPACE
 

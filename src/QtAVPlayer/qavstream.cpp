@@ -8,6 +8,7 @@
 #include "qavstream.h"
 #include "qavdemuxer_p.h"
 #include "qavcodec_p.h"
+#include <QDebug>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -80,8 +81,8 @@ QMap<QString, QString> QAVStream::metadata() const
 {
     Q_D(const QAVStream);
     QMap<QString, QString> result;
-    AVDictionaryEntry *tag = nullptr;
-    if (d->stream != nullptr) {
+    if (d->stream) {
+        AVDictionaryEntry *tag = nullptr;
         while ((tag = av_dict_get(d->stream->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
             result[QString::fromUtf8(tag->key)] = QString::fromUtf8(tag->value);
     }
@@ -103,5 +104,19 @@ double QAVStream::duration() const
 
     return d->stream->duration * av_q2d(d->stream->time_base);
 }
+
+bool operator==(const QAVStream &lhs, const QAVStream &rhs)
+{
+    return lhs.index() == rhs.index();
+}
+
+#ifndef QT_NO_DEBUG_STREAM
+QDebug operator<<(QDebug dbg, const QAVStream &stream)
+{
+    QDebugStateSaver saver(dbg);
+    dbg.nospace();
+    return dbg << QString(QLatin1String("QAVStream(%1)" )).arg(stream.index()).toLatin1().constData();
+}
+#endif
 
 QT_END_NAMESPACE

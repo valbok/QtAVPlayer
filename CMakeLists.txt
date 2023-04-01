@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 project(QtAVPlayer)
+add_definitions(-std=c++17)
 
 if(NOT WIN32)
-    add_definitions(-std=c++14)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     set(CXX_FLAGS "-Wall" "-pedantic")
     set(CMAKE_CXX_FLAGS, "${CXX_FLAGS}")
