@@ -146,7 +146,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
        qDebug() << "Audio streams" << player.availableAudioStreams().size();
        qDebug() << "Current audio stream" << player.currentAudioStreams().first().index() << player.currentAudioStreams().first().metadata();
-       player.setAudioStreams(player.currentAudioStreams()); // Return all frames for all available audio streams      
+       player.setAudioStreams(player.availableAudioStreams()); // Return all frames for all available audio streams      
 
 9. HW accelerations:
 
