@@ -31,13 +31,17 @@ int QAVFilters::createFilters(
         if (graph) {
             int ret = graph->parse(filterDesc);
             if (ret < 0) {
-                qWarning() << QLatin1String("Could not parse filter desc:") << filterDesc << ret;
+                qWarning() << "Could not parse filter desc:" << filterDesc << ret;
                 return ret;
             }
             QAVFrame videoFrame;
             QAVFrame audioFrame;
-            videoFrame.setStream(demuxer.videoStream());
-            audioFrame.setStream(demuxer.audioStream());
+            const auto videoStreams = demuxer.currentVideoStreams();
+            const auto videoStream = !videoStreams.isEmpty() ? videoStreams.first() : QAVStream();
+            videoFrame.setStream(videoStream);
+            const auto audioStreams = demuxer.currentAudioStreams();
+            const auto audioStream = !audioStreams.isEmpty() ? audioStreams.first() : QAVStream();
+            audioFrame.setStream(audioStream);
             auto stream = frame.stream().stream();
             if (stream) {
                 switch (stream->codecpar->codec_type) {
@@ -48,23 +52,23 @@ int QAVFilters::createFilters(
                     audioFrame = frame;
                     break;
                 default:
-                    qWarning() << QLatin1String("Unsupported codec type:") << stream->codecpar->codec_type;
+                    qWarning() << "Unsupported codec type:" << stream->codecpar->codec_type;
                     return AVERROR(ENOTSUP);
                 }
             }
             ret = graph->apply(videoFrame);
             if (ret < 0) {
-                qWarning() << QLatin1String("Could not create video filters") << ret;
+                qWarning() << "Could not create video filters" << ret;
                 return ret;
             }
             ret = graph->apply(audioFrame);
             if (ret < 0) {
-                qWarning() << QLatin1String("Could not create audio filters") << ret;
+                qWarning() << "Could not create audio filters" << ret;
                 return ret;
             }
             ret = graph->config();
             if (ret < 0) {
-                qWarning() << QLatin1String("Could not configure filter graph") << ret;
+                qWarning() << "Could not configure filter graph" << ret;
                 return ret;
             }
 
@@ -74,7 +78,7 @@ int QAVFilters::createFilters(
                 m_videoFilters.emplace_back(
                     std::unique_ptr<QAVFilter>(
                         new QAVVideoFilter(
-                            demuxer.videoStream(),
+                            videoStream,
                             QString::number(i),
                             videoInput,
                             videoOutput)
@@ -87,7 +91,7 @@ int QAVFilters::createFilters(
                 m_audioFilters.emplace_back(
                     std::unique_ptr<QAVFilter>(
                         new QAVAudioFilter(
-                            demuxer.audioStream(),
+                            audioStream,
                             QString::number(i),
                             audioInput,
                             audioOutput)
@@ -127,7 +131,7 @@ int QAVFilters::write(
     case AVMEDIA_TYPE_AUDIO:
         return writeFrame(decodedFrame, m_audioFilters);
     default:
-        qWarning() << QLatin1String("Unsupported codec type:") << mediaType;
+        qWarning() << "Unsupported codec type:" << mediaType;
         break;
     }
     return AVERROR(ENOTSUP);
@@ -169,7 +173,7 @@ int QAVFilters::read(
     case AVMEDIA_TYPE_AUDIO:
         return readFrames(decodedFrame, m_audioFilters, filteredFrames);
     default:
-        qWarning() << QLatin1String("Unsupported codec type:") << mediaType;
+        qWarning() << "Unsupported codec type:" << mediaType;
         break;
     }
     return AVERROR(ENOTSUP);

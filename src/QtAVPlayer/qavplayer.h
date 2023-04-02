@@ -56,17 +56,20 @@ public:
     void setSource(const QString &url, QIODevice *dev = nullptr);
     QString source() const;
 
-    QList<QAVStream> videoStreams() const;
-    QAVStream videoStream() const;
+    QList<QAVStream> availableVideoStreams() const;
+    QList<QAVStream> currentVideoStreams() const;
     void setVideoStream(const QAVStream &stream);
+    void setVideoStreams(const QList<QAVStream> &streams);
 
-    QList<QAVStream> audioStreams() const;
-    QAVStream audioStream() const;
+    QList<QAVStream> availableAudioStreams() const;
+    QList<QAVStream> currentAudioStreams() const;
     void setAudioStream(const QAVStream &stream);
+    void setAudioStreams(const QList<QAVStream> &streams);
 
-    QList<QAVStream> subtitleStreams() const;
-    QAVStream subtitleStream() const;
+    QList<QAVStream> availableSubtitleStreams() const;
+    QList<QAVStream> currentSubtitleStreams() const;
     void setSubtitleStream(const QAVStream &stream);
+    void setSubtitleStreams(const QList<QAVStream> &streams);
 
     State state() const;
     MediaStatus mediaStatus() const;
@@ -114,9 +117,9 @@ Q_SIGNALS:
     void seekableChanged(bool seekable);
     void speedChanged(qreal rate);
     void videoFrameRateChanged(double rate);
-    void videoStreamChanged(const QAVStream &stream);
-    void audioStreamChanged(const QAVStream &stream);
-    void subtitleStreamChanged(const QAVStream &stream);
+    void videoStreamsChanged(const QList<QAVStream> &streams);
+    void audioStreamsChanged(const QList<QAVStream> &streams);
+    void subtitleStreamsChanged(const QList<QAVStream> &streams);
     void played(qint64 pos);
     void paused(qint64 pos);
     void stopped(qint64 pos);

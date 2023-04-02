@@ -45,6 +45,15 @@ public:
 };
 #endif
 
+static bool isStreamCurrent(int index, const QList<QAVStream> &streams)
+{
+    for (const auto &stream: streams) {
+        if (stream.index() == index)
+            return true;
+    }
+    return false;
+}
+
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
@@ -107,30 +116,31 @@ int main(int argc, char *argv[])
     QObject::connect(&p, &QAVPlayer::mediaStatusChanged, [&](auto status) {
         qDebug() << "mediaStatusChanged"<< status << p.state();
         if (status == QAVPlayer::LoadedMedia) {
-            auto videoStreams = p.videoStreams();
-            auto videoStream = p.videoStream();
-            qDebug() << "Video streams:" << videoStreams.size();
-            for (auto &s : p.videoStreams())
-                qDebug() << "[" << s.index() << "]" << s.metadata() << (s.index() == videoStream.index() ? "---current" : "");
+            auto availableVideoStreams = p.availableVideoStreams();
+            auto videoStreams = p.currentVideoStreams();
+            qDebug() << "Video streams:" << availableVideoStreams.size();
+            for (auto &s : p.availableVideoStreams())
+                qDebug() << "[" << s.index() << "]" << s.metadata() << (isStreamCurrent(s.index(), videoStreams) ? "---current" : "");
 
-            auto audioStreams = p.audioStreams();
-            auto audioStream = p.audioStream();
-            qDebug() << "Audio streams:" << audioStreams.size();
-            for (auto &s : audioStreams)
-                qDebug() << "[" << s.index() << "]" << s.metadata() << (s.index() == audioStream.index() ? "---current" : "");
+            auto availableAudioStreams = p.availableAudioStreams();
+            auto audioStreams = p.currentAudioStreams();
+            qDebug() << "Audio streams:" << availableAudioStreams.size();
 
-            auto subtitleStreams = p.subtitleStreams();
-            qDebug() << "Subtitle streams:" << subtitleStreams.size();
-            for (auto &s : subtitleStreams) {
+            for (auto &s : availableAudioStreams)
+                qDebug() << "[" << s.index() << "]" << s.metadata() << (isStreamCurrent(s.index(), audioStreams) ? "---current" : "");
+
+            auto availableSubtitleStreams = p.availableSubtitleStreams();
+            qDebug() << "Subtitle streams:" << availableSubtitleStreams.size();
+            for (auto &s : availableSubtitleStreams) {
                 if (s.metadata()["language"] == "eng") {
                     p.setSubtitleStream(s);
                     break;
                 }
             }
 
-            auto subtitleStream = p.subtitleStream();
-            for (auto &s : subtitleStreams) {
-                qDebug() << "[" << s.index() << "]" << s.metadata() << (s.index() == subtitleStream.index() ? "---current" : "");
+            auto subtitleStreams = p.currentSubtitleStreams();
+            for (auto &s : availableSubtitleStreams) {
+                qDebug() << "[" << s.index() << "]" << s.metadata() << (isStreamCurrent(s.index(), subtitleStreams) ? "---current" : "");
             }
         }
     });
@@ -139,9 +149,9 @@ int main(int argc, char *argv[])
     QObject::connect(&p, &QAVPlayer::subtitleFrame, &p, [](const QAVSubtitleFrame &frame) {
         for (unsigned i = 0; i < frame.subtitle()->num_rects; ++i) {
             if (frame.subtitle()->rects[i]->type == SUBTITLE_TEXT)
-                qDebug()<<"text:"<<frame.subtitle()->rects[i]->text;
+                qDebug() << "text:" << frame.subtitle()->rects[i]->text;
             else
-                qDebug()<<"ass:"<<frame.subtitle()->rects[i]->ass;
+                qDebug() << "ass:" << frame.subtitle()->rects[i]->ass;
         }
     });
     p.setSource(file);

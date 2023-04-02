@@ -29,6 +29,10 @@
 
 QT_BEGIN_NAMESPACE
 
+extern "C" {
+#include <libavutil/avutil.h>
+}
+
 class QAVDemuxerPrivate;
 class QAVVideoCodec;
 class QAVAudioCodec;
@@ -47,16 +51,19 @@ public:
     void unload();
 
     QAVStream stream(int index) const;
-    QList<QAVStream> videoStreams() const;
-    QAVStream videoStream() const;
-    bool setVideoStream(const QAVStream &stream);
-    QList<QAVStream> audioStreams() const;
-    QAVStream audioStream() const;
-    bool setAudioStream(const QAVStream &stream);
+    AVMediaType currentCodecType(int index) const;
 
-    QList<QAVStream> subtitleStreams() const;
-    QAVStream subtitleStream() const;
-    bool setSubtitleStream(const QAVStream &stream);
+    QList<QAVStream> availableVideoStreams() const;
+    QList<QAVStream> currentVideoStreams() const;
+    bool setVideoStreams(const QList<QAVStream> &streams);
+
+    QList<QAVStream> availableAudioStreams() const;
+    QList<QAVStream> currentAudioStreams() const;
+    bool setAudioStreams(const QList<QAVStream> &streams);
+
+    QList<QAVStream> availableSubtitleStreams() const;
+    QList<QAVStream> currentSubtitleStreams() const;
+    bool setSubtitleStreams(const QList<QAVStream> &streams);
 
     QAVPacket read();
 

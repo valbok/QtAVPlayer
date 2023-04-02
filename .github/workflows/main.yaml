@@ -59,7 +59,7 @@ jobs:
           mkdir build
           cd build
           cmake ../
-          make
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17'
 
       - name: QMake Test
         run: |
