@@ -121,6 +121,12 @@ Free and open-source Qt Media Player library based on FFmpeg.
        player.setFilter("subtitles=file.mkv");
        // Render subtitles from srt file
        player.setFilter("subtitles=file.srt");
+       // Multiple filters
+       player.setFilters({
+            "drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[drawtext]",
+            "negate[negate]",
+            "[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[out3]"
+       }); // Return frames from 3 filters with 5 outputs
 
 7. Step by step:
 
@@ -140,7 +146,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
        qDebug() << "Audio streams" << player.availableAudioStreams().size();
        qDebug() << "Current audio stream" << player.currentAudioStreams().first().index() << player.currentAudioStreams().first().metadata();
-       player.setAudioStreams(player.currentAudioStreams());       
+       player.setAudioStreams(player.currentAudioStreams()); // Return all frames for all available audio streams      
 
 9. HW accelerations:
 
