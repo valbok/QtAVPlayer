@@ -42,6 +42,8 @@ Free and open-source Qt Media Player library based on FFmpeg.
        // Or Android
        player.setInputFormat("android_camera");
        player.setSource("0:0");
+       
+       player.setInputOptions({{"user_agent", "QAVPlayer"}});
     
        // Using various protocols
        player.setSource("subfile,,start,0,end,0,,:/root/Downloads/why-qtmm-must-die.mkv");
@@ -136,9 +138,9 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
 8. Multiple streams:
 
-       qDebug() << "Audio streams" << player.audioStreams().size();
-       qDebug() << "Current audio stream" << player.audioStream().index() << player.audioStream().metadata();
-       player.setAudioStream(player.audioStream());       
+       qDebug() << "Audio streams" << player.availableAudioStreams().size();
+       qDebug() << "Current audio stream" << player.currentAudioStreams().first().index() << player.currentAudioStreams().first().metadata();
+       player.setAudioStreams(player.currentAudioStreams());       
 
 9. HW accelerations:
 
