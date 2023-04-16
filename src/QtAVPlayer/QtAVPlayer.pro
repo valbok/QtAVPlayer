@@ -113,7 +113,7 @@ android {
     PRIVATE_HEADERS += qavhwdevice_mediacodec_p.h
     SOURCES += qavhwdevice_mediacodec.cpp
 
-    LIBS += -lavcodec -lavformat -lswscale -lavutil -lswresample
+    LIBS += -lavdevice -lavformat -lavutil -lavcodec -lavfilter -lswscale  -lswresample
     equals(ANDROID_TARGET_ARCH, armeabi-v7a): \
         LIBS += -L$$(AVPLAYER_ANDROID_LIB_ARMEABI_V7A)
 
