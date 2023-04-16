@@ -150,15 +150,14 @@ static int readFrames(
     }
 
     // Read all frames from all filters at once
-    int ret = 0;
-    for (size_t i = 0; i < filters.size() && ret >= 0; ++i) {
+    for (size_t i = 0; i < filters.size(); ++i) {
         do {
-            ret = filters[i]->read(frame);
-            if (ret >= 0 && frame)
+            filters[i]->read(frame);
+            if (frame)
                 filteredFrames.append(frame);
         } while (!filters[i]->isEmpty());
     }
-    return ret;
+    return 0;
 }
 
 int QAVFilters::read(

@@ -699,15 +699,13 @@ void QAVPlayerPrivate::doPlayStep(
         if (ret >= 0 || ret == AVERROR(EAGAIN))
             ret = filters.read(queue.mediaType(), decodedFrame, filteredFrames);
         if (ret < 0) {
-            if (ret != AVERROR(EAGAIN)) {
-                // Try filters again
-                filteredFrames.clear();
-                if (ret != AVERROR(ENOTSUP)) {
-                    setError(QAVPlayer::FilterError, err_str(ret));
-                    return;
-                }
-                applyFilters(true, decodedFrame);
+            // Try filters again
+            filteredFrames.clear();
+            if (ret != AVERROR(ENOTSUP)) {
+                setError(QAVPlayer::FilterError, err_str(ret));
+                return;
             }
+            applyFilters(true, decodedFrame);
         } else {
             // The frame is already filtered, decode next one
             decodedFrame = {};
