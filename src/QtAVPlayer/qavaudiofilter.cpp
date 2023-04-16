@@ -66,13 +66,13 @@ int QAVAudioFilter::write(const QAVFrame &frame)
     return 0;
 }
 
-int QAVAudioFilter::read(QAVFrame &frame)
+void QAVAudioFilter::read(QAVFrame &frame)
 {
     Q_D(QAVAudioFilter);
     if (d->outputs.isEmpty() || d->isEmpty) {
         frame = {};
         d->sourceFrame = {};
-        return 0;
+        return;
     }
 
     int ret = 0;
@@ -107,8 +107,6 @@ int QAVAudioFilter::read(QAVFrame &frame)
         d->sourceFrame = {};
         d->isEmpty = true;
     }
-
-    return 0;
 }
 
 void QAVAudioFilter::flush()

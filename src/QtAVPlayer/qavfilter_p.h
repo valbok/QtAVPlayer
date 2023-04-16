@@ -34,7 +34,7 @@ public:
     ~QAVFilter();
 
     virtual int write(const QAVFrame &frame) = 0;
-    virtual int read(QAVFrame &frame) = 0;
+    virtual void read(QAVFrame &frame) = 0;
     // Checks if all frames have been read
     bool isEmpty() const;
     virtual void flush() = 0;

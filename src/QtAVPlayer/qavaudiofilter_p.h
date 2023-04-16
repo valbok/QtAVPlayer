@@ -38,7 +38,7 @@ public:
         QObject *parent = nullptr);
 
     int write(const QAVFrame &frame) override;
-    int read(QAVFrame &frame) override;
+    void read(QAVFrame &frame) override;
     void flush() override;
 
 protected:
