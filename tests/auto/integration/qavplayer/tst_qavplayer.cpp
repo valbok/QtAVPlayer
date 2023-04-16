@@ -2968,6 +2968,16 @@ void tst_QAVPlayer::multipleStreams()
     p.setSource(file.absoluteFilePath());
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    auto audioStreams = p.availableAudioStreams();
+    auto videoStreams = p.availableVideoStreams();
+    QCOMPARE(audioStreams.size(), 2);
+    QCOMPARE(audioStreams[0].duration(), 3);
+    QCOMPARE(audioStreams[0].framesCount(), 125);
+    QCOMPARE(audioStreams[1].duration(), 3);
+    QCOMPARE(audioStreams[1].framesCount(), 125);
+    QCOMPARE(videoStreams.size(), 1);
+    QCOMPARE(videoStreams[0].duration(), 2.3773788);
+    QCOMPARE(videoStreams[0].framesCount(), 57);
     p.setAudioStreams(p.availableAudioStreams());
     p.setAudioStreams(p.availableAudioStreams());
     QTRY_COMPARE(spy.count(), 1);

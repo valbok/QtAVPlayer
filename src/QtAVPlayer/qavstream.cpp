@@ -105,6 +105,31 @@ double QAVStream::duration() const
     return d->stream->duration * av_q2d(d->stream->time_base);
 }
 
+int64_t QAVStream::framesCount() const
+{
+    Q_D(const QAVStream);
+    if (!d->stream)
+        return 0;
+
+    auto frames = d->stream->nb_frames;
+    if (frames)
+        return frames;
+
+    frames = duration() * av_q2d(d->stream->avg_frame_rate);
+    if (frames)
+        return frames;
+
+    // TODO: Check if it is relevant
+    const auto tb = d->stream->time_base;
+    if ((tb.num == 1 && tb.den >= 24 && tb.den <= 60) ||
+        (tb.num == 1001 && tb.den >= 24000 && tb.den <= 60000))
+    {
+        return d->stream->duration;
+    }
+
+    return 0;
+}
+
 bool operator==(const QAVStream &lhs, const QAVStream &rhs)
 {
     return lhs.index() == rhs.index();
