@@ -117,6 +117,7 @@ void tst_QAVDemuxer::loadAudio()
         QCOMPARE(p2.packet()->stream_index, p.packet()->stream_index);
 
         QAVFrame f;
+        QVERIFY(!d.decode(p, f));
         QVERIFY(d.decode(p, f));
         QVERIFY(f);
         QVERIFY(f.frame());
@@ -182,6 +183,7 @@ void tst_QAVDemuxer::loadVideo()
     QVERIFY(p.packet()->stream_index >= 0);
 
     QAVFrame f;
+    QVERIFY(!d.decode(p, f));
     QVERIFY(d.decode(p, f));
     QVERIFY(f);
     QVERIFY(f.frame());
@@ -193,6 +195,7 @@ void tst_QAVDemuxer::loadVideo()
         QCOMPARE(d.eof(), false);
         if (p.packet()->stream_index == d.currentVideoStreams().first().index()) {
             QAVFrame f;
+            QVERIFY(!d.decode(p, f));
             QVERIFY(d.decode(p, f));
             QVERIFY(f);
             QVERIFY(f.frame());
@@ -237,6 +240,7 @@ void tst_QAVDemuxer::fileIO()
     QVERIFY(p.packet()->stream_index >= 0);
 
     QAVFrame f;
+    QVERIFY(!d.decode(p, f));
     QVERIFY(d.decode(p, f));
     QVERIFY(f);
     QVERIFY(f.frame());
@@ -248,6 +252,7 @@ void tst_QAVDemuxer::fileIO()
         QCOMPARE(d.eof(), false);
         if (p.packet()->stream_index == d.currentVideoStreams().first().index()) {
             QAVFrame f;
+            QVERIFY(!d.decode(p, f));
             QVERIFY(d.decode(p, f));
             QVERIFY(f);
             QVERIFY(f.frame());
@@ -307,6 +312,7 @@ void tst_QAVDemuxer::qrcIO()
         QCOMPARE(p2.packet()->stream_index, p.packet()->stream_index);
 
         QAVFrame f;
+        QVERIFY(!d.decode(p, f));
         QVERIFY(d.decode(p, f));
         QVERIFY(f);
         QVERIFY(f.frame());

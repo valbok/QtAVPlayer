@@ -28,6 +28,8 @@ struct AVFrame;
 class Q_AVPLAYER_EXPORT QAVFrameCodec : public QAVCodec
 {
 public:
+    // Returns true if frame is received
+    //         false to try next packet
     bool decode(const AVPacket *pkt, AVFrame *frame) const;
 
 protected:

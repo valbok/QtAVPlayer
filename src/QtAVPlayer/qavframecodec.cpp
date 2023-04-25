@@ -33,12 +33,15 @@ bool QAVFrameCodec::decode(const AVPacket *pkt, AVFrame *frame) const
     if (!d->avctx)
         return false;
 
-    int ret = avcodec_send_packet(d->avctx, pkt);
-    if (ret < 0 && ret != AVERROR(EAGAIN))
-        return false;
-
-    avcodec_receive_frame(d->avctx, frame);
-    return true;
+    int ret = avcodec_receive_frame(d->avctx, frame);
+    // Frame was returned
+    if (ret >= 0)
+        return true;
+    // Output is not available in this state - user must try to send new input
+    if (ret == AVERROR(EAGAIN))
+        avcodec_send_packet(d->avctx, pkt);
+    // Try next packet
+    return false;
 }
 
 QT_END_NAMESPACE

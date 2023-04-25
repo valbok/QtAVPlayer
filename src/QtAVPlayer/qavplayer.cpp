@@ -91,6 +91,7 @@ public:
         double refPts,
         QAVQueueClock &clock,
         QAVPacketQueue &queue,
+        QAVPacket &packet,
         QAVFrame &decodedFrame,
         QList<QAVFrame> &filteredFrames,
         bool &sync,
@@ -676,6 +677,7 @@ void QAVPlayerPrivate::doPlayStep(
     double refPts,
     QAVQueueClock &clock,
     QAVPacketQueue &queue,
+    QAVPacket &packet,
     QAVFrame &decodedFrame,
     QList<QAVFrame> &filteredFrames,
     bool &sync,
@@ -686,9 +688,17 @@ void QAVPlayerPrivate::doPlayStep(
     if (master)
         statePrev = q_ptr->state();
 
+    if (!packet)
+        packet = queue.dequeue();
+
     // 1. Decode a frame
-    if (!decodedFrame)
-        demuxer.decode(queue.dequeue(), decodedFrame);
+    if (packet && !decodedFrame) {
+        // If failed, need to try next packet
+        if (!demuxer.decode(packet, decodedFrame)) {
+            packet = {};
+            decodedFrame = {};
+        }
+    }
 
     bool flushEvents = false;
     int ret = 0;
@@ -707,6 +717,7 @@ void QAVPlayerPrivate::doPlayStep(
             }
             applyFilters(true, decodedFrame);
         } else {
+            if (decodedFrame)
             // The frame is already filtered, decode next one
             decodedFrame = {};
         }
@@ -750,6 +761,7 @@ void QAVPlayerPrivate::doPlayVideo()
     videoClock.setFrameRate(demuxer.videoFrameRate());
     const bool master = true;
     bool sync = true;
+    QAVPacket packet;
     QAVFrame decodedFrame;
     QList<QAVFrame> filteredFrames;
 
@@ -759,6 +771,7 @@ void QAVPlayerPrivate::doPlayVideo()
             !demuxer.currentAudioStreams().isEmpty() ? audioClock.pts() : -1,
             videoClock,
             videoQueue,
+            packet,
             decodedFrame,
             filteredFrames,
             sync,
@@ -778,6 +791,7 @@ void QAVPlayerPrivate::doPlayAudio()
     const double ref = -1;
     bool sync = true;
     QList<QAVFrame> filteredFrames;
+    QAVPacket packet;
     QAVFrame decodedFrame;
 
     while (!quit) {
@@ -786,6 +800,7 @@ void QAVPlayerPrivate::doPlayAudio()
             ref,
             audioClock,
             audioQueue,
+            packet,
             decodedFrame,
             filteredFrames,
             sync,
