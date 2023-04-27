@@ -516,7 +516,7 @@ void QAVPlayerPrivate::doLoad()
     if (!q_ptr->availableAudioStreams().isEmpty())
         audioPlayFuture = QtConcurrent::run(&threadPool, this, &QAVPlayerPrivate::doPlayAudio);
     if (!q_ptr->availableSubtitleStreams().isEmpty())
-        audioPlayFuture = QtConcurrent::run(&threadPool, this, &QAVPlayerPrivate::doPlaySubtitle);
+        subtitlePlayFuture = QtConcurrent::run(&threadPool, this, &QAVPlayerPrivate::doPlaySubtitle);
 #else
     demuxerFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doDemux, this);
     if (!q_ptr->availableVideoStreams().isEmpty())
@@ -524,7 +524,7 @@ void QAVPlayerPrivate::doLoad()
     if (!q_ptr->availableAudioStreams().isEmpty())
         audioPlayFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doPlayAudio, this);
     if (!q_ptr->availableSubtitleStreams().isEmpty())
-        audioPlayFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doPlaySubtitle, this);
+        subtitlePlayFuture = QtConcurrent::run(&threadPool, &QAVPlayerPrivate::doPlaySubtitle, this);
 #endif
     qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
