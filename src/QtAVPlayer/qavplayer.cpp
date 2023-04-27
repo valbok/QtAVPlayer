@@ -91,7 +91,7 @@ public:
         double refPts,
         QAVQueueClock &clock,
         QAVPacketQueue &queue,
-        QAVFrame &decodedFrame,
+        QList<QAVFrame> &decodedFrames,
         QList<QAVFrame> &filteredFrames,
         bool &sync,
         const std::function<void(const QAVFrame &frame)> &cb);
@@ -676,7 +676,7 @@ void QAVPlayerPrivate::doPlayStep(
     double refPts,
     QAVQueueClock &clock,
     QAVPacketQueue &queue,
-    QAVFrame &decodedFrame,
+    QList<QAVFrame> &decodedFrames,
     QList<QAVFrame> &filteredFrames,
     bool &sync,
     const std::function<void(const QAVFrame &frame)> &cb)
@@ -687,11 +687,12 @@ void QAVPlayerPrivate::doPlayStep(
         statePrev = q_ptr->state();
 
     // 1. Decode a frame
-    if (!decodedFrame)
-        demuxer.decode(queue.dequeue(), decodedFrame);
+    if (decodedFrames.isEmpty())
+        demuxer.decode(queue.dequeue(), decodedFrames);
 
     bool flushEvents = false;
     int ret = 0;
+    QAVFrame decodedFrame = !decodedFrames.isEmpty() ? decodedFrames.takeFirst() : QAVFrame();
     // 2. Filter decoded frame
     if (filteredFrames.isEmpty()) {
         if (decodedFrame)
@@ -750,7 +751,7 @@ void QAVPlayerPrivate::doPlayVideo()
     videoClock.setFrameRate(demuxer.videoFrameRate());
     const bool master = true;
     bool sync = true;
-    QAVFrame decodedFrame;
+    QList<QAVFrame> decodedFrames;
     QList<QAVFrame> filteredFrames;
 
     while (!quit) {
@@ -759,7 +760,7 @@ void QAVPlayerPrivate::doPlayVideo()
             !demuxer.currentAudioStreams().isEmpty() ? audioClock.pts() : -1,
             videoClock,
             videoQueue,
-            decodedFrame,
+            decodedFrames,
             filteredFrames,
             sync,
             [&](const QAVFrame &frame) { emit q_ptr->videoFrame(frame); }
@@ -777,8 +778,8 @@ void QAVPlayerPrivate::doPlayAudio()
     const bool master = demuxer.currentVideoStreams().isEmpty();
     const double ref = -1;
     bool sync = true;
+    QList<QAVFrame> decodedFrames;
     QList<QAVFrame> filteredFrames;
-    QAVFrame decodedFrame;
 
     while (!quit) {
         doPlayStep(
@@ -786,7 +787,7 @@ void QAVPlayerPrivate::doPlayAudio()
             ref,
             audioClock,
             audioQueue,
-            decodedFrame,
+            decodedFrames,
             filteredFrames,
             sync,
             [this](const QAVFrame &frame) { emit q_ptr->audioFrame(frame); }

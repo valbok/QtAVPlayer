@@ -67,7 +67,7 @@ public:
 
     QAVPacket read();
 
-    bool decode(const QAVPacket &pkt, QAVFrame &frame) const;
+    bool decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const;
     bool decode(const QAVPacket &pkt, QAVSubtitleFrame &frame) const;
 
     double duration() const;

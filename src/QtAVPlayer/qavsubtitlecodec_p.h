@@ -19,7 +19,9 @@
 // We mean it.
 //
 
+#include "qavsubtitleframe.h"
 #include "qavcodec_p.h"
+#include "qavpacket_p.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -30,7 +32,7 @@ class Q_AVPLAYER_EXPORT QAVSubtitleCodec : public QAVCodec
 public:
     QAVSubtitleCodec(QObject *parent = nullptr);
 
-    bool decode(const AVPacket *pkt, AVSubtitle *frame) const;
+    bool decode(const QAVPacket &pkt, QAVSubtitleFrame &frame) const;
 
 private:
     Q_DISABLE_COPY(QAVSubtitleCodec)

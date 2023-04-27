@@ -27,17 +27,20 @@ QAVFrameCodec::QAVFrameCodec(QAVCodecPrivate &d, QObject *parent)
 {
 }
 
-bool QAVFrameCodec::decode(const AVPacket *pkt, AVFrame *frame) const
+bool QAVFrameCodec::decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const
 {
     Q_D(const QAVCodec);
     if (!d->avctx)
         return false;
 
-    int ret = avcodec_send_packet(d->avctx, pkt);
+    int ret = avcodec_send_packet(d->avctx, pkt.packet());
     if (ret < 0 && ret != AVERROR(EAGAIN))
         return false;
 
-    avcodec_receive_frame(d->avctx, frame);
+    QAVFrame frame;
+    while ((ret = avcodec_receive_frame(d->avctx, frame.frame()) >= 0))
+        frames.push_back(frame);
+
     return true;
 }
 

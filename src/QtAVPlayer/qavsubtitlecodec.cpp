@@ -20,13 +20,16 @@ QAVSubtitleCodec::QAVSubtitleCodec(QObject *parent)
 {
 }
 
-bool QAVSubtitleCodec::decode(const AVPacket *pkt, AVSubtitle *subtitle) const
+bool QAVSubtitleCodec::decode(const QAVPacket &pkt, QAVSubtitleFrame &frame) const
 {
     Q_D(const QAVCodec);
 
     int got_output = 0;
-    int ret = avcodec_decode_subtitle2(d->avctx,
-                                       subtitle, &got_output, const_cast<AVPacket *>(pkt));
+    int ret = avcodec_decode_subtitle2(
+        d->avctx,
+        frame.subtitle(),
+        &got_output,
+        const_cast<AVPacket *>(pkt.packet()));
 
     if (ret < 0 && ret != AVERROR(EAGAIN))
         return false;
