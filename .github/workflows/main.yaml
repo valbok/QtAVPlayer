@@ -25,7 +25,7 @@ jobs:
     env: ${{ matrix.env }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install compiler and FFmpeg dependencies
         run: |
@@ -87,7 +87,7 @@ jobs:
     env: ${{ matrix.env }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install dependencies
         run: |
@@ -121,7 +121,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Init vs environment
         uses: egor-tensin/vs-shell@v2
@@ -182,7 +182,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install wget & unzip
         run: |
