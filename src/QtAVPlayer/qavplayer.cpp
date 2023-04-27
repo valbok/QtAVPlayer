@@ -824,7 +824,7 @@ void QAVPlayerPrivate::doPlayStep(
             q_ptr->speed(),
             -1))
     {
-        sync = !skipFrame(-1, decodedFrame, queue.isEmpty());
+        sync = !skipFrame(false, decodedFrame, queue.isEmpty());
         if (sync) {
             if (decodedFrame)
                 cb(decodedFrame);
