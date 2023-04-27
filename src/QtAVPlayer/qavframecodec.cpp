@@ -37,9 +37,13 @@ bool QAVFrameCodec::decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const
     if (ret < 0 && ret != AVERROR(EAGAIN))
         return false;
 
-    QAVFrame frame;
-    while ((ret = avcodec_receive_frame(d->avctx, frame.frame()) >= 0))
+    while (true) {
+        QAVFrame frame;
+        ret = avcodec_receive_frame(d->avctx, frame.frame());
+        if (ret < 0)
+            break;
         frames.push_back(frame);
+    }
 
     return true;
 }
