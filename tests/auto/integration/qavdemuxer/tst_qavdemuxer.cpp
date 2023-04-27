@@ -53,8 +53,9 @@ void tst_QAVDemuxer::construction()
     QCOMPARE(p.duration(), 0);
     QCOMPARE(p.packet()->size, 0);
     QVERIFY(p.packet()->stream_index < 0);
-    QAVFrame f1;
-    QVERIFY(!d.decode(p, f1));
+    QList<QAVFrame> fs;
+    QVERIFY(!d.decode(p, fs));
+    QVERIFY(fs.isEmpty());
 
     QAVFrame f;
     QVERIFY(!f);
@@ -116,8 +117,10 @@ void tst_QAVDemuxer::loadAudio()
         QCOMPARE(p2.packet()->size, p.packet()->size);
         QCOMPARE(p2.packet()->stream_index, p.packet()->stream_index);
 
-        QAVFrame f;
-        QVERIFY(d.decode(p, f));
+        QList<QAVFrame> fs;
+        QVERIFY(d.decode(p, fs));
+        QCOMPARE(fs.size(), 1);
+        auto f = fs[0];
         QVERIFY(f);
         QVERIFY(f.frame());
         QVERIFY(f.pts() >= 0);
@@ -181,8 +184,10 @@ void tst_QAVDemuxer::loadVideo()
     QVERIFY(p.packet()->size > 0);
     QVERIFY(p.packet()->stream_index >= 0);
 
-    QAVFrame f;
-    QVERIFY(d.decode(p, f));
+    QList<QAVFrame> fs;
+    QVERIFY(d.decode(p, fs));
+    QCOMPARE(fs.size(), 1);
+    auto f = fs[0];
     QVERIFY(f);
     QVERIFY(f.frame());
     QVERIFY(f.pts() >= 0);
@@ -192,8 +197,10 @@ void tst_QAVDemuxer::loadVideo()
     while ((p = d.read())) {
         QCOMPARE(d.eof(), false);
         if (p.packet()->stream_index == d.currentVideoStreams().first().index()) {
-            QAVFrame f;
-            QVERIFY(d.decode(p, f));
+            QList<QAVFrame> fs1;
+            QVERIFY(d.decode(p, fs1));
+            QCOMPARE(fs1.size(), 1);
+            f = fs1[0];
             QVERIFY(f);
             QVERIFY(f.frame());
             QVERIFY(f.pts() >= 0);
@@ -236,8 +243,10 @@ void tst_QAVDemuxer::fileIO()
     QVERIFY(p.packet()->size > 0);
     QVERIFY(p.packet()->stream_index >= 0);
 
-    QAVFrame f;
-    QVERIFY(d.decode(p, f));
+    QList<QAVFrame> fs;
+    QVERIFY(d.decode(p, fs));
+    QCOMPARE(fs.size(), 1);
+    auto f = fs[0];
     QVERIFY(f);
     QVERIFY(f.frame());
     QVERIFY(f.pts() >= 0);
@@ -247,8 +256,10 @@ void tst_QAVDemuxer::fileIO()
     while ((p = d.read())) {
         QCOMPARE(d.eof(), false);
         if (p.packet()->stream_index == d.currentVideoStreams().first().index()) {
-            QAVFrame f;
-            QVERIFY(d.decode(p, f));
+            QList<QAVFrame> fs1;
+            QVERIFY(d.decode(p, fs1));
+            QCOMPARE(fs1.size(), 1);
+            f = fs1[0];
             QVERIFY(f);
             QVERIFY(f.frame());
             QVERIFY(f.pts() >= 0);
@@ -306,8 +317,10 @@ void tst_QAVDemuxer::qrcIO()
         QCOMPARE(p2.packet()->size, p.packet()->size);
         QCOMPARE(p2.packet()->stream_index, p.packet()->stream_index);
 
-        QAVFrame f;
-        QVERIFY(d.decode(p, f));
+        QList<QAVFrame> fs;
+        QVERIFY(d.decode(p, fs));
+        QCOMPARE(fs.size(), 1);
+        auto f = fs[0];
         QVERIFY(f);
         QVERIFY(f.frame());
         QVERIFY(f.pts() >= 0);

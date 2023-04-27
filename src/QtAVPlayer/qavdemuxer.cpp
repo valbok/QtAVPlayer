@@ -678,7 +678,7 @@ QAVPacket QAVDemuxer::read()
     return !d->packets.isEmpty() ? d->packets.takeFirst() : QAVPacket{};
 }
 
-static bool decode_packet(const QAVDemuxer &demuxer, const QAVPacket &pkt, QAVFrame *frame, QAVSubtitleFrame *subtitle)
+static bool decode_packet(const QAVDemuxer &demuxer, const QAVPacket &pkt, QList<QAVFrame> *frames, QAVSubtitleFrame *subtitle)
 {
     auto s = demuxer.stream(pkt.packet()->stream_index);
     if (!s)
@@ -688,17 +688,19 @@ static bool decode_packet(const QAVDemuxer &demuxer, const QAVPacket &pkt, QAVFr
     switch (s.stream()->codecpar->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
         case AVMEDIA_TYPE_AUDIO: {
-            if (frame) {
+            if (frames) {
                 auto c = reinterpret_cast<QAVFrameCodec *>(s.codec().data());
-                result = c->decode(pkt.packet(), frame->frame());
-                if (result)
-                    frame->setStream(s);
+                result = c->decode(pkt, *frames);
+                if (result) {
+                    for (auto & frame : *frames)
+                        frame.setStream(s);
+                }
             }
         } break;
         case AVMEDIA_TYPE_SUBTITLE: {
             if (subtitle) {
                 auto c = reinterpret_cast<QAVSubtitleCodec *>(s.codec().data());
-                result = c->decode(pkt.packet(), subtitle->subtitle());
+                result = c->decode(pkt, *subtitle);
                 if (result)
                     subtitle->setStream(s);
             }
@@ -715,9 +717,9 @@ bool QAVDemuxer::decode(const QAVPacket &pkt, QAVSubtitleFrame &frame) const
     return decode_packet(*this, pkt, nullptr, &frame);
 }
 
-bool QAVDemuxer::decode(const QAVPacket &pkt, QAVFrame &frame) const
+bool QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const
 {
-    return decode_packet(*this, pkt, &frame, nullptr);
+    return decode_packet(*this, pkt, &frames, nullptr);
 }
 
 bool QAVDemuxer::seekable() const
