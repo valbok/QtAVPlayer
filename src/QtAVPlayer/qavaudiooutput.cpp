@@ -94,10 +94,11 @@ public:
 #endif
     AudioOutput *audioOutput = nullptr;
     qreal volume = 1.0;
+    int bufferSize = 0;
     QList<QAVAudioFrame> frames;
     qint64 offset = 0;
     bool quit = 0;
-    QMutex mutex;
+    mutable QMutex mutex;
     QWaitCondition cond;
     QThreadPool threadPool;
 
@@ -159,6 +160,8 @@ public:
                     }
                 });
 
+            if (bufferSize > 0)
+                audioOutput->setBufferSize(bufferSize);
             audioOutput->start(this);
         }
 
@@ -208,6 +211,20 @@ void QAVAudioOutput::setVolume(qreal v)
     Q_D(QAVAudioOutput);
     QMutexLocker locker(&d->mutex);
     d->volume = v;
+}
+
+void QAVAudioOutput::setBufferSize(int bytes)
+{
+    Q_D(QAVAudioOutput);
+    QMutexLocker locker(&d->mutex);
+    d->bufferSize = bytes;
+}
+
+int QAVAudioOutput::bufferSize() const
+{
+    Q_D(const QAVAudioOutput);
+    QMutexLocker locker(&d->mutex);
+    return d->bufferSize;
 }
 
 bool QAVAudioOutput::play(const QAVAudioFrame &frame)
