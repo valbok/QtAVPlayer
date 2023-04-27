@@ -133,7 +133,7 @@ jobs:
           choco install wget unzip xidel
 
       - name: Install Qt 5.15
-        uses: jurplel/install-qt-action@v2
+        uses: jurplel/install-qt-action@v3
         with:
           version: 5.15.2
 
@@ -189,7 +189,7 @@ jobs:
           choco install wget unzip xidel
 
       - name: Install Qt 5.15
-        uses: jurplel/install-qt-action@v2
+        uses: jurplel/install-qt-action@v3
         with:
           arch: win64_mingw81
           version: 5.15.2
