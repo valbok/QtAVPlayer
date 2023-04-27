@@ -22,6 +22,9 @@ public:
     ~QAVAudioOutput();
 
     void setVolume(qreal v);
+    void setBufferSize(int bytes);
+    int bufferSize() const;
+
     bool play(const QAVAudioFrame &frame);
 
 protected:
