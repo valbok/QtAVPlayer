@@ -844,7 +844,7 @@ void QAVPlayerPrivate::doPlaySubtitle()
             subtitleQueue,
             decodedFrame,
             sync,
-            [this](const auto &frame) { emit q_ptr->subtitleFrame(frame); }
+            [this](const QAVSubtitleFrame &frame) { emit q_ptr->subtitleFrame(frame); }
         );
     }
 
