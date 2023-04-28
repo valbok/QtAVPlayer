@@ -142,6 +142,11 @@ int main(int argc, char *argv[])
             for (auto &s : availableSubtitleStreams) {
                 qDebug() << "[" << s.index() << "]" << s.metadata() << (isStreamCurrent(s.index(), subtitleStreams) ? "---current" : "");
             }
+        } else if (status == QAVPlayer::EndOfMedia) {
+            float expected = p.currentVideoStreams().first().framesCount();
+            float received = frameCount;
+            float loss = 100.0 - 100.0 * received  / expected;
+            qDebug() << expected << "frames expected," << received << "received," << loss << "% loss";
         }
     });
     QObject::connect(&p, &QAVPlayer::durationChanged, [&](auto d) { qDebug() << "durationChanged" << d; });
