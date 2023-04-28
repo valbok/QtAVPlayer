@@ -33,17 +33,23 @@ bool QAVFrameCodec::decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const
     if (!d->avctx)
         return false;
 
-    int ret = avcodec_send_packet(d->avctx, pkt.packet());
-    if (ret < 0 && ret != AVERROR(EAGAIN))
-        return false;
+    int sent = 0;
+    do {
+        sent = avcodec_send_packet(d->avctx, pkt.packet());
+        // AVERROR(EAGAIN): input is not accepted in the current state - user must read output with avcodec_receive_frame()
+        // (once all output is read, the packet should be resent, and the call will not fail with EAGAIN)
+        if (sent < 0 && sent != AVERROR(EAGAIN))
+            return false;
 
-    while (true) {
-        QAVFrame frame;
-        ret = avcodec_receive_frame(d->avctx, frame.frame());
-        if (ret < 0)
-            break;
-        frames.push_back(frame);
-    }
+        while (true) {
+            QAVFrame frame;
+            int ret = avcodec_receive_frame(d->avctx, frame.frame());
+            // AVERROR(EAGAIN): output is not available in this state - user must try to send new input
+            if (ret < 0)
+                break;
+            frames.push_back(frame);
+        }
+    } while (sent == AVERROR(EAGAIN));
 
     return true;
 }
