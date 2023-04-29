@@ -14,7 +14,6 @@ set(SOURCES
     qavvideoframe.cpp
     qavaudioframe.cpp
     qavsubtitleframe.cpp
-    qavaudiooutput.cpp
     qavfilter.cpp
     qavvideofilter.cpp
     qavaudiofilter.cpp
@@ -36,9 +35,9 @@ set(PUBLIC_HEADERS
     qavsubtitleframe.h
     qavaudioformat.h
     qavplayer.h
-    qavaudiooutput.h
     qtavplayerglobal.h
     qavstream.h
+    qtQtAVPlayer-config.h
 )
 
 set(PRIVATE_HEADERS
@@ -70,7 +69,13 @@ set(PRIVATE_HEADERS
     qavaudiooutputfilter_p.h
     qaviodevice_p.h
     qavfilters_p.h
+    qtQtAVPlayer-config_p.h
 )
+
+if(MULTIMEDIA_FOUND)
+    set(SOURCES ${SOURCES} qavaudiooutput.cpp)
+    set(PUBLIC_HEADERS ${PUBLIC_HEADERS} qavaudiooutput.h)
+endif()
 
 if(Qt6_FOUND)
     if(QT_FEATURE_egl AND va_drm)
@@ -113,17 +118,36 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
 set_target_properties(${PROJECT_NAME} PROPERTIES PRIVATE_HEADER "${PRIVATE_HEADERS}")
 if(Qt6_FOUND)
-    include_directories(${Qt6Multimedia_PRIVATE_INCLUDE_DIRS})
-    if(APPLE)
-        target_link_libraries(${PROJECT_NAME} ${LIBS} ${LIBAV} Qt6::Core Qt6::Gui Qt6::Multimedia ${IOSURFACE_LIBRARY} ${COREVIDEO_LIBRARY})
+    if(MULTIMEDIA_FOUND)
+        include_directories(${Qt6Multimedia_PRIVATE_INCLUDE_DIRS})
+        if(APPLE)
+            target_link_libraries(${PROJECT_NAME} ${LIBS} ${LIBAV} Qt6::Core Qt6::Gui Qt6::Multimedia ${IOSURFACE_LIBRARY} ${COREVIDEO_LIBRARY})
+        else()
+            target_link_libraries(${PROJECT_NAME} ${LIBS} ${LIBAV} Qt6::Core Qt6::Gui Qt6::Multimedia)
+        endif()
     else()
-        target_link_libraries(${PROJECT_NAME} ${LIBS} ${LIBAV} Qt6::Core Qt6::Gui Qt6::Multimedia)
-    endif ()
+        include_directories(${Qt6Gui_PRIVATE_INCLUDE_DIRS})
+        if(APPLE)
+            target_link_libraries(${PROJECT_NAME} ${LIBS} ${LIBAV} Qt6::Core Qt6::Gui ${IOSURFACE_LIBRARY} ${COREVIDEO_LIBRARY})
+        else()
+            target_link_libraries(${PROJECT_NAME} ${LIBS} ${LIBAV} Qt6::Core Qt6::Gui)
+        endif()
+    endif()
 else()
-    if(APPLE)
-        target_link_libraries(${PROJECT_NAME} ${LIBS} ${LIBAV} Qt5::Core Qt5::Gui Qt5::Multimedia ${IOSURFACE_LIBRARY} ${COREVIDEO_LIBRARY})
+    if(MULTIMEDIA_FOUND)
+        include_directories(${Qt5Multimedia_PRIVATE_INCLUDE_DIRS})
+        if(APPLE)
+            target_link_libraries(${PROJECT_NAME} ${LIBS} ${LIBAV} Qt5::Core Qt5::Gui Qt5::Multimedia ${IOSURFACE_LIBRARY} ${COREVIDEO_LIBRARY})
+        else()
+            target_link_libraries(${PROJECT_NAME} ${LIBS} ${LIBAV} Qt5::Core Qt5::Gui Qt5::Multimedia)
+        endif()
     else()
-        target_link_libraries(${PROJECT_NAME} ${LIBS} ${LIBAV} Qt5::Core Qt5::Gui Qt5::Multimedia)
+        include_directories(${Qt5Gui_PRIVATE_INCLUDE_DIRS})
+        if(APPLE)
+            target_link_libraries(${PROJECT_NAME} ${LIBS} ${LIBAV} Qt5::Core Qt5::Gui ${IOSURFACE_LIBRARY} ${COREVIDEO_LIBRARY})
+        else()
+            target_link_libraries(${PROJECT_NAME} ${LIBS} ${LIBAV} Qt5::Core Qt5::Gui)
+        endif()
     endif()
 endif()
 target_compile_definitions(${PROJECT_NAME} PRIVATE QT_BUILD_QTAVPLAYER_LIB)

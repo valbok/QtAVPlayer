@@ -1,6 +1,9 @@
 TARGET = tst_qavdemuxer
 
-QT += multimedia-private testlib QtAVPlayer-private
+QT += testlib QtAVPlayer-private
+qtConfig(multimedia): {
+    QT += multimedia-private
+}
 
 INCLUDEPATH += .
 CONFIG += testcase console

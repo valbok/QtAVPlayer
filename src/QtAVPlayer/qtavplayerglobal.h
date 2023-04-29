@@ -9,6 +9,7 @@
 #define QTAVPLAYERGLOBAL_H
 
 #include <QtGui/qtguiglobal.h>
+#include <QtAVPlayer/qtQtAVPlayer-config.h>
 
 QT_BEGIN_NAMESPACE
 

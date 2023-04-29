@@ -1,10 +1,5 @@
 {
     "module": "QtAVPlayer",
-    "depends": [
-        "multimedia"
-    ],
-    "condition": "module.multimedia",
-
     "libraries": {
         "ffmpeg": {
             "label": "FFmpeg",
@@ -69,6 +64,11 @@
     },
 
     "features": {
+        "multimedia": {
+            "label": "Qt Multimedia",
+            "condition": "module.multimedia",
+            "output": [ "feature", "privateFeature" ]
+        },
         "ffmpeg": {
             "label": "FFmpeg",
             "condition": "libs.ffmpeg",
@@ -100,6 +100,7 @@
         {
             "section": "Qt AVPlayer",
             "entries": [
+                "multimedia",
                 "ffmpeg",
                 "va_x11",
                 "va_drm",
