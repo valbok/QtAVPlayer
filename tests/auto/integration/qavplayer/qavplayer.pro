@@ -1,6 +1,9 @@
 TARGET = tst_qavplayer
 
-QT += multimedia-private testlib QtAVPlayer QtAVPlayer-private
+QT += testlib QtAVPlayer QtAVPlayer-private
+qtConfig(multimedia): {
+    QT += multimedia-private
+}
 
 CONFIG += testcase console
 CONFIG += C++1z

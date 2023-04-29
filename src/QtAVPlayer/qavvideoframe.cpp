@@ -11,11 +11,13 @@
 #include "qavvideocodec_p.h"
 #include "qavhwdevice_p.h"
 #include <QSize>
+#ifndef QT_NO_MULTIMEDIA
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QAbstractVideoSurface>
 #else
 #include <QtMultimedia/private/qabstractvideobuffer_p.h>
 #include <QtMultimedia/private/qvideotexturehelper_p.h>
+#endif
 #endif
 #include <QDebug>
 
@@ -163,6 +165,7 @@ QAVVideoFrame QAVVideoFrame::convertTo(AVPixelFormat fmt) const
     return result;
 }
 
+#ifndef QT_NO_MULTIMEDIA
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 class PlanarVideoBuffer : public QAbstractPlanarVideoBuffer
 {
@@ -259,7 +262,7 @@ private:
     QVariant m_textures;
 };
 
-#endif
+#endif // #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 
 QAVVideoFrame::operator QVideoFrame() const
 {
@@ -343,5 +346,6 @@ QAVVideoFrame::operator QVideoFrame() const
     return QVideoFrame(new PlanarVideoBuffer(result, format, type), {size(), format});
 #endif
 }
+#endif // #ifndef QT_NO_MULTIMEDIA
 
 QT_END_NAMESPACE

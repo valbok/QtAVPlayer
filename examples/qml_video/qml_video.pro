@@ -1,6 +1,14 @@
 TEMPLATE = app
 TARGET = qml_video
 INCLUDEPATH += .
+# Example
+ANDROID_EXTRA_LIBS += /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavdevice.so \
+	/opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavformat.so \
+	/opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavutil.so \
+	/opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavcodec.so \
+	/opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavfilter.so \
+	/opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libswscale.so \
+	/opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libswresample.so
 
 QT += gui multimedia QtAVPlayer
 lessThan(QT_MAJOR_VERSION, 6): QT += qtmultimediaquicktools-private

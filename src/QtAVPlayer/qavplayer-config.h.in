@@ -1,0 +1,6 @@
+#pragma once
+#cmakedefine multimedia 1
+
+#if not defined(multimedia)
+#define QT_NO_MULTIMEDIA
+#endif

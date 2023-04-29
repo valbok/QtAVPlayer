@@ -10,7 +10,9 @@
 
 #include <QtAVPlayer/qavframe.h>
 #include <QVariant>
+#ifndef QT_NO_MULTIMEDIA
 #include <QVideoFrame>
+#endif
 
 extern "C" {
 #include <libavutil/frame.h>
@@ -55,8 +57,9 @@ public:
     AVPixelFormat format() const;
     QString formatName() const;
     QAVVideoFrame convertTo(AVPixelFormat fmt) const;
-
+#ifndef QT_NO_MULTIMEDIA
     operator QVideoFrame() const;
+#endif
 
 protected:
     Q_DECLARE_PRIVATE(QAVVideoFrame)
