@@ -36,6 +36,32 @@
                   "args": "libva-drm" }
             ]
         },
+        "opengl_es2": {
+            "label": "OpenGL ES 2.0",
+            "test": {
+                "head": [
+                    "#ifdef __APPLE__",
+                    "#  include <OpenGLES/ES2/gl.h>",
+                    "#else",
+                    "#  define GL_GLEXT_PROTOTYPES",
+                    "#endif"
+                ],
+                "main": [
+                    "glUniform1f(1, GLfloat(1.0));",
+                    "glClear(GL_COLOR_BUFFER_BIT);"
+                ]
+            },
+            "headers": [
+                {
+                    "condition": "!config.darwin",
+                    "headers": "GLES2/gl2.h"
+                }
+            ],
+            "sources": [
+                { "type": "pkgConfig", "args": "glesv2", "condition": "!config.darwin" },
+                { "type": "makeSpec", "spec": "OPENGL_ES2" }
+            ]
+        },
         "egl": {
             "label": "EGL",
             "test": {
@@ -48,6 +74,35 @@
             "sources": [
                 { "type": "pkgConfig", "args": "egl" },
                 { "type": "makeSpec", "spec": "EGL" }
+            ]
+        },
+        "opengl": {
+            "label": "Desktop OpenGL",
+            "test": {
+                "head": [
+                    "#ifdef __APPLE__",
+                    "#  include <OpenGL/gl.h>",
+                    "#else",
+                    "#  define GL_GLEXT_PROTOTYPES",
+                    "#endif"
+                ],
+                "main": [
+                    "glBegin(GL_TRIANGLES);",
+                    "    glVertex2f(20.0f, 10.0f);",
+                    "    glVertex2f(10.0f, 30.0f);",
+                    "    glVertex2f(20.0f, 50.0f);",
+                    "glEnd();"
+                ]
+            },
+            "headers": [
+                {
+                    "condition": "!config.darwin",
+                    "headers": "GL/gl.h"
+                }
+            ],
+            "sources": [
+                { "type": "pkgConfig", "args": "gl", "condition": "!config.darwin" },
+                { "type": "makeSpec", "spec": "OPENGL" }
             ]
         },
         "vdpau": {
@@ -64,6 +119,11 @@
     },
 
     "features": {
+        "gui": {
+            "label": "Qt GUI",
+            "condition": "module.gui",
+            "output": [ "feature", "privateFeature" ]
+        },
         "multimedia": {
             "label": "Qt Multimedia",
             "condition": "module.multimedia",
@@ -86,8 +146,42 @@
         },
         "egl": {
             "label": "egl",
-            "condition": "libs.egl",
+            "condition": "libs.egl && libs.opengl_es2",
             "output": [ "privateFeature" ]
+        },
+        "opengles2": {
+            "label": "OpenGL ES 2.0",
+            "enable": "input.opengl == 'es2'",
+            "disable": "input.opengl == 'desktop' || input.opengl == 'dynamic' || input.opengl == 'no'",
+            "condition": "config.win32 || (!config.watchos && !features.opengl-desktop && libs.opengl_es2)",
+            "output": [
+                "publicFeature",
+                "publicQtConfig",
+                { "type": "define", "name": "QT_OPENGL_ES" },
+                { "type": "define", "name": "QT_OPENGL_ES_2" }
+            ]
+        },
+        "opengl-desktop": {
+            "label": "Desktop OpenGL",
+            "enable": "input.opengl == 'desktop'",
+            "disable": "input.opengl == 'es2' || input.opengl == 'dynamic' || input.opengl == 'no'",
+            "condition": "(config.win32 && !config.winrt && !features.opengles2 && (config.msvc || libs.opengl))
+                          || (!config.watchos && !config.win32 && !config.wasm && libs.opengl)"
+        },
+        "opengl-dynamic": {
+            "label": "Dynamic OpenGL",
+            "enable": "input.opengl == 'dynamic'",
+            "autoDetect": false,
+            "condition": "config.win32 && !config.winrt",
+            "output": [
+                { "type": "publicFeature", "name": "dynamicgl" },
+                { "type": "define", "name": "QT_OPENGL_DYNAMIC" }
+            ]
+        },
+        "opengl": {
+            "label": "OpenGL",
+            "condition": "features.opengl-desktop || features.opengl-dynamic || features.opengles2",
+            "output": [ "publicFeature", "feature" ]
         },
         "vdpau": {
             "label": "vdpau",
@@ -105,6 +199,7 @@
                 "va_x11",
                 "va_drm",
                 "egl",
+                "opengl",
                 "vdpau"
             ]
         }
