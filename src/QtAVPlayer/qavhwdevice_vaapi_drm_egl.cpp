@@ -13,7 +13,8 @@
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include <QtGui/qopengl.h>
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
 #include <va/va_drmcommon.h>
 #include <drm/drm_fourcc.h>
 
@@ -44,7 +45,8 @@ QAVHWDevice_VAAPI_DRM_EGL::~QAVHWDevice_VAAPI_DRM_EGL()
 {
     Q_D(QAVHWDevice_VAAPI_DRM_EGL);
 
-    glDeleteTextures(2, d->textures);
+    if (d->textures[0])
+        glDeleteTextures(2, &d->textures[0]);
 }
 
 AVPixelFormat QAVHWDevice_VAAPI_DRM_EGL::format() const

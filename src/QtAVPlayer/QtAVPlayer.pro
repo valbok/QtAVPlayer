@@ -2,10 +2,8 @@ TARGET = QtAVPlayer
 MODULE = QtAVPlayer
 
 QT = concurrent
-# opengl feature
-QT_PRIVATE += gui-private
-CONFIG += C++1z
 
+CONFIG += C++1z
 QMAKE_USE += ffmpeg
 
 PRIVATE_HEADERS += \
@@ -78,7 +76,7 @@ SOURCES += \
     qavstream.cpp \
     qavfilters.cpp
 
-qtConfig(multimedia): {
+qtConfig(multimedia) {
     QT += multimedia
     # Needed for QAbstractVideoBuffer
     equals(QT_MAJOR_VERSION, 6): QT += multimedia-private
@@ -86,14 +84,14 @@ qtConfig(multimedia): {
     SOURCES += qavaudiooutput.cpp
 }
 
-qtConfig(va_x11):qtConfig(opengl): {
-    QMAKE_USE += va_x11 x11
+qtConfig(va_x11):qtConfig(opengl) {
+    QMAKE_USE += va_x11 x11 opengl
     PRIVATE_HEADERS += qavhwdevice_vaapi_x11_glx_p.h
     SOURCES += qavhwdevice_vaapi_x11_glx.cpp
 }
 
-qtConfig(va_drm):qtConfig(egl): {
-    QMAKE_USE += va_drm egl
+qtConfig(va_drm):qtConfig(egl) {
+    QMAKE_USE += va_drm egl opengl
     PRIVATE_HEADERS += qavhwdevice_vaapi_drm_egl_p.h
     SOURCES += qavhwdevice_vaapi_drm_egl.cpp
 }

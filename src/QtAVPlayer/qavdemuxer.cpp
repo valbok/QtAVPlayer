@@ -13,8 +13,6 @@
 #include "qaviodevice_p.h"
 #include "qtQtAVPlayer-config_p.h"
 #include <QtAVPlayer/qtavplayerglobal.h>
-// QT_CONFIG(egl)
-#include <QtGui/private/qtguiglobal_p.h>
 
 #if QT_CONFIG(va_x11) && QT_CONFIG(opengl)
 #include "qavhwdevice_vaapi_x11_glx_p.h"
@@ -45,7 +43,6 @@ extern "C" {
 #endif
 
 #include <QAtomicInt>
-#include <QGuiApplication>
 #include <QDir>
 #include <QSharedPointer>
 #include <QMutexLocker>
@@ -131,37 +128,29 @@ static int setup_video_codec(AVStream *stream, QAVVideoCodec &codec)
     QList<QSharedPointer<QAVHWDevice>> devices;
     AVDictionary *opts = NULL;
     Q_UNUSED(opts);
-    auto name = QGuiApplication::platformName();
 
 #if QT_CONFIG(va_x11) && QT_CONFIG(opengl)
-    if (name == QLatin1String("xcb")) {
-        devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VAAPI_X11_GLX));
-        av_dict_set(&opts, "connection_type", "x11", 0);
-    }
-#endif
-#if QT_CONFIG(va_drm) && QT_CONFIG(egl)
-    if (name == QLatin1String("eglfs"))
-        devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VAAPI_DRM_EGL));
+    devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VAAPI_X11_GLX));
+    av_dict_set(&opts, "connection_type", "x11", 0);
 #endif
 #if QT_CONFIG(vdpau)
     devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VDPAU));
 #endif
+#if QT_CONFIG(va_drm) && QT_CONFIG(egl)
+    devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VAAPI_DRM_EGL));
+#endif
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
-    if (name == QLatin1String("cocoa") || name == QLatin1String("ios"))
-        devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VideoToolbox));
+    devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VideoToolbox));
 #endif
 #if defined(Q_OS_WIN)
-    if (name == QLatin1String("windows"))
-        devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_D3D11));
+    devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_D3D11));
 #endif
 #if defined(Q_OS_ANDROID)
-    if (name == QLatin1String("android")) {
-        devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_MediaCodec));
-        if (!codec.codec())
-            codec.setCodec(avcodec_find_decoder_by_name("h264_mediacodec"));
-        auto vm = QtAndroidPrivate::javaVM();
-        av_jni_set_java_vm(vm, NULL);
-    }
+    devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_MediaCodec));
+    if (!codec.codec())
+        codec.setCodec(avcodec_find_decoder_by_name("h264_mediacodec"));
+    auto vm = QtAndroidPrivate::javaVM();
+    av_jni_set_java_vm(vm, NULL);
 #endif
 
     if (!codec.open(stream)) {
@@ -195,7 +184,7 @@ static int setup_video_codec(AVStream *stream, QAVVideoCodec &codec)
 
     if (devices.isEmpty()) {
         if (!supported.isEmpty())
-            qWarning() << name << ": none of the hardware accelerations was implemented";
+            qWarning() << "None of the hardware accelerations was implemented";
         return 0;
     }
 

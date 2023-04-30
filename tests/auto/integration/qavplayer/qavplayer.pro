@@ -1,7 +1,8 @@
 TARGET = tst_qavplayer
 
+QT -= gui
 QT += testlib QtAVPlayer QtAVPlayer-private
-qtConfig(multimedia): {
+qtConfig(multimedia) {
     QT += multimedia-private
 }
 

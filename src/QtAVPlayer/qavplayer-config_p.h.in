@@ -3,6 +3,7 @@
 #cmakedefine va_drm 1
 #cmakedefine va_x11 1
 #cmakedefine vdpau 1
+#cmakedefine egl 1
 
 #if defined(va_x11)
 #define QT_FEATURE_va_x11 1
@@ -20,4 +21,12 @@
 #define QT_FEATURE_vdpau 1
 #else
 #define QT_FEATURE_vdpau -1
+#endif
+
+#ifndef QT_FEATURE_egl
+#if defined(egl)
+#define QT_FEATURE_egl 1
+#else
+#define QT_FEATURE_egl -1
+#endif
 #endif
