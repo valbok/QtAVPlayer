@@ -27,31 +27,21 @@ QAVFrameCodec::QAVFrameCodec(QAVCodecPrivate &d, QObject *parent)
 {
 }
 
-bool QAVFrameCodec::decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const
+int QAVFrameCodec::write(const QAVPacket &pkt)
 {
-    Q_D(const QAVCodec);
+    Q_D(QAVCodec);
     if (!d->avctx)
-        return false;
+        return AVERROR(EINVAL);
+    return avcodec_send_packet(d->avctx, pkt ? pkt.packet() : nullptr);
+}
 
-    int sent = 0;
-    do {
-        sent = avcodec_send_packet(d->avctx, pkt.packet());
-        // AVERROR(EAGAIN): input is not accepted in the current state - user must read output with avcodec_receive_frame()
-        // (once all output is read, the packet should be resent, and the call will not fail with EAGAIN)
-        if (sent < 0 && sent != AVERROR(EAGAIN))
-            return false;
-
-        while (true) {
-            QAVFrame frame;
-            int ret = avcodec_receive_frame(d->avctx, frame.frame());
-            // AVERROR(EAGAIN): output is not available in this state - user must try to send new input
-            if (ret < 0)
-                break;
-            frames.push_back(frame);
-        }
-    } while (sent == AVERROR(EAGAIN));
-
-    return true;
+int QAVFrameCodec::read(QAVStreamFrame &frame)
+{
+    Q_D(QAVCodec);
+    if (!d->avctx)
+        return AVERROR(EINVAL);
+    auto f = static_cast<QAVFrame *>(&frame);
+    return avcodec_receive_frame(d->avctx, f->frame());
 }
 
 QT_END_NAMESPACE

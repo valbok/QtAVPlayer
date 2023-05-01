@@ -47,9 +47,9 @@ class QAVPlayerPrivate
 public:
     QAVPlayerPrivate(QAVPlayer *q)
         : q_ptr(q)
-        , videoQueue(AVMEDIA_TYPE_VIDEO)
-        , audioQueue(AVMEDIA_TYPE_AUDIO)
-        , subtitleQueue(AVMEDIA_TYPE_SUBTITLE)
+        , videoQueue(AVMEDIA_TYPE_VIDEO, demuxer)
+        , audioQueue(AVMEDIA_TYPE_AUDIO, demuxer)
+        , subtitleQueue(AVMEDIA_TYPE_SUBTITLE, demuxer)
     {
         threadPool.setMaxThreadCount(4);
     }
@@ -86,19 +86,18 @@ public:
         const QAVFrame &decodedFrame,
         const std::vector<std::unique_ptr<QAVFilter>> &filters,
         QList<QAVFrame> &filteredFrames);
+
     void doPlayStep(
         bool master,
         double refPts,
         QAVQueueClock &clock,
-        QAVPacketQueue &queue,
-        QList<QAVFrame> &decodedFrames,
+        QAVPacketQueue<QAVFrame> &queue,
         QList<QAVFrame> &filteredFrames,
         bool &sync,
         const std::function<void(const QAVFrame &frame)> &cb);
     void doPlayStep(
         QAVQueueClock &clock,
-        QAVPacketQueue &queue,
-        QAVSubtitleFrame &decodedFrame,
+        QAVPacketQueue<QAVSubtitleFrame> &queue,
         bool &sync,
         const std::function<void(const QAVSubtitleFrame &frame)> &cb);
 
@@ -137,15 +136,15 @@ public:
     QFuture<void> demuxerFuture;
 
     QFuture<void> videoPlayFuture;
-    QAVPacketQueue videoQueue;
+    QAVPacketQueue<QAVFrame> videoQueue;
     QAVQueueClock videoClock;
 
     QFuture<void> audioPlayFuture;
-    QAVPacketQueue audioQueue;
+    QAVPacketQueue<QAVFrame> audioQueue;
     QAVQueueClock audioClock;
 
     QFuture<void> subtitlePlayFuture;
-    QAVPacketQueue subtitleQueue;
+    QAVPacketQueue<QAVSubtitleFrame> subtitleQueue;
     QAVQueueClock subtitleClock;
 
     bool quit = 0;
@@ -554,7 +553,7 @@ void QAVPlayerPrivate::doDemux()
                 const double pos = pendingPosition;
                 locker.unlock();
                 qCDebug(lcAVPlayer) << "Seeking to pos:" << pos * 1000;
-                const int ret = demuxer.seek(pos);
+                int ret = demuxer.seek(pos);
                 if (ret >= 0) {
                     qCDebug(lcAVPlayer) << "Waiting video thread finished processing packets";
                     videoQueue.waitForEmpty();
@@ -578,8 +577,9 @@ void QAVPlayerPrivate::doDemux()
         }
 
         auto packet = demuxer.read();
-        if (packet) {
+        if (packet.stream()) {
             endOfFile(false);
+            // Empty packet points to EOF and it needs to flush codecs
             switch (demuxer.currentCodecType(packet.packet()->stream_index)) {
                 case AVMEDIA_TYPE_VIDEO:
                     videoQueue.enqueue(packet);
@@ -675,8 +675,7 @@ void QAVPlayerPrivate::doPlayStep(
     bool master,
     double refPts,
     QAVQueueClock &clock,
-    QAVPacketQueue &queue,
-    QList<QAVFrame> &decodedFrames,
+    QAVPacketQueue<QAVFrame> &queue,
     QList<QAVFrame> &filteredFrames,
     bool &sync,
     const std::function<void(const QAVFrame &frame)> &cb)
@@ -687,12 +686,11 @@ void QAVPlayerPrivate::doPlayStep(
         statePrev = q_ptr->state();
 
     // 1. Decode a frame
-    if (decodedFrames.isEmpty())
-        demuxer.decode(queue.dequeue(), decodedFrames);
-
+    QAVFrame decodedFrame;
+    queue.frame(decodedFrame);
     bool flushEvents = false;
     int ret = 0;
-    QAVFrame decodedFrame = !decodedFrames.isEmpty() ? decodedFrames.takeFirst() : QAVFrame();
+
     // 2. Filter decoded frame
     if (filteredFrames.isEmpty()) {
         if (decodedFrame)
@@ -709,7 +707,7 @@ void QAVPlayerPrivate::doPlayStep(
             applyFilters(true, decodedFrame);
         } else {
             // The frame is already filtered, decode next one
-            decodedFrame = {};
+            queue.nextFrame();
         }
     }
 
@@ -751,7 +749,6 @@ void QAVPlayerPrivate::doPlayVideo()
     videoClock.setFrameRate(demuxer.videoFrameRate());
     const bool master = true;
     bool sync = true;
-    QList<QAVFrame> decodedFrames;
     QList<QAVFrame> filteredFrames;
 
     while (!quit) {
@@ -760,7 +757,6 @@ void QAVPlayerPrivate::doPlayVideo()
             !demuxer.currentAudioStreams().isEmpty() ? audioClock.pts() : -1,
             videoClock,
             videoQueue,
-            decodedFrames,
             filteredFrames,
             sync,
             [&](const QAVFrame &frame) { emit q_ptr->videoFrame(frame); }
@@ -778,7 +774,6 @@ void QAVPlayerPrivate::doPlayAudio()
     const bool master = demuxer.currentVideoStreams().isEmpty();
     const double ref = -1;
     bool sync = true;
-    QList<QAVFrame> decodedFrames;
     QList<QAVFrame> filteredFrames;
 
     while (!quit) {
@@ -787,7 +782,6 @@ void QAVPlayerPrivate::doPlayAudio()
             ref,
             audioClock,
             audioQueue,
-            decodedFrames,
             filteredFrames,
             sync,
             [this](const QAVFrame &frame) { emit q_ptr->audioFrame(frame); }
@@ -803,18 +797,15 @@ void QAVPlayerPrivate::doPlayAudio()
 
 void QAVPlayerPrivate::doPlayStep(
     QAVQueueClock &clock,
-    QAVPacketQueue &queue,
-    QAVSubtitleFrame &decodedFrame,
+    QAVPacketQueue<QAVSubtitleFrame> &queue,
     bool &sync,
     const std::function<void(const QAVSubtitleFrame &frame)> &cb)
 {
     doWait();
-    // 1. Decode a frame
-    if (!decodedFrame)
-        demuxer.decode(queue.dequeue(), decodedFrame);
 
-    // Try to decode again
-    if (!decodedFrame)
+    // 1. Decode a frame
+    QAVSubtitleFrame decodedFrame;
+    if (!queue.frame(decodedFrame))
         return;
 
     // 2. Sync decoded frame
@@ -829,20 +820,17 @@ void QAVPlayerPrivate::doPlayStep(
             if (decodedFrame)
                 cb(decodedFrame);
         }
-        decodedFrame = {};
+        queue.nextFrame();
     }
 }
 
 void QAVPlayerPrivate::doPlaySubtitle()
 {
     bool sync = true;
-    QAVSubtitleFrame decodedFrame;
-
     while (!quit) {
         doPlayStep(
             subtitleClock,
             subtitleQueue,
-            decodedFrame,
             sync,
             [this](const QAVSubtitleFrame &frame) { emit q_ptr->subtitleFrame(frame); }
         );

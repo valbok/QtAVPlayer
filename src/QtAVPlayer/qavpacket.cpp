@@ -23,7 +23,7 @@ class QAVPacketPrivate
 {
 public:
     AVPacket *pkt = nullptr;
-    AVRational timeBase{};
+    QAVStream stream;
 };
 
 QAVPacket::QAVPacket(QObject *parent)
@@ -33,6 +33,7 @@ QAVPacket::QAVPacket(QObject *parent)
     d_ptr->pkt = av_packet_alloc();
     d_ptr->pkt->size = 0;
     d_ptr->pkt->stream_index = -1;
+    d_ptr->pkt->pts = AV_NOPTS_VALUE;
 }
 
 QAVPacket::QAVPacket(const QAVPacket &other)
@@ -46,7 +47,7 @@ QAVPacket &QAVPacket::operator=(const QAVPacket &other)
     av_packet_unref(d_ptr->pkt);
     av_packet_ref(d_ptr->pkt, other.d_ptr->pkt);
 
-    d_ptr->timeBase = other.d_ptr->timeBase;
+    d_ptr->stream = other.d_ptr->stream;
 
     return *this;
 }
@@ -63,12 +64,6 @@ QAVPacket::~QAVPacket()
     av_packet_free(&d->pkt);
 }
 
-void QAVPacket::setTimeBase(const AVRational &value)
-{
-    Q_D(QAVPacket);
-    d->timeBase = value;
-}
-
 AVPacket *QAVPacket::packet() const
 {
     return d_func()->pkt;
@@ -77,13 +72,37 @@ AVPacket *QAVPacket::packet() const
 double QAVPacket::duration() const
 {
     Q_D(const QAVPacket);
-    return d->timeBase.num && d->timeBase.den ? d->pkt->duration * av_q2d(d->timeBase) : 0.0;
+    if (!d->stream)
+        return 0.0;
+    auto tb = d->stream.stream()->time_base;
+    return tb.num && tb.den ? d->pkt->duration * av_q2d(tb) : 0.0;
 }
 
 double QAVPacket::pts() const
 {
     Q_D(const QAVPacket);
-    return d->timeBase.num && d->timeBase.den ? d->pkt->pts * av_q2d(d->timeBase) : 0.0;
+    if (!d->stream)
+        return 0.0;
+    auto tb = d->stream.stream()->time_base;
+    return tb.num && tb.den ? d->pkt->pts * av_q2d(tb) : 0.0;
+}
+
+QAVStream QAVPacket::stream() const
+{
+    Q_D(const QAVPacket);
+    return d->stream;
+}
+
+void QAVPacket::setStream(const QAVStream &stream)
+{
+    Q_D(QAVPacket);
+    d->stream = stream;
+}
+
+int QAVPacket::send() const
+{
+    Q_D(const QAVPacket);
+    return d->stream ? d->stream.codec()->write(*this) : 0;
 }
 
 QT_END_NAMESPACE

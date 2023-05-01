@@ -25,6 +25,7 @@
 #include "qavframe.h"
 #include "qavsubtitleframe.h"
 #include "qavstreamframe.h"
+#include "qavdemuxer_p.h"
 #include <QMutex>
 #include <QWaitCondition>
 #include <QList>
@@ -116,11 +117,13 @@ private:
     const double refreshRate = 0.01;
 };
 
+template<class T>
 class QAVPacketQueue
 {
 public:
-    QAVPacketQueue(AVMediaType mediaType)
+    QAVPacketQueue(AVMediaType mediaType, QAVDemuxer &demuxer)
         : m_mediaType(mediaType)
+        , m_demuxer(demuxer)
     {
     }
 
@@ -137,7 +140,7 @@ public:
     bool isEmpty() const
     {
         QMutexLocker locker(&m_mutex);
-        return m_packets.isEmpty();
+        return m_packets.isEmpty() && m_decodedFrames.isEmpty();
     }
 
     void enqueue(const QAVPacket &packet)
@@ -151,24 +154,23 @@ public:
         m_waitingForPackets = false;
     }
 
-    QAVPacket dequeue()
+    /// Returns decoded frame
+    bool frame(T &frame)
     {
         QMutexLocker locker(&m_mutex);
-        if (m_packets.isEmpty()) {
-            m_producerWaiter.wakeAll();
-            if (!m_abort && !m_wake) {
-                m_waitingForPackets = true;
-                m_consumerWaiter.wait(&m_mutex);
-                m_waitingForPackets = false;
-            }
-        }
-        if (m_packets.isEmpty())
-            return {};
+        if (m_decodedFrames.isEmpty())
+            m_demuxer.decode(dequeue(), m_decodedFrames);
+        if (m_decodedFrames.isEmpty())
+            return false;
+        frame = m_decodedFrames.front();
+        return true;
+    }
 
-        auto packet = m_packets.takeFirst();
-        m_bytes -= packet.packet()->size + sizeof(packet);
-        m_duration -= packet.duration();
-        return packet;
+    void nextFrame()
+    {
+        QMutexLocker locker(&m_mutex);
+        if (!m_decodedFrames.isEmpty())
+            m_decodedFrames.pop_front();
     }
 
     void waitForEmpty()
@@ -215,7 +217,26 @@ public:
         m_wake = wake;
     }
 
-protected:
+private:
+    QAVPacket dequeue()
+    {
+        if (m_packets.isEmpty()) {
+            m_producerWaiter.wakeAll();
+            if (!m_abort && !m_wake) {
+                m_waitingForPackets = true;
+                m_consumerWaiter.wait(&m_mutex);
+                m_waitingForPackets = false;
+            }
+        }
+        if (m_packets.isEmpty())
+            return {};
+
+        auto packet = m_packets.takeFirst();
+        m_bytes -= packet.packet()->size + sizeof(packet);
+        m_duration -= packet.duration();
+        return packet;
+    }
+
     void clearPackets()
     {
         m_packets.clear();
@@ -224,7 +245,10 @@ protected:
     }
 
     const AVMediaType m_mediaType = AVMEDIA_TYPE_UNKNOWN;
+    QAVDemuxer &m_demuxer;
     QList<QAVPacket> m_packets;
+    // Tracks decoded frames to prevent EOF if not all frames are landed
+    QList<T> m_decodedFrames;
     mutable QMutex m_mutex;
     QWaitCondition m_consumerWaiter;
     QWaitCondition m_producerWaiter;

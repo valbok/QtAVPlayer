@@ -28,7 +28,8 @@ QT_BEGIN_NAMESPACE
 class Q_AVPLAYER_EXPORT QAVFrameCodec : public QAVCodec
 {
 public:
-    bool decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const;
+    int write(const QAVPacket &pkt) override;
+    int read(QAVStreamFrame &frame) override;
 
 protected:
     QAVFrameCodec(QObject *parent = nullptr);

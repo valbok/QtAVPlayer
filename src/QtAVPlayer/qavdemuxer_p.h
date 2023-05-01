@@ -67,8 +67,8 @@ public:
 
     QAVPacket read();
 
-    bool decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const;
-    bool decode(const QAVPacket &pkt, QAVSubtitleFrame &frame) const;
+    void decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const;
+    void decode(const QAVPacket &pkt, QList<QAVSubtitleFrame> &frames) const;
 
     double duration() const;
     bool seekable() const;
@@ -99,6 +99,8 @@ protected:
     std::unique_ptr<QAVDemuxerPrivate> d_ptr;
 
 private:
+    int resetCodecs();
+
     Q_DISABLE_COPY(QAVDemuxer)
     Q_DECLARE_PRIVATE(QAVDemuxer)
 };
