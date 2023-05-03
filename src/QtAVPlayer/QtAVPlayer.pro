@@ -113,6 +113,7 @@ qtConfig(vdpau) {
 }
 
 android {
+    QT += core-private
     PRIVATE_HEADERS += qavhwdevice_mediacodec_p.h
     SOURCES += qavhwdevice_mediacodec.cpp
 
