@@ -687,7 +687,7 @@ void QAVPlayerPrivate::doPlayStep(
 
     // 1. Decode a frame
     QAVFrame decodedFrame;
-    queue.frame(decodedFrame);
+    queue.frontFrame(decodedFrame);
     bool flushEvents = false;
     int ret = 0;
 
@@ -707,7 +707,7 @@ void QAVPlayerPrivate::doPlayStep(
             applyFilters(true, decodedFrame);
         } else {
             // The frame is already filtered, decode next one
-            queue.nextFrame();
+            queue.popFrame();
         }
     }
 
@@ -805,7 +805,7 @@ void QAVPlayerPrivate::doPlayStep(
 
     // 1. Decode a frame
     QAVSubtitleFrame decodedFrame;
-    if (!queue.frame(decodedFrame))
+    if (!queue.frontFrame(decodedFrame))
         return;
 
     // 2. Sync decoded frame
@@ -820,7 +820,7 @@ void QAVPlayerPrivate::doPlayStep(
             if (decodedFrame)
                 cb(decodedFrame);
         }
-        queue.nextFrame();
+        queue.popFrame();
     }
 }
 
