@@ -480,6 +480,8 @@ void QAVPlayerPrivate::applyFilters(bool reset, const QAVFrame &frame)
         setError(QAVPlayer::FilterError, QLatin1String("Could not create filters: ") + err_str(ret));
         return;
     }
+    videoQueue.clearFrames();
+    audioQueue.clearFrames();
     if (error == QAVPlayer::FilterError)
         setMediaStatus(QAVPlayer::LoadedMedia);
 }

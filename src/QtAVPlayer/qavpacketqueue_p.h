@@ -208,6 +208,12 @@ public:
         clearPackets();
     }
 
+    void clearFrames()
+    {
+        QMutexLocker locker(&m_mutex);
+        m_decodedFrames.clear();
+    }
+
     void wake(bool wake)
     {
         QMutexLocker locker(&m_mutex);
