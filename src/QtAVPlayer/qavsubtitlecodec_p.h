@@ -25,17 +25,17 @@
 
 QT_BEGIN_NAMESPACE
 
-struct AVSubtitle;
-struct AVPacket;
+class QAVSubtitleCodecPrivate;
 class Q_AVPLAYER_EXPORT QAVSubtitleCodec : public QAVCodec
 {
 public:
     QAVSubtitleCodec(QObject *parent = nullptr);
 
-    bool decode(const QAVPacket &pkt, QAVSubtitleFrame &frame) const;
+    int write(const QAVPacket &pkt) override;
+    int read(QAVStreamFrame &frame) override;
 
 private:
-    Q_DISABLE_COPY(QAVSubtitleCodec)
+    Q_DECLARE_PRIVATE(QAVSubtitleCodec)
 };
 
 QT_END_NAMESPACE

@@ -92,10 +92,12 @@ int main(int argc, char *argv[])
 
     QElapsedTimer frameElapsed;
     frameElapsed.start();
-    int frameCount = 0;
+    int fpsFrames = 0;
+    int receivedFrames = 0;
 
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &) { ++receivedFrames; }, Qt::DirectConnection);
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
-        const int fps = frameCount++ * 1000 / frameElapsed.elapsed();
+        const int fps = fpsFrames++ * 1000 / frameElapsed.elapsed();
         rootObject->setProperty("frame_fps", fps);
 
         QVideoFrame videoFrame = frame;
@@ -144,9 +146,8 @@ int main(int argc, char *argv[])
             }
         } else if (status == QAVPlayer::EndOfMedia) {
             float expected = p.currentVideoStreams().first().framesCount();
-            float received = frameCount;
-            float loss = 100.0 - 100.0 * received  / expected;
-            qDebug() << expected << "frames expected," << received << "received," << loss << "% loss";
+            float loss = 100.0 - 100.0 * receivedFrames  / expected;
+            qDebug() << expected << "frames expected," << receivedFrames << "received," << loss << "% loss";
         }
     });
     QObject::connect(&p, &QAVPlayer::durationChanged, [&](auto d) { qDebug() << "durationChanged" << d; });
@@ -160,6 +161,7 @@ int main(int argc, char *argv[])
         }
     });
     p.setSource(file);
+    p.setSynced(true);
     p.play();
 
     viewer.setMinimumSize(QSize(300, 360));

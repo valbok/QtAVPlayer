@@ -335,16 +335,6 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
         d->ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
     }
 
-    const AVCodec *videoCodec = nullptr;
-    if (!d->inputVideoCodec.isEmpty()) {
-        qDebug() << "Loading: -vcodec" << d->inputVideoCodec;
-        videoCodec = avcodec_find_decoder_by_name(d->inputVideoCodec.toUtf8().constData());
-        if (!videoCodec) {
-            qWarning() << "Could not find decoder:" << d->inputVideoCodec;
-            return AVERROR(EINVAL);
-        }
-    }
-
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 0, 0)
     const
 #endif
@@ -373,37 +363,13 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
     locker.relock();
     av_log_set_callback(log_callback);
 
-    for (std::size_t i = 0; i < d->ctx->nb_streams; ++i) {
-        if (!d->ctx->streams[i]->codecpar) {
-            qWarning() << "Could not find codecpar";
-            return AVERROR(EINVAL);
-        }
-        const AVMediaType type = d->ctx->streams[i]->codecpar->codec_type;
-        switch (type) {
-            case AVMEDIA_TYPE_VIDEO:
-            {
-                QSharedPointer<QAVCodec> codec(new QAVVideoCodec);
-                if (videoCodec)
-                    codec->setCodec(videoCodec);
-                d->availableStreams.push_back({ int(i), d->ctx->streams[i], codec });
-                ret = setup_video_codec(d->ctx->streams[i], *static_cast<QAVVideoCodec *>(codec.data()));
-            } break;
-            case AVMEDIA_TYPE_AUDIO:
-                d->availableStreams.push_back({ int(i), d->ctx->streams[i], QSharedPointer<QAVCodec>(new QAVAudioCodec) });
-                if (!d->availableStreams.last().codec()->open(d->ctx->streams[i]))
-                    qWarning() << "Could not open audio codec for stream:" << i;
-                break;
-            case AVMEDIA_TYPE_SUBTITLE:
-                d->availableStreams.push_back({ int(i), d->ctx->streams[i], QSharedPointer<QAVCodec>(new QAVSubtitleCodec) });
-                if (!d->availableStreams.last().codec()->open(d->ctx->streams[i]))
-                    qWarning() << "Could not open subtitle codec for stream:" << i;
-                break;
-            default:
-                // Adding default stream
-                d->availableStreams.push_back({ int(i), d->ctx->streams[i], nullptr });
-                break;
-        }
-    }
+    d->seekable = d->ctx->iformat->read_seek || d->ctx->iformat->read_seek2;
+    if (d->ctx->pb)
+        d->seekable |= bool(d->ctx->pb->seekable);
+
+    ret = resetCodecs();
+    if (ret < 0)
+        return ret;
 
     const int videoStreamIndex = av_find_best_stream(
         d->ctx,
@@ -435,10 +401,6 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
     if (subtitleStreamIndex >= 0)
         d->currentSubtitleStreams.push_back(d->availableStreams[subtitleStreamIndex]);
 
-    d->seekable = d->ctx->iformat->read_seek || d->ctx->iformat->read_seek2;
-    if (d->ctx->pb)
-        d->seekable |= bool(d->ctx->pb->seekable);
-
     if (ret < 0)
         return ret;
 
@@ -446,6 +408,55 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
         return apply_bsf(d->bsfs, d->ctx, d->bsf_ctx);
 
     return 0;
+}
+
+int QAVDemuxer::resetCodecs()
+{
+    Q_D(QAVDemuxer);
+    d->availableStreams.clear();
+    const AVCodec *videoCodec = nullptr;
+    if (!d->inputVideoCodec.isEmpty()) {
+        qDebug() << "Loading: -vcodec" << d->inputVideoCodec;
+        videoCodec = avcodec_find_decoder_by_name(d->inputVideoCodec.toUtf8().constData());
+        if (!videoCodec) {
+            qWarning() << "Could not find decoder:" << d->inputVideoCodec;
+            return AVERROR(EINVAL);
+        }
+    }
+    int ret = 0;
+    for (std::size_t i = 0; i < d->ctx->nb_streams && ret >= 0; ++i) {
+        if (!d->ctx->streams[i]->codecpar) {
+            qWarning() << "Could not find codecpar";
+            return AVERROR(EINVAL);
+        }
+        const AVMediaType type = d->ctx->streams[i]->codecpar->codec_type;
+        switch (type) {
+            case AVMEDIA_TYPE_VIDEO:
+            {
+                QSharedPointer<QAVCodec> codec(new QAVVideoCodec);
+                if (videoCodec)
+                    codec->setCodec(videoCodec);
+                d->availableStreams.push_back({ int(i), d->ctx->streams[i], codec });
+                ret = setup_video_codec(d->ctx->streams[i], *static_cast<QAVVideoCodec *>(codec.data()));
+            } break;
+            case AVMEDIA_TYPE_AUDIO:
+                d->availableStreams.push_back({ int(i), d->ctx->streams[i], QSharedPointer<QAVCodec>(new QAVAudioCodec) });
+                if (!d->availableStreams.last().codec()->open(d->ctx->streams[i]))
+                    qWarning() << "Could not open audio codec for stream:" << i;
+                break;
+            case AVMEDIA_TYPE_SUBTITLE:
+                d->availableStreams.push_back({ int(i), d->ctx->streams[i], QSharedPointer<QAVCodec>(new QAVSubtitleCodec) });
+                if (!d->availableStreams.last().codec()->open(d->ctx->streams[i]))
+                    qWarning() << "Could not open subtitle codec for stream:" << i;
+                break;
+            default:
+                // Adding default stream
+                d->availableStreams.push_back({ int(i), d->ctx->streams[i], nullptr });
+                break;
+        }
+    }
+
+    return ret;
 }
 
 QAVStream QAVDemuxer::stream(int index) const
@@ -643,14 +654,13 @@ QAVPacket QAVDemuxer::read()
             locker.unlock();
         }
     }
-
     locker.relock();
 
-    const AVStream *stream = static_cast<unsigned>(pkt.packet()->stream_index) < d->ctx->nb_streams
-                             ? d->ctx->streams[pkt.packet()->stream_index]
-                             : nullptr;
-    if (stream != nullptr)
-        pkt.setTimeBase(stream->time_base);
+    QAVStream stream = pkt.packet()->stream_index < d->availableStreams.size()
+                       ? d->availableStreams[pkt.packet()->stream_index]
+                       : QAVStream();
+    Q_ASSERT(stream.stream());
+    pkt.setStream(stream);
 
     if (d->bsf_ctx) {
         ret = av_bsf_send_packet(d->bsf_ctx, d->eof ? NULL : pkt.packet());
@@ -669,48 +679,42 @@ QAVPacket QAVDemuxer::read()
     return !d->packets.isEmpty() ? d->packets.takeFirst() : QAVPacket{};
 }
 
-static bool decode_packet(const QAVDemuxer &demuxer, const QAVPacket &pkt, QList<QAVFrame> *frames, QAVSubtitleFrame *subtitle)
+void QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const
 {
-    auto s = demuxer.stream(pkt.packet()->stream_index);
-    if (!s)
-        return false;
+    if (!pkt.stream())
+        return;
+    int sent = 0;
+    do {
+        sent = pkt.send();
+        // AVERROR(EAGAIN): input is not accepted in the current state - user must read output with avcodec_receive_frame()
+        // (once all output is read, the packet should be resent, and the call will not fail with EAGAIN)
+        if (sent < 0 && sent != AVERROR(EAGAIN))
+            return;
 
-    bool result = false;
-    switch (s.stream()->codecpar->codec_type) {
-        case AVMEDIA_TYPE_VIDEO:
-        case AVMEDIA_TYPE_AUDIO: {
-            if (frames) {
-                auto c = reinterpret_cast<QAVFrameCodec *>(s.codec().data());
-                result = c->decode(pkt, *frames);
-                if (result) {
-                    for (auto & frame : *frames)
-                        frame.setStream(s);
-                }
-            }
-        } break;
-        case AVMEDIA_TYPE_SUBTITLE: {
-            if (subtitle) {
-                auto c = reinterpret_cast<QAVSubtitleCodec *>(s.codec().data());
-                result = c->decode(pkt, *subtitle);
-                if (result)
-                    subtitle->setStream(s);
-            }
-        } break;
-        default:
-            break;
-    }
-
-    return result;
+        while (true) {
+            QAVFrame frame;
+            frame.setStream(pkt.stream());
+            // AVERROR(EAGAIN): output is not available in this state - user must try to send new input
+            int received = frame.receive();
+            if (received < 0)
+                break;
+            frames.push_back(frame);
+        }
+    } while (sent == AVERROR(EAGAIN));
 }
 
-bool QAVDemuxer::decode(const QAVPacket &pkt, QAVSubtitleFrame &frame) const
+void QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVSubtitleFrame> &frames) const
 {
-    return decode_packet(*this, pkt, nullptr, &frame);
-}
+    if (!pkt.stream())
+        return;
+    int sent = pkt.send();
+    if (sent < 0 && sent != AVERROR(EAGAIN))
+        return;
 
-bool QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const
-{
-    return decode_packet(*this, pkt, &frames, nullptr);
+    QAVSubtitleFrame frame;
+    frame.setStream(pkt.stream());
+    if (frame.receive() >= 0)
+        frames.push_back(frame);
 }
 
 bool QAVDemuxer::seekable() const
@@ -721,10 +725,23 @@ bool QAVDemuxer::seekable() const
 int QAVDemuxer::seek(double sec)
 {
     Q_D(QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
     if (!d->ctx || !d->seekable)
         return AVERROR(EINVAL);
 
+    if (d->eof) {
+        // When EOF is reached, codecs have been flushed
+        // and they don't accept packets any more.
+        // Thus it needs to recreate all codecs.
+        int ret = resetCodecs();
+        if (ret < 0) {
+            qWarning() << "Could not reset codecs:" << ret;
+            return ret;
+        }
+    }
     d->eof = false;
+    locker.unlock();
+
     int flags = AVSEEK_FLAG_BACKWARD;
     int64_t target = sec * AV_TIME_BASE;
     int64_t min = INT_MIN;

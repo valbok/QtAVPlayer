@@ -19,6 +19,8 @@
 // We mean it.
 //
 
+#include "qavpacket_p.h"
+#include "qavframe.h"
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QObject>
 #include <memory>
@@ -38,6 +40,12 @@ public:
     AVCodecContext *avctx() const;
     void setCodec(const AVCodec *c);
     const AVCodec *codec() const;
+
+    // Sends a packet
+    virtual int write(const QAVPacket &pkt) = 0;
+    // Receives a frame
+    // NOTE: There could be multiple frames
+    virtual int read(QAVStreamFrame &frame) = 0;
 
 protected:
     QAVCodec(QObject *parent = nullptr);

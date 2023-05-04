@@ -54,7 +54,7 @@ void tst_QAVDemuxer::construction()
     QCOMPARE(p.packet()->size, 0);
     QVERIFY(p.packet()->stream_index < 0);
     QList<QAVFrame> fs;
-    QVERIFY(!d.decode(p, fs));
+    d.decode(p, fs);
     QVERIFY(fs.isEmpty());
 
     QAVFrame f;
@@ -118,7 +118,7 @@ void tst_QAVDemuxer::loadAudio()
         QCOMPARE(p2.packet()->stream_index, p.packet()->stream_index);
 
         QList<QAVFrame> fs;
-        QVERIFY(d.decode(p, fs));
+        d.decode(p, fs);
         QCOMPARE(fs.size(), 1);
         auto f = fs[0];
         QVERIFY(f);
@@ -185,7 +185,7 @@ void tst_QAVDemuxer::loadVideo()
     QVERIFY(p.packet()->stream_index >= 0);
 
     QList<QAVFrame> fs;
-    QVERIFY(d.decode(p, fs));
+    d.decode(p, fs);
     QCOMPARE(fs.size(), 1);
     auto f = fs[0];
     QVERIFY(f);
@@ -198,7 +198,7 @@ void tst_QAVDemuxer::loadVideo()
         QCOMPARE(d.eof(), false);
         if (p.packet()->stream_index == d.currentVideoStreams().first().index()) {
             QList<QAVFrame> fs1;
-            QVERIFY(d.decode(p, fs1));
+            d.decode(p, fs1);
             QCOMPARE(fs1.size(), 1);
             f = fs1[0];
             QVERIFY(f);
@@ -244,7 +244,7 @@ void tst_QAVDemuxer::fileIO()
     QVERIFY(p.packet()->stream_index >= 0);
 
     QList<QAVFrame> fs;
-    QVERIFY(d.decode(p, fs));
+    d.decode(p, fs);
     QCOMPARE(fs.size(), 1);
     auto f = fs[0];
     QVERIFY(f);
@@ -257,7 +257,7 @@ void tst_QAVDemuxer::fileIO()
         QCOMPARE(d.eof(), false);
         if (p.packet()->stream_index == d.currentVideoStreams().first().index()) {
             QList<QAVFrame> fs1;
-            QVERIFY(d.decode(p, fs1));
+            d.decode(p, fs1);
             QCOMPARE(fs1.size(), 1);
             f = fs1[0];
             QVERIFY(f);
@@ -318,7 +318,7 @@ void tst_QAVDemuxer::qrcIO()
         QCOMPARE(p2.packet()->stream_index, p.packet()->stream_index);
 
         QList<QAVFrame> fs;
-        QVERIFY(d.decode(p, fs));
+        d.decode(p, fs);
         QCOMPARE(fs.size(), 1);
         auto f = fs[0];
         QVERIFY(f);

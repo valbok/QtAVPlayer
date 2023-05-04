@@ -8,6 +8,7 @@
 #include "qavstreamframe.h"
 #include "qavstreamframe_p.h"
 #include "qavframe_p.h"
+#include "qavcodec_p.h"
 #include <QDebug>
 
 extern "C" {
@@ -70,6 +71,12 @@ double QAVStreamFrame::duration() const
 {
     Q_D(const QAVStreamFrame);
     return d->duration();
+}
+
+int QAVStreamFrame::receive()
+{
+    Q_D(QAVStreamFrame);
+    return d->stream ? d->stream.codec()->read(*this) : 0;
 }
 
 QT_END_NAMESPACE

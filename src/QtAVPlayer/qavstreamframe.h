@@ -31,6 +31,9 @@ public:
     double pts() const;
     double duration() const;
 
+    // Receives a data from the codec from the stream
+    int receive();
+
 protected:
     QAVStreamFrame(QAVStreamFramePrivate &d, QObject *parent = nullptr);
 
