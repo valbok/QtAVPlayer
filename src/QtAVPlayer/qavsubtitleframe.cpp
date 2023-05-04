@@ -65,7 +65,7 @@ AVSubtitle *QAVSubtitleFrame::subtitle() const
 
 double QAVSubtitleFramePrivate::pts() const
 {
-    if (!stream)
+    if (!subtitle)
         return NAN;
     AVRational tb;
     tb.num = 1;
@@ -75,7 +75,7 @@ double QAVSubtitleFramePrivate::pts() const
 
 double QAVSubtitleFramePrivate::duration() const
 {
-    if (!stream)
+    if (!subtitle)
         return 0.0;
     return (subtitle->end_display_time - subtitle->start_display_time) / 1000.0;
 }
