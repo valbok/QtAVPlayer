@@ -154,8 +154,7 @@ public:
         m_waitingForPackets = false;
     }
 
-    /// Returns decoded frame
-    bool frame(T &frame)
+    bool frontFrame(T &frame)
     {
         QMutexLocker locker(&m_mutex);
         if (m_decodedFrames.isEmpty())
@@ -166,7 +165,7 @@ public:
         return true;
     }
 
-    void nextFrame()
+    void popFrame()
     {
         QMutexLocker locker(&m_mutex);
         if (!m_decodedFrames.isEmpty())
@@ -240,6 +239,7 @@ private:
     void clearPackets()
     {
         m_packets.clear();
+        m_decodedFrames.clear();
         m_bytes = 0;
         m_duration = 0;
     }

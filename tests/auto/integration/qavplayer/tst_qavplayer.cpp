@@ -1820,7 +1820,7 @@ void tst_QAVPlayer::availableAudioStreams()
 
 #ifndef QT_NO_MULTIMEDIA
 void tst_QAVPlayer::audioOutput()
-{return;
+{
     QFileInfo file1(QLatin1String("../testdata/guido.mp4"));
     QFileInfo file2(QLatin1String("../testdata/small.mp4"));
 
