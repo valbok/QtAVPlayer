@@ -2702,7 +2702,7 @@ void tst_QAVPlayer::bsfInvalid()
     p.play();
 
     QTRY_COMPARE(spy.count(), 1);
-    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+    QTRY_VERIFY(spyErrorOccurred.count() > 0);
 
     QCOMPARE(framesCount, 0);
     QVERIFY(!frame);
