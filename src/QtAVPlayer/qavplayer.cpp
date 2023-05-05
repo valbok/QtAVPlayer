@@ -787,7 +787,10 @@ void QAVPlayerPrivate::doPlayAudio()
             audioQueue,
             filteredFrames,
             sync,
-            [this](const QAVFrame &frame) { emit q_ptr->audioFrame(frame); }
+            [this](const QAVFrame &frame) {
+                frame.frame()->sample_rate *= q_ptr->speed();
+                emit q_ptr->audioFrame(frame);
+            }
         );
     }
 
