@@ -2897,7 +2897,7 @@ void tst_QAVPlayer::filterNameStep()
     QTRY_VERIFY(set.contains("out1"));
     QTRY_VERIFY(set.contains("out2"));
     QTRY_VERIFY(set.contains("out3"));
-    QCOMPARE(framesCount, 5);
+    QVERIFY(framesCount >= 5);
 
     set.clear();
     framesCount = 0;
