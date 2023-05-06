@@ -698,7 +698,9 @@ void QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const
             int received = frame.receive();
             if (received < 0)
                 break;
-            frames.push_back(frame);
+            // Skip frames for previous packets
+            if (!pkt || frame.pts() <= pkt.pts())
+                frames.push_back(frame);
         }
     } while (sent == AVERROR(EAGAIN));
 }
