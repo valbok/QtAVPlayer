@@ -2156,13 +2156,12 @@ void tst_QAVPlayer::configureFilter()
 
     p.pause();
     QTRY_VERIFY(frame);
-    QTRY_COMPARE(frame.size(), QSize(560, 320));
 
     frame = QAVVideoFrame();
 
     p.play();
     QTRY_VERIFY(frame);
-    QCOMPARE(frame.size(), QSize(560, 320));
+    QTRY_COMPARE(frame.size(), QSize(560, 320));
 
     p.stop();
     p.setFilter("wrong");
@@ -2191,7 +2190,6 @@ void tst_QAVPlayer::configureFilter()
 
     p.pause();
     QTRY_VERIFY(frame);
-    QTRY_COMPARE(frame.size(), QSize(560 / 2, 320 / 2));
     QCOMPARE(spyErrorOccurred.count(), 0);
 
     spy.clear();

@@ -151,8 +151,6 @@ public:
     mutable QMutex waitMutex;
     QWaitCondition waitCond;
     bool eof = false;
-    // Send an event (f.e. paused) only for the latest frame.
-    int framesToFlushEvents = 0;
 
     QList<QString> filterDescs;
     QAVFilters filters;
@@ -218,8 +216,6 @@ bool QAVPlayerPrivate::setState(QAVPlayer::State s)
         qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << state << "->" << s;
         state = s;
         result = true;
-        if (s == QAVPlayer::PausedState)
-            ++framesToFlushEvents;
     }
 
     emit q->stateChanged(s);
@@ -339,11 +335,6 @@ void QAVPlayerPrivate::terminate()
 void QAVPlayerPrivate::step(bool hasFrame)
 {
     QMutexLocker locker(&stateMutex);
-    // Flush events only for the latest frame
-    if (--framesToFlushEvents > 0)
-        hasFrame = false;
-    else
-        framesToFlushEvents = 0;
     while (!pendingMediaStatuses.isEmpty()) {
         auto status = pendingMediaStatuses.first();
         locker.unlock();
@@ -1176,7 +1167,6 @@ void QAVPlayer::setFilter(const QString &desc)
             d->filterDescs.clear();
         else
             d->filterDescs = {desc};
-        ++d->framesToFlushEvents;
     }
 
     emit filtersChanged({desc});
@@ -1191,7 +1181,6 @@ void QAVPlayer::setFilters(const QList<QString> &filters)
         QMutexLocker locker(&d->stateMutex);
         qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << d->filterDescs << "->" << filters;
         d->filterDescs = filters;
-        ++d->framesToFlushEvents;
     }
 
     emit filtersChanged(filters);
