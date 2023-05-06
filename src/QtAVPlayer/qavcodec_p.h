@@ -41,6 +41,8 @@ public:
     void setCodec(const AVCodec *c);
     const AVCodec *codec() const;
 
+    void flushBuffers();
+
     // Sends a packet
     virtual int write(const QAVPacket &pkt) = 0;
     // Receives a frame
