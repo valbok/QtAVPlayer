@@ -698,9 +698,7 @@ void QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const
             int received = frame.receive();
             if (received < 0)
                 break;
-            // Skip frames for previous packets
-            if (!pkt || frame.pts() <= pkt.pts())
-                frames.push_back(frame);
+            frames.push_back(frame);
         }
     } while (sent == AVERROR(EAGAIN));
 }
@@ -717,6 +715,17 @@ void QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVSubtitleFrame> &frames) c
     frame.setStream(pkt.stream());
     if (frame.receive() >= 0)
         frames.push_back(frame);
+}
+
+void QAVDemuxer::flushCodecBuffers()
+{
+    Q_D(QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    for (auto &s: d->availableStreams) {
+        auto c = s.codec();
+        if (c)
+            c->flushBuffers();
+    }
 }
 
 bool QAVDemuxer::seekable() const

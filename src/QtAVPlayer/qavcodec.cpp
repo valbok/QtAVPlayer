@@ -90,4 +90,11 @@ const AVCodec *QAVCodec::codec() const
     return d_func()->codec;
 }
 
+void QAVCodec::flushBuffers()
+{
+     Q_D(QAVCodec);
+     if (!d->avctx)
+        return;
+    avcodec_flush_buffers(d->avctx);
+}
 QT_END_NAMESPACE
