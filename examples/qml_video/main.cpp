@@ -92,12 +92,10 @@ int main(int argc, char *argv[])
 
     QElapsedTimer frameElapsed;
     frameElapsed.start();
-    int fpsFrames = 0;
     int receivedFrames = 0;
 
-    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &) { ++receivedFrames; }, Qt::DirectConnection);
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
-        const int fps = fpsFrames++ * 1000 / frameElapsed.elapsed();
+        const int fps = receivedFrames++ * 1000 / frameElapsed.elapsed();
         rootObject->setProperty("frame_fps", fps);
 
         QVideoFrame videoFrame = frame;
