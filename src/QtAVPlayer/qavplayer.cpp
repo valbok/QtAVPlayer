@@ -92,7 +92,6 @@ public:
         double refPts,
         QAVQueueClock &clock,
         QAVPacketQueue<QAVFrame> &queue,
-        QList<QAVFrame> &filteredFrames,
         bool &sync,
         const std::function<void(const QAVFrame &frame)> &cb);
     void doPlayStep(
@@ -687,7 +686,6 @@ void QAVPlayerPrivate::doPlayStep(
     double refPts,
     QAVQueueClock &clock,
     QAVPacketQueue<QAVFrame> &queue,
-    QList<QAVFrame> &filteredFrames,
     bool &sync,
     const std::function<void(const QAVFrame &frame)> &cb)
 {
@@ -700,23 +698,22 @@ void QAVPlayerPrivate::doPlayStep(
     int ret = 0;
 
     // 2. Filter decoded frame
-    if (filteredFrames.isEmpty()) {
-        if (decodedFrame)
-            ret = filters.write(queue.mediaType(), decodedFrame);
-        if (ret >= 0 || ret == AVERROR(EAGAIN))
-            ret = filters.read(queue.mediaType(), decodedFrame, filteredFrames);
-        if (ret < 0) {
-            // Try filters again
-            filteredFrames.clear();
-            if (ret != AVERROR(ENOTSUP)) {
-                setError(QAVPlayer::FilterError, err_str(ret));
-                return;
-            }
-            applyFilters(true, decodedFrame);
-        } else {
-            // The frame is already filtered, decode next one
-            queue.popFrame();
+    QList<QAVFrame> filteredFrames;
+    if (decodedFrame)
+        ret = filters.write(queue.mediaType(), decodedFrame);
+    if (ret >= 0 || ret == AVERROR(EAGAIN))
+        ret = filters.read(queue.mediaType(), decodedFrame, filteredFrames);
+    if (ret < 0) {
+        // Try filters again
+        filteredFrames.clear();
+        if (ret != AVERROR(ENOTSUP)) {
+            setError(QAVPlayer::FilterError, err_str(ret));
+            return;
         }
+        applyFilters(true, decodedFrame);
+    } else {
+        // The frame is already filtered, decode next one
+        queue.popFrame();
     }
 
     // 3. Sync filtered frames
@@ -752,7 +749,6 @@ void QAVPlayerPrivate::doPlayVideo()
     videoClock.setFrameRate(demuxer.videoFrameRate());
     const bool master = true;
     bool sync = true;
-    QList<QAVFrame> filteredFrames;
 
     while (!quit) {
         doPlayStep(
@@ -760,7 +756,6 @@ void QAVPlayerPrivate::doPlayVideo()
             !demuxer.currentAudioStreams().isEmpty() ? audioClock.pts() : -1,
             videoClock,
             videoQueue,
-            filteredFrames,
             sync,
             [&](const QAVFrame &frame) { emit q_ptr->videoFrame(frame); }
         );
@@ -777,7 +772,6 @@ void QAVPlayerPrivate::doPlayAudio()
     const bool master = demuxer.currentVideoStreams().isEmpty();
     const double ref = -1;
     bool sync = true;
-    QList<QAVFrame> filteredFrames;
 
     while (!quit) {
         doPlayStep(
@@ -785,7 +779,6 @@ void QAVPlayerPrivate::doPlayAudio()
             ref,
             audioClock,
             audioQueue,
-            filteredFrames,
             sync,
             [this](const QAVFrame &frame) {
                 frame.frame()->sample_rate *= q_ptr->speed();
