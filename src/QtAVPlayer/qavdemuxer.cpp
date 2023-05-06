@@ -740,16 +740,6 @@ int QAVDemuxer::seek(double sec)
     if (!d->ctx || !d->seekable)
         return AVERROR(EINVAL);
 
-    if (d->eof) {
-        // When EOF is reached, codecs have been flushed
-        // and they don't accept packets any more.
-        // Thus it needs to recreate all codecs.
-        int ret = resetCodecs();
-        if (ret < 0) {
-            qWarning() << "Could not reset codecs:" << ret;
-            return ret;
-        }
-    }
     d->eof = false;
     locker.unlock();
 
