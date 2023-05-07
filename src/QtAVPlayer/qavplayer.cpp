@@ -68,6 +68,7 @@ public:
     bool isEndOfFile() const;
     void endOfFile(bool v);
     void setVideoFrameRate(double v);
+    void setPts(double v);
     double pts() const;
     void applyFilters();
     void applyFilters(bool reset, const QAVFrame &frame);
@@ -123,6 +124,7 @@ public:
     double duration = 0;
     double pendingPosition = 0;
     bool pendingSeek = false;
+    double currPts = 0.0;
     mutable QMutex positionMutex;
     bool synced = true;
 
@@ -273,10 +275,16 @@ void QAVPlayerPrivate::setVideoFrameRate(double v)
     emit q->videoFrameRateChanged(v);
 }
 
+void QAVPlayerPrivate::setPts(double v)
+{
+    QMutexLocker locker(&positionMutex);
+    currPts = v;
+}
+
 double QAVPlayerPrivate::pts() const
 {
-    Q_Q(const QAVPlayer);
-    return !q->availableVideoStreams().isEmpty() ? videoClock.pts() : audioClock.pts();
+    QMutexLocker locker(&positionMutex);
+    return currPts;
 }
 
 template <class T>
@@ -324,6 +332,7 @@ void QAVPlayerPrivate::terminate()
     audioPlayFuture.waitForFinished();
     pendingPosition = 0;
     pendingSeek = false;
+    currPts = 0.0;
     pendingMediaStatuses.clear();
     filters.clear();
     setDuration(0);
@@ -558,13 +567,13 @@ void QAVPlayerPrivate::doDemux()
                 if (ret >= 0) {
                     qCDebug(lcAVPlayer) << "Waiting video thread finished processing packets";
                     videoQueue.waitForEmpty();
-                    videoClock.clear(false);
+                    videoClock.clear();
                     qCDebug(lcAVPlayer) << "Waiting audio thread finished processing packets";
                     audioQueue.waitForEmpty();
-                    audioClock.clear(false);
+                    audioClock.clear();
                     qCDebug(lcAVPlayer) << "Waiting subtitle thread finished processing packets";
                     subtitleQueue.waitForEmpty();
-                    subtitleClock.clear(false);
+                    subtitleClock.clear();
                     qCDebug(lcAVPlayer) << "Flush codec buffers";
                     demuxer.flushCodecBuffers();
                     qCDebug(lcAVPlayer) << "Reset filters";
@@ -722,6 +731,8 @@ void QAVPlayerPrivate::doPlayStep(
             if (frame) {
                 sync = !skipFrame(master, frame, queue.isEmpty());
                 if (sync) {
+                    if (master)
+                        setPts(frame.pts());
                     if (!flushEvents)
                         flushEvents = true;
                     cb(frame);
@@ -1118,9 +1129,11 @@ qint64 QAVPlayer::position() const
 {
     Q_D(const QAVPlayer);
 
-    QMutexLocker locker(&d->positionMutex);
-    if (d->pendingSeek)
-        return d->pendingPosition * 1000 + (d->pendingPosition < 0 ? duration() : 0);
+    {
+        QMutexLocker locker(&d->positionMutex);
+        if (d->pendingSeek)
+            return d->pendingPosition * 1000 + (d->pendingPosition < 0 ? duration() : 0);
+    }
 
     if (mediaStatus() == QAVPlayer::EndOfMedia)
         return duration();
