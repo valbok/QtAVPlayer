@@ -558,13 +558,13 @@ void QAVPlayerPrivate::doDemux()
                 if (ret >= 0) {
                     qCDebug(lcAVPlayer) << "Waiting video thread finished processing packets";
                     videoQueue.waitForEmpty();
-                    videoClock.clear();
+                    videoClock.clear(false);
                     qCDebug(lcAVPlayer) << "Waiting audio thread finished processing packets";
                     audioQueue.waitForEmpty();
-                    audioClock.clear();
+                    audioClock.clear(false);
                     qCDebug(lcAVPlayer) << "Waiting subtitle thread finished processing packets";
                     subtitleQueue.waitForEmpty();
-                    subtitleClock.clear();
+                    subtitleClock.clear(false);
                     qCDebug(lcAVPlayer) << "Flush codec buffers";
                     demuxer.flushCodecBuffers();
                     qCDebug(lcAVPlayer) << "Reset filters";

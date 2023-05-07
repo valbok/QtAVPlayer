@@ -79,6 +79,7 @@ public:
         }
 
         prevPts = pts;
+        currPts = pts;
         frameTimer += delay;
         if ((delay > 0 && time - frameTimer > maxThreshold) || !shouldSync)
             frameTimer = time;
@@ -89,14 +90,16 @@ public:
     double pts() const
     {
         QMutexLocker locker(&m_mutex);
-        return prevPts;
+        return currPts;
     }
 
-    void clear()
+    void clear(bool clearPts = true)
     {
         QMutexLocker locker(&m_mutex);
         prevPts = 0;
         frameTimer = 0;
+        if (clearPts)
+            currPts = 0;
     }
 
     void setFrameRate(double v)
@@ -109,6 +112,7 @@ private:
     double frameRate = 0;
     double frameTimer = 0;
     double prevPts = 0;
+    double currPts = 0;
     mutable QMutex m_mutex;
     const double maxFrameDuration = 10.0;
     const double minThreshold = 0.04;
@@ -248,6 +252,7 @@ private:
         m_decodedFrames.clear();
         m_bytes = 0;
         m_duration = 0;
+        m_pts = 0;
     }
 
     const AVMediaType m_mediaType = AVMEDIA_TYPE_UNKNOWN;
@@ -255,6 +260,7 @@ private:
     QList<QAVPacket> m_packets;
     // Tracks decoded frames to prevent EOF if not all frames are landed
     QList<T> m_decodedFrames;
+    double m_pts = 0.0;
     mutable QMutex m_mutex;
     QWaitCondition m_consumerWaiter;
     QWaitCondition m_producerWaiter;
