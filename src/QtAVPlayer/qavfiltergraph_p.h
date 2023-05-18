@@ -28,6 +28,7 @@
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QtAVPlayer/qavaudioframe.h>
 #include <QObject>
+#include <QMutex>
 #include <memory>
 
 QT_BEGIN_NAMESPACE
@@ -44,6 +45,7 @@ public:
     int apply(const QAVFrame &frame);
     int config();
     QString desc() const;
+    QMutex &mutex();
 
     AVFilterGraph *graph() const;
     QList<QAVVideoInputFilter> videoInputFilters() const;

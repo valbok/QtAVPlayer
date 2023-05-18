@@ -22,6 +22,7 @@
 #include "qavfilter_p.h"
 #include "qavvideoinputfilter_p.h"
 #include "qavvideooutputfilter_p.h"
+#include <QMutex>
 
 QT_BEGIN_NAMESPACE
 
@@ -34,6 +35,7 @@ public:
         const QString &name,
         const QList<QAVVideoInputFilter> &inputs,
         const QList<QAVVideoOutputFilter> &outputs,
+        QMutex &mutex,
         QObject *parent = nullptr);
 
     int write(const QAVFrame &frame) override;

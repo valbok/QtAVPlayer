@@ -24,10 +24,11 @@ QT_BEGIN_NAMESPACE
 class QAVAudioFilterPrivate : public QAVFilterPrivate
 {
 public:
-    QAVAudioFilterPrivate(QAVFilter *q) : QAVFilterPrivate(q) { }
+    QAVAudioFilterPrivate(QAVFilter *q, QMutex &mutex) : QAVFilterPrivate(q, mutex) { }
 
     QList<QAVAudioInputFilter> inputs;
     QList<QAVAudioOutputFilter> outputs;
+    int64_t filter_in_rescale_delta_last = AV_NOPTS_VALUE;
 };
 
 QAVAudioFilter::QAVAudioFilter(
@@ -35,11 +36,12 @@ QAVAudioFilter::QAVAudioFilter(
     const QString &name,
     const QList<QAVAudioInputFilter> &inputs,
     const QList<QAVAudioOutputFilter> &outputs,
+    QMutex &mutex,
     QObject *parent)
     : QAVFilter(
         stream,
         name,
-        *new QAVAudioFilterPrivate(this),
+        *new QAVAudioFilterPrivate(this, mutex),
         parent)
 {
     Q_D(QAVAudioFilter);
@@ -58,9 +60,21 @@ int QAVAudioFilter::write(const QAVFrame &frame)
         return AVERROR(EAGAIN);
 
     d->sourceFrame = frame;
+    AVFrame *decoded_frame = frame.frame();
+    AVRational decoded_frame_tb = frame.stream().stream()->time_base;
+    // TODO: clear filter_in_rescale_delta_last
+    if (decoded_frame->pts != AV_NOPTS_VALUE) {
+        decoded_frame->pts = av_rescale_delta(decoded_frame_tb, decoded_frame->pts,
+                                              AVRational{1, decoded_frame->sample_rate},
+                                              decoded_frame->nb_samples,
+                                              &d->filter_in_rescale_delta_last,
+                                              AVRational{1, decoded_frame->sample_rate});
+    }
+
     for (auto &filter : d->inputs) {
         QAVFrame ref = frame;
-        int ret = av_buffersrc_add_frame_flags(filter.ctx(), ref.frame(), 0);
+        QMutexLocker locker(&d->graphMutex);
+        int ret = av_buffersrc_add_frame_flags(filter.ctx(), ref.frame(), AV_BUFFERSRC_FLAG_PUSH);
         if (ret < 0)
             return ret;
     }
@@ -86,7 +100,10 @@ void QAVAudioFilter::read(QAVFrame &frame)
                 QAVFrame out = d->sourceFrame;
                 // av_buffersink_get_frame_flags allocates frame's data
                 av_frame_unref(out.frame());
-                ret = av_buffersink_get_frame_flags(filter.ctx(), out.frame(), 0);
+                {
+                    QMutexLocker locker(&d->graphMutex);
+                    ret = av_buffersink_get_frame_flags(filter.ctx(), out.frame(), 0);
+                }
                 if (ret < 0)
                     break;
 

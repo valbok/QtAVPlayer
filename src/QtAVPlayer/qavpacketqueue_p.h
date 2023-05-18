@@ -42,7 +42,7 @@ QT_BEGIN_NAMESPACE
 class QAVQueueClock
 {
 public:
-    QAVQueueClock(double v = 1 / 24.0)
+    QAVQueueClock(double v = 0.0)
         : frameRate(v)
     {
     }

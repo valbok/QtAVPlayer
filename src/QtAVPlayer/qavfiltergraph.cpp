@@ -37,6 +37,7 @@ public:
     QList<QAVVideoOutputFilter> videoOutputFilters;
     QList<QAVAudioInputFilter> audioInputFilters;
     QList<QAVAudioOutputFilter> audioOutputFilters;
+    mutable QMutex mutex;
 };
 
 QAVFilterGraph::QAVFilterGraph(QObject *parent)
@@ -113,7 +114,7 @@ int QAVFilterGraph::apply(const QAVFrame &frame)
     }
 
     for (cur = d->outputs, i = 0; cur; cur = cur->next, ++i) {
-        switch (avfilter_pad_get_type(cur->filter_ctx->input_pads, cur->pad_idx)) {
+        switch (avfilter_pad_get_type(cur->filter_ctx->output_pads, cur->pad_idx)) {
         case AVMEDIA_TYPE_VIDEO: {
             if (codec_type == AVMEDIA_TYPE_VIDEO) {
                 QAVVideoOutputFilter filter;
@@ -150,6 +151,12 @@ QString QAVFilterGraph::desc() const
 {
     Q_D(const QAVFilterGraph);
     return d->desc;
+}
+
+QMutex &QAVFilterGraph::mutex()
+{
+    Q_D(QAVFilterGraph);
+    return d->mutex;
 }
 
 AVFilterGraph *QAVFilterGraph::graph() const
