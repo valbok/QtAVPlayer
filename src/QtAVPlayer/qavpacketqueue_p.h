@@ -89,7 +89,7 @@ public:
     double pts() const
     {
         QMutexLocker locker(&m_mutex);
-        return currPts;
+        return prevPts;
     }
 
     void clear()
@@ -109,7 +109,6 @@ private:
     double frameRate = 0;
     double frameTimer = 0;
     double prevPts = 0;
-    double currPts = 0;
     mutable QMutex m_mutex;
     const double maxFrameDuration = 10.0;
     const double minThreshold = 0.04;

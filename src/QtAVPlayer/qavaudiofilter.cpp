@@ -54,6 +54,8 @@ int QAVAudioFilter::write(const QAVFrame &frame)
         qWarning() << "Frame is not audio";
         return AVERROR(EINVAL);
     }
+    if (!d->isEmpty)
+        return AVERROR(EAGAIN);
 
     d->sourceFrame = frame;
     for (auto &filter : d->inputs) {
@@ -70,8 +72,9 @@ void QAVAudioFilter::read(QAVFrame &frame)
 {
     Q_D(QAVAudioFilter);
     if (d->outputs.isEmpty() || d->isEmpty) {
-        frame = {};
+        frame = d->sourceFrame;
         d->sourceFrame = {};
+        d->isEmpty = true;
         return;
     }
 

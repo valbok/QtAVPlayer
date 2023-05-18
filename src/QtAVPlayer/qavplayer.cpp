@@ -705,7 +705,7 @@ void QAVPlayerPrivate::doPlayStep(
         ret = filters.write(queue.mediaType(), decodedFrame);
     if (ret >= 0 || ret == AVERROR(EAGAIN))
         ret = filters.read(queue.mediaType(), decodedFrame, filteredFrames);
-    if (ret < 0) {
+    if (ret < 0 && ret != AVERROR(EAGAIN)) {
         // Try filters again
         filteredFrames.clear();
         if (ret != AVERROR(ENOTSUP)) {
@@ -728,15 +728,13 @@ void QAVPlayerPrivate::doPlayStep(
                 q_ptr->speed(),
                 refPts))
         {
-            if (frame) {
-                sync = !skipFrame(master, frame, queue.isEmpty());
-                if (sync) {
-                    if (master)
-                        setPts(frame.pts());
-                    if (!flushEvents)
-                        flushEvents = true;
-                    cb(frame);
-                }
+            sync = !skipFrame(master, frame, queue.isEmpty());
+            if (sync) {
+                if (master)
+                    setPts(frame.pts());
+                if (!flushEvents)
+                    flushEvents = true;
+                cb(frame);
             }
             filteredFrames.pop_front();
         } else {

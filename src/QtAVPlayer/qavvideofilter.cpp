@@ -78,8 +78,9 @@ void QAVVideoFilter::read(QAVFrame &frame)
 {
     Q_D(QAVVideoFilter);
     if (d->outputs.isEmpty() || d->isEmpty) {
-        frame = {};
+        frame = d->sourceFrame;
         d->sourceFrame = {};
+        d->isEmpty = true;
         return;
     }
 
