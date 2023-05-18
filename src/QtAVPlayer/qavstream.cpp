@@ -115,9 +115,11 @@ int64_t QAVStream::framesCount() const
     if (frames)
         return frames;
 
-    frames = duration() * av_q2d(d->stream->avg_frame_rate);
-    if (frames)
-        return frames;
+    if (d->stream->duration != AV_NOPTS_VALUE) {
+        frames = d->stream->duration * av_q2d(d->stream->avg_frame_rate);
+        if (frames)
+            return frames;
+    }
 
     // TODO: Check if it is relevant
     const auto tb = d->stream->time_base;
