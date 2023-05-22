@@ -90,6 +90,8 @@ private slots:
     void multipleStreams();
     void emptyStreams();
     void flushCodecs();
+    void multiFilterInputs_data();
+    void multiFilterInputs();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -3092,6 +3094,34 @@ void tst_QAVPlayer::flushCodecs()
     QVERIFY(frame.stream());
     QCOMPARE(frame.stream().framesCount(), 309);
     QTRY_COMPARE(framesCount, 309);
+}
+
+void tst_QAVPlayer::multiFilterInputs_data()
+{
+    QTest::addColumn<QString>("filter");
+
+    QTest::newRow("vstack") << QString("sws_flags=neighbor;format=yuv444p,scale[b];showvolume=w=320:h=40:f=0.95:dm=1[a];[a][b]vstack");
+    QTest::newRow("xstack") << QString("[0:a:0]abitscope,scale=320x240[z2];[0:v:0]scale=320x240[b];[z2][b]xstack");
+}
+
+void tst_QAVPlayer::multiFilterInputs()
+{
+    QFETCH(QString, filter);
+    QAVPlayer p;
+    QFileInfo file(QLatin1String("../testdata/av_sample.mkv"));
+    int framesCount = 0;
+    QAVFrame frame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; }, Qt::DirectConnection);
+
+    p.setSource(file.absoluteFilePath());
+    p.setSynced(false);
+    p.setFilter(filter);
+    p.play();
+
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+    QVERIFY(frame);
+    QVERIFY(frame.stream());
+    QCOMPARE(framesCount, 250);
 }
 
 QTEST_MAIN(tst_QAVPlayer)

@@ -25,7 +25,7 @@ QT_BEGIN_NAMESPACE
 class QAVVideoFilterPrivate : public QAVFilterPrivate
 {
 public:
-    QAVVideoFilterPrivate(QAVFilter *q) : QAVFilterPrivate(q) { }
+    QAVVideoFilterPrivate(QAVFilter *q, QMutex &mutex) : QAVFilterPrivate(q, mutex) { }
 
     QList<QAVVideoInputFilter> inputs;
     QList<QAVVideoOutputFilter> outputs;
@@ -36,11 +36,12 @@ QAVVideoFilter::QAVVideoFilter(
     const QString &name,
     const QList<QAVVideoInputFilter> &inputs,
     const QList<QAVVideoOutputFilter> &outputs,
+    QMutex &mutex,
     QObject *parent)
     : QAVFilter(
         stream,
         name,
-        *new QAVVideoFilterPrivate(this),
+        *new QAVVideoFilterPrivate(this, mutex),
         parent)
 {
     Q_D(QAVVideoFilter);
@@ -65,7 +66,8 @@ int QAVVideoFilter::write(const QAVFrame &frame)
             return AVERROR(ENOTSUP);
         }
         QAVFrame ref = d->sourceFrame;
-        int ret = av_buffersrc_add_frame_flags(filter.ctx(), ref.frame(), 0);
+        QMutexLocker locker(&d->graphMutex);
+        int ret = av_buffersrc_add_frame_flags(filter.ctx(), ref.frame(), AV_BUFFERSRC_FLAG_PUSH);
         if (ret < 0)
             return ret;
     }
@@ -92,7 +94,10 @@ void QAVVideoFilter::read(QAVFrame &frame)
                 QAVFrame out = d->sourceFrame;
                 // av_buffersink_get_frame_flags allocates frame's data
                 av_frame_unref(out.frame());
-                ret = av_buffersink_get_frame_flags(filter.ctx(), out.frame(), 0);
+                {
+                    QMutexLocker locker(&d->graphMutex);
+                    ret = av_buffersink_get_frame_flags(filter.ctx(), out.frame(), 0);
+                }
                 if (ret < 0)
                     break;
 

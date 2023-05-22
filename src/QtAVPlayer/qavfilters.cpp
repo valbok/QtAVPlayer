@@ -58,43 +58,45 @@ int QAVFilters::createFilters(
             }
             ret = graph->apply(videoFrame);
             if (ret < 0) {
-                qWarning() << "Could not create video filters" << ret;
+                qWarning() << "Could not create video filters:" << ret;
                 return ret;
             }
             ret = graph->apply(audioFrame);
             if (ret < 0) {
-                qWarning() << "Could not create audio filters" << ret;
+                qWarning() << "Could not create audio filters:" << ret;
                 return ret;
             }
             ret = graph->config();
             if (ret < 0) {
-                qWarning() << "Could not configure filter graph" << ret;
+                qWarning() << "Could not configure filter graph:" << ret;
                 return ret;
             }
 
             auto videoInput = graph->videoInputFilters();
             auto videoOutput = graph->videoOutputFilters();
-            if (!videoInput.isEmpty() && !videoOutput.isEmpty()) {
+            if (!videoInput.isEmpty()) {
                 m_videoFilters.emplace_back(
                     std::unique_ptr<QAVFilter>(
                         new QAVVideoFilter(
                             videoStream,
                             QString::number(i),
                             videoInput,
-                            videoOutput)
+                            videoOutput,
+                            graph->mutex())
                     )
                 );
             }
             auto audioInput = graph->audioInputFilters();
             auto audioOutput = graph->audioOutputFilters();
-            if (!audioInput.isEmpty() && !audioOutput.isEmpty()) {
+            if (!audioInput.isEmpty()) {
                 m_audioFilters.emplace_back(
                     std::unique_ptr<QAVFilter>(
                         new QAVAudioFilter(
                             audioStream,
                             QString::number(i),
                             audioInput,
-                            audioOutput)
+                            audioOutput,
+                            graph->mutex())
                     )
                 );
             }

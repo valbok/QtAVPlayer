@@ -23,6 +23,7 @@
 #include "qavaudioinputfilter_p.h"
 #include "qavaudiooutputfilter_p.h"
 #include <QList>
+#include <QMutex>
 
 QT_BEGIN_NAMESPACE
 
@@ -35,6 +36,7 @@ public:
         const QString &name,
         const QList<QAVAudioInputFilter> &inputs,
         const QList<QAVAudioOutputFilter> &outputs,
+        QMutex &mutex,
         QObject *parent = nullptr);
 
     int write(const QAVFrame &frame) override;
