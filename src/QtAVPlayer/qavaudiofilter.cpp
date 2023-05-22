@@ -90,8 +90,13 @@ void QAVAudioFilter::read(QAVFrame &frame)
                 if (ret < 0)
                     break;
 
+#if LIBAVUTIL_VERSION_MAJOR < 58
                 if (!out.frame()->pkt_duration)
                     out.frame()->pkt_duration = d->sourceFrame.frame()->pkt_duration;
+#else
+                if (out.frame()->duration == AV_NOPTS_VALUE || out.frame()->duration == 0)
+                    out.frame()->duration = d->sourceFrame.frame()->duration;
+#endif
                 frame.setTimeBase(av_buffersink_get_time_base(filter.ctx()));
                 out.setFilterName(
                     !filter.name().isEmpty()

@@ -109,7 +109,13 @@ double QAVFramePrivate::duration() const
 
     return frameRate.den && frameRate.num
            ? av_q2d(AVRational{frameRate.den, frameRate.num})
-           : frame->pkt_duration * av_q2d(stream.stream()->time_base);
+           :
+#if LIBAVUTIL_VERSION_MAJOR < 58
+             frame->pkt_duration
+#else
+             frame->duration
+#endif
+             * av_q2d(stream.stream()->time_base);
 }
 
 QT_END_NAMESPACE
