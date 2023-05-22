@@ -153,13 +153,7 @@
             "label": "OpenGL ES 2.0",
             "enable": "input.opengl == 'es2'",
             "disable": "input.opengl == 'desktop' || input.opengl == 'dynamic' || input.opengl == 'no'",
-            "condition": "config.win32 || (!config.watchos && !features.opengl-desktop && libs.opengl_es2)",
-            "output": [
-                "publicFeature",
-                "publicQtConfig",
-                { "type": "define", "name": "QT_OPENGL_ES" },
-                { "type": "define", "name": "QT_OPENGL_ES_2" }
-            ]
+            "condition": "config.win32 || (!config.watchos && !features.opengl-desktop && libs.opengl_es2)"
         },
         "opengl-desktop": {
             "label": "Desktop OpenGL",
@@ -172,11 +166,7 @@
             "label": "Dynamic OpenGL",
             "enable": "input.opengl == 'dynamic'",
             "autoDetect": false,
-            "condition": "config.win32 && !config.winrt",
-            "output": [
-                { "type": "publicFeature", "name": "dynamicgl" },
-                { "type": "define", "name": "QT_OPENGL_DYNAMIC" }
-            ]
+            "condition": "config.win32 && !config.winrt"
         },
         "opengl": {
             "label": "OpenGL",
