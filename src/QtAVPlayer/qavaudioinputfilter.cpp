@@ -33,8 +33,12 @@ public:
 
     AVSampleFormat format = AV_SAMPLE_FMT_NONE;
     int sample_rate = 0;
+#if LIBAVUTIL_VERSION_MAJOR < 58
     uint64_t channel_layout = 0;
     int channels = 0;
+#else
+    AVChannelLayout ch_layout;
+#endif
 };
 
 QAVAudioInputFilter::QAVAudioInputFilter(QObject *parent)
@@ -50,8 +54,12 @@ QAVAudioInputFilter::QAVAudioInputFilter(const QAVFrame &frame, QObject *parent)
     const auto & stream = frame.stream().stream();
     d->format = frm->format != AV_SAMPLE_FMT_NONE ? AVSampleFormat(frm->format) : AVSampleFormat(stream->codecpar->format);
     d->sample_rate = frm->sample_rate ? frm->sample_rate : stream->codecpar->sample_rate;
+#if LIBAVUTIL_VERSION_MAJOR < 58
     d->channel_layout = frm->channel_layout ? frm->channel_layout : stream->codecpar->channel_layout;
     d->channels = frm->channels ? frm->channels : stream->codecpar->channels;
+#else
+    d->ch_layout = frm->ch_layout.order != AV_CHANNEL_ORDER_UNSPEC ? frm->ch_layout : stream->codecpar->ch_layout;
+#endif
 }
 
 QAVAudioInputFilter::QAVAudioInputFilter(const QAVAudioInputFilter &other)
@@ -68,8 +76,12 @@ QAVAudioInputFilter &QAVAudioInputFilter::operator=(const QAVAudioInputFilter &o
     QAVInOutFilter::operator=(other);
     d->format = other.d_func()->format;
     d->sample_rate = other.d_func()->sample_rate;
+#if LIBAVUTIL_VERSION_MAJOR < 58
     d->channel_layout = other.d_func()->channel_layout;
     d->channels = other.d_func()->channels;
+#else
+    d->ch_layout = other.d_func()->ch_layout;
+#endif
     return *this;
 }
 
@@ -83,10 +95,21 @@ int QAVAudioInputFilter::configure(AVFilterGraph *graph, AVFilterInOut *in)
              1, d->sample_rate,
              d->sample_rate,
              av_get_sample_fmt_name(AVSampleFormat(d->format)));
+
+#if LIBAVUTIL_VERSION_MAJOR < 58
     if (d->channel_layout)
         av_bprintf(&args, ":channel_layout=0x%" PRIx64, d->channel_layout);
     else
         av_bprintf(&args, ":channels=%d", d->channels);
+#else
+    if (av_channel_layout_check(&d->ch_layout) &&
+        d->ch_layout.order != AV_CHANNEL_ORDER_UNSPEC) {
+        av_bprintf(&args, ":channel_layout=");
+        av_channel_layout_describe_bprint(&d->ch_layout, &args);
+    } else {
+        av_bprintf(&args, ":channels=%d", d->ch_layout.nb_channels);
+    }
+#endif
 
     char name[255];
     static int index = 0;

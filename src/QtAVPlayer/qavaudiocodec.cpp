@@ -38,7 +38,11 @@ QAVAudioFormat QAVAudioCodec::audioFormat() const
         format.setSampleFormat(QAVAudioFormat::Float);
 
     format.setSampleRate(d->avctx->sample_rate);
+#if LIBAVUTIL_VERSION_MAJOR < 58
     format.setChannelCount(d->avctx->channels);
+#else
+    format.setChannelCount(d->avctx->ch_layout.nb_channels);
+#endif
 
     return format;
 }
