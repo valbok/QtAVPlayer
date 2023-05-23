@@ -102,7 +102,12 @@ QByteArray QAVAudioFrame::data() const
         return d->data;
 
     AVSampleFormat outFormat = AV_SAMPLE_FMT_NONE;
+#if LIBAVUTIL_VERSION_MAJOR < 58
     int64_t outChannelLayout = av_get_default_channel_layout(fmt.channelCount());
+#else
+    AVChannelLayout outChannelLayout;
+    av_channel_layout_default(&outChannelLayout, fmt.channelCount());
+#endif
     int outSampleRate = fmt.sampleRate();
 
     switch (fmt.sampleFormat()) {
@@ -123,20 +128,32 @@ QByteArray QAVAudioFrame::data() const
         return {};
     }
 
+#if LIBAVUTIL_VERSION_MAJOR < 58
     int64_t channelLayout = (frame->channel_layout && frame->channels == av_get_channel_layout_nb_channels(frame->channel_layout))
         ? frame->channel_layout
         : av_get_default_channel_layout(frame->channels);
-
     bool needsConvert = frame->format != outFormat || channelLayout != outChannelLayout || frame->sample_rate != outSampleRate;
+#else
+    AVChannelLayout channelLayout =frame->ch_layout;
+    bool needsConvert = frame->format != outFormat || av_channel_layout_compare(&channelLayout, &outChannelLayout) || frame->sample_rate != outSampleRate;
+#endif
+
     if (needsConvert && (fmt != d->outAudioFormat || frame->sample_rate != d->inSampleRate || !d->swr_ctx)) {
         swr_free(&d->swr_ctx);
+#if LIBAVUTIL_VERSION_MAJOR < 58
         d->swr_ctx = swr_alloc_set_opts(nullptr,
                                         outChannelLayout, outFormat, outSampleRate,
                                         channelLayout, AVSampleFormat(frame->format), frame->sample_rate,
                                         0, nullptr);
+#else
+        swr_alloc_set_opts2(&d->swr_ctx,
+                            &outChannelLayout, outFormat, outSampleRate,
+                            &channelLayout, AVSampleFormat(frame->format), frame->sample_rate,
+                            0, nullptr);
+#endif
         int ret = swr_init(d->swr_ctx);
         if (!d->swr_ctx || ret < 0) {
-            qWarning() << "Could not init SwrContext" << ret;
+            qWarning() << "Could not init SwrContext:" << ret;
             return {};
         }
     }
@@ -160,8 +177,12 @@ QByteArray QAVAudioFrame::data() const
         int size = samples * fmt.channelCount() * av_get_bytes_per_sample(outFormat);
         d->data = QByteArray::fromRawData((const char *)d->audioBuf, size);
     } else {
-        int size = av_samples_get_buffer_size(NULL,
+        int size = av_samples_get_buffer_size(nullptr,
+#if LIBAVUTIL_VERSION_MAJOR < 58
                                               frame->channels,
+#else
+                                              outChannelLayout.nb_channels,
+#endif
                                               frame->nb_samples,
                                               AVSampleFormat(frame->format), 1);
         d->data = QByteArray::fromRawData((const char *)frame->data[0], size);
