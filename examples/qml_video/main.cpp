@@ -94,6 +94,7 @@ int main(int argc, char *argv[])
     frameElapsed.start();
     int framesCount = 0;
     int receivedFrames = 0;
+    int64_t expectedFrames = 0;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &) { ++receivedFrames; }, Qt::DirectConnection);
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
         const int fps = framesCount++ * 1000 / frameElapsed.elapsed();
@@ -122,15 +123,17 @@ int main(int argc, char *argv[])
             auto availableVideoStreams = p.availableVideoStreams();
             auto videoStreams = p.currentVideoStreams();
             qDebug() << "Video streams:" << availableVideoStreams.size();
-            for (auto &s : p.availableVideoStreams())
-                qDebug() << "[" << s.index() << "]" << s.metadata() << (isStreamCurrent(s.index(), videoStreams) ? "---current" : "");
+            for (auto &s : p.availableVideoStreams()) {
+                expectedFrames = s.framesCount();
+                qDebug() << "[" << s.index() << "]" << s.metadata() << s.framesCount() << "frames," << s.frameRate() << "frame rate" << (isStreamCurrent(s.index(), videoStreams) ? "---current" : "");
+            }
 
             auto availableAudioStreams = p.availableAudioStreams();
             auto audioStreams = p.currentAudioStreams();
             qDebug() << "Audio streams:" << availableAudioStreams.size();
 
             for (auto &s : availableAudioStreams)
-                qDebug() << "[" << s.index() << "]" << s.metadata() << (isStreamCurrent(s.index(), audioStreams) ? "---current" : "");
+                qDebug() << "[" << s.index() << "]" << s.metadata() << s.framesCount() << "frames," << s.frameRate() << "frame rate" << (isStreamCurrent(s.index(), audioStreams) ? "---current" : "");
 
             auto availableSubtitleStreams = p.availableSubtitleStreams();
             qDebug() << "Subtitle streams:" << availableSubtitleStreams.size();
@@ -143,12 +146,11 @@ int main(int argc, char *argv[])
 
             auto subtitleStreams = p.currentSubtitleStreams();
             for (auto &s : availableSubtitleStreams) {
-                qDebug() << "[" << s.index() << "]" << s.metadata() << (isStreamCurrent(s.index(), subtitleStreams) ? "---current" : "");
+                qDebug() << "[" << s.index() << "]" << s.metadata() << s.framesCount() << "frames," << s.frameRate() << "frame rate" << (isStreamCurrent(s.index(), subtitleStreams) ? "---current" : "");
             }
         } else if (status == QAVPlayer::EndOfMedia) {
-            int64_t expected = p.currentVideoStreams().first().framesCount();
-            float loss = expected ? (100.0 - 100.0 * receivedFrames  / expected) : NAN;
-            qDebug() << expected << "frames expected," << receivedFrames << "received," << loss << "% loss";
+            float loss = expectedFrames ? (100.0 - 100.0 * receivedFrames  / expectedFrames) : NAN;
+            qDebug() << expectedFrames << "frames expected," << receivedFrames << "received," << loss << "% loss";
         }
     });
     QObject::connect(&p, &QAVPlayer::durationChanged, [&](auto d) { qDebug() << "durationChanged" << d; });

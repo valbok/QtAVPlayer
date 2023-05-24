@@ -24,7 +24,7 @@ public:
 
     QAVStream *q_ptr = nullptr;
     int index = -1;
-    AVStream *stream = nullptr;
+    AVFormatContext *ctx = nullptr;
     QSharedPointer<QAVCodec> codec;
 };
 
@@ -34,11 +34,11 @@ QAVStream::QAVStream(QObject *parent)
 {
 }
 
-QAVStream::QAVStream(int index, AVStream *stream, const QSharedPointer<QAVCodec> &codec, QObject *parent)
+QAVStream::QAVStream(int index, AVFormatContext *ctx, const QSharedPointer<QAVCodec> &codec, QObject *parent)
     : QAVStream(parent)
 {
     d_ptr->index = index;
-    d_ptr->stream = stream;
+    d_ptr->ctx = ctx;
     d_ptr->codec = codec;
 }
 
@@ -55,7 +55,7 @@ QAVStream::QAVStream(const QAVStream &other)
 QAVStream &QAVStream::operator=(const QAVStream &other)
 {
     d_ptr->index = other.d_ptr->index;
-    d_ptr->stream = other.d_ptr->stream;
+    d_ptr->ctx = other.d_ptr->ctx;
     d_ptr->codec = other.d_ptr->codec;
     return *this;
 }
@@ -63,13 +63,13 @@ QAVStream &QAVStream::operator=(const QAVStream &other)
 QAVStream::operator bool() const
 {
     Q_D(const QAVStream);
-    return d->stream != nullptr && d->codec && d->index >= 0;
+    return d->ctx != nullptr && d->codec && d->index >= 0;
 }
 
 AVStream *QAVStream::stream() const
 {
     Q_D(const QAVStream);
-    return d->stream;
+    return d->index >= 0 && d->index < static_cast<int>(d->ctx->nb_streams) ? d->ctx->streams[d->index] : nullptr;
 }
 
 int QAVStream::index() const
@@ -79,11 +79,11 @@ int QAVStream::index() const
 
 QMap<QString, QString> QAVStream::metadata() const
 {
-    Q_D(const QAVStream);
     QMap<QString, QString> result;
-    if (d->stream) {
+    auto s = stream();
+    if (s != nullptr) {
         AVDictionaryEntry *tag = nullptr;
-        while ((tag = av_dict_get(d->stream->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
+        while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
             result[QString::fromUtf8(tag->key)] = QString::fromUtf8(tag->value);
     }
 
@@ -98,38 +98,50 @@ QSharedPointer<QAVCodec> QAVStream::codec() const
 
 double QAVStream::duration() const
 {
-    Q_D(const QAVStream);
-    if (!d->stream)
+    auto s = stream();
+    if (s == nullptr || s->duration == AV_NOPTS_VALUE)
         return 0.0;
 
-    return d->stream->duration * av_q2d(d->stream->time_base);
+    return s->duration * av_q2d(s->time_base);
 }
 
 int64_t QAVStream::framesCount() const
 {
     Q_D(const QAVStream);
-    if (!d->stream)
+    auto s = stream();
+    if (s == nullptr)
         return 0;
 
-    auto frames = d->stream->nb_frames;
+    auto frames = s->nb_frames;
     if (frames)
         return frames;
 
-    if (d->stream->duration != AV_NOPTS_VALUE) {
-        frames = d->stream->duration * av_q2d(d->stream->avg_frame_rate);
-        if (frames)
-            return frames;
-    }
+    auto dur = duration();
+    if (dur == 0 && d->ctx->duration != AV_NOPTS_VALUE)
+        dur = d->ctx->duration / AV_TIME_BASE;
 
-    // TODO: Check if it is relevant
-    const auto tb = d->stream->time_base;
+    // If frame count is not known, estimating it
+    if (s->avg_frame_rate.num && s->avg_frame_rate.den && dur)
+        return dur * av_q2d(s->avg_frame_rate);
+
+    const auto tb = s->time_base;
     if ((tb.num == 1 && tb.den >= 24 && tb.den <= 60) ||
         (tb.num == 1001 && tb.den >= 24000 && tb.den <= 60000))
     {
-        return d->stream->duration;
+        return s->duration;
     }
 
     return 0;
+}
+
+double QAVStream::frameRate() const
+{
+    Q_D(const QAVStream);
+    auto s = stream();
+    if (s == nullptr)
+        return 0.0;
+    AVRational fr = av_guess_frame_rate(d->ctx, s, nullptr);
+    return fr.num && fr.den ? av_q2d({fr.den, fr.num}) : 0.0;
 }
 
 bool operator==(const QAVStream &lhs, const QAVStream &rhs)

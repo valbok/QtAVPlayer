@@ -17,13 +17,14 @@
 QT_BEGIN_NAMESPACE
 
 struct AVStream;
+struct AVFormatContext;
 class QAVCodec;
 class QAVStreamPrivate;
 class Q_AVPLAYER_EXPORT QAVStream : public QObject
 {
 public:
     QAVStream(QObject *parent = nullptr);
-    QAVStream(int index, AVStream *stream = nullptr, const QSharedPointer<QAVCodec> &codec = {}, QObject *parent = nullptr);
+    QAVStream(int index, AVFormatContext *ctx = nullptr, const QSharedPointer<QAVCodec> &codec = {}, QObject *parent = nullptr);
     QAVStream(const QAVStream &other);
     ~QAVStream();
     QAVStream &operator=(const QAVStream &other);
@@ -33,6 +34,7 @@ public:
     AVStream *stream() const;
     double duration() const;
     int64_t framesCount() const;
+    double frameRate() const;
     QMap<QString, QString> metadata() const;
 
     QSharedPointer<QAVCodec> codec() const;
