@@ -105,7 +105,7 @@ double QAVStream::duration() const
     return s->duration * av_q2d(s->time_base);
 }
 
-int64_t QAVStream::expectedFramesCount() const
+int64_t QAVStream::framesCount() const
 {
     Q_D(const QAVStream);
     auto s = stream();
@@ -132,6 +132,16 @@ int64_t QAVStream::expectedFramesCount() const
     }
 
     return 0;
+}
+
+double QAVStream::frameRate() const
+{
+    Q_D(const QAVStream);
+    auto s = stream();
+    if (s == nullptr)
+        return 0.0;
+    AVRational fr = av_guess_frame_rate(d->ctx, s, nullptr);
+    return fr.num && fr.den ? av_q2d({fr.den, fr.num}) : 0.0;
 }
 
 bool operator==(const QAVStream &lhs, const QAVStream &rhs)

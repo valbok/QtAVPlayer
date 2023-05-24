@@ -33,7 +33,8 @@ public:
     int index() const;
     AVStream *stream() const;
     double duration() const;
-    int64_t expectedFramesCount() const;
+    int64_t framesCount() const;
+    double frameRate() const;
     QMap<QString, QString> metadata() const;
 
     QSharedPointer<QAVCodec> codec() const;
