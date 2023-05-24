@@ -39,6 +39,29 @@ public:
 
     QSharedPointer<QAVCodec> codec() const;
 
+    class Q_AVPLAYER_EXPORT Progress {
+    public:
+        Progress(qint64 frames = 0, double fr = 0.0);
+        Progress(const Progress &other);
+        Progress &operator=(const Progress &other);
+
+        double pts() const;
+        qint64 framesCount() const;
+        qint64 expectedFramesCount() const;
+        double frameRate() const;
+        double expectedFrameRate() const;
+        unsigned fps() const;
+
+        void onFrameSent(double pts);
+    private:
+        double m_pts = 0.0;
+        qint64 m_framesCount = 0;
+        qint64 m_expectedFramesCount = 0;
+        double m_expectedFrameRate = 0.0;
+        qint64 m_time = 0;
+        qint64 m_diffs = 0;
+    };
+
 private:
     std::unique_ptr<QAVStreamPrivate> d_ptr;
     Q_DECLARE_PRIVATE(QAVStream)
@@ -50,6 +73,7 @@ Q_DECLARE_METATYPE(QAVStream)
 
 #ifndef QT_NO_DEBUG_STREAM
 Q_AVPLAYER_EXPORT QDebug operator<<(QDebug, const QAVStream &);
+Q_AVPLAYER_EXPORT QDebug operator<<(QDebug, const QAVStream::Progress &);
 #endif
 
 QT_END_NAMESPACE

@@ -12,6 +12,7 @@
 
 extern "C" {
 #include <libavformat/avformat.h>
+#include <libavutil/time.h>
 }
 
 QT_BEGIN_NAMESPACE
@@ -144,6 +145,71 @@ double QAVStream::frameRate() const
     return fr.num && fr.den ? av_q2d({fr.den, fr.num}) : 0.0;
 }
 
+QAVStream::Progress::Progress(qint64 frames, double fr)
+    : m_expectedFramesCount(frames)
+    , m_expectedFrameRate(fr)
+{
+}
+
+QAVStream::Progress::Progress(const Progress &other)
+{
+    *this = other;
+}
+
+QAVStream::Progress &QAVStream::Progress::operator=(const Progress &other)
+{
+    m_pts = other.m_pts;
+    m_framesCount = other.m_framesCount;
+    m_expectedFramesCount = other.m_expectedFramesCount;
+    m_expectedFrameRate = other.m_expectedFrameRate;
+    m_time = other.m_time;
+    m_diffs = other.m_diffs;
+    return *this;
+}
+
+double QAVStream::Progress::pts() const
+{
+    return m_pts;
+}
+
+qint64 QAVStream::Progress::framesCount() const
+{
+    return m_framesCount;
+}
+
+qint64 QAVStream::Progress::expectedFramesCount() const
+{
+    return m_expectedFramesCount;
+}
+
+double QAVStream::Progress::expectedFrameRate() const
+{
+    return m_expectedFrameRate;
+}
+
+double QAVStream::Progress::frameRate() const
+{
+    return m_framesCount ? m_diffs / 1000000.0 / static_cast<double>(m_framesCount) : 0.0;
+}
+
+unsigned QAVStream::Progress::fps() const
+{
+    double fr = frameRate();
+    return fr ? static_cast<unsigned>(1 / fr) : 0;
+}
+
+void QAVStream::Progress::onFrameSent(double pts)
+{
+    m_pts = pts;
+    qint64 cur = av_gettime_relative();
+    if (m_framesCount++ > 0) {
+        qint64 diff = cur - m_time;
+        if (diff > 0)
+            m_diffs += diff;
+    }
+    m_time = cur;
+}
+
 bool operator==(const QAVStream &lhs, const QAVStream &rhs)
 {
     return lhs.index() == rhs.index();
@@ -155,6 +221,19 @@ QDebug operator<<(QDebug dbg, const QAVStream &stream)
     QDebugStateSaver saver(dbg);
     dbg.nospace();
     return dbg << QString(QLatin1String("QAVStream(%1)" )).arg(stream.index()).toLatin1().constData();
+}
+
+QDebug operator<<(QDebug dbg, const QAVStream::Progress &p)
+{
+    QDebugStateSaver saver(dbg);
+    dbg.nospace();
+    return dbg << QString(QLatin1String("Progress(%1 pts, %2/%3 frames, %4/%5 frame rate, %6 fps)"))
+        .arg(p.pts())
+        .arg(p.framesCount())
+        .arg(p.expectedFramesCount())
+        .arg(p.frameRate())
+        .arg(p.expectedFrameRate())
+        .arg(p.fps()).toLatin1().constData();
 }
 #endif
 

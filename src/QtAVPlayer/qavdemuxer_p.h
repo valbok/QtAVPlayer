@@ -50,7 +50,6 @@ public:
     int load(const QString &url, QAVIODevice *dev = nullptr);
     void unload();
 
-    QAVStream stream(int index) const;
     AVMediaType currentCodecType(int index) const;
 
     QList<QAVStream> availableVideoStreams() const;
@@ -90,6 +89,9 @@ public:
 
     QMap<QString, QString> inputOptions() const;
     void setInputOptions(const QMap<QString, QString> &opts);
+
+    void onFrameSent(const QAVStreamFrame &frame);
+    QAVStream::Progress progress(const QAVStream &s) const;
 
     static QStringList supportedFormats();
     static QStringList supportedVideoCodecs();
