@@ -94,6 +94,7 @@ int main(int argc, char *argv[])
     frameElapsed.start();
     int framesCount = 0;
     int receivedFrames = 0;
+    int64_t expectedFrames = 0;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &) { ++receivedFrames; }, Qt::DirectConnection);
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
         const int fps = framesCount++ * 1000 / frameElapsed.elapsed();
@@ -145,10 +146,12 @@ int main(int argc, char *argv[])
             for (auto &s : availableSubtitleStreams) {
                 qDebug() << "[" << s.index() << "]" << s.metadata() << (isStreamCurrent(s.index(), subtitleStreams) ? "---current" : "");
             }
+
+            expectedFrames = p.currentVideoStreams().first().expectedFramesCount();
+            qDebug() <<"Expected frames:" << expectedFrames;
         } else if (status == QAVPlayer::EndOfMedia) {
-            int64_t expected = p.currentVideoStreams().first().framesCount();
-            float loss = expected ? (100.0 - 100.0 * receivedFrames  / expected) : NAN;
-            qDebug() << expected << "frames expected," << receivedFrames << "received," << loss << "% loss";
+            float loss = expectedFrames ? (100.0 - 100.0 * receivedFrames  / expectedFrames) : NAN;
+            qDebug() << expectedFrames << "frames expected," << receivedFrames << "received," << loss << "% loss";
         }
     });
     QObject::connect(&p, &QAVPlayer::durationChanged, [&](auto d) { qDebug() << "durationChanged" << d; });

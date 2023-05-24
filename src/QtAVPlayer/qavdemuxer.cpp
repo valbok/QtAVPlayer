@@ -436,22 +436,22 @@ int QAVDemuxer::resetCodecs()
                 QSharedPointer<QAVCodec> codec(new QAVVideoCodec);
                 if (videoCodec)
                     codec->setCodec(videoCodec);
-                d->availableStreams.push_back({ int(i), d->ctx->streams[i], codec });
+                d->availableStreams.push_back({ int(i), d->ctx, codec });
                 ret = setup_video_codec(d->ctx->streams[i], *static_cast<QAVVideoCodec *>(codec.data()));
             } break;
             case AVMEDIA_TYPE_AUDIO:
-                d->availableStreams.push_back({ int(i), d->ctx->streams[i], QSharedPointer<QAVCodec>(new QAVAudioCodec) });
+                d->availableStreams.push_back({ int(i), d->ctx, QSharedPointer<QAVCodec>(new QAVAudioCodec) });
                 if (!d->availableStreams.last().codec()->open(d->ctx->streams[i]))
                     qWarning() << "Could not open audio codec for stream:" << i;
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
-                d->availableStreams.push_back({ int(i), d->ctx->streams[i], QSharedPointer<QAVCodec>(new QAVSubtitleCodec) });
+                d->availableStreams.push_back({ int(i), d->ctx, QSharedPointer<QAVCodec>(new QAVSubtitleCodec) });
                 if (!d->availableStreams.last().codec()->open(d->ctx->streams[i]))
                     qWarning() << "Could not open subtitle codec for stream:" << i;
                 break;
             default:
                 // Adding default stream
-                d->availableStreams.push_back({ int(i), d->ctx->streams[i], nullptr });
+                d->availableStreams.push_back({ int(i), d->ctx, nullptr });
                 break;
         }
     }
