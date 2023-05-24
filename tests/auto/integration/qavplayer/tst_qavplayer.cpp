@@ -1216,6 +1216,13 @@ void tst_QAVPlayer::files()
     p.play();
     p.seek(duration * 0.9);
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 18000);
+    for (const auto &s : p.availableVideoStreams()) {
+        auto progress = p.progress(s);
+        QVERIFY(progress.pts() >= 0.0);
+        QVERIFY(progress.framesCount() > 0);
+        QVERIFY(progress.frameRate() > 0.0);
+        QVERIFY(progress.fps() > 0);
+    }
 }
 
 void tst_QAVPlayer::files_io_data()
@@ -3126,7 +3133,14 @@ void tst_QAVPlayer::multiFilterInputs()
     QVERIFY(frame);
     QVERIFY(frame.stream());
     QCOMPARE(framesCount, 250);
-    QCOMPARE(framesCount, p.currentVideoStreams().first().framesCount());
+    auto s = p.currentVideoStreams().first();
+    QCOMPARE(framesCount, s.framesCount());
+    QCOMPARE(framesCount, p.progress(s).framesCount());
+    QCOMPARE(framesCount, p.progress(s).expectedFramesCount());
+    QVERIFY(p.progress(s).pts() > 0);
+    QVERIFY(p.progress(s).fps() > 0.0);
+    QVERIFY(p.progress(s).frameRate() > 0.0);
+    QVERIFY(p.progress(s).expectedFrameRate() > 0.0);
 }
 
 QTEST_MAIN(tst_QAVPlayer)

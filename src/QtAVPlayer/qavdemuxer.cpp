@@ -80,6 +80,7 @@ public:
     QList<QAVStream> currentVideoStreams;
     QList<QAVStream> currentAudioStreams;
     QList<QAVStream> currentSubtitleStreams;
+    QList<QAVStream::Progress> progress;
     QString inputFormat;
     QString inputVideoCodec;
     QMap<QString, QString> inputOptions;
@@ -413,7 +414,6 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
 int QAVDemuxer::resetCodecs()
 {
     Q_D(QAVDemuxer);
-    d->availableStreams.clear();
     const AVCodec *videoCodec = nullptr;
     if (!d->inputVideoCodec.isEmpty()) {
         qDebug() << "Loading: -vcodec" << d->inputVideoCodec;
@@ -454,18 +454,11 @@ int QAVDemuxer::resetCodecs()
                 d->availableStreams.push_back({ int(i), d->ctx, nullptr });
                 break;
         }
+        auto &s = d->availableStreams[i];
+        d->progress.push_back({ s.framesCount(), s.frameRate() });
     }
 
     return ret;
-}
-
-QAVStream QAVDemuxer::stream(int index) const
-{
-    Q_D(const QAVDemuxer);
-    QMutexLocker locker(&d->mutex);
-    return index >= 0 && index < d->availableStreams.size()
-           ? d->availableStreams[index]
-           : QAVStream{};
 }
 
 static bool findStream(
@@ -623,6 +616,7 @@ void QAVDemuxer::unload()
     d->currentAudioStreams.clear();
     d->currentSubtitleStreams.clear();
     d->availableStreams.clear();
+    d->progress.clear();
     av_bsf_free(&d->bsf_ctx);
     d->bsf_ctx = nullptr;
 }
@@ -852,6 +846,25 @@ void QAVDemuxer::setInputOptions(const QMap<QString, QString> &opts)
     Q_D(QAVDemuxer);
     QMutexLocker locker(&d->mutex);
     d->inputOptions = opts;
+}
+
+void QAVDemuxer::onFrameSent(const QAVStreamFrame &frame)
+{
+    Q_D(QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    int index = frame.stream().index();
+    if (index >= 0 && index < d->progress.size())
+        d->progress[index].onFrameSent(frame.pts());
+}
+
+QAVStream::Progress QAVDemuxer::progress(const QAVStream &s) const
+{
+    Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    int index = s.index();
+    if (index >= 0 && index < d->progress.size())
+        return d->progress[index];
+    return {};
 }
 
 QStringList QAVDemuxer::supportedBitstreamFilters()

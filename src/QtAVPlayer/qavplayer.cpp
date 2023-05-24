@@ -735,6 +735,7 @@ void QAVPlayerPrivate::doPlayStep(
                 if (!flushEvents)
                     flushEvents = true;
                 cb(frame);
+                demuxer.onFrameSent(frame);
             }
             filteredFrames.pop_front();
         } else {
@@ -817,9 +818,9 @@ void QAVPlayerPrivate::doPlayStep(
             -1))
     {
         sync = !skipFrame(false, decodedFrame, queue.isEmpty());
-        if (sync) {
-            if (decodedFrame)
-                cb(decodedFrame);
+        if (sync && decodedFrame) {
+            cb(decodedFrame);
+            demuxer.onFrameSent(decodedFrame);
         }
         queue.popFrame();
     }
@@ -1296,6 +1297,11 @@ void QAVPlayer::setInputOptions(const QMap<QString, QString>  &opts)
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << current << "->" << opts;
     d->demuxer.setInputOptions(opts);
     emit inputOptionsChanged(opts);
+}
+
+QAVStream::Progress QAVPlayer::progress(const QAVStream &s) const
+{
+    return d_func()->demuxer.progress(s);
 }
 
 #ifndef QT_NO_DEBUG_STREAM

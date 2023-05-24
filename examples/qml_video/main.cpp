@@ -90,15 +90,8 @@ int main(int argc, char *argv[])
     auto videoSurface = vo->videoSink();
 #endif
 
-    QElapsedTimer frameElapsed;
-    frameElapsed.start();
-    int framesCount = 0;
-    int receivedFrames = 0;
-    int64_t expectedFrames = 0;
-    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &) { ++receivedFrames; }, Qt::DirectConnection);
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
-        const int fps = framesCount++ * 1000 / frameElapsed.elapsed();
-        rootObject->setProperty("frame_fps", fps);
+        rootObject->setProperty("frame_fps", p.progress(frame.stream()).fps());
 
         // Might download and convert data
         QVideoFrame videoFrame = frame;
@@ -123,10 +116,8 @@ int main(int argc, char *argv[])
             auto availableVideoStreams = p.availableVideoStreams();
             auto videoStreams = p.currentVideoStreams();
             qDebug() << "Video streams:" << availableVideoStreams.size();
-            for (auto &s : p.availableVideoStreams()) {
-                expectedFrames = s.framesCount();
+            for (auto &s : p.availableVideoStreams())
                 qDebug() << "[" << s.index() << "]" << s.metadata() << s.framesCount() << "frames," << s.frameRate() << "frame rate" << (isStreamCurrent(s.index(), videoStreams) ? "---current" : "");
-            }
 
             auto availableAudioStreams = p.availableAudioStreams();
             auto audioStreams = p.currentAudioStreams();
@@ -149,9 +140,10 @@ int main(int argc, char *argv[])
                 qDebug() << "[" << s.index() << "]" << s.metadata() << s.framesCount() << "frames," << s.frameRate() << "frame rate" << (isStreamCurrent(s.index(), subtitleStreams) ? "---current" : "");
             }
         } else if (status == QAVPlayer::EndOfMedia) {
-            float loss = expectedFrames ? (100.0 - 100.0 * receivedFrames  / expectedFrames) : NAN;
-            qDebug() << expectedFrames << "frames expected," << receivedFrames << "received," << loss << "% loss";
+            for (const auto &s : p.availableVideoStreams())
+                qDebug() << s << p.progress(s);
         }
+
     });
     QObject::connect(&p, &QAVPlayer::durationChanged, [&](auto d) { qDebug() << "durationChanged" << d; });
 

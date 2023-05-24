@@ -99,6 +99,8 @@ public:
     QMap<QString, QString> inputOptions() const;
     void setInputOptions(const QMap<QString, QString> &opts);
 
+    QAVStream::Progress progress(const QAVStream &stream) const;
+
 public Q_SLOTS:
     void play();
     void pause();
