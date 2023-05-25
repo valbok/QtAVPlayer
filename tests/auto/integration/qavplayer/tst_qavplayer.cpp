@@ -7,7 +7,7 @@
 
 #include "qavplayer.h"
 #include "qavaudiooutput.h"
-#include "private/qaviodevice_p.h"
+#include "qaviodevice_p.h"
 
 #include <QDebug>
 #include <QtTest/QtTest>
@@ -16,6 +16,10 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 }
 
+#ifndef TEST_DATA_DIR
+#define TEST_DATA_DIR "../testdata"
+#endif
+
 QT_USE_NAMESPACE
 
 class tst_QAVPlayer : public QObject
@@ -23,7 +27,7 @@ class tst_QAVPlayer : public QObject
     Q_OBJECT
 public slots:
     void initTestCase();
-
+    QString testData(const QString &fn) { return QLatin1String(TEST_DATA_DIR) + "/" + fn; }
 private slots:
     void construction();
     void sourceChanged();
@@ -141,7 +145,7 @@ void tst_QAVPlayer::quitAudio()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/test.wav"));
+    QFileInfo file(testData("test.wav"));
     p.setSource(file.absoluteFilePath());
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
@@ -160,7 +164,7 @@ void tst_QAVPlayer::playIncorrectSource()
     QVERIFY(p.availableVideoStreams().isEmpty());
     QCOMPARE(spyStateChanged.count(), 0);
 
-    p.setSource(QLatin1String("unknown"));
+    p.setSource("unknown");
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::InvalidMedia);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QTRY_COMPARE(spyErrorOccurred.count(), 1);
@@ -177,14 +181,14 @@ void tst_QAVPlayer::playIncorrectSource()
 
     spyStateChanged.clear();
 
-    p.setSource(QLatin1String("unknown"));
+    p.setSource("unknown");
     p.play();
     QCOMPARE(p.mediaStatus(), QAVPlayer::InvalidMedia);
     QCOMPARE(spyStateChanged.count(), 0);
     QCOMPARE(spyErrorOccurred.count(), 0);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
 
-    QFileInfo file(QLatin1String("../testdata/test.wav"));
+    QFileInfo file(testData("test.wav"));
     p.setSource(file.absoluteFilePath());
 
     p.play();
@@ -214,7 +218,7 @@ void tst_QAVPlayer::playAudio()
     QCOMPARE(p.mediaStatus(), QAVPlayer::NoMedia);
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
 
-    QFileInfo file(QLatin1String("../testdata/test.wav"));
+    QFileInfo file(testData("test.wav"));
     p.setSource(file.absoluteFilePath());
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
@@ -282,7 +286,7 @@ void tst_QAVPlayer::playAudioOutput()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/test.wav"));
+    QFileInfo file(testData("test.wav"));
     p.setSource(file.absoluteFilePath());
 
     QAVAudioFrame frame;
@@ -305,7 +309,7 @@ void tst_QAVPlayer::pauseAudio()
     QSignalSpy spyMediaStatus(&p, &QAVPlayer::mediaStatusChanged);
     QSignalSpy spyPaused(&p, &QAVPlayer::paused);
 
-    QFileInfo file(QLatin1String("../testdata/test.wav"));
+    QFileInfo file(testData("test.wav"));
     p.setSource(file.absoluteFilePath());
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
     QCOMPARE(spyPaused.count(), 0);
@@ -335,7 +339,7 @@ void tst_QAVPlayer::stopAudio()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/test.wav"));
+    QFileInfo file(testData("test.wav"));
     p.setSource(file.absoluteFilePath());
     p.play();
 
@@ -361,7 +365,7 @@ void tst_QAVPlayer::seekAudio()
     QAVPlayer p;
     QSignalSpy spyPaused(&p, &QAVPlayer::paused);
 
-    QFileInfo file(QLatin1String("../testdata/test.wav"));
+    QFileInfo file(testData("test.wav"));
     p.setSource(file.absoluteFilePath());
 
     p.seek(500);
@@ -413,7 +417,7 @@ void tst_QAVPlayer::speedAudio()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/test.wav"));
+    QFileInfo file(testData("test.wav"));
     p.setSource(file.absoluteFilePath());
 
     p.setSpeed(0.5);
@@ -446,7 +450,7 @@ void tst_QAVPlayer::playVideo()
     QCOMPARE(spyVideoFrameRateChanged.count(), 0);
     QCOMPARE(p.videoFrameRate(), 0.0);
 
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
     p.setSource(file.absoluteFilePath());
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
@@ -480,7 +484,7 @@ void tst_QAVPlayer::pauseVideo()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
     p.setSource(file.absoluteFilePath());
 
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
@@ -514,7 +518,7 @@ void tst_QAVPlayer::seekVideo()
     QAVVideoFrame frame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame, &framesCount](const QAVVideoFrame &f) { frame = f; ++framesCount; });
 
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
     p.setSource(file.absoluteFilePath());
 
     p.seek(14500);
@@ -746,7 +750,7 @@ void tst_QAVPlayer::seekVideoNegative()
     QAVVideoFrame frame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame, &framesCount](const QAVVideoFrame &f) { frame = f; ++framesCount; });
 
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
     p.setSource(file.absoluteFilePath());
 
     p.seek(-1000);
@@ -871,7 +875,7 @@ void tst_QAVPlayer::speedVideo()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
     p.setSource(file.absoluteFilePath());
 
     QAVVideoFrame frame;
@@ -902,7 +906,7 @@ void tst_QAVPlayer::videoFrame()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
     p.setSource(file.absoluteFilePath());
 
     QAVVideoFrame frame;
@@ -919,7 +923,7 @@ void tst_QAVPlayer::pauseSeekVideo()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
 
     QAVVideoFrame frame;
     int framesCount = 0;
@@ -1120,14 +1124,14 @@ void tst_QAVPlayer::files_data()
     QTest::addColumn<bool>("hasVideo");
     QTest::addColumn<bool>("hasAudio");
 
-    QTest::newRow("test.wav") << QString("../testdata/test.wav") << 999 << false << true;
-    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4") << 15019 << true << true;
-    QTest::newRow("shots0000.dv") << QString("../testdata/shots0000.dv") << 40 << true << false;
-    QTest::newRow("dv_dsf_1_stype_1.dv") << QString("../testdata/dv_dsf_1_stype_1.dv") << 600 << true << true;
-    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << 2000 << true << true;
-    QTest::newRow("small.mp4") << QString("../testdata/small.mp4") << 5568 << true << true;
-    QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov") << 6840 << true << false;
-    QTest::newRow("star_trails.mpeg") << QString("../testdata/star_trails.mpeg") << 1050 << true << true;
+    QTest::newRow("test.wav") << testData("test.wav") << 999 << false << true;
+    QTest::newRow("colors.mp4") << testData("colors.mp4") << 15019 << true << true;
+    QTest::newRow("shots0000.dv") << testData("shots0000.dv") << 40 << true << false;
+    QTest::newRow("dv_dsf_1_stype_1.dv") << testData("dv_dsf_1_stype_1.dv") << 600 << true << true;
+    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << 2000 << true << true;
+    QTest::newRow("small.mp4") << testData("small.mp4") << 5568 << true << true;
+    QTest::newRow("Earth_Zoom_In.mov") << testData("Earth_Zoom_In.mov") << 6840 << true << false;
+    QTest::newRow("star_trails.mpeg") << testData("star_trails.mpeg") << 1050 << true << true;
 }
 
 void tst_QAVPlayer::files()
@@ -1232,13 +1236,13 @@ void tst_QAVPlayer::files_io_data()
     QTest::addColumn<int>("videoFrames");
     QTest::addColumn<int>("audioFrames");
 
-    QTest::newRow("test.wav") << QString("../testdata/test.wav") << 999 << 0 << 21;
-    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4") << 15019 << 374 << 702;
-    QTest::newRow("shots0000.dv") << QString("../testdata/shots0000.dv") << 40 << 1 << 0;
-    QTest::newRow("dv_dsf_1_stype_1.dv") << QString("../testdata/dv_dsf_1_stype_1.dv") << 600 << 14 << 14;
-    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << 2000 << 49 << 49;
-    QTest::newRow("small.mp4") << QString("../testdata/small.mp4") << 5568 << 165 << 259;
-    QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov") << 6840 << 169 << 0;
+    QTest::newRow("test.wav") << testData("test.wav") << 999 << 0 << 21;
+    QTest::newRow("colors.mp4") << testData("colors.mp4") << 15019 << 374 << 702;
+    QTest::newRow("shots0000.dv") << testData("shots0000.dv") << 40 << 1 << 0;
+    QTest::newRow("dv_dsf_1_stype_1.dv") << testData("dv_dsf_1_stype_1.dv") << 600 << 14 << 14;
+    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << 2000 << 49 << 49;
+    QTest::newRow("small.mp4") << testData("small.mp4") << 5568 << 165 << 259;
+    QTest::newRow("Earth_Zoom_In.mov") << testData("Earth_Zoom_In.mov") << 6840 << 169 << 0;
 }
 
 void tst_QAVPlayer::files_io()
@@ -1342,12 +1346,12 @@ void tst_QAVPlayer::convert_data()
     QTest::addColumn<QString>("path");
     QTest::addColumn<AVPixelFormat>("to");
 
-    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4") << AV_PIX_FMT_NV12;
-    QTest::newRow("dv_dsf_1_stype_1.dv") << QString("../testdata/dv_dsf_1_stype_1.dv") << AV_PIX_FMT_NV21;
-    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << AV_PIX_FMT_YUV420P;
-    QTest::newRow("small.mp4") << QString("../testdata/small.mp4") << AV_PIX_FMT_YUV422P;
-    QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov") << AV_PIX_FMT_NV12;
-    QTest::newRow("1.dv") << QString("../testdata/1.dv") << AV_PIX_FMT_YUV422P;
+    QTest::newRow("colors.mp4") << testData("colors.mp4") << AV_PIX_FMT_NV12;
+    QTest::newRow("dv_dsf_1_stype_1.dv") << testData("dv_dsf_1_stype_1.dv") << AV_PIX_FMT_NV21;
+    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << AV_PIX_FMT_YUV420P;
+    QTest::newRow("small.mp4") << testData("small.mp4") << AV_PIX_FMT_YUV422P;
+    QTest::newRow("Earth_Zoom_In.mov") << testData("Earth_Zoom_In.mov") << AV_PIX_FMT_NV12;
+    QTest::newRow("1.dv") << testData("1.dv") << AV_PIX_FMT_YUV422P;
 }
 
 void tst_QAVPlayer::convert()
@@ -1375,11 +1379,11 @@ void tst_QAVPlayer::map_data()
 {
     QTest::addColumn<QString>("path");
 
-    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4");
-    QTest::newRow("dv_dsf_1_stype_1.dv") << QString("../testdata/dv_dsf_1_stype_1.dv");
-    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv");
-    QTest::newRow("small.mp4") << QString("../testdata/small.mp4");
-    QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov");
+    QTest::newRow("colors.mp4") << testData("colors.mp4");
+    QTest::newRow("dv_dsf_1_stype_1.dv") << testData("dv_dsf_1_stype_1.dv");
+    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv");
+    QTest::newRow("small.mp4") << testData("small.mp4");
+    QTest::newRow("Earth_Zoom_In.mov") << testData("Earth_Zoom_In.mov");
 }
 
 void tst_QAVPlayer::map()
@@ -1411,11 +1415,11 @@ void tst_QAVPlayer::cast2QVideoFrame_data()
     QTest::addColumn<QString>("path");
     QTest::addColumn<QSize>("size");
 
-    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4") << QSize(160, 120);
-    QTest::newRow("dv_dsf_1_stype_1.dv") << QString("../testdata/dv_dsf_1_stype_1.dv") << QSize(720, 576);
-    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QSize(720, 576);
-    QTest::newRow("small.mp4") << QString("../testdata/small.mp4") << QSize(560, 320);
-    QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov") << QSize(1920, 1080);
+    QTest::newRow("colors.mp4") << testData("colors.mp4") << QSize(160, 120);
+    QTest::newRow("dv_dsf_1_stype_1.dv") << testData("dv_dsf_1_stype_1.dv") << QSize(720, 576);
+    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QSize(720, 576);
+    QTest::newRow("small.mp4") << testData("small.mp4") << QSize(560, 320);
+    QTest::newRow("Earth_Zoom_In.mov") << testData("Earth_Zoom_In.mov") << QSize(1920, 1080);
 }
 
 void tst_QAVPlayer::cast2QVideoFrame()
@@ -1454,7 +1458,7 @@ void tst_QAVPlayer::stepForward()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/small.mp4"));
+    QFileInfo file(testData("small.mp4"));
 
     QAVVideoFrame frame;
     int framesCount = 0;
@@ -1579,7 +1583,7 @@ void tst_QAVPlayer::stepBackward()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/small.mp4"));
+    QFileInfo file(testData("small.mp4"));
 
     QAVVideoFrame frame;
     int framesCount = 0;
@@ -1763,7 +1767,7 @@ void tst_QAVPlayer::availableAudioStreams()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/guido.mp4"));
+    QFileInfo file(testData("guido.mp4"));
 
     QSignalSpy spy(&p, &QAVPlayer::audioStreamsChanged);
 
@@ -1833,8 +1837,8 @@ void tst_QAVPlayer::availableAudioStreams()
 #ifndef QT_NO_MULTIMEDIA
 void tst_QAVPlayer::audioOutput()
 {
-    QFileInfo file1(QLatin1String("../testdata/guido.mp4"));
-    QFileInfo file2(QLatin1String("../testdata/small.mp4"));
+    QFileInfo file1(testData("guido.mp4"));
+    QFileInfo file2(testData("small.mp4"));
 
     QAVPlayer p;
     QAVAudioOutput out;
@@ -1863,13 +1867,13 @@ void tst_QAVPlayer::setEmptySource()
             noMediaReceived = s == QAVPlayer::NoMedia;
     });
 
-    QFileInfo file(QLatin1String("../testdata/small.mp4"));
+    QFileInfo file(testData("small.mp4"));
     p.setSource(file.absoluteFilePath());
     p.play();
 
     QTest::qWait(200);
 
-    p.setSource(QLatin1String());
+    p.setSource("");
     QTRY_VERIFY(noMediaReceived);
 
     framesCount = 0;
@@ -1881,10 +1885,10 @@ void tst_QAVPlayer::accurateSeek_data()
 {
     QTest::addColumn<QString>("path");
 
-    QTest::newRow("colors.mp4") << QString("../testdata/colors.mp4");
-    QTest::newRow("small.mp4") << QString("../testdata/small.mp4");
-    QTest::newRow("Earth_Zoom_In.mov") << QString("../testdata/Earth_Zoom_In.mov");
-    QTest::newRow("test6g100.mkv") << QString("../testdata/test6g100.mkv");
+    QTest::newRow("colors.mp4") << testData("colors.mp4");
+    QTest::newRow("small.mp4") << testData("small.mp4");
+    QTest::newRow("Earth_Zoom_In.mov") << testData("Earth_Zoom_In.mov");
+    QTest::newRow("test6g100.mkv") << testData("test6g100.mkv");
 }
 
 void tst_QAVPlayer::accurateSeek()
@@ -2086,7 +2090,7 @@ void tst_QAVPlayer::lastFrame()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/small.mp4"));
+    QFileInfo file(testData("small.mp4"));
     p.setSource(file.absoluteFilePath());
 
     int framesCount = 0;
@@ -2127,7 +2131,7 @@ void tst_QAVPlayer::configureFilter()
     qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/small.mp4"));
+    QFileInfo file(testData("small.mp4"));
     p.setSource(file.absoluteFilePath());
     QSignalSpy spy(&p, &QAVPlayer::filtersChanged);
     QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
@@ -2266,7 +2270,7 @@ void tst_QAVPlayer::changeSourceFilter()
 {
     QAVPlayer p;
 
-    QFileInfo file1(QLatin1String("../testdata/small.mp4"));
+    QFileInfo file1(testData("small.mp4"));
     p.setSource(file1.absoluteFilePath());
     QSignalSpy spy(&p, &QAVPlayer::filtersChanged);
     QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
@@ -2279,7 +2283,7 @@ void tst_QAVPlayer::changeSourceFilter()
     QTRY_VERIFY(frame);
     QCOMPARE(frame.size(), QSize(560 / 2, 320 / 2));
 
-    QFileInfo file2(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file2(testData("colors.mp4"));
     p.setSource(file2.absoluteFilePath());
 
     QCOMPARE(p.state(), QAVPlayer::StoppedState);
@@ -2352,7 +2356,7 @@ void tst_QAVPlayer::filter()
     QFETCH(QString, filter);
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv"));
+    QFileInfo file(testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv"));
     p.setSource(file.absoluteFilePath());
 
     QSignalSpy spyVideoFilterChanged(&p, &QAVPlayer::filtersChanged);
@@ -2431,9 +2435,9 @@ void tst_QAVPlayer::filesIO_data()
 {
     QTest::addColumn<QString>("path");
 
-    QTest::newRow("small") << QString("../testdata/small.mp4");
-    QTest::newRow("colors") << QString("../testdata/colors.mp4");
-    QTest::newRow("3_2ch_32k_bars_sine") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv");
+    QTest::newRow("small") << testData("small.mp4");
+    QTest::newRow("colors") << testData("colors.mp4");
+    QTest::newRow("3_2ch_32k_bars_sine") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv");
 }
 
 void tst_QAVPlayer::filesIO()
@@ -2484,8 +2488,8 @@ void tst_QAVPlayer::filesIOSequential_data()
 {
     QTest::addColumn<QString>("path");
 
-    QTest::newRow("colors") << QString("../testdata/colors.mp4");
-    QTest::newRow("3_2ch_32k_bars_sine") << QString("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv");
+    QTest::newRow("colors") << testData("colors.mp4");
+    QTest::newRow("3_2ch_32k_bars_sine") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv");
 }
 
 void tst_QAVPlayer::filesIOSequential()
@@ -2523,7 +2527,7 @@ void tst_QAVPlayer::subfile()
 {
     QAVPlayer p;
 
-    QFileInfo fileInfo(QLatin1String("../testdata/dv25_pal__411_4-3_2ch_32k_bars_sine.dv"));
+    QFileInfo fileInfo(testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv"));
     QString src = QLatin1String("subfile,,start,0,end,0,,:") + fileInfo.absoluteFilePath();
     p.setSource(src);
 
@@ -2541,7 +2545,7 @@ void tst_QAVPlayer::subfileTar()
 {
     QAVPlayer p;
 
-    QFileInfo fileInfo(QLatin1String("../testdata/dv.tar"));
+    QFileInfo fileInfo(testData("dv.tar"));
     QString src = QLatin1String("subfile,,start,1000,end,0,,:") + fileInfo.absoluteFilePath();
     p.setSource(src);
 
@@ -2559,7 +2563,7 @@ void tst_QAVPlayer::subtitles()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/colors_subtitles.mp4"));
+    QFileInfo file(testData("colors_subtitles.mp4"));
     p.setSource(file.absoluteFilePath());
 
     QSignalSpy spy(&p, &QAVPlayer::subtitleStreamsChanged);
@@ -2613,7 +2617,7 @@ void tst_QAVPlayer::synced()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
     p.setSource(file.absoluteFilePath());
 
     QSignalSpy spy(&p, &QAVPlayer::syncedChanged);
@@ -2642,7 +2646,7 @@ void tst_QAVPlayer::synced()
 void tst_QAVPlayer::bsf()
 {
     QAVPlayer p;
-    QFileInfo file(QLatin1String("../testdata/test.mov"));
+    QFileInfo file(testData("test.mov"));
     p.setSource(file.absoluteFilePath());
 
     QSignalSpy spy(&p, &QAVPlayer::bitstreamFilterChanged);
@@ -2699,7 +2703,7 @@ void tst_QAVPlayer::bsf()
 void tst_QAVPlayer::bsfInvalid()
 {
     QAVPlayer p;
-    QFileInfo file(QLatin1String("../testdata/test.mov"));
+    QFileInfo file(testData("test.mov"));
     p.setSource(file.absoluteFilePath());
 
     QSignalSpy spy(&p, &QAVPlayer::bitstreamFilterChanged);
@@ -2774,7 +2778,7 @@ void tst_QAVPlayer::bsfInvalid()
 void tst_QAVPlayer::convertDirectConnection()
 {
     QAVPlayer p;
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
     p.setSource(file.absoluteFilePath());
 
     int frameCount = 0;
@@ -2790,7 +2794,7 @@ void tst_QAVPlayer::convertDirectConnection()
 void tst_QAVPlayer::mapTwice()
 {
     QAVPlayer p;
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
     p.setSource(file.absoluteFilePath());
     QAVVideoFrame::MapData md1;
     QAVVideoFrame::MapData md2;
@@ -2815,7 +2819,7 @@ void tst_QAVPlayer::mapTwice()
 void tst_QAVPlayer::changeFormat()
 {
     QAVPlayer p;
-    QFileInfo file(QLatin1String("../testdata/1.dv"));
+    QFileInfo file(testData("1.dv"));
     p.setSource(file.absoluteFilePath());
     p.setFilter("drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36");
     QAVVideoFrame videoFrame;
@@ -2832,7 +2836,7 @@ void tst_QAVPlayer::filterName()
 {
     qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QAVPlayer p;
-    QFileInfo file(QLatin1String("../testdata/small.mp4"));
+    QFileInfo file(testData("small.mp4"));
     p.setSource(file.absoluteFilePath());
     p.setFilter("drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36");
     QSet<QString> set;
@@ -2874,7 +2878,7 @@ void tst_QAVPlayer::filterNameStep()
 {
     qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QAVPlayer p;
-    QFileInfo file(QLatin1String("../testdata/small.mp4"));
+    QFileInfo file(testData("small.mp4"));
     p.setSource(file.absoluteFilePath());
     p.setFilter("[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[out3]");
     QSet<QString> set;
@@ -2950,7 +2954,7 @@ void tst_QAVPlayer::inputFormat()
 void tst_QAVPlayer::inputVideoCodec()
 {
     QAVPlayer p;
-    QFileInfo file(QLatin1String("../testdata/small.mp4"));
+    QFileInfo file(testData("small.mp4"));
     QSignalSpy spy(&p, &QAVPlayer::inputVideoCodecChanged);
     p.setSource(file.absoluteFilePath());
     int framesCount = 0;
@@ -2974,7 +2978,7 @@ void tst_QAVPlayer::flushFilters()
 {
     qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QAVPlayer p;
-    QFileInfo file(QLatin1String("../testdata/BAVC1010958_DV000107.dv"));
+    QFileInfo file(testData("BAVC1010958_DV000107.dv"));
     p.setSource(file.absoluteFilePath());
     p.setFilter("scale,format=rgb32,crop=1:ih:iw/2:0,tile=layout=512x1,setsar=1/1 [panel_0]");
     int framesCount = 0;
@@ -2991,7 +2995,7 @@ void tst_QAVPlayer::multipleStreams()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/guido.mp4"));
+    QFileInfo file(testData("guido.mp4"));
 
     QSignalSpy spy(&p, &QAVPlayer::audioStreamsChanged);
 
@@ -3026,7 +3030,7 @@ void tst_QAVPlayer::emptyStreams()
 {
     QAVPlayer p;
 
-    QFileInfo file(QLatin1String("../testdata/guido.mp4"));
+    QFileInfo file(testData("guido.mp4"));
 
     QSignalSpy spyAudio(&p, &QAVPlayer::audioStreamsChanged);
     QSignalSpy spyVideo(&p, &QAVPlayer::videoStreamsChanged);
@@ -3084,7 +3088,7 @@ void tst_QAVPlayer::emptyStreams()
 void tst_QAVPlayer::flushCodecs()
 {
     QAVPlayer p;
-    QFileInfo file(QLatin1String("../testdata/DHC0413_CreaseOrNot.mp4"));
+    QFileInfo file(testData("DHC0413_CreaseOrNot.mp4"));
     int framesCount = 0;
     QAVFrame frame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
@@ -3132,7 +3136,7 @@ void tst_QAVPlayer::multiFilterInputs()
 {
     QFETCH(QString, filter);
     QAVPlayer p;
-    QFileInfo file(QLatin1String("../testdata/av_sample.mkv"));
+    QFileInfo file(testData("av_sample.mkv"));
     int framesCount = 0;
     QAVFrame frame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; }, Qt::DirectConnection);

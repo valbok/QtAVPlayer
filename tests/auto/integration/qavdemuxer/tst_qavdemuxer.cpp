@@ -5,12 +5,12 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#include "private/qavdemuxer_p.h"
+#include "qavdemuxer_p.h"
 #include "qavaudioframe.h"
 #include "qavvideoframe.h"
-#include "private/qaviodevice_p.h"
-#include "private/qavvideocodec_p.h"
-#include "private/qavaudiocodec_p.h"
+#include "qaviodevice_p.h"
+#include "qavvideocodec_p.h"
+#include "qavaudiocodec_p.h"
 
 #include <QDebug>
 #include <QtTest/QtTest>
@@ -18,11 +18,17 @@
 extern "C" {
 #include <libavcodec/avcodec.h>
 }
+
+#ifndef TEST_DATA_DIR
+#define TEST_DATA_DIR "../testdata"
+#endif
+
 QT_USE_NAMESPACE
 
 class tst_QAVDemuxer : public QObject
 {
     Q_OBJECT
+    QString testData(const QString &fn) { return QLatin1String(TEST_DATA_DIR) + "/" + fn; }
 private slots:
     void construction();
     void loadIncorrect();
@@ -72,7 +78,7 @@ void tst_QAVDemuxer::construction()
 void tst_QAVDemuxer::loadIncorrect()
 {
     QAVDemuxer d;
-    QVERIFY(d.load(QLatin1String("unknown.mp4")) < 0);
+    QVERIFY(d.load("unknown.mp4") < 0);
     QVERIFY(d.currentVideoStreams().isEmpty());
     QVERIFY(d.currentAudioStreams().isEmpty());
     QVERIFY(d.currentSubtitleStreams().isEmpty());
@@ -84,7 +90,7 @@ void tst_QAVDemuxer::loadAudio()
 {
     QAVDemuxer d;
 
-    QFileInfo file(QLatin1String("../testdata/test.wav"));
+    QFileInfo file(testData("test.wav"));
 
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(d.currentVideoStreams().isEmpty());
@@ -167,7 +173,7 @@ void tst_QAVDemuxer::loadVideo()
 {
     QAVDemuxer d;
 
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
 
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(!d.currentVideoStreams().isEmpty());
@@ -220,14 +226,14 @@ void tst_QAVDemuxer::fileIO()
 {
     QAVDemuxer d;
 
-    QFile file(QLatin1String("../testdata/colors.mp4"));
+    QFile file(testData("colors.mp4"));
     if (!file.open(QIODevice::ReadOnly)) {
         QFAIL("Could not open");
         return;
     }
 
     QAVIODevice dev(file);
-    QVERIFY(d.load(QLatin1String("colors.mp4"), &dev) >= 0);
+    QVERIFY(d.load("colors.mp4", &dev) >= 0);
 
     QVERIFY(!d.currentVideoStreams().isEmpty());
     QVERIFY(!d.currentAudioStreams().isEmpty());
@@ -279,7 +285,7 @@ void tst_QAVDemuxer::qrcIO()
 {
     QAVDemuxer d;
 
-    QFile file(QLatin1String(":/test.wav"));
+    QFile file(":/test.wav");
     if (!file.open(QIODevice::ReadOnly)) {
         QFAIL("Could not open");
         return;
@@ -383,7 +389,7 @@ void tst_QAVDemuxer::supportedFormats()
     d.unload();
 
     d.setInputFormat({});
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     d.unload();
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
@@ -393,7 +399,7 @@ void tst_QAVDemuxer::metadata()
 {
     QAVDemuxer d;
 
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
 
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(!d.metadata().isEmpty());
@@ -410,7 +416,7 @@ void tst_QAVDemuxer::videoCodecs()
     QAVDemuxer d;
     auto codecs = QAVDemuxer::supportedVideoCodecs();
     QVERIFY(!codecs.isEmpty());
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     d.unload();
     d.setInputVideoCodec("h264");
@@ -423,7 +429,7 @@ void tst_QAVDemuxer::videoCodecs()
 void tst_QAVDemuxer::inputOptions()
 {
     QAVDemuxer d;
-    QFileInfo file(QLatin1String("../testdata/colors.mp4"));
+    QFileInfo file(testData("colors.mp4"));
     d.setInputOptions({{"user_agent", "QAVPlayer"}});
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
 }
