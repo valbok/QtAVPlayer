@@ -158,6 +158,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
 # Build
 
+**qmake is deprecated since Qt 6.5**
 
 Linux:
 
