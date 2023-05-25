@@ -124,8 +124,21 @@ void QAVDemuxer::abort(bool stop)
     d->abortRequest = stop;
 }
 
-static int setup_video_codec(AVStream *stream, QAVVideoCodec &codec)
+static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, QAVVideoCodec &codec)
 {
+    const AVCodec *videoCodec = nullptr;
+    if (!inputVideoCodec.isEmpty()) {
+        qDebug() << "Loading: -vcodec" << inputVideoCodec;
+        videoCodec = avcodec_find_decoder_by_name(inputVideoCodec.toUtf8().constData());
+        if (!videoCodec) {
+            qWarning() << "Could not find decoder:" << inputVideoCodec;
+            return AVERROR(EINVAL);
+        }
+    }
+
+    if (videoCodec)
+        codec.setCodec(videoCodec);
+
     QList<QSharedPointer<QAVHWDevice>> devices;
     AVDictionary *opts = NULL;
     Q_UNUSED(opts);
@@ -414,15 +427,6 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
 int QAVDemuxer::resetCodecs()
 {
     Q_D(QAVDemuxer);
-    const AVCodec *videoCodec = nullptr;
-    if (!d->inputVideoCodec.isEmpty()) {
-        qDebug() << "Loading: -vcodec" << d->inputVideoCodec;
-        videoCodec = avcodec_find_decoder_by_name(d->inputVideoCodec.toUtf8().constData());
-        if (!videoCodec) {
-            qWarning() << "Could not find decoder:" << d->inputVideoCodec;
-            return AVERROR(EINVAL);
-        }
-    }
     int ret = 0;
     for (std::size_t i = 0; i < d->ctx->nb_streams && ret >= 0; ++i) {
         if (!d->ctx->streams[i]->codecpar) {
@@ -434,10 +438,8 @@ int QAVDemuxer::resetCodecs()
             case AVMEDIA_TYPE_VIDEO:
             {
                 QSharedPointer<QAVCodec> codec(new QAVVideoCodec);
-                if (videoCodec)
-                    codec->setCodec(videoCodec);
                 d->availableStreams.push_back({ int(i), d->ctx, codec });
-                ret = setup_video_codec(d->ctx->streams[i], *static_cast<QAVVideoCodec *>(codec.data()));
+                ret = setup_video_codec(d->inputVideoCodec, d->ctx->streams[i], *static_cast<QAVVideoCodec *>(codec.data()));
             } break;
             case AVMEDIA_TYPE_AUDIO:
                 d->availableStreams.push_back({ int(i), d->ctx, QSharedPointer<QAVCodec>(new QAVAudioCodec) });
