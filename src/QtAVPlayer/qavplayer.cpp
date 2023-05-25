@@ -1281,6 +1281,11 @@ void QAVPlayer::setInputVideoCodec(const QString &codec)
     emit inputVideoCodecChanged(codec);
 }
 
+QStringList QAVPlayer::supportedVideoCodecs()
+{
+    return QAVDemuxer::supportedVideoCodecs();
+}
+
 QMap<QString, QString> QAVPlayer::inputOptions() const
 {
     Q_D(const QAVPlayer);

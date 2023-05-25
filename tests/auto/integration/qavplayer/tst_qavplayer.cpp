@@ -2950,11 +2950,24 @@ void tst_QAVPlayer::inputFormat()
 void tst_QAVPlayer::inputVideoCodec()
 {
     QAVPlayer p;
+    QFileInfo file(QLatin1String("../testdata/small.mp4"));
     QSignalSpy spy(&p, &QAVPlayer::inputVideoCodecChanged);
+    p.setSource(file.absoluteFilePath());
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &) { ++framesCount; });
+
     QCOMPARE(p.inputVideoCodec(), "");
     p.setInputVideoCodec("h264");
     QCOMPARE(spy.count(), 1);
     QCOMPARE(p.inputVideoCodec(), "h264");
+    QVERIFY(!QAVPlayer::supportedVideoCodecs().isEmpty());
+    if (!QAVPlayer::supportedVideoCodecs().contains("h264"))
+        return;
+
+    p.setSynced(false);
+    p.play();
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
+    QTRY_COMPARE(framesCount, 166);
 }
 
 void tst_QAVPlayer::flushFilters()

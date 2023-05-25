@@ -95,6 +95,7 @@ public:
 
     QString inputVideoCodec() const;
     void setInputVideoCodec(const QString &codec);
+    static QStringList supportedVideoCodecs();
 
     QMap<QString, QString> inputOptions() const;
     void setInputOptions(const QMap<QString, QString> &opts);
