@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 3.8)
-project(QtAVPlayer)
+include(.cmake.conf)
+project(QtAVPlayer
+    VERSION "${QT_REPO_MODULE_VERSION}"
+    DESCRIPTION "Qt AVPlayer Libraries"
+    HOMEPAGE_URL "http://valbok.com/"
+    LANGUAGES CXX C
+)
+
 add_definitions(-std=c++17)
 
 if(NOT WIN32)
@@ -13,7 +20,7 @@ set(MULTIMEDIA_FOUND FALSE)
 find_package(Qt6 COMPONENTS CoreTools)
 if(Qt6CoreTools_FOUND)
     # TODO: tools?
-    find_package(Qt6 REQUIRED COMPONENTS Core OPTIONAL_COMPONENTS Multimedia)
+    find_package(Qt6 REQUIRED COMPONENTS Core BuildInternals OPTIONAL_COMPONENTS Multimedia Test)
     if(Qt6Multimedia_FOUND)
         set(MULTIMEDIA_FOUND TRUE)
     endif()
@@ -27,6 +34,7 @@ else()
         set(EGL_FOUND TRUE)
     endif()
     add_definitions(${Qt5Core_DEFINITIONS})
+    add_subdirectory(src)
 endif()
 
 find_library(LIBVA_X11_LIBRARY NAMES va-x11)
@@ -60,13 +68,21 @@ option(va_drm "Enable libva-drm" ${LIBVA_DRM_FOUND})
 option(vdpau "Enable vdpau" ${VDPAU_FOUND})
 option(egl "Enable egl" ${EGL_FOUND})
 option(multimedia "Enable Qt Multimedia" ${MULTIMEDIA_FOUND})
+option(BUILD_TESTS "Build tests" OFF)
+option(BUILD_EXAMPLES "Build examples" OFF)
 
 configure_file(src/QtAVPlayer/qavplayer-config_p.h.in ${PROJECT_SOURCE_DIR}/src/QtAVPlayer/qtQtAVPlayer-config_p.h)
 configure_file(src/QtAVPlayer/qavplayer-config.h.in ${PROJECT_SOURCE_DIR}/src/QtAVPlayer/qtQtAVPlayer-config.h)
 
 include_directories(./src)
+include_directories(./src/QtAVPlayer)
+if(Qt6CoreTools_FOUND)
+    qt_build_repo()
+    if(Qt6Test_FOUND AND BUILD_TESTS)
+        add_subdirectory(tests)
+    endif()
+endif()
 
-add_subdirectory(src)
-if(multimedia)
+if(multimedia AND BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
