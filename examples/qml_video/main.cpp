@@ -142,6 +142,10 @@ int main(int argc, char *argv[])
         } else if (status == QAVPlayer::EndOfMedia) {
             for (const auto &s : p.availableVideoStreams())
                 qDebug() << s << p.progress(s);
+            for (const auto &s : p.availableAudioStreams())
+                qDebug() << s << p.progress(s);
+            for (const auto &s : p.availableSubtitleStreams())
+                qDebug() << s << p.progress(s);
         }
 
     });

@@ -41,11 +41,12 @@ public:
 
     class Q_AVPLAYER_EXPORT Progress {
     public:
-        Progress(qint64 frames = 0, double fr = 0.0);
+        Progress(double duration = 0.0, qint64 frames = 0, double fr = 0.0);
         Progress(const Progress &other);
         Progress &operator=(const Progress &other);
 
         double pts() const;
+        double duration() const;
         qint64 framesCount() const;
         qint64 expectedFramesCount() const;
         double frameRate() const;
@@ -55,6 +56,7 @@ public:
         void onFrameSent(double pts);
     private:
         double m_pts = 0.0;
+        double m_duration = 0.0;
         qint64 m_framesCount = 0;
         qint64 m_expectedFramesCount = 0;
         double m_expectedFrameRate = 0.0;

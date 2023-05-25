@@ -99,16 +99,21 @@ QSharedPointer<QAVCodec> QAVStream::codec() const
 
 double QAVStream::duration() const
 {
+    Q_D(const QAVStream);
     auto s = stream();
-    if (s == nullptr || s->duration == AV_NOPTS_VALUE)
+    if (!s)
         return 0.0;
 
-    return s->duration * av_q2d(s->time_base);
+    double ret = 0.0;
+    if (s->duration != AV_NOPTS_VALUE)
+        ret = s->duration * av_q2d(s->time_base);
+    if (!ret && d->ctx->duration != AV_NOPTS_VALUE)
+        ret = d->ctx->duration / AV_TIME_BASE;
+    return ret;
 }
 
 int64_t QAVStream::framesCount() const
 {
-    Q_D(const QAVStream);
     auto s = stream();
     if (s == nullptr)
         return 0;
@@ -118,9 +123,6 @@ int64_t QAVStream::framesCount() const
         return frames;
 
     auto dur = duration();
-    if (dur == 0 && d->ctx->duration != AV_NOPTS_VALUE)
-        dur = d->ctx->duration / AV_TIME_BASE;
-
     // If frame count is not known, estimating it
     if (s->avg_frame_rate.num && s->avg_frame_rate.den && dur)
         return dur * av_q2d(s->avg_frame_rate);
@@ -145,8 +147,9 @@ double QAVStream::frameRate() const
     return fr.num && fr.den ? av_q2d({fr.den, fr.num}) : 0.0;
 }
 
-QAVStream::Progress::Progress(qint64 frames, double fr)
-    : m_expectedFramesCount(frames)
+QAVStream::Progress::Progress(double duration, qint64 frames, double fr)
+    : m_duration(duration)
+    , m_expectedFramesCount(frames)
     , m_expectedFrameRate(fr)
 {
 }
@@ -159,6 +162,7 @@ QAVStream::Progress::Progress(const Progress &other)
 QAVStream::Progress &QAVStream::Progress::operator=(const Progress &other)
 {
     m_pts = other.m_pts;
+    m_duration = other.m_duration;
     m_framesCount = other.m_framesCount;
     m_expectedFramesCount = other.m_expectedFramesCount;
     m_expectedFrameRate = other.m_expectedFrameRate;
@@ -170,6 +174,11 @@ QAVStream::Progress &QAVStream::Progress::operator=(const Progress &other)
 double QAVStream::Progress::pts() const
 {
     return m_pts;
+}
+
+double QAVStream::Progress::duration() const
+{
+    return m_duration;
 }
 
 qint64 QAVStream::Progress::framesCount() const
@@ -227,8 +236,9 @@ QDebug operator<<(QDebug dbg, const QAVStream::Progress &p)
 {
     QDebugStateSaver saver(dbg);
     dbg.nospace();
-    return dbg << QString(QLatin1String("Progress(%1 pts, %2/%3 frames, %4/%5 frame rate, %6 fps)"))
+    return dbg << QString(QLatin1String("Progress(%1/%2 pts, %3/%4 frames, %5/%6 frame rate, %7 fps)"))
         .arg(p.pts())
+        .arg(p.duration())
         .arg(p.framesCount())
         .arg(p.expectedFramesCount())
         .arg(p.frameRate())

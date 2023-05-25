@@ -455,7 +455,7 @@ int QAVDemuxer::resetCodecs()
                 break;
         }
         auto &s = d->availableStreams[i];
-        d->progress.push_back({ s.framesCount(), s.frameRate() });
+        d->progress.push_back({ s.duration(), s.framesCount(), s.frameRate() });
     }
 
     return ret;
