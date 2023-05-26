@@ -1,12 +1,7 @@
-if(MULTIMEDIA_FOUND)
-    set(multimeida Qt::Multimedia)
-endif()
-
 qt_internal_add_test(tst_qavdemuxer
     SOURCES
         tst_qavdemuxer.cpp
     LIBRARIES
-        ${multimeida}
         ${PROJECT_NAME}
     TESTDATA testdata
 )
@@ -21,5 +16,7 @@ qt_internal_add_resource(tst_qavdemuxer "testdata"
         "../testdata/test.wav"
 )
 
+set_target_properties(Qt6::Gui PROPERTIES INTERFACE_COMPILE_DEFINITIONS "")
 target_compile_definitions(tst_qavdemuxer PUBLIC TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../testdata")
+
 
