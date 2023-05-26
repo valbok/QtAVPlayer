@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
-project(qml_video)
+project(qml_video LANGUAGES CXX)
+
+add_definitions(-std=c++1z)
 
 if(Qt6_FOUND)
     find_package(Qt6 COMPONENTS QmlTools Quick REQUIRED)
@@ -33,3 +35,9 @@ else()
         target_link_libraries(${PROJECT_NAME} QtAVPlayer Qt5::Core Qt5::Gui Qt5::Quick Qt5::Multimedia Qt5::MultimediaQuick ${LIBAV})
     endif()
 endif()
+
+install(TARGETS ${PROJECT_NAME}
+    RUNTIME DESTINATION "${INSTALL_EXAMPLEDIR}"
+    BUNDLE DESTINATION "${INSTALL_EXAMPLEDIR}"
+    LIBRARY DESTINATION "${INSTALL_EXAMPLEDIR}"
+)
