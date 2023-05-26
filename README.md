@@ -20,6 +20,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
   * Audio frames could be played by `QAVAudioOutput` which is a wrapper of QtMultimedia's [QAudioSink](https://doc-snapshots.qt.io/qt6-dev/qaudiosink.html)
 - Designed to be as simple and understandable as possible, to share knowledge about creating efficient FFmpeg applications.
 - Might be used for media analytics software like [qctools](https://github.com/bavc/qctools) or [dvrescue](https://github.com/mipops/dvrescue).
+- Implemented as a Qt module using QMake and also supports CMake.
 
 # Features
 
