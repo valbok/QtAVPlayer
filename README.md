@@ -2,11 +2,11 @@
 ![example workflow](https://github.com/valbok/QtAVPlayer/actions/workflows/main.yaml/badge.svg)
 
 Free and open-source Qt Media Player library based on FFmpeg.
-- Should be used to decode and fetch _video_/_audio_/_subtitle_ frames.
-- Could be used to synchronize frames based on pts or ignore any synchronization and decode frames as soon as possible.
+- Designed to decode _video_/_audio_/_subtitle_ frames.
+- Supports a synchronization like in FFplay and decoding like FFmpeg.
 - Supports [FFmpeg Bitstream Filters](https://ffmpeg.org/ffmpeg-bitstream-filters.html) and [FFmpeg Filters](https://ffmpeg.org/ffmpeg-filters.html) including simplified `filter_complex`.
-- Supports multiple parallel filters for one input, which generates multiple outputs.
-- Based on Qt platform the video frames are sent in specific format:
+- Supports multiple parallel filters for one input (one input frame and multiple output ones).
+- Based on Qt platform the video frames are sent using specific hardware context:
   * `VA-API` for Linux: DRM with EGL or X11 with GLX.
   * `VDPAU` for Linux.
   * `Video Toolbox` for macOS and iOS.
@@ -18,6 +18,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
   * But there is _experimental_ support of converting video frames to QtMultimedia's [QVideoFrame](https://doc.qt.io/qt-5/qvideoframe.html) for copy-free rendering if possible.
   Note: Not all Qt's renders support copy-free rendering. Also QtMultimedia does not always provide public API to render the video frames. And, of course, for best performance both decoding and rendering should be accelerated.
   * Audio frames could be played by `QAVAudioOutput` which is a wrapper of QtMultimedia's [QAudioSink](https://doc-snapshots.qt.io/qt6-dev/qaudiosink.html)
+- Designed to be as simple and understandable as possible, to share knowledge about creating efficient FFmpeg applications.
 
 # Features
 
@@ -146,7 +147,10 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
        qDebug() << "Audio streams" << player.availableAudioStreams().size();
        qDebug() << "Current audio stream" << player.currentAudioStreams().first().index() << player.currentAudioStreams().first().metadata();
-       player.setAudioStreams(player.availableAudioStreams()); // Return all frames for all available audio streams      
+       player.setAudioStreams(player.availableAudioStreams()); // Return all frames for all available audio streams
+       // Reports progress of playing per stream, like current pts, fps, frame rate, num of frames etc
+       for (const auto &s : p.availableVideoStreams())
+           qDebug() << s << p.progress(s);
 
 9. HW accelerations:
 
@@ -156,30 +160,30 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
 11. Qt 5.12 - **6**.x is supported
 
-# Build
+# How to build
 
 **qmake is deprecated since Qt 6.5**
 
-Linux:
+## Linux:
 
-cmake:
+- cmake:
 
-    cd build; /opt/cmake-3.19.2/bin/cmake .. -DCMAKE_PREFIX_PATH=/opt/dev/qtbase/lib/cmake/Qt5 -DCMAKE_INSTALL_PREFIX=/opt/QtAVPlayer/install -DCMAKE_LIBRARY_PATH="/opt/dev/qtbase/lib;/opt/ffmpeg/install/lib" -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=/opt/ffmpeg/install/include
+      $ cd build; /opt/cmake-3.19.2/bin/cmake .. -DCMAKE_PREFIX_PATH=/opt/dev/qtbase/lib/cmake/Qt5 -DCMAKE_INSTALL_PREFIX=/opt/QtAVPlayer/install -DCMAKE_LIBRARY_PATH="/opt/dev/qtbase/lib;/opt/ffmpeg/install/lib" -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=/opt/ffmpeg/install/include
 
-qmake:
+- qmake:
 
-Install ffmpeg visible with pkg-config.
+    Install ffmpeg visible with pkg-config.
 
-    $ cd QtAVPlayer && qmake && make -j8
+      $ cd QtAVPlayer && qmake && make -j8
 
-macOS and iOS:
+## macOS and iOS:
 
     $ export FFMPEG_ROOT=/usr/local/Cellar/ffmpeg/4.3_1
     $ export LIBRARY_PATH=$FFMPEG_ROOT/lib:$LIBRARY_PATH
     $ export CPLUS_INCLUDE_PATH=$FFMPEG_ROOT/include:$CPLUS_INCLUDE_PATH
     $ cd QtAVPlayer && qmake && make -j8    
 
-Android:
+## Android:
 
 Set vars that point to libraries in armeabi-v7a, arm64-v8a, x86 and x86_64 target archs.
 
@@ -195,22 +199,22 @@ Don't forget to set extra libs in pro file for your app:
     ANDROID_EXTRA_LIBS += /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavdevice.so /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavformat.so /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavutil.so /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavcodec.so /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavfilter.so /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libswscale.so /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libswresample.so
 
 
-Windows and MSVC:
+## Windows and MSVC:
 
-cmake:
+- cmake:
 
-    cd build
-    cmake .. -DCMAKE_PREFIX_PATH=c:\dev\qtbase\lib\cmake\Qt5 -DCMAKE_LIBRARY_PATH="c:\dev\qtbase\lib;c:\ffmpeg\lib" -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=c:\ffmpeg\include -DCMAKE_INSTALL_PREFIX=c:\QtAVPlayer\install
-    msbuild QtAVPlayer.sln
-    cmake --build . --target install
+      cd build
+      cmake .. -DCMAKE_PREFIX_PATH=c:\dev\qtbase\lib\cmake\Qt5 -DCMAKE_LIBRARY_PATH="c:\dev\qtbase\lib;c:\ffmpeg\lib" -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=c:\ffmpeg\include -DCMAKE_INSTALL_PREFIX=c:\QtAVPlayer\install
+      msbuild QtAVPlayer.sln
+      cmake --build . --target install
 
 
-qmake:
+- qmake:
 
-    SET FFMPEG=C:\ffmpeg
-    SET PATH=%FFMPEG%\lib;%PATH%
-    SET INCLUDE=%FFMPEG%\include;%INCLUDE%
-    SET LIB=%FFMPEG%\lib;%LIB%
-    cd QtAVPlayer && qmake && nmake
+      SET FFMPEG=C:\ffmpeg
+      SET PATH=%FFMPEG%\lib;%PATH%
+      SET INCLUDE=%FFMPEG%\include;%INCLUDE%
+      SET LIB=%FFMPEG%\lib;%LIB%
+      cd QtAVPlayer && qmake && nmake
 
 
