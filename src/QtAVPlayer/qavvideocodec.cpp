@@ -59,6 +59,26 @@ static AVPixelFormat negotiate_pixel_format(AVCodecContext *c, const AVPixelForm
 {
     auto d = reinterpret_cast<QAVVideoCodecPrivate *>(c->opaque);
 
+    QList<AVHWDeviceType> supported;
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(58, 0, 0)
+    for (int i = 0;; ++i) {
+        const AVCodecHWConfig *config = avcodec_get_hw_config(c->codec, i);
+        if (!config)
+            break;
+
+        if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX)
+            supported.append(config->device_type);
+    }
+
+    if (!supported.isEmpty()) {
+        qDebug() << c->codec->name << ": supported hardware device contexts:";
+        for (auto a: supported)
+            qDebug() << "   " << av_hwdevice_get_type_name(a);
+    } else {
+        qWarning() << "None of the hardware accelerations are supported";
+    }
+#endif
+
     QList<AVPixelFormat> softwareFormats;
     QList<AVPixelFormat> hardwareFormats;
     for (int i = 0; f[i] != AV_PIX_FMT_NONE; ++i) {
@@ -95,6 +115,8 @@ static AVPixelFormat negotiate_pixel_format(AVCodecContext *c, const AVPixelForm
     auto dsc = av_pix_fmt_desc_get(pf);
     if (dsc)
         qDebug() << "Using" << decStr << "decoding in" << dsc->name;
+    else
+        qDebug() << "None of the pixel formats";
 
     return pf;
 }

@@ -29,6 +29,7 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
+struct AVCodecContext;
 class QAVVideoBuffer;
 class Q_AVPLAYER_EXPORT QAVHWDevice
 {
@@ -36,6 +37,7 @@ public:
     QAVHWDevice() = default;
     virtual ~QAVHWDevice() = default;
 
+    virtual void init(AVCodecContext *) { }
     virtual AVPixelFormat format() const = 0;
     virtual AVHWDeviceType type() const = 0;
     virtual QAVVideoBuffer *videoBuffer(const QAVVideoFrame &frame) const = 0;

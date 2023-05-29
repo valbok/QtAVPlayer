@@ -105,7 +105,10 @@ if(vdpau)
 endif()
 
 if(ANDROID)
-    set(SOURCES ${SOURCES} qavhwdevice_mediacodec.cpp)
+    set(SOURCES
+        ${SOURCES}
+        qavhwdevice_mediacodec.cpp
+        qavandroidsurfacetexture.cpp)
 endif()
 
 if(APPLE)

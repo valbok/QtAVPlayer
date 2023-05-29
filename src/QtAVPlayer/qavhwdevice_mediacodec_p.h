@@ -20,21 +20,26 @@
 //
 
 #include "qavhwdevice_p.h"
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 
+class QAVHWDevice_MediaCodecPrivate;
 class Q_AVPLAYER_EXPORT QAVHWDevice_MediaCodec : public QObject, public QAVHWDevice
 {
 public:
     QAVHWDevice_MediaCodec(QObject *parent = nullptr);
-    ~QAVHWDevice_MediaCodec() = default;
+    ~QAVHWDevice_MediaCodec();
 
+    void init(AVCodecContext *avctx) override;
     AVPixelFormat format() const override;
     AVHWDeviceType type() const override;
     QAVVideoBuffer *videoBuffer(const QAVVideoFrame &frame) const override;
 
 private:
+    std::unique_ptr<QAVHWDevice_MediaCodecPrivate> d_ptr;
     Q_DISABLE_COPY(QAVHWDevice_MediaCodec)
+    Q_DECLARE_PRIVATE(QAVHWDevice_MediaCodec)
 };
 
 QT_END_NAMESPACE
