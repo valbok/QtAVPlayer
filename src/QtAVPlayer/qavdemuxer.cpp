@@ -167,54 +167,30 @@ static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, Q
     av_jni_set_java_vm(vm, NULL);
 #endif
 
+    const bool ignoreHW = qEnvironmentVariableIsSet("QT_AVPLAYER_NO_HWDEVICE");
+    if (!ignoreHW) {
+        AVBufferRef *hw_device_ctx = nullptr;
+        for (auto &device : devices) {
+            auto deviceName = av_hwdevice_get_type_name(device->type());
+            qDebug() << "Creating hardware device context:" << deviceName;
+            if (av_hwdevice_ctx_create(&hw_device_ctx, device->type(), nullptr, opts, 0) >= 0) {
+                qDebug() << "Using hardware device context:" << deviceName;
+                codec.avctx()->hw_device_ctx = hw_device_ctx;
+                codec.avctx()->pix_fmt = device->format();
+                device->init(codec.avctx());
+                codec.setDevice(device);
+                break;
+            }
+            av_buffer_unref(&hw_device_ctx);
+        }
+    }
+
+    // Open codec after hwdevices
     if (!codec.open(stream)) {
         qWarning() << "Could not open video codec for stream";
         return AVERROR(EINVAL);
     }
 
-    if (qEnvironmentVariableIsSet("QT_AVPLAYER_NO_HWDEVICE"))
-        return 0;
-
-    QList<AVHWDeviceType> supported;
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(58, 0, 0)
-    for (int i = 0;; ++i) {
-        const AVCodecHWConfig *config = avcodec_get_hw_config(codec.codec(), i);
-        if (!config)
-            break;
-
-        if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX)
-            supported.append(config->device_type);
-    }
-
-    if (!supported.isEmpty()) {
-        qDebug() << codec.codec()->name << ": supported hardware device contexts:";
-        for (auto a: supported)
-            qDebug() << "   " << av_hwdevice_get_type_name(a);
-    } else {
-        qWarning() << "None of the hardware accelerations are supported";
-        return 0;
-    }
-#endif
-
-    if (devices.isEmpty()) {
-        if (!supported.isEmpty())
-            qWarning() << "None of the hardware accelerations was implemented";
-        return 0;
-    }
-
-    AVBufferRef *hw_device_ctx = nullptr;
-    for (auto &device : devices) {
-        auto deviceName = av_hwdevice_get_type_name(device->type());
-        qDebug() << "Creating hardware device context:" << deviceName;
-        if (av_hwdevice_ctx_create(&hw_device_ctx, device->type(), nullptr, opts, 0) >= 0) {
-            qDebug() << "Using hardware device context:" << deviceName;
-            codec.avctx()->hw_device_ctx = hw_device_ctx;
-            codec.avctx()->pix_fmt = device->format();
-            codec.setDevice(device);
-            break;
-        }
-        av_buffer_unref(&hw_device_ctx);
-    }
     return 0;
 }
 

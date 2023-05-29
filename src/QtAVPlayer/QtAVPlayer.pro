@@ -115,9 +115,9 @@ qtConfig(vdpau) {
 android {
     QT += core-private
     PRIVATE_HEADERS += qavhwdevice_mediacodec_p.h
-    SOURCES += qavhwdevice_mediacodec.cpp
+    SOURCES += qavhwdevice_mediacodec.cpp qavandroidsurfacetexture.cpp
 
-    LIBS += -lavdevice -lavformat -lavutil -lavcodec -lavfilter -lswscale  -lswresample
+    LIBS += -lavdevice -lavformat -lavutil -lavcodec -lavfilter -lswscale -lswresample
     equals(ANDROID_TARGET_ARCH, armeabi-v7a): \
         LIBS += -L$$(AVPLAYER_ANDROID_LIB_ARMEABI_V7A)
 

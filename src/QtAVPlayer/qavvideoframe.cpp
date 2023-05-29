@@ -309,6 +309,11 @@ QAVVideoFrame::operator QVideoFrame() const
         case AV_PIX_FMT_NV12:
             format = VideoFrame::Format_NV12;
             break;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        case AV_PIX_FMT_MEDIACODEC:
+            format = VideoFrame::Format_SamplerExternalOES;
+            break;
+#endif
         default:
             // TODO: Add more supported formats instead of converting
             result = convertTo(AV_PIX_FMT_YUV420P);
