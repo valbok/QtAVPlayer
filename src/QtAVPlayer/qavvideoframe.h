@@ -32,10 +32,10 @@ public:
         MTLTextureHandle
     };
 
-    QAVVideoFrame(QObject *parent = nullptr);
-    QAVVideoFrame(const QAVFrame &other, QObject *parent = nullptr);
-    QAVVideoFrame(const QAVVideoFrame &other, QObject *parent = nullptr);
-    QAVVideoFrame(const QSize &size, AVPixelFormat fmt, QObject *parent = nullptr);
+    QAVVideoFrame();
+    QAVVideoFrame(const QAVFrame &other);
+    QAVVideoFrame(const QAVVideoFrame &other);
+    QAVVideoFrame(const QSize &size, AVPixelFormat fmt);
 
     QAVVideoFrame &operator=(const QAVFrame &other);
     QAVVideoFrame &operator=(const QAVVideoFrame &other);

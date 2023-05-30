@@ -27,7 +27,7 @@ class QAVAudioOutputFilterPrivate;
 class Q_AVPLAYER_EXPORT QAVAudioOutputFilter : public QAVInOutFilter
 {
 public:
-    QAVAudioOutputFilter(QObject *parent = nullptr);
+    QAVAudioOutputFilter();
     ~QAVAudioOutputFilter();
 
     int configure(AVFilterGraph *graph, AVFilterInOut *out) override;

@@ -26,9 +26,8 @@ public:
     QAVStream stream;
 };
 
-QAVPacket::QAVPacket(QObject *parent)
-    : QObject(parent)
-    , d_ptr(new QAVPacketPrivate)
+QAVPacket::QAVPacket()
+    : d_ptr(new QAVPacketPrivate)
 {
     d_ptr->pkt = av_packet_alloc();
     d_ptr->pkt->size = 0;

@@ -15,8 +15,7 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-QAVAudioCodec::QAVAudioCodec(QObject *parent)
-    : QAVFrameCodec(parent)
+QAVAudioCodec::QAVAudioCodec()
 {
 }
 

@@ -56,25 +56,25 @@ public:
     QScopedPointer<QAVVideoBuffer> buffer;
 };
 
-QAVVideoFrame::QAVVideoFrame(QObject *parent)
-    : QAVFrame(*new QAVVideoFramePrivate(this), parent)
+QAVVideoFrame::QAVVideoFrame()
+    : QAVFrame(*new QAVVideoFramePrivate(this))
 {
 }
 
-QAVVideoFrame::QAVVideoFrame(const QAVFrame &other, QObject *parent)
-    : QAVVideoFrame(parent)
-{
-    operator=(other);
-}
-
-QAVVideoFrame::QAVVideoFrame(const QAVVideoFrame &other, QObject *parent)
-    : QAVVideoFrame(parent)
+QAVVideoFrame::QAVVideoFrame(const QAVFrame &other)
+    : QAVVideoFrame()
 {
     operator=(other);
 }
 
-QAVVideoFrame::QAVVideoFrame(const QSize &size, AVPixelFormat fmt, QObject *parent)
-    : QAVVideoFrame(parent)
+QAVVideoFrame::QAVVideoFrame(const QAVVideoFrame &other)
+    : QAVVideoFrame()
+{
+    operator=(other);
+}
+
+QAVVideoFrame::QAVVideoFrame(const QSize &size, AVPixelFormat fmt)
+    : QAVVideoFrame()
 {
     frame()->format = fmt;
     frame()->width = size.width();

@@ -26,8 +26,8 @@ public:
     int gotOutput = 0;
 };
 
-QAVSubtitleCodec::QAVSubtitleCodec(QObject *parent)
-    : QAVCodec(*new QAVSubtitleCodecPrivate(this), parent)
+QAVSubtitleCodec::QAVSubtitleCodec()
+    : QAVCodec(*new QAVSubtitleCodecPrivate(this))
 {
 }
 

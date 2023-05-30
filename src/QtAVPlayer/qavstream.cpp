@@ -29,14 +29,13 @@ public:
     QSharedPointer<QAVCodec> codec;
 };
 
-QAVStream::QAVStream(QObject *parent)
-    : QObject(parent)
-    , d_ptr(new QAVStreamPrivate(this))
+QAVStream::QAVStream()
+    : d_ptr(new QAVStreamPrivate(this))
 {
 }
 
-QAVStream::QAVStream(int index, AVFormatContext *ctx, const QSharedPointer<QAVCodec> &codec, QObject *parent)
-    : QAVStream(parent)
+QAVStream::QAVStream(int index, AVFormatContext *ctx, const QSharedPointer<QAVCodec> &codec)
+    : QAVStream()
 {
     d_ptr->index = index;
     d_ptr->ctx = ctx;

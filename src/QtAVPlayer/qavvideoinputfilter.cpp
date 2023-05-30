@@ -34,13 +34,13 @@ public:
     AVRational frame_rate{};
 };
 
-QAVVideoInputFilter::QAVVideoInputFilter(QObject *parent)
-    : QAVInOutFilter(*new QAVVideoInputFilterPrivate(this), parent)
+QAVVideoInputFilter::QAVVideoInputFilter()
+    : QAVInOutFilter(*new QAVVideoInputFilterPrivate(this))
 {
 }
 
-QAVVideoInputFilter::QAVVideoInputFilter(const QAVFrame &frame, QObject *parent)
-    : QAVVideoInputFilter(parent)
+QAVVideoInputFilter::QAVVideoInputFilter(const QAVFrame &frame)
+    : QAVVideoInputFilter()
 {
     Q_D(QAVVideoInputFilter);
     const auto & frm = frame.frame();
@@ -54,7 +54,7 @@ QAVVideoInputFilter::QAVVideoInputFilter(const QAVFrame &frame, QObject *parent)
 }
 
 QAVVideoInputFilter::QAVVideoInputFilter(const QAVVideoInputFilter &other)
-    : QAVVideoInputFilter({})
+    : QAVVideoInputFilter()
 {
     *this = other;
 }

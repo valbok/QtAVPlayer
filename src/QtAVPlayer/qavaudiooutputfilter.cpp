@@ -17,8 +17,8 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-QAVAudioOutputFilter::QAVAudioOutputFilter(QObject *parent)
-    : QAVInOutFilter(*new QAVInOutFilterPrivate(this), parent)
+QAVAudioOutputFilter::QAVAudioOutputFilter()
+    : QAVInOutFilter(*new QAVInOutFilterPrivate(this))
 {
 }
 

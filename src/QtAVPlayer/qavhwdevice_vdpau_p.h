@@ -23,10 +23,10 @@
 
 QT_BEGIN_NAMESPACE
 
-class Q_AVPLAYER_EXPORT QAVHWDevice_VDPAU : public QObject, public QAVHWDevice
+class Q_AVPLAYER_EXPORT QAVHWDevice_VDPAU : public QAVHWDevice
 {
 public:
-    QAVHWDevice_VDPAU(QObject *parent = nullptr);
+    QAVHWDevice_VDPAU();
     ~QAVHWDevice_VDPAU();
 
     AVPixelFormat format() const override;

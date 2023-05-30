@@ -35,9 +35,8 @@ public:
     GLuint textures[2] = {0};
 };
 
-QAVHWDevice_VAAPI_DRM_EGL::QAVHWDevice_VAAPI_DRM_EGL(QObject *parent)
-    : QObject(parent)
-    , d_ptr(new QAVHWDevice_VAAPI_DRM_EGLPrivate)
+QAVHWDevice_VAAPI_DRM_EGL::QAVHWDevice_VAAPI_DRM_EGL()
+    : d_ptr(new QAVHWDevice_VAAPI_DRM_EGLPrivate)
 {
 }
 

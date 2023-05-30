@@ -26,9 +26,8 @@ public:
     GLuint texture = 0;
 };
 
-QAVHWDevice_MediaCodec::QAVHWDevice_MediaCodec(QObject *parent)
-    : QObject(parent)
-    , d_ptr(new QAVHWDevice_MediaCodecPrivate)
+QAVHWDevice_MediaCodec::QAVHWDevice_MediaCodec()
+    : d_ptr(new QAVHWDevice_MediaCodecPrivate)
 {
 }
 

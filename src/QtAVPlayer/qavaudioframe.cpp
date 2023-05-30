@@ -26,8 +26,8 @@ public:
     QByteArray data;
 };
 
-QAVAudioFrame::QAVAudioFrame(QObject *parent)
-    : QAVFrame(*new QAVAudioFramePrivate, parent)
+QAVAudioFrame::QAVAudioFrame()
+    : QAVFrame(*new QAVAudioFramePrivate)
 {
 }
 
@@ -38,14 +38,14 @@ QAVAudioFrame::~QAVAudioFrame()
     av_freep(&d->audioBuf);
 }
 
-QAVAudioFrame::QAVAudioFrame(const QAVFrame &other, QObject *parent)
-    : QAVFrame(*new QAVAudioFramePrivate, parent)
+QAVAudioFrame::QAVAudioFrame(const QAVFrame &other)
+    : QAVFrame(*new QAVAudioFramePrivate)
 {
     operator=(other);
 }
 
-QAVAudioFrame::QAVAudioFrame(const QAVAudioFrame &other, QObject *parent)
-    : QAVFrame(*new QAVAudioFramePrivate, parent)
+QAVAudioFrame::QAVAudioFrame(const QAVAudioFrame &other)
+    : QAVFrame(*new QAVAudioFramePrivate)
 {
     operator=(other);
 }

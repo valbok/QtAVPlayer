@@ -97,9 +97,8 @@ static int decode_interrupt_cb(void *ctx)
     return d ? int(d->abortRequest) : 0;
 }
 
-QAVDemuxer::QAVDemuxer(QObject *parent)
-    : QObject(parent)
-    , d_ptr(new QAVDemuxerPrivate(this))
+QAVDemuxer::QAVDemuxer()
+    : d_ptr(new QAVDemuxerPrivate(this))
 {
     static bool loaded = false;
     if (!loaded) {

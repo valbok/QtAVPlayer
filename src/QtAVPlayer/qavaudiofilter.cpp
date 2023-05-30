@@ -36,13 +36,11 @@ QAVAudioFilter::QAVAudioFilter(
     const QString &name,
     const QList<QAVAudioInputFilter> &inputs,
     const QList<QAVAudioOutputFilter> &outputs,
-    QMutex &mutex,
-    QObject *parent)
+    QMutex &mutex)
     : QAVFilter(
         stream,
         name,
-        *new QAVAudioFilterPrivate(this, mutex),
-        parent)
+        *new QAVAudioFilterPrivate(this, mutex))
 {
     Q_D(QAVAudioFilter);
     d->inputs = inputs;

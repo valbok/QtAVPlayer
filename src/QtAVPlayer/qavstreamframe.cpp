@@ -17,20 +17,19 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-QAVStreamFrame::QAVStreamFrame(QObject *parent)
-    : QAVStreamFrame(*new QAVStreamFramePrivate, parent)
+QAVStreamFrame::QAVStreamFrame()
+    : QAVStreamFrame(*new QAVStreamFramePrivate)
 {
 }
 
 QAVStreamFrame::QAVStreamFrame(const QAVStreamFrame &other)
-    : QAVStreamFrame(nullptr)
+    : QAVStreamFrame()
 {
     *this = other;
 }
 
-QAVStreamFrame::QAVStreamFrame(QAVStreamFramePrivate &d, QObject *parent)
-    : QObject(parent)
-    , d_ptr(&d)
+QAVStreamFrame::QAVStreamFrame(QAVStreamFramePrivate &d)
+    : d_ptr(&d)
 {
 }
 

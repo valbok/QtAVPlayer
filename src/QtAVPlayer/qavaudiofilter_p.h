@@ -36,8 +36,7 @@ public:
         const QString &name,
         const QList<QAVAudioInputFilter> &inputs,
         const QList<QAVAudioOutputFilter> &outputs,
-        QMutex &mutex,
-        QObject *parent = nullptr);
+        QMutex &mutex);
 
     int write(const QAVFrame &frame) override;
     void read(QAVFrame &frame) override;

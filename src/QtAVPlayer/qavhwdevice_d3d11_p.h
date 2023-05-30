@@ -23,10 +23,10 @@
 
 QT_BEGIN_NAMESPACE
 
-class Q_AVPLAYER_EXPORT QAVHWDevice_D3D11 : public QObject, public QAVHWDevice
+class Q_AVPLAYER_EXPORT QAVHWDevice_D3D11 : public QAVHWDevice
 {
 public:
-    QAVHWDevice_D3D11(QObject *parent = nullptr);
+    QAVHWDevice_D3D11();
     ~QAVHWDevice_D3D11() = default;
 
     AVPixelFormat format() const override;

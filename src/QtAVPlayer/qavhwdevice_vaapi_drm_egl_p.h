@@ -25,10 +25,10 @@
 QT_BEGIN_NAMESPACE
 
 class QAVHWDevice_VAAPI_DRM_EGLPrivate;
-class Q_AVPLAYER_EXPORT QAVHWDevice_VAAPI_DRM_EGL : public QObject, public QAVHWDevice
+class Q_AVPLAYER_EXPORT QAVHWDevice_VAAPI_DRM_EGL : public QAVHWDevice
 {
 public:
-    QAVHWDevice_VAAPI_DRM_EGL(QObject *parent = nullptr);
+    QAVHWDevice_VAAPI_DRM_EGL();
     ~QAVHWDevice_VAAPI_DRM_EGL();
 
     AVPixelFormat format() const override;

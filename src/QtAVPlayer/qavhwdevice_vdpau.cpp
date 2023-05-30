@@ -51,8 +51,7 @@ static VdpVideoMixerRender *s_video_mixer_render = nullptr;
 
 QT_BEGIN_NAMESPACE
 
-QAVHWDevice_VDPAU::QAVHWDevice_VDPAU(QObject *parent)
-    : QObject(parent)
+QAVHWDevice_VDPAU::QAVHWDevice_VDPAU()
 {
 }
 

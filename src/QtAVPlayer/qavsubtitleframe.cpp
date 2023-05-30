@@ -30,8 +30,8 @@ static void subtitle_free(AVSubtitle *subtitle)
     avsubtitle_free(subtitle);
 }
 
-QAVSubtitleFrame::QAVSubtitleFrame(QObject *parent)
-    : QAVStreamFrame(*new QAVSubtitleFramePrivate, parent)
+QAVSubtitleFrame::QAVSubtitleFrame()
+    : QAVStreamFrame(*new QAVSubtitleFramePrivate)
 {
     Q_D(QAVSubtitleFrame);
     d->subtitle.reset(new AVSubtitle, subtitle_free);
@@ -43,7 +43,7 @@ QAVSubtitleFrame::~QAVSubtitleFrame()
 }
 
 QAVSubtitleFrame::QAVSubtitleFrame(const QAVSubtitleFrame &other)
-    : QAVSubtitleFrame(nullptr)
+    : QAVSubtitleFrame()
 {
     operator=(other);
 }
