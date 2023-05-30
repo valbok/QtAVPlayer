@@ -10,7 +10,6 @@
 
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QMap>
-#include <QObject>
 #include <QSharedPointer>
 #include <memory>
 
@@ -20,11 +19,11 @@ struct AVStream;
 struct AVFormatContext;
 class QAVCodec;
 class QAVStreamPrivate;
-class Q_AVPLAYER_EXPORT QAVStream : public QObject
+class Q_AVPLAYER_EXPORT QAVStream
 {
 public:
-    QAVStream(QObject *parent = nullptr);
-    QAVStream(int index, AVFormatContext *ctx = nullptr, const QSharedPointer<QAVCodec> &codec = {}, QObject *parent = nullptr);
+    QAVStream();
+    QAVStream(int index, AVFormatContext *ctx = nullptr, const QSharedPointer<QAVCodec> &codec = {});
     QAVStream(const QAVStream &other);
     ~QAVStream();
     QAVStream &operator=(const QAVStream &other);
@@ -39,7 +38,8 @@ public:
 
     QSharedPointer<QAVCodec> codec() const;
 
-    class Q_AVPLAYER_EXPORT Progress {
+    class Q_AVPLAYER_EXPORT Progress
+    {
     public:
         Progress(double duration = 0.0, qint64 frames = 0, double fr = 0.0);
         Progress(const Progress &other);

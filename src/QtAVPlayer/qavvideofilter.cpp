@@ -36,13 +36,11 @@ QAVVideoFilter::QAVVideoFilter(
     const QString &name,
     const QList<QAVVideoInputFilter> &inputs,
     const QList<QAVVideoOutputFilter> &outputs,
-    QMutex &mutex,
-    QObject *parent)
+    QMutex &mutex)
     : QAVFilter(
         stream,
         name,
-        *new QAVVideoFilterPrivate(this, mutex),
-        parent)
+        *new QAVVideoFilterPrivate(this, mutex))
 {
     Q_D(QAVVideoFilter);
     d->inputs = inputs;

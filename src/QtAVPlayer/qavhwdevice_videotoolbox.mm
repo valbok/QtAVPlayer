@@ -29,9 +29,8 @@ public:
     CVPixelBufferRef pbuf = nullptr;
 };
 
-QAVHWDevice_VideoToolbox::QAVHWDevice_VideoToolbox(QObject *parent)
-    : QObject(parent)
-    , d_ptr(new QAVHWDevice_VideoToolboxPrivate)
+QAVHWDevice_VideoToolbox::QAVHWDevice_VideoToolbox()
+    : d_ptr(new QAVHWDevice_VideoToolboxPrivate)
 {
 }
 

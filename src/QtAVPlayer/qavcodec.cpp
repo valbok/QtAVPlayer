@@ -18,14 +18,13 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-QAVCodec::QAVCodec(QObject *parent)
-    : QAVCodec(*new QAVCodecPrivate, parent)
+QAVCodec::QAVCodec()
+    : QAVCodec(*new QAVCodecPrivate)
 {
 }
 
-QAVCodec::QAVCodec(QAVCodecPrivate &d, QObject *parent)
-    : QObject(parent)
-    , d_ptr(&d)
+QAVCodec::QAVCodec(QAVCodecPrivate &d)
+    : d_ptr(&d)
 {
     d_ptr->avctx = avcodec_alloc_context3(nullptr);
 }

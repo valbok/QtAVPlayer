@@ -25,10 +25,10 @@
 QT_BEGIN_NAMESPACE
 
 class QAVHWDevice_MediaCodecPrivate;
-class Q_AVPLAYER_EXPORT QAVHWDevice_MediaCodec : public QObject, public QAVHWDevice
+class Q_AVPLAYER_EXPORT QAVHWDevice_MediaCodec : public QAVHWDevice
 {
 public:
-    QAVHWDevice_MediaCodec(QObject *parent = nullptr);
+    QAVHWDevice_MediaCodec();
     ~QAVHWDevice_MediaCodec();
 
     void init(AVCodecContext *avctx) override;

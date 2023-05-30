@@ -40,9 +40,8 @@ public:
     mutable QMutex mutex;
 };
 
-QAVFilterGraph::QAVFilterGraph(QObject *parent)
-    : QObject(parent)
-    , d_ptr(new QAVFilterGraphPrivate(this))
+QAVFilterGraph::QAVFilterGraph()
+    : d_ptr(new QAVFilterGraphPrivate(this))
 {    
 }
 

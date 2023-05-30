@@ -18,10 +18,10 @@ class QAVAudioFramePrivate;
 class Q_AVPLAYER_EXPORT QAVAudioFrame : public QAVFrame
 {
 public:
-    QAVAudioFrame(QObject *parent = nullptr);
+    QAVAudioFrame();
     ~QAVAudioFrame();
-    QAVAudioFrame(const QAVFrame &other, QObject *parent = nullptr);
-    QAVAudioFrame(const QAVAudioFrame &other, QObject *parent = nullptr);
+    QAVAudioFrame(const QAVFrame &other);
+    QAVAudioFrame(const QAVAudioFrame &other);
     QAVAudioFrame &operator=(const QAVFrame &other);
     QAVAudioFrame &operator=(const QAVAudioFrame &other);
 

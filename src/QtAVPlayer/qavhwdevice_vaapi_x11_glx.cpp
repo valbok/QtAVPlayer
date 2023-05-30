@@ -35,9 +35,8 @@ public:
     GLuint texture = 0;
 };
 
-QAVHWDevice_VAAPI_X11_GLX::QAVHWDevice_VAAPI_X11_GLX(QObject *parent)
-    : QObject(parent)
-    , d_ptr(new QAVHWDevice_VAAPI_X11_GLXPrivate)
+QAVHWDevice_VAAPI_X11_GLX::QAVHWDevice_VAAPI_X11_GLX()
+    : d_ptr(new QAVHWDevice_VAAPI_X11_GLXPrivate)
 {
 }
 

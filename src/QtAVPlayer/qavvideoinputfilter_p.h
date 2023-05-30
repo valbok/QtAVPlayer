@@ -28,7 +28,7 @@ class QAVVideoInputFilterPrivate;
 class Q_AVPLAYER_EXPORT QAVVideoInputFilter : public QAVInOutFilter
 {
 public:
-    QAVVideoInputFilter(const QAVFrame &frame, QObject *parent = nullptr);
+    QAVVideoInputFilter(const QAVFrame &frame);
     QAVVideoInputFilter(const QAVVideoInputFilter &other);
     ~QAVVideoInputFilter();
     QAVVideoInputFilter &operator=(const QAVVideoInputFilter &other);
@@ -37,7 +37,7 @@ public:
     bool supports(const QAVFrame &frame) const;
 
 protected:
-    QAVVideoInputFilter(QObject *parent = nullptr);
+    QAVVideoInputFilter();
     Q_DECLARE_PRIVATE(QAVVideoInputFilter)
 };
 

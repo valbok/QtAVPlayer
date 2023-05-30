@@ -32,8 +32,8 @@ public:
     int read(QAVStreamFrame &frame) override;
 
 protected:
-    QAVFrameCodec(QObject *parent = nullptr);
-    QAVFrameCodec(QAVCodecPrivate &d, QObject *parent = nullptr);
+    QAVFrameCodec();
+    QAVFrameCodec(QAVCodecPrivate &d);
 };
 
 QT_END_NAMESPACE

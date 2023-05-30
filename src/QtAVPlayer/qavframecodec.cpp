@@ -17,13 +17,12 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-QAVFrameCodec::QAVFrameCodec(QObject *parent)
-    : QAVCodec(parent)
+QAVFrameCodec::QAVFrameCodec()
 {
 }
 
-QAVFrameCodec::QAVFrameCodec(QAVCodecPrivate &d, QObject *parent)
-    : QAVCodec(d, parent)
+QAVFrameCodec::QAVFrameCodec(QAVCodecPrivate &d)
+    : QAVCodec(d)
 {
 }
 

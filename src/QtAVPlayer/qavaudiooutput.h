@@ -10,6 +10,7 @@
 
 #include <QtAVPlayer/qavaudioframe.h>
 #include <QtAVPlayer/qtavplayerglobal.h>
+#include <QObject>
 #include <memory>
 
 QT_BEGIN_NAMESPACE

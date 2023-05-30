@@ -10,8 +10,7 @@
 
 QT_BEGIN_NAMESPACE
 
-QAVHWDevice_D3D11::QAVHWDevice_D3D11(QObject *parent)
-    : QObject(parent)
+QAVHWDevice_D3D11::QAVHWDevice_D3D11()
 {
 }
 

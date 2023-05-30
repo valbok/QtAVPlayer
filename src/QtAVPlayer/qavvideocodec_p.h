@@ -28,7 +28,7 @@ class QAVHWDevice;
 class Q_AVPLAYER_EXPORT QAVVideoCodec : public QAVFrameCodec
 {
 public:
-    QAVVideoCodec(QObject *parent = nullptr);
+    QAVVideoCodec();
     ~QAVVideoCodec();
 
     void setDevice(const QSharedPointer<QAVHWDevice> &d);

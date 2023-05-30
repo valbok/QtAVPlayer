@@ -22,7 +22,6 @@
 #include "qavpacket_p.h"
 #include "qavframe.h"
 #include <QtAVPlayer/qtavplayerglobal.h>
-#include <QObject>
 #include <memory>
 
 QT_BEGIN_NAMESPACE
@@ -31,10 +30,10 @@ struct AVCodec;
 struct AVCodecContext;
 struct AVStream;
 class QAVCodecPrivate;
-class Q_AVPLAYER_EXPORT QAVCodec : public QObject
+class Q_AVPLAYER_EXPORT QAVCodec
 {
 public:
-    ~QAVCodec();
+    virtual ~QAVCodec();
 
     bool open(AVStream *stream);
     AVCodecContext *avctx() const;
@@ -50,8 +49,8 @@ public:
     virtual int read(QAVStreamFrame &frame) = 0;
 
 protected:
-    QAVCodec(QObject *parent = nullptr);
-    QAVCodec(QAVCodecPrivate &d, QObject *parent = nullptr);
+    QAVCodec();
+    QAVCodec(QAVCodecPrivate &d);
     std::unique_ptr<QAVCodecPrivate> d_ptr;
     Q_DECLARE_PRIVATE(QAVCodec)
 private:

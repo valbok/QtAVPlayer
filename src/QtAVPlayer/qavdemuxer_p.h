@@ -23,7 +23,6 @@
 #include "qavstream.h"
 #include "qavframe.h"
 #include "qavsubtitleframe.h"
-#include <QObject>
 #include <QMap>
 #include <memory>
 
@@ -40,10 +39,10 @@ class QAVIODevice;
 struct AVStream;
 struct AVCodecContext;
 struct AVFormatContext;
-class Q_AVPLAYER_EXPORT QAVDemuxer : public QObject
+class Q_AVPLAYER_EXPORT QAVDemuxer
 {
 public:
-    QAVDemuxer(QObject *parent = nullptr);
+    QAVDemuxer();
     ~QAVDemuxer();
 
     void abort(bool stop = true);

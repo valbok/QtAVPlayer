@@ -16,8 +16,8 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-QAVFrame::QAVFrame(QObject *parent)
-    : QAVFrame(*new QAVFramePrivate, parent)
+QAVFrame::QAVFrame()
+    : QAVFrame(*new QAVFramePrivate)
 {
 }
 
@@ -27,8 +27,8 @@ QAVFrame::QAVFrame(const QAVFrame &other)
     *this = other;
 }
 
-QAVFrame::QAVFrame(QAVFramePrivate &d, QObject *parent)
-    : QAVStreamFrame(d, parent)
+QAVFrame::QAVFrame(QAVFramePrivate &d)
+    : QAVStreamFrame(d)
 {
     d.frame = av_frame_alloc();
 }

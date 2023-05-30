@@ -15,8 +15,8 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-QAVVideoOutputFilter::QAVVideoOutputFilter(QObject *parent)
-    : QAVInOutFilter(*new QAVInOutFilterPrivate(this), parent)
+QAVVideoOutputFilter::QAVVideoOutputFilter()
+    : QAVInOutFilter(*new QAVInOutFilterPrivate(this))
 {
 }
 

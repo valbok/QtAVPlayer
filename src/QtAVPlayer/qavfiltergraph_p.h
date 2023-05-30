@@ -27,7 +27,6 @@
 #include <QtAVPlayer/qavframe.h>
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QtAVPlayer/qavaudioframe.h>
-#include <QObject>
 #include <QMutex>
 #include <memory>
 
@@ -35,10 +34,10 @@ QT_BEGIN_NAMESPACE
 
 class QAVFilterGraphPrivate;
 class QAVDemuxer;
-class Q_AVPLAYER_EXPORT QAVFilterGraph : public QObject
+class Q_AVPLAYER_EXPORT QAVFilterGraph
 {
 public:
-    QAVFilterGraph(QObject *parent = nullptr);
+    QAVFilterGraph();
     ~QAVFilterGraph();
 
     int parse(const QString &desc);

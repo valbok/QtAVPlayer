@@ -19,7 +19,7 @@ class QAVFramePrivate;
 class Q_AVPLAYER_EXPORT QAVFrame : public QAVStreamFrame
 {
 public:
-    QAVFrame(QObject *parent = nullptr);
+    QAVFrame();
     ~QAVFrame();
     QAVFrame(const QAVFrame &other);
     QAVFrame &operator=(const QAVFrame &other);
@@ -32,7 +32,7 @@ public:
     void setFilterName(const QString &name);
 
 protected:
-    QAVFrame(QAVFramePrivate &d, QObject *parent = nullptr);
+    QAVFrame(QAVFramePrivate &d);
     Q_DECLARE_PRIVATE(QAVFrame)
 };
 

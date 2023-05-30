@@ -14,10 +14,8 @@ QT_BEGIN_NAMESPACE
 QAVFilter::QAVFilter(
     const QAVStream &stream,
     const QString &name,
-    QAVFilterPrivate &d,
-    QObject *parent)
-    : QObject(parent)
-    , d_ptr(&d)
+    QAVFilterPrivate &d)
+    : d_ptr(&d)
 {
     d.stream = stream;
     d.name = name;

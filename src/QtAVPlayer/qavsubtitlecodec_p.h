@@ -29,7 +29,7 @@ class QAVSubtitleCodecPrivate;
 class Q_AVPLAYER_EXPORT QAVSubtitleCodec : public QAVCodec
 {
 public:
-    QAVSubtitleCodec(QObject *parent = nullptr);
+    QAVSubtitleCodec();
 
     int write(const QAVPacket &pkt) override;
     int read(QAVStreamFrame &frame) override;

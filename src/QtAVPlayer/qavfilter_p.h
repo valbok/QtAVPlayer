@@ -22,16 +22,15 @@
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QtAVPlayer/qavframe.h>
 #include <QtAVPlayer/qavstream.h>
-#include <QObject>
 #include <memory>
 
 QT_BEGIN_NAMESPACE
 
 class QAVFilterPrivate;
-class Q_AVPLAYER_EXPORT QAVFilter : public QObject
+class Q_AVPLAYER_EXPORT QAVFilter
 {
 public:
-    ~QAVFilter();
+    virtual ~QAVFilter();
 
     virtual int write(const QAVFrame &frame) = 0;
     virtual void read(QAVFrame &frame) = 0;
@@ -43,8 +42,7 @@ protected:
     QAVFilter(
         const QAVStream &stream,
         const QString &name,
-        QAVFilterPrivate &d,
-        QObject *parent = nullptr);
+        QAVFilterPrivate &d);
     std::unique_ptr<QAVFilterPrivate> d_ptr;
     Q_DECLARE_PRIVATE(QAVFilter)
 private:

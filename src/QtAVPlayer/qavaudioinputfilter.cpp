@@ -41,13 +41,13 @@ public:
 #endif
 };
 
-QAVAudioInputFilter::QAVAudioInputFilter(QObject *parent)
-    : QAVInOutFilter(*new QAVAudioInputFilterPrivate(this), parent)
+QAVAudioInputFilter::QAVAudioInputFilter()
+    : QAVInOutFilter(*new QAVAudioInputFilterPrivate(this))
 {
 }
 
-QAVAudioInputFilter::QAVAudioInputFilter(const QAVFrame &frame, QObject *parent)
-    : QAVAudioInputFilter(parent)
+QAVAudioInputFilter::QAVAudioInputFilter(const QAVFrame &frame)
+    : QAVAudioInputFilter()
 {
     Q_D(QAVAudioInputFilter);
     const auto & frm = frame.frame();

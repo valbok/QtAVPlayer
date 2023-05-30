@@ -16,21 +16,20 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-QAVInOutFilter::QAVInOutFilter(QObject *parent)
-    : QAVInOutFilter(*new QAVInOutFilterPrivate(this), parent)
+QAVInOutFilter::QAVInOutFilter()
+    : QAVInOutFilter(*new QAVInOutFilterPrivate(this))
 {
 }
 
-QAVInOutFilter::QAVInOutFilter(QAVInOutFilterPrivate &d, QObject *parent)
-    : QObject(parent)
-    , d_ptr(&d)
+QAVInOutFilter::QAVInOutFilter(QAVInOutFilterPrivate &d)
+    : d_ptr(&d)
 {
 }
 
 QAVInOutFilter::~QAVInOutFilter() = default;
 
 QAVInOutFilter::QAVInOutFilter(const QAVInOutFilter &other)
-    : QAVInOutFilter(nullptr)
+    : QAVInOutFilter()
 {
     *this = other;
 }

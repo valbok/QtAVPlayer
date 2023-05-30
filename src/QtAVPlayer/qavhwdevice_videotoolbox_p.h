@@ -25,10 +25,10 @@
 QT_BEGIN_NAMESPACE
 
 class QAVHWDevice_VideoToolboxPrivate;
-class Q_AVPLAYER_EXPORT QAVHWDevice_VideoToolbox : public QObject, public QAVHWDevice
+class Q_AVPLAYER_EXPORT QAVHWDevice_VideoToolbox : public QAVHWDevice
 {
 public:
-    QAVHWDevice_VideoToolbox(QObject *parent = nullptr);
+    QAVHWDevice_VideoToolbox();
     ~QAVHWDevice_VideoToolbox();
 
     AVPixelFormat format() const override;

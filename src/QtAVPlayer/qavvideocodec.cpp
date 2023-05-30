@@ -121,8 +121,8 @@ static AVPixelFormat negotiate_pixel_format(AVCodecContext *c, const AVPixelForm
     return pf;
 }
 
-QAVVideoCodec::QAVVideoCodec(QObject *parent)
-    : QAVFrameCodec(*new QAVVideoCodecPrivate, parent)
+QAVVideoCodec::QAVVideoCodec()
+    : QAVFrameCodec(*new QAVVideoCodecPrivate)
 {
     d_ptr->avctx->opaque = d_ptr.get();
     d_ptr->avctx->get_format = negotiate_pixel_format;
