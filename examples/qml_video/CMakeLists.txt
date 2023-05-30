@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 project(qml_video LANGUAGES CXX)
 
-add_definitions(-std=c++1z)
-
 if(Qt6_FOUND)
     find_package(Qt6 COMPONENTS QmlTools Quick REQUIRED)
     qt6_add_resources(QT_RESOURCES qml_qt6.qrc)
@@ -19,22 +17,28 @@ set(SOURCES main.cpp)
 
 add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${QT_RESOURCES})
 if(NOT WIN32)
+    add_definitions(-std=c++1z)
     target_compile_options(${PROJECT_NAME} PRIVATE -fPIC)
 endif()
 add_dependencies(${PROJECT_NAME} QtAVPlayer)
 
+set(LIBS QtAVPlayer ${LIBAV})
+
 if(Qt6_FOUND)
-    target_link_libraries(${PROJECT_NAME} QtAVPlayer Qt6::Core Qt6::Gui Qt6::Multimedia Qt6::Quick Qt6::MultimediaQuickPrivate ${LIBAV})
+    set(LIBS ${LIBS} Qt6::Core Qt6::Gui Qt6::Multimedia Qt6::Quick Qt6::MultimediaQuickPrivate)
 else()
+    set(LIBS ${LIBS} Qt5::Core Qt5::Gui Qt5::Quick Qt5::Multimedia ${MultimediaQuick_LIBRARY})
     if (Qt5Core_VERSION VERSION_LESS 5.15.0)
         find_library(MultimediaQuick_LIBRARY REQUIRED NAMES Qt5MultimediaQuick)
-        target_link_libraries(${PROJECT_NAME} QtAVPlayer Qt5::Core Qt5::Gui Qt5::Quick Qt5::Multimedia ${MultimediaQuick_LIBRARY} ${LIBAV})
+        set(LIBS ${LIBS} ${MultimediaQuick_LIBRARY})
     else()
         find_package(Qt5 COMPONENTS MultimediaQuick REQUIRED)
         include_directories(${Qt5MultimediaQuick_PRIVATE_INCLUDE_DIRS})
-        target_link_libraries(${PROJECT_NAME} QtAVPlayer Qt5::Core Qt5::Gui Qt5::Quick Qt5::Multimedia Qt5::MultimediaQuick ${LIBAV})
+        set(LIBS ${LIBS} Qt5::MultimediaQuick)
     endif()
 endif()
+
+target_link_libraries(${PROJECT_NAME} ${LIBS})
 
 install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION "${INSTALL_EXAMPLEDIR}"

@@ -106,16 +106,24 @@ jobs:
       - name: Set environment path
         run: |
           echo "/usr/local/opt/qt5/bin" >> $GITHUB_PATH
+          echo "/usr/local/Cellar/ffmpeg/6.0/include" >> $GITHUB_PATH
           echo "/usr/local/opt/llvm@9/bin" >> $GITHUB_PATH
 
-      - name: Build
+      - name: CMake Build
+        run: |
+          mkdir build
+          cd build
+          cmake ../ -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=/usr/local/Cellar/ffmpeg/6.0/include -DCMAKE_LIBRARY_PATH=/usr/local/Cellar/ffmpeg/6.0/lib
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
+
+      - name: QMake Build
         run: |
           ffmpeg -version
           qmake
           make CC=$CC CXX=$CXX CXXFLAGS="$CXXFLAGS"
           make install
 
-      - name: Test
+      - name: QMake Test
         run: |
           cd tests/
           qmake
@@ -159,21 +167,30 @@ jobs:
           unzip %FFMPEG_NAME%.zip
           ren %FFMPEG_NAME% ffmpeg
           dir ffmpeg
+          dir ffmpeg\include
           dir ffmpeg\bin
+          dir D:\a\QtAVPlayer\Qt\5.15.2\msvc2019_64\lib\
           SET FFMPEG=%CD%\ffmpeg
           echo FFMPEG=%FFMPEG%>>%GITHUB_ENV%
           echo PATH=%FFMPEG%\lib;%FFMPEG%\bin;%PATH%>>%GITHUB_ENV%
           echo INCLUDE=%FFMPEG%\include;%INCLUDE%>>%GITHUB_ENV%
           echo LIB=%FFMPEG%\lib;%FFMPEG%\bin;%LIB%>>%GITHUB_ENV%
 
-      - name: Build
+      - name: CMake Build
+        run: |
+          mkdir build
+          cd build
+          cmake ../ -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib -DBUILD_SHARED_LIBS=ON
+          cmake --build . -v
+
+      - name: QMake Build
         shell: cmd
         run: |
           qmake
           nmake
           nmake install
 
-      - name: Test
+      - name: QMake Test
         shell: cmd
         run: |
           set QT_LOGGING_RULES=qt.QtAVPlayer.debug=true
@@ -201,7 +218,10 @@ jobs:
       - name: Install Qt 5.15
         uses: jurplel/install-qt-action@v3
         with:
+          aqtversion: '==3.1.*'
           arch: win64_mingw81
+          host: 'windows'
+          target: 'desktop'
           version: 5.15.2
 
       - name: Install FFmpeg
@@ -217,6 +237,7 @@ jobs:
           ren %FFMPEG_NAME% ffmpeg
           dir ffmpeg
           dir ffmpeg\bin
+          dir D:\a\QtAVPlayer\Qt\5.15.2\mingw81_64\lib\
           SET FFMPEG=%CD%\ffmpeg
           echo FFMPEG=%FFMPEG%>>%GITHUB_ENV%
           echo PATH=%FFMPEG%\lib;%FFMPEG%\bin;%PATH%>>%GITHUB_ENV%
@@ -225,14 +246,21 @@ jobs:
           echo CPLUS_INCLUDE_PATH=%FFMPEG%\include;%CPLUS_INCLUDE_PATH%>>%GITHUB_ENV%
           echo LIB=%FFMPEG%\lib;%FFMPEG%\bin;%LIB%>>%GITHUB_ENV%
 
-      - name: Build
+      - name: CMake Build
+        run: |
+          mkdir build
+          cd build
+          cmake ../ -DBUILD_TESTS=ON -DBUILD_EXAMPLES=OFF -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib -DBUILD_SHARED_LIBS=OFF
+          cmake --build . -v
+
+      - name: QMake Build
         shell: cmd
         run: |
           qmake
           mingw32-make
           mingw32-make install
 
-      - name: Test
+      - name: QMake Test
         shell: cmd
         run: |
           set QT_LOGGING_RULES=qt.QtAVPlayer.debug=true

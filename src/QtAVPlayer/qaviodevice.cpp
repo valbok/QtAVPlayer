@@ -33,7 +33,7 @@ public:
         : q_ptr(q)
         , device(device)
         , buffer(static_cast<unsigned char*>(av_malloc(buffer_size)))
-        , ctx(avio_alloc_context(buffer, buffer_size, 0, this, &QAVIODevicePrivate::read, nullptr, !device.isSequential() ? &QAVIODevicePrivate::seek : nullptr))
+        , ctx(avio_alloc_context(buffer, static_cast<int>(buffer_size), 0, this, &QAVIODevicePrivate::read, nullptr, !device.isSequential() ? &QAVIODevicePrivate::seek : nullptr))
     {
         if (!device.isSequential())
             ctx->seekable = AVIO_SEEKABLE_NORMAL;

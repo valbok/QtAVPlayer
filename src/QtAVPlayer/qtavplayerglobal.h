@@ -8,13 +8,13 @@
 #ifndef QTAVPLAYERGLOBAL_H
 #define QTAVPLAYERGLOBAL_H
 
-#include <QtGui/qtguiglobal.h>
+#include <QtCore/qglobal.h>
 #include <QtAVPlayer/qtQtAVPlayer-config.h>
 
 QT_BEGIN_NAMESPACE
 
 #ifndef QT_STATIC
-#    if defined(QT_BUILD_QTAVPLAYER_LIB)
+#    ifdef QT_BUILD_QTAVPLAYER_LIB
 #        define Q_AVPLAYER_EXPORT Q_DECL_EXPORT
 #    else
 #        define Q_AVPLAYER_EXPORT Q_DECL_IMPORT
