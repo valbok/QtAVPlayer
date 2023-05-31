@@ -7,12 +7,11 @@ project(QtAVPlayer
     LANGUAGES CXX C
 )
 
-add_definitions(-std=c++17)
-
 if(NOT WIN32)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     set(CXX_FLAGS "-Wall" "-pedantic")
     set(CMAKE_CXX_FLAGS, "${CXX_FLAGS}")
+    add_definitions(-std=c++17)
 endif()
 
 set(QT_DEFAULT_MAJOR_VERSION 6)
@@ -73,7 +72,11 @@ option(BUILD_EXAMPLES "Build examples" OFF)
 if(Qt6_FOUND)
     message(STATUS "Using Qt6")
 else()
-    message(STATUS "Using Qt5")
+    if(Qt5_FOUND)
+        message(STATUS "Using Qt5")
+    else()
+        message(FATAL_ERROR "Qt has not been found!")
+    endif()
 endif()
 message(STATUS "Enable Qt Multimedia: " ${multimedia})
 message(STATUS "Enable libva-x11: " ${va_x11})

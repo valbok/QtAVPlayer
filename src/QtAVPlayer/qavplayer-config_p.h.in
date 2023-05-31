@@ -5,26 +5,26 @@
 #cmakedefine vdpau 1
 #cmakedefine egl 1
 
-#if defined(va_x11)
+#ifdef va_x11
 #define QT_FEATURE_va_x11 1
 #else
 #define QT_FEATURE_va_x11 -1
 #endif
 
-#if defined(va_drm)
+#ifdef va_drm
 #define QT_FEATURE_va_drm 1
 #else
 #define QT_FEATURE_va_drm -1
 #endif
 
-#if defined(vdpau)
+#ifdef vdpau
 #define QT_FEATURE_vdpau 1
 #else
 #define QT_FEATURE_vdpau -1
 #endif
 
 #ifndef QT_FEATURE_egl
-#if defined(egl)
+#ifdef egl
 #define QT_FEATURE_egl 1
 #else
 #define QT_FEATURE_egl -1

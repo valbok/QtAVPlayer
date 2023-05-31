@@ -431,7 +431,7 @@ int QAVDemuxer::resetCodecs()
                 d->availableStreams.push_back({ int(i), d->ctx, nullptr });
                 break;
         }
-        auto &s = d->availableStreams[i];
+        auto &s = d->availableStreams[int(i)];
         d->progress.push_back({ s.duration(), s.framesCount(), s.frameRate() });
     }
 
