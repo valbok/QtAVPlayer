@@ -135,13 +135,19 @@ jobs:
           cd qavplayer
           ./tst_qavplayer --platform minimal -maxwarnings 100000
 
-  windows-vs:
+  windows:
+    strategy:
+      matrix:
+        qt_version: ["5.15.2"]
+        type: ["MSVC", "MINGW"]
+
     runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v3
 
       - name: Init vs environment
+        if: ${{ matrix.type == 'MSVC' }}
         uses: egor-tensin/vs-shell@v2
         with:
           arch: x64
@@ -150,10 +156,18 @@ jobs:
         run: |
           choco install wget unzip xidel
 
-      - name: Install Qt 5.15
+      - name: Install Qt
+        if: ${{ matrix.type == 'MINGW' }}
         uses: jurplel/install-qt-action@v3
         with:
-          version: 5.15.2
+          arch: win64_mingw81
+          version: ${{ matrix.qt_version }}
+
+      - name: Install Qt
+        if: ${{ matrix.type == 'MSVC' }}
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ matrix.qt_version }}
 
       - name: Install FFmpeg
         shell: cmd
@@ -169,75 +183,6 @@ jobs:
           dir ffmpeg
           dir ffmpeg\include
           dir ffmpeg\bin
-          dir D:\a\QtAVPlayer\Qt\5.15.2\msvc2019_64\lib\
-          SET FFMPEG=%CD%\ffmpeg
-          echo FFMPEG=%FFMPEG%>>%GITHUB_ENV%
-          echo PATH=%FFMPEG%\lib;%FFMPEG%\bin;%PATH%>>%GITHUB_ENV%
-          echo INCLUDE=%FFMPEG%\include;%INCLUDE%>>%GITHUB_ENV%
-          echo LIB=%FFMPEG%\lib;%FFMPEG%\bin;%LIB%>>%GITHUB_ENV%
-
-      - name: CMake Build
-        run: |
-          mkdir build
-          cd build
-          cmake ../ -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib -DBUILD_SHARED_LIBS=ON
-          cmake --build . -v
-
-      - name: QMake Build
-        shell: cmd
-        run: |
-          qmake
-          nmake
-          nmake install
-
-      - name: QMake Test
-        shell: cmd
-        run: |
-          set QT_LOGGING_RULES=qt.QtAVPlayer.debug=true
-          set QT_FORCE_STDERR_LOGGING=1
-          set QT_ASSUME_STDERR_HAS_CONSOLE=1
-          cd tests/
-          qmake
-          nmake
-          cd auto/integration/qavdemuxer
-          release\tst_qavdemuxer.exe
-          cd ../
-          cd qavplayer
-          release\tst_qavplayer.exe -maxwarnings 100000
-
-  windows-mingw:
-    runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install wget & unzip
-        run: |
-          choco install wget unzip xidel
-
-      - name: Install Qt 5.15
-        uses: jurplel/install-qt-action@v3
-        with:
-          aqtversion: '==3.1.*'
-          arch: win64_mingw81
-          host: 'windows'
-          target: 'desktop'
-          version: 5.15.2
-
-      - name: Install FFmpeg
-        shell: cmd
-        run: |
-          cd ..
-          xidel https://github.com/BtbN/FFmpeg-Builds/releases -e "//a[contains(@href, '-gpl-shared.zip')]/@href[1]" --silent > ffmpeg.url
-          xidel https://github.com/BtbN/FFmpeg-Builds/releases -e "(//a[contains(@href, '-gpl-shared.zip')])[1]/substring(., 0, string-length(.) - 3)" --silent > ffmpeg.name
-          set /P FFMPEG_URL=< ffmpeg.url
-          set /P FFMPEG_NAME=< ffmpeg.name
-          wget https://github.com%FFMPEG_URL%
-          unzip %FFMPEG_NAME%.zip
-          ren %FFMPEG_NAME% ffmpeg
-          dir ffmpeg
-          dir ffmpeg\bin
-          dir D:\a\QtAVPlayer\Qt\5.15.2\mingw81_64\lib\
           SET FFMPEG=%CD%\ffmpeg
           echo FFMPEG=%FFMPEG%>>%GITHUB_ENV%
           echo PATH=%FFMPEG%\lib;%FFMPEG%\bin;%PATH%>>%GITHUB_ENV%
@@ -247,6 +192,15 @@ jobs:
           echo LIB=%FFMPEG%\lib;%FFMPEG%\bin;%LIB%>>%GITHUB_ENV%
 
       - name: CMake Build
+        if: ${{ matrix.type == 'MSVC' }}
+        run: |
+          mkdir build
+          cd build
+          cmake ../ -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib -DBUILD_SHARED_LIBS=ON
+          cmake --build . -v
+
+      - name: CMake Build
+        if: ${{ matrix.type == 'MINGW' }}
         run: |
           mkdir build
           cd build
@@ -254,6 +208,31 @@ jobs:
           cmake --build . -v
 
       - name: QMake Build
+        if: ${{ matrix.type == 'MSVC' }}
+        shell: cmd
+        run: |
+          qmake
+          nmake
+          nmake install
+
+      - name: QMake Test
+        if: ${{ matrix.type == 'MSVC' }}
+        shell: cmd
+        run: |
+          set QT_LOGGING_RULES=qt.QtAVPlayer.debug=true
+          set QT_FORCE_STDERR_LOGGING=1
+          set QT_ASSUME_STDERR_HAS_CONSOLE=1
+          cd tests/
+          qmake
+          nmake
+          cd auto/integration/qavdemuxer
+          release\tst_qavdemuxer.exe
+          cd ../
+          cd qavplayer
+          release\tst_qavplayer.exe -maxwarnings 100000
+
+      - name: QMake Build
+        if: ${{ matrix.type == 'MINGW' }}
         shell: cmd
         run: |
           qmake
@@ -261,6 +240,7 @@ jobs:
           mingw32-make install
 
       - name: QMake Test
+        if: ${{ matrix.type == 'MINGW' }}
         shell: cmd
         run: |
           set QT_LOGGING_RULES=qt.QtAVPlayer.debug=true
@@ -274,3 +254,4 @@ jobs:
           cd ../
           cd qavplayer
           release\tst_qavplayer.exe -maxwarnings 100000
+
