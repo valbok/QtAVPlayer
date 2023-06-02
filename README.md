@@ -210,6 +210,10 @@ Don't forget to set extra libs in pro file for your app:
 
     ANDROID_EXTRA_LIBS += /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavdevice.so /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavformat.so /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavutil.so /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavcodec.so /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavfilter.so /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libswscale.so /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libswresample.so
 
+- cmake
+
+      cmake .. -DCMAKE_PREFIX_PATH=/opt/Qt/6.4.3/android_armv7/lib/cmake/Qt6 -DCMAKE_INSTALL_PREFIX=/opt/QtAVPlayer/install -DCMAKE_LIBRARY_PATH="/opt/6.4.3/android_armv7/lib;/opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/" -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=/opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/include -DBUILD_EXAMPLES=ON -DQT_QMAKE_TARGET_MKSPEC=android-clang -DANDROID_SDK_ROOT=/home/val/Android/Sdk -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk-r25c/build/cmake/android.toolchain.cmake -DANDROID_ABI=armeabi-v7a -DQt6_DIR=/opt/Qt/6.4.3/android_armv7/lib/cmake/Qt6 -DQT_DEBUG_FIND_PACKAGE=ON -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON -DCMAKE_FIND_DEBUG_MODE=OFF -DANDROID_STL="c++_shared"
+
 
 ## Windows and MSVC:
 
