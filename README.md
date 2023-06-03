@@ -22,7 +22,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
 - Designed to be as simple and understandable as possible, to share knowledge about creating efficient FFmpeg applications.
 - Might be used for media analytics software like [qctools](https://github.com/bavc/qctools) or [dvrescue](https://github.com/mipops/dvrescue).
 - Implemented as a Qt module using QMake and also supports CMake.
-- Strange to say this in 21 century, but each feature is covered by integration tests.
+- Strange to say this in 21st century, but each feature is covered by integration tests.
 - Implements and replaces a combination of FFmpeg and FFplay:
 
       ffmpeg -i we-miss-gst-pipeline-in-qt6mm.mkv -filter_complex "qt,nev:er,wanted;[ffmpeg];what:happened" - | ffplay -
