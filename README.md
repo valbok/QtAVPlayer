@@ -6,6 +6,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
 - Supports a synchronization of frames like in FFplay and a decoding like in FFmpeg.
 - Supports [FFmpeg Bitstream Filters](https://ffmpeg.org/ffmpeg-bitstream-filters.html) and [FFmpeg Filters](https://ffmpeg.org/ffmpeg-filters.html) including _simplified_ `filter_complex`.
 - Supports multiple parallel filters for one input (one input frame and multiple output ones).
+- Supports decoding all available streams at the same time.
 - Based on Qt platform the video frames are sent using specific hardware context:
   * `VA-API` for Linux: DRM with EGL or X11 with GLX.
   * `VDPAU` for Linux.
