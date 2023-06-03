@@ -172,7 +172,9 @@ Free and open-source Qt Media Player library based on FFmpeg.
   * `D3D11` for Windows: the frames should be mapped to CPU memory. D3D11 Textures are not yet supported. 
   * `MediaCodec` for Android: the frames are returned with OpenGL textures.
 
-10. QtMultimedia could be used to render video frames to QML or Widgets. See [examples](examples).
+10. QtMultimedia could be used to render video frames to QML or Widgets. See [examples](examples):
+
+    `$ ./qml_video :/valbok`
 
 11. Qt 5.12 - **6**.x is supported
 
