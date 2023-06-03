@@ -22,6 +22,7 @@
 #include <QGuiApplication>
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QFile>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -159,7 +160,14 @@ int main(int argc, char *argv[])
                 qDebug() << "ass:" << frame.subtitle()->rects[i]->ass;
         }
     });
-    p.setSource(file);
+
+    std::unique_ptr<QFile> qrc;
+    if (file.startsWith(":/")) {
+        qrc = std::make_unique<QFile>(file);
+        if (!qrc->open(QIODevice::ReadOnly))
+            qrc.reset();
+    }
+    p.setSource(file, qrc.get());
     //p.setSynced(false);
     p.play();
     p.setFilter(filter);
