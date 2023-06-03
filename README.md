@@ -15,21 +15,21 @@ Free and open-source Qt Media Player library based on FFmpeg.
   
   Note: Not all ffmpeg decoders or filters support HW acceleration. In this case software decoders are used.
 - It is up to an application to decide how to process the frames.
-  * But there is _experimental_ support of converting video frames to QtMultimedia's [QVideoFrame](https://doc.qt.io/qt-5/qvideoframe.html) for copy-free rendering if possible.
+  * But there is _experimental_ support of converting the video frames to QtMultimedia's [QVideoFrame](https://doc.qt.io/qt-5/qvideoframe.html) for copy-free rendering if possible.
   Note: Not all Qt's renders support copy-free rendering. Also QtMultimedia does not always provide public API to render the video frames. And, of course, for best performance both decoding and rendering should be accelerated.
   * Audio frames could be played by `QAVAudioOutput` which is a wrapper of QtMultimedia's [QAudioSink](https://doc-snapshots.qt.io/qt6-dev/qaudiosink.html)
 - Supports accurate seek, it starts playing the closest frame. No weird jumps on pts anymore.
 - Designed to be as simple and understandable as possible, to share knowledge about creating efficient FFmpeg applications.
 - Might be used for media analytics software like [qctools](https://github.com/bavc/qctools) or [dvrescue](https://github.com/mipops/dvrescue).
 - Implemented as a Qt module using QMake and also supports CMake.
-- Each feature is covered by integration tests.
+- Strange to say this in 21 century, but each feature is covered by integration tests.
 - Implements and replaces a combination of FFmpeg and FFplay:
 
-      ffmpeg -i return-our-2007.mkv -filter_complex "very;weird;filter" - | ffplay -
+      ffmpeg -i we-miss-gst-pipeline-in-qt6mm.mkv -filter_complex "qt,nev:er,wanted;[ffmpeg];what:happened" - | ffplay -
 
   but using QML or Qt Widgets:
 
-      ./qml_video we-miss-gst-pipeline-in-qt6mm.mkv "qt,nev:er,wanted;[ffmpeg];what:happened"
+      ./qml_video :/valbok "if:you:like[cats];remove[this]"
 
 # Features
 
@@ -172,10 +172,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
   * `D3D11` for Windows: the frames should be mapped to CPU memory. D3D11 Textures are not yet supported. 
   * `MediaCodec` for Android: the frames are returned with OpenGL textures.
 
-10. QtMultimedia could be used to render video frames to QML or Widgets. See [examples](examples):
-
-    `$ ./qml_video :/valbok`
-
+10. QtMultimedia could be used to render video frames to QML or Widgets. See [examples](examples)
 11. Qt 5.12 - **6**.x is supported
 
 # How to build
