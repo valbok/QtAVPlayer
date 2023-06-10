@@ -40,7 +40,6 @@ QAVHWDevice_MediaCodec::~QAVHWDevice_MediaCodec()
 
 void QAVHWDevice_MediaCodec::init(AVCodecContext *avctx)
 {
-    Q_UNUSED(avctx);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     AVBufferRef *hw_device_ctx = avctx->hw_device_ctx;
     if (hw_device_ctx) {
@@ -52,6 +51,8 @@ void QAVHWDevice_MediaCodec::init(AVCodecContext *avctx)
                 mediaDeviceContext->surface = androidSurfaceTexture->surface();
         }
     }
+#else
+    Q_UNUSED(avctx);
 #endif
 }
 
@@ -79,7 +80,7 @@ public:
         return QAVVideoFrame::GLTextureHandle;
     }
 
-    QVariant handle() const override
+    QVariant handle(QRhi */*rhi*/) const override
     {
         if (!androidSurfaceTexture->isValid())
             return {};

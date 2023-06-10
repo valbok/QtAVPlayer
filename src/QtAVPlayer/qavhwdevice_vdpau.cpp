@@ -213,7 +213,7 @@ public:
         return gl_texture;
     }
 
-    QVariant handle() const override
+    QVariant handle(QRhi */*rhi*/) const override
     {
         return const_cast<VideoBuffer_VDPAU_GLX *>(this)->texture();
     }

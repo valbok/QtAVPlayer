@@ -83,7 +83,7 @@ public:
         return QAVVideoFrame::GLTextureHandle;
     }
 
-    QVariant handle() const override
+    QVariant handle(QRhi */*rhi*/) const override
     {
         if (!s_glXBindTexImageEXT) {
             qWarning() << "Could not get proc address: s_glXBindTexImageEXT";

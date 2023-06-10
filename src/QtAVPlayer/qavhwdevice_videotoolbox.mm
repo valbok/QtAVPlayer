@@ -65,7 +65,7 @@ public:
         return QAVVideoFrame::MTLTextureHandle;
     }
 
-    QVariant handle() const override
+    QVariant handle(QRhi */*rhi*/) const override
     {
         CVPixelBufferRelease(m_hw->pbuf);
         m_hw->pbuf = (CVPixelBufferRef)frame().frame()->data[3];
