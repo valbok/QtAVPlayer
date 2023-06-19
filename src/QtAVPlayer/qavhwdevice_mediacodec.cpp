@@ -9,6 +9,7 @@
 #include "qavvideobuffer_gpu_p.h"
 #include "qavcodec_p.h"
 #include "qavandroidsurfacetexture_p.h"
+#include <GLES/gl.h>
 
 extern "C" {
 #include <libavutil/pixdesc.h>

@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 #endif
     });
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
         // Might download and convert data
         QVideoFrame videoFrame = frame;
