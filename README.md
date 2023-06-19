@@ -170,7 +170,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
    
   * `VA-API` and `VDPAU` for Linux: the frames are returned with OpenGL textures.
   * `Video Toolbox` for macOS and iOS: the frames are returned with Metal Textures.
-  * `D3D11` for Windows: the frames should be mapped to CPU memory. D3D11 Textures are not yet supported. 
+  * `D3D11` for Windows: the frames are returned with D3D11Texture2D textures. 
   * `MediaCodec` for Android: the frames are returned with OpenGL textures.
 
 10. QtMultimedia could be used to render video frames to QML or Widgets. See [examples](examples)
