@@ -93,18 +93,23 @@ int main(int argc, char *argv[])
 
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
         rootObject->setProperty("frame_fps", p.progress(frame.stream()).fps());
-
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         // Might download and convert data
         QVideoFrame videoFrame = frame;
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         if (!videoSurface->isActive())
             videoSurface->start({videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType()});
         if (videoSurface->isActive())
             videoSurface->present(videoFrame);
-#else
-        videoSurface->setVideoFrame(videoFrame);
 #endif
     });
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
+        // Might download and convert data
+        QVideoFrame videoFrame = frame;
+        videoSurface->setVideoFrame(videoFrame);
+    }, Qt::DirectConnection);
+#endif
 
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); });
     QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QLatin1String("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
@@ -168,9 +173,9 @@ int main(int argc, char *argv[])
             qrc.reset();
     }
     p.setSource(file, qrc.get());
-    //p.setSynced(false);
     p.play();
     p.setFilter(filter);
+    //p.setSynced(false);
 
     viewer.setMinimumSize(QSize(300, 360));
     viewer.resize(1960, 1086);

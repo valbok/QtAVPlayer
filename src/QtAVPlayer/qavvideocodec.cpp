@@ -105,6 +105,7 @@ static AVPixelFormat negotiate_pixel_format(AVCodecContext *c, const AVPixelForm
     if (d->hw_device) {
         for (auto f : hardwareFormats) {
             if (f == d->hw_device->format()) {
+                d->hw_device->init(c);
                 pf = d->hw_device->format();
                 decStr = "hardware";
                 break;

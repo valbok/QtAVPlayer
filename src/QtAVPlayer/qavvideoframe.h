@@ -22,6 +22,9 @@ QT_BEGIN_NAMESPACE
 
 class QAVVideoFramePrivate;
 class QAVCodec;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+class QRhi;
+#endif
 class Q_AVPLAYER_EXPORT QAVVideoFrame : public QAVFrame
 {
 public:
@@ -29,7 +32,8 @@ public:
     {
         NoHandle,
         GLTextureHandle,
-        MTLTextureHandle
+        MTLTextureHandle,
+        D3D11Texture2DHandle
     };
 
     QAVVideoFrame();
@@ -52,8 +56,11 @@ public:
 
     MapData map() const;
     HandleType handleType() const;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QVariant handle(QRhi *rhi = nullptr) const;
+#else
     QVariant handle() const;
-
+#endif
     AVPixelFormat format() const;
     QString formatName() const;
     QAVVideoFrame convertTo(AVPixelFormat fmt) const;

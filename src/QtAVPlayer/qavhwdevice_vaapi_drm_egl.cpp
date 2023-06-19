@@ -82,7 +82,7 @@ public:
         return QList<QVariant>() << m_hw->textures[0] << m_hw->textures[1];
     }
 
-    QVariant handle() const override
+    QVariant handle(QRhi */*rhi*/) const override
     {
         if (!m_hw->textures[0])
             glGenTextures(2, m_hw->textures);

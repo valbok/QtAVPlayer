@@ -176,7 +176,6 @@ static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, Q
                 qDebug() << "Using hardware device context:" << deviceName;
                 codec.avctx()->hw_device_ctx = hw_device_ctx;
                 codec.avctx()->pix_fmt = device->format();
-                device->init(codec.avctx());
                 codec.setDevice(device);
                 break;
             }

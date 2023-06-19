@@ -14,6 +14,11 @@ if(NOT WIN32)
     add_definitions(-std=c++17)
 endif()
 
+if(MSVC)
+    # error D8016: '/O2' and '/RTC1' command-line options are incompatible
+    string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+endif()
+
 set(QT_DEFAULT_MAJOR_VERSION 6)
 set(MULTIMEDIA_FOUND FALSE)
 find_package(Qt6 COMPONENTS CoreTools)
