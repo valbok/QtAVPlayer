@@ -116,7 +116,7 @@ QAVVideoFrame::HandleType QAVVideoFrame::handleType() const
     return d->videoBuffer().handleType();
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 QVariant QAVVideoFrame::handle(QRhi *rhi) const
 {
     Q_D(const QAVVideoFrame);
@@ -228,14 +228,6 @@ public:
     {
     }
 
-    std::unique_ptr<QVideoFrameTextures> mapTextures(QRhi *rhi) override
-    {
-        m_rhi = rhi;
-        if (m_textures.isNull())
-            m_textures = m_frame.handle(m_rhi);
-        return nullptr;
-    }
-
     quint64 textureHandle(int plane) const override
     {
         if (m_textures.isNull())
@@ -271,6 +263,15 @@ public:
         return res;
     }
     void unmap() override { m_mode = QVideoFrame::NotMapped; }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+    std::unique_ptr<QVideoFrameTextures> mapTextures(QRhi *rhi) override
+    {
+        m_rhi = rhi;
+        if (m_textures.isNull())
+            m_textures = m_frame.handle(m_rhi);
+        return nullptr;
+    }
 
     static QVideoFrameFormat::ColorSpace colorSpace(const AVFrame *frame)
     {
@@ -358,12 +359,16 @@ public:
         }
         return maxNits;
     }
+#endif
 
 private:
     QAVVideoFrame m_frame;
     QVideoFrameFormat::PixelFormat m_pixelFormat = QVideoFrameFormat::Format_Invalid;
     QVideoFrame::MapMode m_mode = QVideoFrame::NotMapped;
     QVariant m_textures;
+#if QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
+    QRhi *m_rhi = nullptr;
+#endif
 };
 
 #endif // #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -454,10 +459,12 @@ QAVVideoFrame::operator QVideoFrame() const
     return QVideoFrame(new PlanarVideoBuffer(result, type), size(), format);
 #else
     QVideoFrameFormat videoFormat(size(), format);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
     videoFormat.setColorSpace(PlanarVideoBuffer::colorSpace(frame()));
     videoFormat.setColorTransfer(PlanarVideoBuffer::colorTransfer(frame()));
     videoFormat.setColorRange(PlanarVideoBuffer::colorRange(frame()));
-    videoFormat.setMaxLuminance(PlanarVideoBuffer::maxNits(frame()));    
+    videoFormat.setMaxLuminance(PlanarVideoBuffer::maxNits(frame()));
+#endif
     return QVideoFrame(new PlanarVideoBuffer(result, format, type), videoFormat);
 #endif
 }
