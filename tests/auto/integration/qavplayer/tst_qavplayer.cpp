@@ -2823,7 +2823,7 @@ void tst_QAVPlayer::changeFormat()
     QAVPlayer p;
     QFileInfo file(testData("1.dv"));
     p.setSource(file.absoluteFilePath());
-    p.setFilter("drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36");
+    p.setFilter("[0:v]split=2[in1][in2];[in1]boxblur[out1];[in2]negate[out2]");
     QAVVideoFrame videoFrame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
         videoFrame = frame;
@@ -2840,7 +2840,7 @@ void tst_QAVPlayer::filterName()
     QAVPlayer p;
     QFileInfo file(testData("small.mp4"));
     p.setSource(file.absoluteFilePath());
-    p.setFilter("drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36");
+    p.setFilter("scale=iw/2:-1");
     QSet<QString> set;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
         qDebug() << frame.pts() << frame.filterName();
@@ -2857,19 +2857,19 @@ void tst_QAVPlayer::filterName()
     QTRY_VERIFY(set.contains("out1"));
     QTRY_VERIFY(set.contains("out2"));
     set.clear();
-    p.setFilter("[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[out3]");
+    p.setFilter("[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]scale=iw/2:-1[out3]");
     QTRY_VERIFY_WITH_TIMEOUT(set.size() >= 3, 30000);
     QTRY_VERIFY(set.contains("out1"));
     QTRY_VERIFY(set.contains("out2"));
     QTRY_VERIFY(set.contains("out3"));
     set.clear();
     p.setFilters({
-            "drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[drawtext]",
+            "scale=iw/2:-1[scale]",
             "negate[negate]",
-            "[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[out3]"
+            "[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]scale=iw/2:-1[out3]"
         });
     QTRY_VERIFY_WITH_TIMEOUT(set.size() >= 5, 30000);
-    QTRY_VERIFY(set.contains("drawtext"));
+    QTRY_VERIFY(set.contains("scale"));
     QTRY_VERIFY(set.contains("negate"));
     QTRY_VERIFY(set.contains("out1"));
     QTRY_VERIFY(set.contains("out2"));
@@ -2882,7 +2882,7 @@ void tst_QAVPlayer::filterNameStep()
     QAVPlayer p;
     QFileInfo file(testData("small.mp4"));
     p.setSource(file.absoluteFilePath());
-    p.setFilter("[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[out3]");
+    p.setFilter("[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]scale=iw/2:-1[out3]");
     QSet<QString> set;
     int framesCount = 0;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
@@ -2902,14 +2902,14 @@ void tst_QAVPlayer::filterNameStep()
     set.clear();
     framesCount = 0;
     p.setFilters({
-            "drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[drawtext]",
+            "scale=iw/2:-1[scale]",
             "negate[negate]",
-            "[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[out3]"
+            "[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]scale=iw/2:-1[out3]"
         });
 
     p.stepForward();
     QTRY_VERIFY_WITH_TIMEOUT(set.size() >= 5, 30000);
-    QTRY_VERIFY(set.contains("drawtext"));
+    QTRY_VERIFY(set.contains("scale"));
     QTRY_VERIFY(set.contains("negate"));
     QTRY_VERIFY(set.contains("out1"));
     QTRY_VERIFY(set.contains("out2"));
@@ -2921,7 +2921,7 @@ void tst_QAVPlayer::filterNameStep()
 
     p.stepBackward();
     QTRY_VERIFY_WITH_TIMEOUT(set.size() >= 5, 30000);
-    QTRY_VERIFY(set.contains("drawtext"));
+    QTRY_VERIFY(set.contains("scale"));
     QTRY_VERIFY(set.contains("negate"));
     QTRY_VERIFY(set.contains("out1"));
     QTRY_VERIFY(set.contains("out2"));
