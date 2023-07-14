@@ -91,7 +91,9 @@ private slots:
     void inputFormat();
     void inputVideoCodec();
     void flushFilters();
-    void multipleStreams();
+    void multipleAudioStreams();
+    void multipleVideoStreams_data();
+    void multipleVideoStreams();
     void emptyStreams();
     void flushCodecs();
     void multiFilterInputs_data();
@@ -2991,7 +2993,7 @@ void tst_QAVPlayer::flushFilters()
     QTRY_COMPARE(framesCount, 1);
 }
 
-void tst_QAVPlayer::multipleStreams()
+void tst_QAVPlayer::multipleAudioStreams()
 {
     QAVPlayer p;
 
@@ -3024,6 +3026,49 @@ void tst_QAVPlayer::multipleStreams()
     for (const auto &stream: p.availableAudioStreams())
         QVERIFY(streams.contains(stream.index()));
     QCOMPARE(spy.count(), 1);
+}
+
+void tst_QAVPlayer::multipleVideoStreams_data()
+{
+    QTest::addColumn<QString>("path");
+    QTest::addColumn<int>("streamsCount");
+    QTest::addColumn<QList<double>>("streamsDurations");
+    QTest::addColumn<QList<int>>("streamsFramesCount");
+
+    QTest::newRow("7_BCL02006_ffv1_20s_1.mkv") << "7_BCL02006_ffv1_20s_1.mkv" << 4 << QList<double>{20, 20.025, 20.025, 20.025} << QList<int>{599, 2, 2, 2};
+    QTest::newRow("7_BCL02006_ffv1_20s_2.mkv") << "7_BCL02006_ffv1_20s_2.mkv" << 4 << QList<double>{20, 20.025, 20.025, 20.025} << QList<int>{599, 1, 2, 2};
+}
+
+void tst_QAVPlayer::multipleVideoStreams()
+{
+    QFETCH(QString, path);
+    QFETCH(int, streamsCount);
+    QFETCH(QList<double>, streamsDurations);
+    QFETCH(QList<int>, streamsFramesCount);
+
+    QAVPlayer p;
+    QFileInfo file(testData(path));
+
+    QMap<int, int> framesCount;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { framesCount[f.stream().index()]++; });
+
+    p.setSource(file.absoluteFilePath());
+    p.setSynced(false);
+
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    auto audioStreams = p.availableAudioStreams();
+    auto videoStreams = p.availableVideoStreams();
+    QCOMPARE(audioStreams.size(), 0);
+    QCOMPARE(videoStreams.size(), streamsCount);
+    for (int i = 0; i < streamsCount; ++i)
+        QCOMPARE(videoStreams[i].duration(), streamsDurations[i]);
+    // Set all video streams
+    p.setVideoStreams(p.availableVideoStreams());
+    p.play();
+
+    QTRY_COMPARE(framesCount.size(), p.availableVideoStreams().size());
+    for (int i = 0; i < streamsCount; ++i)
+        QTRY_COMPARE(framesCount[i], streamsFramesCount[i]);
 }
 
 void tst_QAVPlayer::emptyStreams()
