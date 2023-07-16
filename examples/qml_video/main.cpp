@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     }, Qt::DirectConnection);
 #endif
 
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); });
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); }, Qt::DirectConnection);
     QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QLatin1String("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
     QString filter = argc > 2 ? QString::fromUtf8(argv[2]) : QString();
 
@@ -120,6 +120,7 @@ int main(int argc, char *argv[])
         qDebug() << "mediaStatusChanged"<< status << p.state();
         if (status == QAVPlayer::LoadedMedia) {
             auto availableVideoStreams = p.availableVideoStreams();
+            //p.setVideoStreams({});
             auto videoStreams = p.currentVideoStreams();
             qDebug() << "Video streams:" << availableVideoStreams.size();
             for (auto &s : p.availableVideoStreams())
@@ -145,6 +146,7 @@ int main(int argc, char *argv[])
             for (auto &s : availableSubtitleStreams) {
                 qDebug() << "[" << s.index() << "]" << s.metadata() << s.framesCount() << "frames," << s.frameRate() << "frame rate" << (isStreamCurrent(s.index(), subtitleStreams) ? "---current" : "");
             }
+            p.play();
         } else if (status == QAVPlayer::EndOfMedia) {
             for (const auto &s : p.availableVideoStreams())
                 qDebug() << s << p.progress(s);
@@ -173,7 +175,6 @@ int main(int argc, char *argv[])
             qrc.reset();
     }
     p.setSource(file, qrc.get());
-    p.play();
     p.setFilter(filter);
     //p.setSynced(false);
 
