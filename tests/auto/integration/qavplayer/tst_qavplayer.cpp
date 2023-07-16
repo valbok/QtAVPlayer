@@ -88,6 +88,7 @@ private slots:
     void changeFormat();
     void filterName();
     void filterNameStep();
+    void audioVideoFilter();
     void inputFormat();
     void inputVideoCodec();
     void flushFilters();
@@ -2941,6 +2942,28 @@ void tst_QAVPlayer::filterNameStep()
     p.stepForward();
     QTRY_COMPARE(framesCount, 1);
     QVERIFY(set.isEmpty());
+}
+
+void tst_QAVPlayer::audioVideoFilter()
+{
+    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
+    QAVPlayer p;
+    QFileInfo file(testData("test.mkv"));
+    p.setSource(file.absoluteFilePath());
+    p.setFilter("ahistogram=dmode=separate:rheight=0:s=360x1:r=32,transpose=2,tile=layout=512x1,format=rgb24 [panel_4]");
+
+    int framesCount = 0;
+    QAVVideoFrame frame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) {
+        frame = f;
+        ++framesCount;
+    }, Qt::DirectConnection);
+
+    p.setSynced(false);
+    p.play();
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
+    QCOMPARE(framesCount, 1);
+    QCOMPARE(frame.filterName(), "panel_4");
 }
 
 void tst_QAVPlayer::inputFormat()

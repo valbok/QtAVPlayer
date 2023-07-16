@@ -74,35 +74,31 @@ int QAVFilters::createFilters(
 
             auto videoInput = graph->videoInputFilters();
             auto videoOutput = graph->videoOutputFilters();
-            if (!videoInput.isEmpty()) {
-                m_videoFilters.emplace_back(
-                    std::unique_ptr<QAVFilter>(
-                        new QAVVideoFilter(
-                            videoStream,
-                            QString::number(i),
-                            videoInput,
-                            videoOutput,
-                            graph->mutex())
-                    )
-                );
-            }
+            m_videoFilters.emplace_back(
+                std::unique_ptr<QAVFilter>(
+                    new QAVVideoFilter(
+                        videoStream,
+                        QString::number(i),
+                        videoInput,
+                        videoOutput,
+                        graph->mutex())
+                )
+            );
             auto audioInput = graph->audioInputFilters();
             auto audioOutput = graph->audioOutputFilters();
-            if (!audioInput.isEmpty()) {
-                m_audioFilters.emplace_back(
-                    std::unique_ptr<QAVFilter>(
-                        new QAVAudioFilter(
-                            audioStream,
-                            QString::number(i),
-                            audioInput,
-                            audioOutput,
-                            graph->mutex())
-                    )
-                );
-            }
+            m_audioFilters.emplace_back(
+                std::unique_ptr<QAVFilter>(
+                    new QAVAudioFilter(
+                        audioStream,
+                        QString::number(i),
+                        audioInput,
+                        audioOutput,
+                        graph->mutex())
+                )
+            );
             qDebug() << __FUNCTION__ << ":" << filterDesc
-                << "video[input:" << videoInput.size() << "-> output:" << videoOutput.size() << "]"
-                << "audio[input:" << audioInput.size() << "-> output:" << audioOutput.size() << "]";
+                << "video[ input:" << videoInput.size() << "-> output:" << videoOutput.size() << "]"
+                << "audio[ input:" << audioInput.size() << "-> output:" << audioOutput.size() << "]";
         }
 
         m_filterGraphs.push_back(std::move(graph));
