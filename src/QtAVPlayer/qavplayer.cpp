@@ -153,7 +153,6 @@ public:
     mutable QMutex waitMutex;
     QWaitCondition waitCond;
     bool eof = false;
-    std::atomic_bool startDemuxing {false};
 
     QList<QString> filterDescs;
     QAVFilters filters;
@@ -340,7 +339,6 @@ void QAVPlayerPrivate::terminate()
     error = QAVPlayer::NoError;
     dev.reset();
     eof = false;
-    startDemuxing = false;
 }
 
 void QAVPlayerPrivate::step(bool hasFrame)
@@ -468,10 +466,8 @@ void QAVPlayerPrivate::wait(bool v)
         isWaiting = v;
     }
 
-    if (!v) {
-        startDemuxing = true;
+    if (!v)
         waitCond.wakeAll();
-    }
     videoQueue.wake(true);
     audioQueue.wake(true);
     subtitleQueue.wake(true);
@@ -549,9 +545,9 @@ void QAVPlayerPrivate::doDemux()
     QWaitCondition waiter;
 
     while (!quit) {
+        doWait();
         if (videoQueue.bytes() + audioQueue.bytes() > maxQueueBytes
-            || (videoQueue.enough() && audioQueue.enough())
-            || !startDemuxing)
+            || (videoQueue.enough() && audioQueue.enough()))
         {
             QMutexLocker locker(&waiterMutex);
             waiter.wait(&waiterMutex, 10);
