@@ -84,7 +84,8 @@ void QAVAudioFilter::read(QAVFrame &frame)
 {
     Q_D(QAVAudioFilter);
     if (d->outputs.isEmpty() || d->isEmpty) {
-        frame = d->sourceFrame;
+        if (!d->outputs.isEmpty())
+            frame = d->sourceFrame;
         d->sourceFrame = {};
         d->isEmpty = true;
         return;

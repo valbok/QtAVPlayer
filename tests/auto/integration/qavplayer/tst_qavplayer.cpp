@@ -89,6 +89,7 @@ private slots:
     void filterName();
     void filterNameStep();
     void audioVideoFilter();
+    void audioFilterVideoFrames();
     void inputFormat();
     void inputVideoCodec();
     void flushFilters();
@@ -2964,6 +2965,32 @@ void tst_QAVPlayer::audioVideoFilter()
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
     QCOMPARE(framesCount, 1);
     QCOMPARE(frame.filterName(), "panel_4");
+}
+
+void tst_QAVPlayer::audioFilterVideoFrames()
+{
+    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
+    QAVPlayer p;
+    QFileInfo file(testData("test.mkv"));
+    p.setSource(file.absoluteFilePath());
+    p.setFilter("aformat=sample_fmts=flt|fltp,astats=metadata=1:reset=1:length=0.4,aphasemeter=video=0,ebur128=metadata=1,aformat=sample_fmts=flt|fltp");
+
+    int videoFramesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &) {
+        ++videoFramesCount;
+    }, Qt::DirectConnection);
+
+    int audioFramesCount = 0;
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &) {
+        ++audioFramesCount;
+    }, Qt::DirectConnection);
+
+
+    p.setSynced(false);
+    p.play();
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
+    QCOMPARE(videoFramesCount, 0);
+    QVERIFY(audioFramesCount > 0);
 }
 
 void tst_QAVPlayer::inputFormat()
