@@ -80,15 +80,13 @@ int QAVAudioFilter::write(const QAVFrame &frame)
     return 0;
 }
 
-void QAVAudioFilter::read(QAVFrame &frame)
+int QAVAudioFilter::read(QAVFrame &frame)
 {
     Q_D(QAVAudioFilter);
     if (d->outputs.isEmpty() || d->isEmpty) {
-        if (!d->outputs.isEmpty())
-            frame = d->sourceFrame;
         d->sourceFrame = {};
         d->isEmpty = true;
-        return;
+        return AVERROR(EAGAIN);
     }
 
     int ret = 0;
@@ -113,7 +111,7 @@ void QAVAudioFilter::read(QAVFrame &frame)
                 if (out.frame()->duration == AV_NOPTS_VALUE || out.frame()->duration == 0)
                     out.frame()->duration = d->sourceFrame.frame()->duration;
 #endif
-                frame.setTimeBase(av_buffersink_get_time_base(filter.ctx()));
+                out.setTimeBase(av_buffersink_get_time_base(filter.ctx()));
                 out.setFilterName(
                     !filter.name().isEmpty()
                     ? filter.name()
@@ -125,12 +123,16 @@ void QAVAudioFilter::read(QAVFrame &frame)
         }
     }
 
-    if (!d->outputFrames.isEmpty())
+    ret = AVERROR(EAGAIN);
+    if (!d->outputFrames.isEmpty()) {
         frame = d->outputFrames.takeFirst();
+        ret = 0;
+    }
     if (d->outputFrames.isEmpty()) {
         d->sourceFrame = {};
         d->isEmpty = true;
     }
+    return ret;
 }
 
 void QAVAudioFilter::flush()

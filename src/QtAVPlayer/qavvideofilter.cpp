@@ -74,15 +74,13 @@ int QAVVideoFilter::write(const QAVFrame &frame)
     return 0;
 }
 
-void QAVVideoFilter::read(QAVFrame &frame)
+int QAVVideoFilter::read(QAVFrame &frame)
 {
     Q_D(QAVVideoFilter);
     if (d->outputs.isEmpty() || d->isEmpty) {
-        if (!d->outputs.isEmpty())
-            frame = d->sourceFrame;
         d->sourceFrame = {};
         d->isEmpty = true;
-        return;
+        return AVERROR(EAGAIN);
     }
 
     int ret = 0;
@@ -120,12 +118,16 @@ void QAVVideoFilter::read(QAVFrame &frame)
         }
     }
 
-    if (!d->outputFrames.isEmpty())
+    ret = AVERROR(EAGAIN);
+    if (!d->outputFrames.isEmpty()) {
         frame = d->outputFrames.takeFirst();
+        ret = 0;
+    }
     if (d->outputFrames.isEmpty()) {
         d->sourceFrame = {};
         d->isEmpty = true;
     }
+    return ret;
 }
 
 void QAVVideoFilter::flush()

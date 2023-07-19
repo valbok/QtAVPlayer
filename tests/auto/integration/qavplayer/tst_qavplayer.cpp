@@ -90,6 +90,7 @@ private slots:
     void filterNameStep();
     void audioVideoFilter();
     void audioFilterVideoFrames();
+    void multipleFilters();
     void inputFormat();
     void inputVideoCodec();
     void flushFilters();
@@ -2991,6 +2992,54 @@ void tst_QAVPlayer::audioFilterVideoFrames()
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
     QCOMPARE(videoFramesCount, 0);
     QVERIFY(audioFramesCount > 0);
+}
+
+void tst_QAVPlayer::multipleFilters()
+{
+    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
+    QAVPlayer p;
+    QFileInfo file(testData("test.mkv"));
+    p.setSource(file.absoluteFilePath());
+    QList<QString> filters = {
+        "signalstats=stat=tout+vrep+brng [stats]",
+        "aformat=sample_fmts=flt|fltp,astats=metadata=1:reset=1:length=0.4,aphasemeter=video=0,ebur128=metadata=1,aformat=sample_fmts=flt|fltp",
+        "scale=72:72,format=rgb24 [thumbnails]",
+        "scale=iw/4:ih/4,format=gray,convolution=0m='0 1 0 1 -4 1 0 1 0':0bias=128,split[a][b];[a]scale=iw:1[a1];[a1][b]scale2ref[a2][b];[b][a2]lut2=c0=((x-y)*(x-y))/2,scale=iw:1,transpose=2,tile=layout=512x1,setsar=1/1,format=rgb24 [panel_0]",
+        "scale,format=rgb24,crop=1:ih:iw/2:0,tile=layout=512x1,setsar=1/1 [panel_1]",
+        "scale,format=rgb24,transpose=2,crop=1:ih:iw/2:0,tile=layout=512x1,setsar=1/1 [panel_2]",
+        "aformat=channel_layouts=stereo:sample_fmts=flt|fltp,ahistogram=dmode=separate:rheight=0:s=360x1:r=32,transpose=2,tile=layout=512x1,format=rgb24 [panel_3]",
+        "aformat=channel_layouts=stereo:sample_fmts=flt|fltp,showwaves=mode=p2p:split_channels=1:size=512x360:scale=lin:draw=full:rate=32/512,format=rgb24 [panel_4]",
+    };
+
+    QMap<QString, int> framesCount;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) {
+        ++framesCount[f.filterName()];
+    }, Qt::DirectConnection);
+
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) {
+        ++framesCount[f.filterName()];
+    }, Qt::DirectConnection);
+
+    p.setSynced(false);
+    p.setFilters(filters);
+    p.play();
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
+    QVERIFY(framesCount.contains("stats"));
+    QCOMPARE(framesCount["stats"], 250);
+    QVERIFY(framesCount.contains("1:0"));
+    QCOMPARE(framesCount["1:0"], 101);
+    QVERIFY(framesCount.contains("thumbnails"));
+    QCOMPARE(framesCount["thumbnails"], 250);
+    QVERIFY(framesCount.contains("panel_0"));
+    QCOMPARE(framesCount["panel_0"], 1);
+    QVERIFY(framesCount.contains("panel_1"));
+    QCOMPARE(framesCount["panel_1"], 1);
+    QVERIFY(framesCount.contains("panel_2"));
+    QCOMPARE(framesCount["panel_2"], 1);
+    QVERIFY(framesCount.contains("panel_3"));
+    QCOMPARE(framesCount["panel_3"], 1);
+    QVERIFY(framesCount.contains("panel_4"));
+    QCOMPARE(framesCount["panel_4"], 1);
 }
 
 void tst_QAVPlayer::inputFormat()
