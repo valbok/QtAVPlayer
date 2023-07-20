@@ -58,8 +58,8 @@ int QAVAudioFilter::write(const QAVFrame &frame)
         return AVERROR(EAGAIN);
 
     d->sourceFrame = frame;
-    AVFrame *decoded_frame = frame.frame();
-    AVRational decoded_frame_tb = frame.stream().stream()->time_base;
+    AVFrame *decoded_frame = d->sourceFrame.frame();
+    AVRational decoded_frame_tb = d->sourceFrame.stream().stream()->time_base;
     // TODO: clear filter_in_rescale_delta_last
     if (!d->inputs.isEmpty() && decoded_frame->pts != AV_NOPTS_VALUE) {
         decoded_frame->pts = av_rescale_delta(decoded_frame_tb, decoded_frame->pts,
@@ -70,7 +70,7 @@ int QAVAudioFilter::write(const QAVFrame &frame)
     }
 
     for (auto &filter : d->inputs) {
-        QAVFrame ref = frame;
+        QAVFrame ref = d->sourceFrame;
         QMutexLocker locker(&d->graphMutex);
         int ret = av_buffersrc_add_frame_flags(filter.ctx(), ref.frame(), AV_BUFFERSRC_FLAG_PUSH);
         if (ret < 0)
