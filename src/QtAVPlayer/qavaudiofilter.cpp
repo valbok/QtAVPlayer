@@ -61,7 +61,7 @@ int QAVAudioFilter::write(const QAVFrame &frame)
     AVFrame *decoded_frame = frame.frame();
     AVRational decoded_frame_tb = frame.stream().stream()->time_base;
     // TODO: clear filter_in_rescale_delta_last
-    if (decoded_frame->pts != AV_NOPTS_VALUE) {
+    if (!d->inputs.isEmpty() && decoded_frame->pts != AV_NOPTS_VALUE) {
         decoded_frame->pts = av_rescale_delta(decoded_frame_tb, decoded_frame->pts,
                                               AVRational{1, decoded_frame->sample_rate},
                                               decoded_frame->nb_samples,
@@ -111,6 +111,7 @@ int QAVAudioFilter::read(QAVFrame &frame)
                 if (out.frame()->duration == AV_NOPTS_VALUE || out.frame()->duration == 0)
                     out.frame()->duration = d->sourceFrame.frame()->duration;
 #endif
+                out.setFrameRate(av_buffersink_get_frame_rate(filter.ctx()));
                 out.setTimeBase(av_buffersink_get_time_base(filter.ctx()));
                 out.setFilterName(
                     !filter.name().isEmpty()

@@ -91,6 +91,7 @@ private slots:
     void audioVideoFilter();
     void audioFilterVideoFrames();
     void multipleFilters();
+    void multipleAudioVideoFilters();
     void inputFormat();
     void inputVideoCodec();
     void flushFilters();
@@ -3040,6 +3041,42 @@ void tst_QAVPlayer::multipleFilters()
     QCOMPARE(framesCount["panel_3"], 1);
     QVERIFY(framesCount.contains("panel_4"));
     QCOMPARE(framesCount["panel_4"], 1);
+}
+
+void tst_QAVPlayer::multipleAudioVideoFilters()
+{
+    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
+    QAVPlayer p;
+    QFileInfo file(testData("test_5beeps.mkv"));
+    p.setSource(file.absoluteFilePath());
+    QList<QString> filters = {
+        "signalstats=stat=tout+vrep+brng [stats]",
+        "aformat=sample_fmts=flt|fltp,astats=metadata=1:reset=1:length=0.4,aphasemeter=video=0,ebur128=metadata=1,aformat=sample_fmts=flt|fltp [audio]",
+    };
+
+    QMap<QString, int> framesCount;
+    QAVVideoFrame videoFrame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) {
+        videoFrame = f;
+        ++framesCount[f.filterName()];
+    }, Qt::DirectConnection);
+
+    QAVAudioFrame audioFrame;
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) {
+        audioFrame = f;
+        ++framesCount[f.filterName()];
+    }, Qt::DirectConnection);
+
+    p.setSynced(false);
+    p.setFilters(filters);
+    p.play();
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
+    QVERIFY(framesCount.contains("stats"));
+    QCOMPARE(framesCount["stats"], 125);
+    QCOMPARE(videoFrame.pts(), 4.963);
+    QVERIFY(framesCount.contains("audio"));
+    QCOMPARE(framesCount["audio"], 51);
+    QVERIFY(audioFrame.pts() < 5.5);
 }
 
 void tst_QAVPlayer::inputFormat()
