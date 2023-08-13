@@ -48,40 +48,17 @@ jobs:
           version: ${{ matrix.qt_version }}
           modules: ${{ matrix.qt_modules }}
 
-      - name: QMake Build
-        if: ${{ matrix.qt_version == '5.15.2' }}
+      - name: QMake Test
         run: |
+          export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
+          cd tests/auto/integration/qavdemuxer
           qmake
           make CC=$CC CXX=$CXX
-          make install
-
-      - name: CMake Build
-        run: |
-          mkdir build
-          cd build
-          cmake ../ -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
-          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
-
-      - name: QMake Test
-        if: ${{ matrix.qt_version == '5.15.2' }}
-        run: |
-          cd tests/
-          qmake
-          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17 -fPIC'
-          export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
-          cd auto/integration/qavdemuxer
           ./tst_qavdemuxer
-          cd ../
-          cd qavplayer
-          ./tst_qavplayer -maxwarnings 100000
-
-      - name: CMake Test
-        if: ${{ matrix.qt_version == '6.5.0' }}
-        run: |
-          cd build
-          export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
-          ./tests/auto/integration/qavdemuxer/tst_qavdemuxer
-          ./tests/auto/integration/qavplayer/tst_qavplayer -maxwarnings 100000
+          cd ../qavplayer
+          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA"
+          make CC=$CC CXX=$CXX
+          ./tst_qavplayer --platform minimal -maxwarnings 100000
 
   macos:
     strategy:
@@ -109,31 +86,17 @@ jobs:
           echo "/usr/local/Cellar/ffmpeg/6.0/include" >> $GITHUB_PATH
           echo "/usr/local/opt/llvm@9/bin" >> $GITHUB_PATH
 
-      - name: CMake Build
-        run: |
-          mkdir build
-          cd build
-          cmake ../ -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=/usr/local/Cellar/ffmpeg/6.0/include -DCMAKE_LIBRARY_PATH=/usr/local/Cellar/ffmpeg/6.0/lib
-          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
-
-      - name: QMake Build
-        run: |
-          ffmpeg -version
-          qmake
-          make CC=$CC CXX=$CXX CXXFLAGS="$CXXFLAGS"
-          make install
-
       - name: QMake Test
         run: |
-          cd tests/
-          qmake
-          make CC=$CC CXX=$CXX
           export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
-          cd auto/integration/qavdemuxer
-          ./tst_qavdemuxer --platform minimal
-          cd ../
-          cd qavplayer
-          ./tst_qavplayer --platform minimal -maxwarnings 100000
+          cd tests/auto/integration/qavdemuxer
+          qmake INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0/include" LIBS="-L/usr/local/Cellar/ffmpeg/6.0/lib"
+          make CC=$CC CXX=$CXX
+          tst_qavdemuxer.app/Contents/MacOS/tst_qavdemuxer
+          cd ../qavplayer
+          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA" INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0/include" LIBS="-L/usr/local/Cellar/ffmpeg/6.0/lib"
+          make CC=$CC CXX=$CXX
+          tst_qavplayer.app/Contents/MacOS/tst_qavplayer --platform minimal -maxwarnings 100000
 
   windows:
     strategy:
@@ -191,30 +154,6 @@ jobs:
           echo CPLUS_INCLUDE_PATH=%FFMPEG%\include;%CPLUS_INCLUDE_PATH%>>%GITHUB_ENV%
           echo LIB=%FFMPEG%\lib;%FFMPEG%\bin;%LIB%>>%GITHUB_ENV%
 
-      - name: CMake Build
-        if: ${{ matrix.type == 'MSVC' }}
-        run: |
-          mkdir build
-          cd build
-          cmake ../ -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib -DBUILD_SHARED_LIBS=ON
-          cmake --build . -v
-
-      - name: CMake Build
-        if: ${{ matrix.type == 'MINGW' }}
-        run: |
-          mkdir build
-          cd build
-          cmake ../ -DBUILD_TESTS=ON -DBUILD_EXAMPLES=OFF -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib -DBUILD_SHARED_LIBS=OFF
-          cmake --build . -v
-
-      - name: QMake Build
-        if: ${{ matrix.type == 'MSVC' }}
-        shell: cmd
-        run: |
-          qmake
-          nmake
-          nmake install
-
       - name: QMake Test
         if: ${{ matrix.type == 'MSVC' }}
         shell: cmd
@@ -222,23 +161,16 @@ jobs:
           set QT_LOGGING_RULES=qt.QtAVPlayer.debug=true
           set QT_FORCE_STDERR_LOGGING=1
           set QT_ASSUME_STDERR_HAS_CONSOLE=1
-          cd tests/
-          qmake
+          cd tests/auto/integration/qavdemuxer
+          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA"
           nmake
-          cd auto/integration/qavdemuxer
           release\tst_qavdemuxer.exe
-          cd ../
+          cd ../qavplayer
           cd qavplayer
+          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA"
+          nmake
           release\tst_qavplayer.exe -maxwarnings 100000
 
-      - name: QMake Build
-        if: ${{ matrix.type == 'MINGW' }}
-        shell: cmd
-        run: |
-          qmake
-          mingw32-make
-          mingw32-make install
-
       - name: QMake Test
         if: ${{ matrix.type == 'MINGW' }}
         shell: cmd
@@ -246,12 +178,12 @@ jobs:
           set QT_LOGGING_RULES=qt.QtAVPlayer.debug=true
           set QT_FORCE_STDERR_LOGGING=1
           set QT_ASSUME_STDERR_HAS_CONSOLE=1
-          cd tests/
-          qmake
+          cd tests/auto/integration/qavdemuxer
+          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA"
           mingw32-make
-          cd auto/integration/qavdemuxer
           release\tst_qavdemuxer.exe
-          cd ../
-          cd qavplayer
+          cd ../qavplayer
+          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA"
+          mingw32-make
           release\tst_qavplayer.exe -maxwarnings 100000
 

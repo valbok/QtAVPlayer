@@ -23,7 +23,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class Q_AVPLAYER_EXPORT QAVVideoBuffer_CPU : public QAVVideoBuffer
+class QAVVideoBuffer_CPU : public QAVVideoBuffer
 {
 public:
     QAVVideoBuffer_CPU() = default;

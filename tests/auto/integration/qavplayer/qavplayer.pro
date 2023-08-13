@@ -1,10 +1,11 @@
 TARGET = tst_qavplayer
 
+INCLUDEPATH += ../../../../src/ ../../../../src/QtAVPlayer
+include(../../../../src/QtAVPlayer/QtAVPlayer.pri)
+
 QT -= gui
-QT += testlib QtAVPlayer QtAVPlayer-private
-qtConfig(multimedia): QT += multimedia-private
-INCLUDEPATH += ../../../../src/QtAVPlayer
-CONFIG += testcase console C++1z
+QT += testlib
+CONFIG += testcase console c++17
 
 SOURCES += \
     tst_qavplayer.cpp

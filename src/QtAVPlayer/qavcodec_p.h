@@ -30,7 +30,7 @@ struct AVCodec;
 struct AVCodecContext;
 struct AVStream;
 class QAVCodecPrivate;
-class Q_AVPLAYER_EXPORT QAVCodec
+class QAVCodec
 {
 public:
     virtual ~QAVCodec();

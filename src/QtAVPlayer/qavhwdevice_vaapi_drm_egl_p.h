@@ -25,7 +25,7 @@
 QT_BEGIN_NAMESPACE
 
 class QAVHWDevice_VAAPI_DRM_EGLPrivate;
-class Q_AVPLAYER_EXPORT QAVHWDevice_VAAPI_DRM_EGL : public QAVHWDevice
+class QAVHWDevice_VAAPI_DRM_EGL : public QAVHWDevice
 {
 public:
     QAVHWDevice_VAAPI_DRM_EGL();

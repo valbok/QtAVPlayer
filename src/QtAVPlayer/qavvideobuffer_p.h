@@ -25,7 +25,7 @@
 QT_BEGIN_NAMESPACE
 
 class QRhi;
-class Q_AVPLAYER_EXPORT QAVVideoBuffer
+class QAVVideoBuffer
 {
 public:
     QAVVideoBuffer() = default;

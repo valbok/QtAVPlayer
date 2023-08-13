@@ -1,6 +1,0 @@
-#pragma once
-#cmakedefine multimedia 1
-
-#ifndef multimedia
-#define QT_NO_MULTIMEDIA
-#endif

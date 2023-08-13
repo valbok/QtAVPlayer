@@ -14,7 +14,7 @@ QT_BEGIN_NAMESPACE
 
 struct AVSubtitle;
 class QAVSubtitleFramePrivate;
-class Q_AVPLAYER_EXPORT QAVSubtitleFrame : public QAVStreamFrame
+class QAVSubtitleFrame : public QAVStreamFrame
 {
 public:
     QAVSubtitleFrame();

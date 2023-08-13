@@ -27,7 +27,7 @@
 QT_BEGIN_NAMESPACE
 
 class QAVVideoFilterPrivate;
-class Q_AVPLAYER_EXPORT QAVVideoFilter : public QAVFilter
+class QAVVideoFilter : public QAVFilter
 {
 public:
     QAVVideoFilter(
