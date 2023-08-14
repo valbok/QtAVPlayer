@@ -31,7 +31,7 @@ QT_BEGIN_NAMESPACE
 
 struct AVCodecContext;
 class QAVVideoBuffer;
-class Q_AVPLAYER_EXPORT QAVHWDevice
+class QAVHWDevice
 {
 public:
     QAVHWDevice() = default;

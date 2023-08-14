@@ -12,7 +12,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class Q_AVPLAYER_EXPORT QAVAudioFormat
+class QAVAudioFormat
 {
 public:
     enum SampleFormat

@@ -2,6 +2,9 @@ TEMPLATE = app
 TARGET = extract_frames
 INCLUDEPATH += .
 
+INCLUDEPATH += . ../../src/QtAVPlayer
+include(../../src/QtAVPlayer/QtAVPlayer.pri)
+
 QT -= gui
 QT += QtAVPlayer
 

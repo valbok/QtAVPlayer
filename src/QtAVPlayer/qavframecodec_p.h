@@ -25,7 +25,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class Q_AVPLAYER_EXPORT QAVFrameCodec : public QAVCodec
+class QAVFrameCodec : public QAVCodec
 {
 public:
     int write(const QAVPacket &pkt) override;

@@ -10,7 +10,7 @@
 
 #include <QtAVPlayer/qavframe.h>
 #include <QVariant>
-#ifndef QT_NO_MULTIMEDIA
+#ifdef QT_AVPLAYER_MULTIMEDIA
 #include <QVideoFrame>
 #endif
 
@@ -25,7 +25,7 @@ class QAVCodec;
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 class QRhi;
 #endif
-class Q_AVPLAYER_EXPORT QAVVideoFrame : public QAVFrame
+class QAVVideoFrame : public QAVFrame
 {
 public:
     enum HandleType
@@ -64,7 +64,7 @@ public:
     AVPixelFormat format() const;
     QString formatName() const;
     QAVVideoFrame convertTo(AVPixelFormat fmt) const;
-#ifndef QT_NO_MULTIMEDIA
+#ifdef QT_AVPLAYER_MULTIMEDIA
     operator QVideoFrame() const;
 #endif
 

@@ -1,10 +1,11 @@
 TARGET = tst_qavdemuxer
 
-QT += testlib QtAVPlayer-private
-qtConfig(multimedia): QT += multimedia-private
-INCLUDEPATH += ../../../../src/QtAVPlayer
-CONFIG += testcase console
-CONFIG += C++1z
+INCLUDEPATH += ../../../../src/ ../../../../src/QtAVPlayer
+include(../../../../src/QtAVPlayer/QtAVPlayer.pri)
+
+QT -= gui
+QT += testlib
+CONFIG += c++17 testcase console
 RESOURCES += files.qrc
 
 SOURCES += \

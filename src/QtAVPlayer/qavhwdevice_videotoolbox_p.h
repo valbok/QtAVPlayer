@@ -25,7 +25,7 @@
 QT_BEGIN_NAMESPACE
 
 class QAVHWDevice_VideoToolboxPrivate;
-class Q_AVPLAYER_EXPORT QAVHWDevice_VideoToolbox : public QAVHWDevice
+class QAVHWDevice_VideoToolbox : public QAVHWDevice
 {
 public:
     QAVHWDevice_VideoToolbox();

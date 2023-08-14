@@ -15,7 +15,7 @@ QT_BEGIN_NAMESPACE
 
 class QAVAudioCodec;
 class QAVAudioFramePrivate;
-class Q_AVPLAYER_EXPORT QAVAudioFrame : public QAVFrame
+class QAVAudioFrame : public QAVFrame
 {
 public:
     QAVAudioFrame();

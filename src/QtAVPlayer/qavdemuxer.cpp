@@ -11,18 +11,17 @@
 #include "qavsubtitlecodec_p.h"
 #include "qavhwdevice_p.h"
 #include "qaviodevice_p.h"
-#include "qtQtAVPlayer-config_p.h"
 #include <QtAVPlayer/qtavplayerglobal.h>
 
-#if QT_CONFIG(va_x11) && QT_CONFIG(opengl)
+#if defined(QT_AVPLAYER_VA_X11) && QT_CONFIG(opengl)
 #include "qavhwdevice_vaapi_x11_glx_p.h"
 #endif
 
-#if QT_CONFIG(va_drm) && QT_CONFIG(egl)
+#if defined(QT_AVPLAYER_VA_DRM) && QT_CONFIG(egl)
 #include "qavhwdevice_vaapi_drm_egl_p.h"
 #endif
 
-#if QT_CONFIG(vdpau)
+#if defined(QT_AVPLAYER_VDPAU)
 #include "qavhwdevice_vdpau_p.h"
 #endif
 
@@ -142,14 +141,14 @@ static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, Q
     AVDictionary *opts = NULL;
     Q_UNUSED(opts);
 
-#if QT_CONFIG(va_x11) && QT_CONFIG(opengl)
+#if defined(QT_AVPLAYER_VA_X11) && QT_CONFIG(opengl)
     devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VAAPI_X11_GLX));
     av_dict_set(&opts, "connection_type", "x11", 0);
 #endif
-#if QT_CONFIG(vdpau)
+#if defined(QT_AVPLAYER_VDPAU)
     devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VDPAU));
 #endif
-#if QT_CONFIG(va_drm) && QT_CONFIG(egl)
+#if defined(QT_AVPLAYER_VA_DRM) && QT_CONFIG(egl)
     devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VAAPI_DRM_EGL));
 #endif
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)

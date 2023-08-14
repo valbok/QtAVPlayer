@@ -55,14 +55,14 @@ private slots:
     void convert();
     void map_data();
     void map();
-#ifndef QT_NO_MULTIMEDIA    
+#ifdef QT_AVPLAYER_MULTIMEDIA
     void cast2QVideoFrame_data();
     void cast2QVideoFrame();
 #endif
     void stepForward();
     void stepBackward();
     void availableAudioStreams();
-#ifndef QT_NO_MULTIMEDIA
+#ifdef QT_AVPLAYER_MULTIMEDIA
     void audioOutput();
 #endif
     void setEmptySource();
@@ -1415,7 +1415,7 @@ void tst_QAVPlayer::map()
     QVERIFY(mapData.data[1] != nullptr);
 }
 
-#ifndef QT_NO_MULTIMEDIA
+#ifdef QT_AVPLAYER_MULTIMEDIA
 void tst_QAVPlayer::cast2QVideoFrame_data()
 {
     QTest::addColumn<QString>("path");
@@ -1458,7 +1458,7 @@ void tst_QAVPlayer::cast2QVideoFrame()
     QVERIFY(q.bytesPerLine(0) > 0);
 #endif
 }
-#endif // #ifndef QT_NO_MULTIMEDIA
+#endif // #ifdef QT_AVPLAYER_MULTIMEDIA
 
 void tst_QAVPlayer::stepForward()
 {
@@ -1840,7 +1840,7 @@ void tst_QAVPlayer::availableAudioStreams()
     QCOMPARE(p.currentAudioStreams().first().index(), 1);
 }
 
-#ifndef QT_NO_MULTIMEDIA
+#ifdef QT_AVPLAYER_MULTIMEDIA
 void tst_QAVPlayer::audioOutput()
 {
     QFileInfo file1(testData("guido.mp4"));
@@ -1858,7 +1858,7 @@ void tst_QAVPlayer::audioOutput()
     p.play();
     QTRY_VERIFY(p.position() > 500);
 }
-#endif // #ifndef QT_NO_MULTIMEDIA
+#endif // #ifndef QT_AVPLAYER_MULTIMEDIA
 
 void tst_QAVPlayer::setEmptySource()
 {
