@@ -182,14 +182,16 @@ Some defines should be provided to opt some features.
 * `QT_AVPLAYER_MULTIMEDIA` - enables support of `QtMultimedia` which requires `QtGUI`, `QtQuick` etc.
 * `QT_AVPLAYER_VA_X11` - enables support of `libva-x11` for HW acceleration. For linux only.
 * `QT_AVPLAYER_VA_DRM` - enables support of `libva-drm` for HW acceleration. For linux only.
-* `QT_AVPLAYER_VDPAU` - enables support of `libvdpau` for HW acceleration. 
+* `QT_AVPLAYER_VDPAU` - enables support of `libvdpau` for HW acceleration. For linux only.
 
 CMake is not supported.
 
 Include QtAVPlayer.pri in your pro file:
 
-    INCLUDEPATH += . ../../src/QtAVPlayer
+    INCLUDEPATH += ../../src/
     include(../../src/QtAVPlayer/QtAVPlayer.pri)
+
+And then for your app:
 
     $ qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA"
 
