@@ -177,7 +177,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
 # How to build
 
-QtAVPlayer should be directly bundled into an app using qmake and [QtAVPlayer.pri](https://github.com/valbok/QtAVPlayer/blob/master/src/QtAVPlayer/QtAVPlayer.pri).
+QtAVPlayer should be directly bundled into an app using QMake and [QtAVPlayer.pri](https://github.com/valbok/QtAVPlayer/blob/master/src/QtAVPlayer/QtAVPlayer.pri).
 Some defines should be provided to opt some features.
 * `QT_AVPLAYER_MULTIMEDIA` - enables support of `QtMultimedia` which requires `QtGUI`, `QtQuick` etc.
 * `QT_AVPLAYER_VA_X11` - enables support of `libva-x11` for HW acceleration. For linux only.
@@ -201,7 +201,7 @@ FFmpeg on custom path:
 
 ## Android:
 
-Some exports chould be also used: vars that point to libraries in armeabi-v7a, arm64-v8a, x86 and x86_64 target archs.
+Some exports could be also used: vars that point to libraries in armeabi-v7a, arm64-v8a, x86 and x86_64 target archs.
 
     $ export AVPLAYER_ANDROID_LIB_ARMEABI_V7A=/opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib
     $ export AVPLAYER_ANDROID_LIB_ARMEABI_V8A=/opt/mobile-ffmpeg/prebuilt/android-arm64/ffmpeg/lib
