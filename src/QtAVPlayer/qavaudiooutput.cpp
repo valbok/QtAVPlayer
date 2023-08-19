@@ -147,7 +147,7 @@ public:
         if (!audioOutput || (fmt.isValid() && audioOutput->format() != fmt) || audioOutput->state() == QAudio::StoppedState) {
             if (audioOutput)
                 audioOutput->deleteLater();
-            audioOutput = new AudioOutput(fmt);
+            audioOutput = new AudioOutput(QAudioDevice(QMediaDevices::defaultAudioOutput()),fmt);
             QObject::connect(audioOutput, &AudioOutput::stateChanged, audioOutput,
                 [&](QAudio::State state) {
                     switch (state) {
