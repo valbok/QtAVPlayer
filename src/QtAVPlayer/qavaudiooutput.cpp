@@ -148,7 +148,7 @@ public:
             if (audioOutput)
                 audioOutput->deleteLater();
         #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-            audioOutput = new AudioOutput(QAudioDevice(QAudioDeviceInfo::defaultOutputDevice()),fmt);
+            audioOutput = new AudioOutput(QAudioDeviceInfo::defaultOutputDevice(),fmt);
         #else
             audioOutput = new AudioOutput(QAudioDevice(QMediaDevices::defaultAudioOutput()),fmt);
         #endif    
