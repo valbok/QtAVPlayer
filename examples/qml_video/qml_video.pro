@@ -1,6 +1,6 @@
 TEMPLATE = app
 TARGET = qml_video
-INCLUDEPATH += . ../../src/QtAVPlayer
+INCLUDEPATH += . ../../src
 include(../../src/QtAVPlayer/QtAVPlayer.pri)
 # Example
 ANDROID_EXTRA_LIBS += /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libavdevice.so \
