@@ -147,22 +147,18 @@ public:
         if (!audioOutput || (fmt.isValid() && audioOutput->format() != fmt) || audioOutput->state() == QAudio::StoppedState) {
             if (audioOutput)
                 audioOutput->deleteLater();
-        #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-            audioOutput = new AudioOutput(QAudioDeviceInfo::defaultOutputDevice(),fmt);
-        #else
-            audioOutput = new AudioOutput(QAudioDevice(QMediaDevices::defaultAudioOutput()),fmt);
-        #endif    
+            audioOutput = new AudioOutput(fmt);
             QObject::connect(audioOutput, &AudioOutput::stateChanged, audioOutput,
-                [&](QAudio::State state) {
-                    switch (state) {
-                        case QAudio::StoppedState:
-                            if (audioOutput->error() != QAudio::NoError)
-                                qWarning() << "QAudioOutput stopped:" << audioOutput->error();
-                            break;
-                        default:
-                            break;
-                    }
-                });
+                             [&](QAudio::State state) {
+                                 switch (state) {
+                                 case QAudio::StoppedState:
+                                     if (audioOutput->error() != QAudio::NoError)
+                                         qWarning() << "QAudioOutput stopped:" << audioOutput->error();
+                                     break;
+                                 default:
+                                     break;
+                                 }
+                             });
 
             if (bufferSize > 0)
                 audioOutput->setBufferSize(bufferSize);
