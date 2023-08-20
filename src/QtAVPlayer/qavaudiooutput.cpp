@@ -17,6 +17,7 @@
 #include <QAudioOutput>
 #else
 #include <QAudioSink>
+#include <QMediaDevices>
 #endif
 
 extern "C" {
@@ -89,8 +90,10 @@ public:
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     using AudioOutput = QAudioOutput;
+    using AudioDevice = QAudioDeviceInfo;
 #else
     using AudioOutput = QAudioSink;
+    using AudioDevice = QAudioDevice;
 #endif
     AudioOutput *audioOutput = nullptr;
     qreal volume = 1.0;
@@ -98,6 +101,7 @@ public:
     QList<QAVAudioFrame> frames;
     qint64 offset = 0;
     bool quit = 0;
+    AudioDevice defaultAudioDevice;
     mutable QMutex mutex;
     QWaitCondition cond;
     QThreadPool threadPool;
@@ -144,21 +148,35 @@ public:
 
     void init(const QAudioFormat &fmt)
     {
-        if (!audioOutput || (fmt.isValid() && audioOutput->format() != fmt) || audioOutput->state() == QAudio::StoppedState) {
-            if (audioOutput)
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+        auto audioDevice = QAudioDeviceInfo::defaultOutputDevice();
+#else
+        auto audioDevice = QMediaDevices::defaultAudioOutput();
+#endif
+        if (!audioOutput
+            || (fmt.isValid() && audioOutput->format() != fmt)
+            || audioOutput->state() == QAudio::StoppedState
+            || defaultAudioDevice != audioDevice)
+        {
+            if (audioOutput) {
+                audioOutput->stop();
                 audioOutput->deleteLater();
-            audioOutput = new AudioOutput(fmt);
+            }
+
+            audioOutput = new AudioOutput(audioDevice, fmt);
+            defaultAudioDevice = audioDevice;
+
             QObject::connect(audioOutput, &AudioOutput::stateChanged, audioOutput,
-                [&](QAudio::State state) {
-                    switch (state) {
-                        case QAudio::StoppedState:
-                            if (audioOutput->error() != QAudio::NoError)
-                                qWarning() << "QAudioOutput stopped:" << audioOutput->error();
-                            break;
-                        default:
-                            break;
-                    }
-                });
+                             [&](QAudio::State state) {
+                                 switch (state) {
+                                 case QAudio::StoppedState:
+                                     if (audioOutput->error() != QAudio::NoError)
+                                         qWarning() << "QAudioOutput stopped:" << audioOutput->error();
+                                     break;
+                                 default:
+                                     break;
+                                 }
+                             });
 
             if (bufferSize > 0)
                 audioOutput->setBufferSize(bufferSize);
