@@ -60,6 +60,12 @@ jobs:
           make CC=$CC CXX=$CXX
           ./tst_qavplayer --platform minimal -maxwarnings 100000
 
+      - name: Examples
+        run: |
+          cd examples/qml_video
+          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA"
+          make CC=$CC CXX=$CXX
+
   macos:
     strategy:
       matrix:
@@ -94,9 +100,15 @@ jobs:
           make CC=$CC CXX=$CXX
           tst_qavdemuxer.app/Contents/MacOS/tst_qavdemuxer
           cd ../qavplayer
-          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA" INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0/include" LIBS="-L/usr/local/Cellar/ffmpeg/6.0/lib"
+          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA" INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0/include" LIBS+="-L/usr/local/Cellar/ffmpeg/6.0/lib"
           make CC=$CC CXX=$CXX
           tst_qavplayer.app/Contents/MacOS/tst_qavplayer --platform minimal -maxwarnings 100000
+
+      - name: Examples
+        run: |
+          cd examples/qml_video
+          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA" INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0/include" LIBS+="-L/usr/local/Cellar/ffmpeg/6.0/lib"
+          make CC=$CC CXX=$CXX
 
   windows:
     strategy:
@@ -187,3 +199,16 @@ jobs:
           mingw32-make
           release\tst_qavplayer.exe -maxwarnings 100000
 
+      - name: Examples
+        if: ${{ matrix.type == 'MSVC' }}
+        run: |
+          cd examples/qml_video
+          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA"
+          nmake
+
+      - name: Examples
+        if: ${{ matrix.type == 'MINGW' }}
+        run: |
+          cd examples/qml_video
+          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA"
+          mingw32-make
