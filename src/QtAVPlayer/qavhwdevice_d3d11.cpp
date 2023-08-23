@@ -12,7 +12,13 @@
 #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
 #include <private/qrhi_p.h>
 #include <private/qrhid3d11_p.h>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 2)
+#include <private/qcomptr_p.h>
+#else
 #include <private/qwindowsiupointer_p.h>
+template <class T>
+using ComPtr = QWindowsIUPointer<T>;
+#endif
 #include <system_error>
 #endif
 
@@ -61,10 +67,31 @@ AVHWDeviceType QAVHWDevice_D3D11::type() const
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
-static QWindowsIUPointer<ID3D11Texture2D> shareTexture(ID3D11Device *dev, ID3D11Texture2D *tex)
+
+template <class T>
+static T **address(ComPtr<T> &ptr)
 {
-    QWindowsIUPointer<IDXGIResource> dxgiResource;
-    HRESULT hr = tex->QueryInterface(__uuidof(IDXGIResource), reinterpret_cast<void **>(dxgiResource.address()));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 2)
+    return ptr.GetAddressOf();
+#else
+    return ptr.address();
+#endif
+}
+
+template <class T>
+static T *get(const ComPtr<T> &ptr)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 2)
+    return ptr.Get();
+#else
+    return ptr.get();
+#endif
+}
+
+static ComPtr<ID3D11Texture2D> shareTexture(ID3D11Device *dev, ID3D11Texture2D *tex)
+{
+    ComPtr<IDXGIResource> dxgiResource;
+    HRESULT hr = tex->QueryInterface(__uuidof(IDXGIResource), reinterpret_cast<void **>(address(dxgiResource)));
     if (FAILED(hr)) {
         qWarning() << "Failed to obtain resource handle from FFmpeg texture:" << hr << std::system_category().message(hr);
         return {};
@@ -77,14 +104,14 @@ static QWindowsIUPointer<ID3D11Texture2D> shareTexture(ID3D11Device *dev, ID3D11
         return {};
     }
 
-    QWindowsIUPointer<ID3D11Texture2D> sharedTex;
-    hr = dev->OpenSharedResource(shared, __uuidof(ID3D11Texture2D), reinterpret_cast<void **>(sharedTex.address()));
+    ComPtr<ID3D11Texture2D> sharedTex;
+    hr = dev->OpenSharedResource(shared, __uuidof(ID3D11Texture2D), reinterpret_cast<void **>(address(sharedTex)));
     if (FAILED(hr))
         qWarning() << "Failed to share FFmpeg texture:" << hr << std::system_category().message(hr);
     return sharedTex;
 }
 
-static QWindowsIUPointer<ID3D11Texture2D> copyTexture(ID3D11Device *dev, ID3D11Texture2D *from, int index)
+static ComPtr<ID3D11Texture2D> copyTexture(ID3D11Device *dev, ID3D11Texture2D *from, int index)
 {
     D3D11_TEXTURE2D_DESC fromDesc = {};
     from->GetDesc(&fromDesc);
@@ -99,16 +126,16 @@ static QWindowsIUPointer<ID3D11Texture2D> copyTexture(ID3D11Device *dev, ID3D11T
     toDesc.MiscFlags = 0;
     toDesc.SampleDesc = { 1, 0 };
 
-    QWindowsIUPointer<ID3D11Texture2D> copy;
-    HRESULT hr = dev->CreateTexture2D(&toDesc, nullptr, copy.address());
+    ComPtr<ID3D11Texture2D> copy;
+    HRESULT hr = dev->CreateTexture2D(&toDesc, nullptr, address(copy));
     if (FAILED(hr)) {
         qWarning() << "Failed to create texture:" << hr << std::system_category().message(hr);
         return {};
     }
 
-    QWindowsIUPointer<ID3D11DeviceContext> ctx;
-    dev->GetImmediateContext(ctx.address());
-    ctx->CopySubresourceRegion(copy.get(), 0, 0, 0, 0, from, index, nullptr);
+    ComPtr<ID3D11DeviceContext> ctx;
+    dev->GetImmediateContext(address(ctx));
+    ctx->CopySubresourceRegion(get(copy), 0, 0, 0, 0, from, index, nullptr);
     return copy;
 }
 
@@ -155,14 +182,14 @@ public:
             }
             auto shared = shareTexture(dev, texture);
             if (shared)
-                const_cast<VideoBuffer_D3D11*>(this)->m_texture = copyTexture(dev, shared.get(), texture_index);
+                const_cast<VideoBuffer_D3D11*>(this)->m_texture = copyTexture(dev, get(shared), texture_index);
         }
 
-        QList<quint64> textures = {quint64(m_texture.get()), quint64(m_texture.get())};
+        QList<quint64> textures = {quint64(get(m_texture)), quint64(get(m_texture))};
         return QVariant::fromValue(textures);
     }
 
-    QWindowsIUPointer<ID3D11Texture2D> m_texture;
+    ComPtr<ID3D11Texture2D> m_texture;
 };
 
 QAVVideoBuffer *QAVHWDevice_D3D11::videoBuffer(const QAVVideoFrame &frame) const
