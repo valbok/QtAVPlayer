@@ -11,12 +11,12 @@ jobs:
     strategy:
       matrix:
         compiler: ['gcc-9']
-        qt_version: ["5.15.2", "6.5.0"]
+        qt_version: ["5.15.2", "6.5.2"]
         include:
           - compiler: gcc-9
             packages: gcc-9 g++-9
             env: { 'CC': 'gcc-9', 'CXX': 'g++-9' }
-          - qt_version: "6.5.0"
+          - qt_version: "6.5.2"
             qt_modules: "qtmultimedia"
             qt_packages: "libxkbcommon-dev libgstreamer-plugins-base1.0-0 libgstreamer-gl1.0-0"
 
@@ -113,8 +113,11 @@ jobs:
   windows:
     strategy:
       matrix:
-        qt_version: ["5.15.2"]
+        qt_version: ["5.15.2", "6.5.2"]
         type: ["MSVC", "MINGW"]
+        include:
+          - qt_version: "6.5.2"
+            qt_modules: "qtmultimedia"
 
     runs-on: windows-latest
 
@@ -137,12 +140,14 @@ jobs:
         with:
           arch: win64_mingw81
           version: ${{ matrix.qt_version }}
+          modules: ${{ matrix.qt_modules }}
 
       - name: Install Qt
         if: ${{ matrix.type == 'MSVC' }}
         uses: jurplel/install-qt-action@v3
         with:
           version: ${{ matrix.qt_version }}
+          modules: ${{ matrix.qt_modules }}
 
       - name: Install FFmpeg
         shell: cmd
