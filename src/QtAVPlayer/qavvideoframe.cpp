@@ -397,6 +397,7 @@ QAVVideoFrame::operator QVideoFrame() const
         case AV_PIX_FMT_YUV420P:
             format = VideoFrame::Format_YUV420P;
             break;
+        case AV_PIX_FMT_YUV444P:
         case AV_PIX_FMT_YUV422P:
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
             result = convertTo(AV_PIX_FMT_YUV420P);
