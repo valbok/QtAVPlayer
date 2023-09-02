@@ -89,25 +89,25 @@ jobs:
       - name: Set environment path
         run: |
           echo "/usr/local/opt/qt5/bin" >> $GITHUB_PATH
-          echo "/usr/local/Cellar/ffmpeg/6.0/include" >> $GITHUB_PATH
+          echo "/usr/local/Cellar/ffmpeg/6.0_1/include" >> $GITHUB_PATH
           echo "/usr/local/opt/llvm@9/bin" >> $GITHUB_PATH
 
       - name: QMake Test
         run: |
           export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
           cd tests/auto/integration/qavdemuxer
-          qmake INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0/include" LIBS="-L/usr/local/Cellar/ffmpeg/6.0/lib"
+          qmake INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0_1/include" LIBS="-L/usr/local/Cellar/ffmpeg/6.0_1/lib"
           make CC=$CC CXX=$CXX
           tst_qavdemuxer.app/Contents/MacOS/tst_qavdemuxer
           cd ../qavplayer
-          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA" INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0/include" LIBS+="-L/usr/local/Cellar/ffmpeg/6.0/lib"
+          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA" INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0_1/include" LIBS="-L/usr/local/Cellar/ffmpeg/6.0_1/lib"
           make CC=$CC CXX=$CXX
           tst_qavplayer.app/Contents/MacOS/tst_qavplayer --platform minimal -maxwarnings 100000
 
       - name: Examples
         run: |
           cd examples/qml_video
-          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA" INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0/include" LIBS+="-L/usr/local/Cellar/ffmpeg/6.0/lib"
+          qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA" INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0_1/include" LIBS+="-L/usr/local/Cellar/ffmpeg/6.0_1/lib"
           make CC=$CC CXX=$CXX
 
   windows:
