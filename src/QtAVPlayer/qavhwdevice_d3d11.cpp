@@ -23,6 +23,7 @@ using ComPtr = QWindowsIUPointer<T>;
 #endif
 
 extern "C" {
+#include <libavcodec/avcodec.h>
 #include <libavcodec/d3d11va.h>
 #include <libavutil/hwcontext_d3d11va.h>
 }
