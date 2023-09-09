@@ -2991,8 +2991,8 @@ void tst_QAVPlayer::audioFilterVideoFrames()
     p.setSynced(false);
     p.play();
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
-    QCOMPARE(videoFramesCount, 0);
-    QVERIFY(audioFramesCount > 0);
+    QTRY_VERIFY(videoFramesCount > 0);
+    QTRY_VERIFY(audioFramesCount > 0);
 }
 
 void tst_QAVPlayer::multipleFilters()
