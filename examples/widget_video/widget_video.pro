@@ -1,8 +1,9 @@
 TEMPLATE = app
 TARGET = widget_video
-INCLUDEPATH += .
+INCLUDEPATH += . ../../src
+include(../../src/QtAVPlayer/QtAVPlayer.pri)
 
-QT += gui multimedia multimediawidgets QtAVPlayer
+QT += gui multimedia multimediawidgets
 
 SOURCES += main.cpp
 
