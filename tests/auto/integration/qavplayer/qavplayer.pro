@@ -1,5 +1,5 @@
 TARGET = tst_qavplayer
-
+DEFINES+="QT_AVPLAYER_MULTIMEDIA"
 INCLUDEPATH += ../../../../src/ ../../../../src/QtAVPlayer
 include(../../../../src/QtAVPlayer/QtAVPlayer.pri)
 

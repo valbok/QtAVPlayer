@@ -1,5 +1,4 @@
 TARGET = tst_qavdemuxer
-
 INCLUDEPATH += ../../../../src/ ../../../../src/QtAVPlayer
 include(../../../../src/QtAVPlayer/QtAVPlayer.pri)
 
