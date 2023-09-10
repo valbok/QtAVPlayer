@@ -151,7 +151,7 @@ static int readFrames(
     for (size_t i = 0; i < filters.size(); ++i) {
         do {
             int ret = filters[i]->read(frame);
-            if (ret >= 0)
+            if (ret >= 0 && (!frame.filterName().isEmpty() || i == 0))
                 filteredFrames.append(frame);
         } while (!filters[i]->isEmpty());
     }
