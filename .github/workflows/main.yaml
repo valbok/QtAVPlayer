@@ -113,7 +113,7 @@ jobs:
   windows:
     strategy:
       matrix:
-        qt_version: ["5.15.2"]
+        qt_version: ["5.15.2", "6.5.2"]
         type: ["MSVC", "MINGW"]
         include:
           - qt_version: "6.5.2"
@@ -135,10 +135,17 @@ jobs:
           choco install wget unzip xidel
 
       - name: Install Qt
-        if: ${{ matrix.type == 'MINGW' }}
+        if: ${{ matrix.type == 'MINGW' && matrix.qt_version == '5.15.2' }}
         uses: jurplel/install-qt-action@v3
         with:
           arch: win64_mingw81
+          version: ${{ matrix.qt_version }}
+
+      - name: Install Qt
+        if: ${{ matrix.type == 'MINGW' && matrix.qt_version == '6.5.2' }}
+        uses: jurplel/install-qt-action@v3
+        with:
+          arch: win64_mingw
           version: ${{ matrix.qt_version }}
           modules: ${{ matrix.qt_modules }}
 
