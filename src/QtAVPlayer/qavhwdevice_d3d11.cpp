@@ -9,6 +9,8 @@
 #include "qavvideobuffer_gpu_p.h"
 #include <d3d11.h>
 
+#ifdef QT_AVPLAYER_MULTIMEDIA
+
 #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
 #include <private/qrhi_p.h>
 #include <private/qrhid3d11_p.h>
@@ -21,6 +23,8 @@ using ComPtr = QWindowsIUPointer<T>;
 #endif
 #include <system_error>
 #endif
+
+#endif // QT_AVPLAYER_MULTIMEDIA
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -66,6 +70,8 @@ AVHWDeviceType QAVHWDevice_D3D11::type() const
 {
     return AV_HWDEVICE_TYPE_D3D11VA;
 }
+
+#ifdef QT_AVPLAYER_MULTIMEDIA
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
 
@@ -198,7 +204,7 @@ QAVVideoBuffer *QAVHWDevice_D3D11::videoBuffer(const QAVVideoFrame &frame) const
     return new VideoBuffer_D3D11(frame);
 }
 
-#else
+#else // QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
 
 QAVVideoBuffer *QAVHWDevice_D3D11::videoBuffer(const QAVVideoFrame &frame) const
 {
@@ -206,5 +212,14 @@ QAVVideoBuffer *QAVHWDevice_D3D11::videoBuffer(const QAVVideoFrame &frame) const
 }
 
 #endif
+
+#else // QT_AVPLAYER_MULTIMEDIA
+
+QAVVideoBuffer *QAVHWDevice_D3D11::videoBuffer(const QAVVideoFrame &frame) const
+{
+    return new QAVVideoBuffer_GPU(frame);
+}
+
+#endif // QT_AVPLAYER_MULTIMEDIA
 
 QT_END_NAMESPACE
