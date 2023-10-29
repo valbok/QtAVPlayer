@@ -41,10 +41,10 @@ extern "C" {
 }
 #endif
 
-#include <QAtomicInt>
 #include <QDir>
 #include <QSharedPointer>
 #include <QMutexLocker>
+#include <atomic>
 #include <QDebug>
 
 extern "C" {
@@ -71,7 +71,7 @@ public:
     AVFormatContext *ctx = nullptr;
     AVBSFContext *bsf_ctx = nullptr;
 
-    bool abortRequest = false;
+    std::atomic_bool abortRequest = false;
     mutable QMutex mutex;
 
     bool seekable = false;
@@ -92,7 +92,6 @@ public:
 static int decode_interrupt_cb(void *ctx)
 {
     auto d = reinterpret_cast<QAVDemuxerPrivate *>(ctx);
-    QMutexLocker locker(&d->mutex);
     return d ? int(d->abortRequest) : 0;
 }
 
