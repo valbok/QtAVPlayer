@@ -8,6 +8,7 @@
 #include <QtAVPlayer/qavplayer.h>
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QtAVPlayer/qavaudiooutput.h>
+#include <QtAVPlayer/qaviodevice.h>
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QAbstractVideoSurface>
 #include <private/qdeclarativevideooutput_p.h>
@@ -168,13 +169,13 @@ int main(int argc, char *argv[])
         }
     });
 
-    std::unique_ptr<QFile> qrc;
+    QSharedPointer<QAVIODevice> qrc;
     if (file.startsWith(":/")) {
-        qrc = std::make_unique<QFile>(file);
-        if (!qrc->open(QIODevice::ReadOnly))
-            qrc.reset();
+        QSharedPointer<QIODevice> io(new QFile(file));
+        if (io->open(QIODevice::ReadOnly))
+            qrc.reset(new QAVIODevice(io));
     }
-    p.setSource(file, qrc.get());
+    p.setSource(file, qrc);
     p.setFilter(filter);
     //p.setSynced(false);
 

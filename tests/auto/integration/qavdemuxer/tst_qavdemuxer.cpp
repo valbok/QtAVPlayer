@@ -8,7 +8,7 @@
 #include "qavdemuxer_p.h"
 #include "qavaudioframe.h"
 #include "qavvideoframe.h"
-#include "qaviodevice_p.h"
+#include "qaviodevice.h"
 #include "qavvideocodec_p.h"
 #include "qavaudiocodec_p.h"
 
@@ -226,8 +226,8 @@ void tst_QAVDemuxer::fileIO()
 {
     QAVDemuxer d;
 
-    QFile file(testData("colors.mp4"));
-    if (!file.open(QIODevice::ReadOnly)) {
+    QSharedPointer<QIODevice> file(new QFile(testData("colors.mp4")));
+    if (!file->open(QIODevice::ReadOnly)) {
         QFAIL("Could not open");
         return;
     }
@@ -285,8 +285,8 @@ void tst_QAVDemuxer::qrcIO()
 {
     QAVDemuxer d;
 
-    QFile file(":/test.wav");
-    if (!file.open(QIODevice::ReadOnly)) {
+    QSharedPointer<QIODevice> file(new QFile(":/test.wav"));
+    if (!file->open(QIODevice::ReadOnly)) {
         QFAIL("Could not open");
         return;
     }

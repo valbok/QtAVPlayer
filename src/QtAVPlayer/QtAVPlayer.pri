@@ -29,10 +29,10 @@ PRIVATE_HEADERS += \
     $$PWD/qavaudioinputfilter_p.h \ 
     $$PWD/qavvideooutputfilter_p.h \
     $$PWD/qavaudiooutputfilter_p.h \
-    $$PWD/qaviodevice_p.h \
     $$PWD/qavfilters_p.h
 
 PUBLIC_HEADERS += \
+    $$PWD/qaviodevice.h \
     $$PWD/qavaudioformat.h \
     $$PWD/qavstreamframe.h \
     $$PWD/qavframe.h \

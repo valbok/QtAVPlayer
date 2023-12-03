@@ -7,7 +7,7 @@
 
 #include "qavplayer.h"
 #include "qavaudiooutput.h"
-#include "qaviodevice_p.h"
+#include "qaviodevice.h"
 
 #include <QDebug>
 #include <QtTest/QtTest>
@@ -1263,13 +1263,13 @@ void tst_QAVPlayer::files_io()
     QAVPlayer p;
 
     QFileInfo fileInfo(path);
-    QFile file(fileInfo.absoluteFilePath());
-    if (!file.open(QIODevice::ReadOnly)) {
+    QSharedPointer<QIODevice> file(new QFile(fileInfo.absoluteFilePath()));
+    if (!file->open(QIODevice::ReadOnly)) {
         QFAIL("Could not open");
         return;
     }
-
-    p.setSource(path, &file);
+    QSharedPointer<QAVIODevice> dev(new QAVIODevice(file));
+    p.setSource(path, dev);
 
     int vf = 0;
     QAVVideoFrame videoFrame;
@@ -2457,21 +2457,22 @@ void tst_QAVPlayer::filesIO()
         return;
     }
 
-    Buffer buffer;
-    buffer.m_size = file.size();
-    buffer.open(QIODevice::ReadWrite);
+    QSharedPointer<Buffer> buffer(new Buffer);
+    buffer->m_size = file.size();
+    buffer->open(QIODevice::ReadWrite);
 
     QAVPlayer p;
     QAVVideoFrame frame;
     int framesCount = 0;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
 
-    p.setSource(fileInfo.fileName(), &buffer);
+    QSharedPointer<QAVIODevice> dev(new QAVIODevice(buffer));
+    p.setSource(fileInfo.fileName(), dev);
     p.play();
 
     while(!file.atEnd()) {
         auto bytes = file.read(64 * 1024);
-        buffer.write(bytes);
+        buffer->write(bytes);
         QTest::qWait(50);
     }
 
@@ -2506,21 +2507,22 @@ void tst_QAVPlayer::filesIOSequential()
     QFile file(fileInfo.absoluteFilePath());
     file.open(QFile::ReadOnly);
 
-    BufferSequential buffer;
-    buffer.m_size = file.size();
-    buffer.open(QIODevice::ReadWrite);
+    QSharedPointer<BufferSequential> buffer(new BufferSequential);
+    buffer->m_size = file.size();
+    buffer->open(QIODevice::ReadWrite);
 
     QAVPlayer p;
     QAVVideoFrame frame;
     int framesCount = 0;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
 
-    p.setSource(fileInfo.fileName(), &buffer);
+    QSharedPointer<QAVIODevice> dev(new QAVIODevice(buffer));
+    p.setSource(fileInfo.fileName(), dev);
     p.play();
 
     while(!file.atEnd()) {
         auto bytes = file.read(64 * 1024);
-        buffer.write(bytes);
+        buffer->write(bytes);
         QTest::qWait(50);
     }
 

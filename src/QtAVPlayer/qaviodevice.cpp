@@ -5,7 +5,7 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#include "qaviodevice_p.h"
+#include "qaviodevice.h"
 #include <QMutex>
 #include <QWaitCondition>
 
@@ -30,13 +30,13 @@ class QAVIODevicePrivate
 {
     Q_DECLARE_PUBLIC(QAVIODevice)
 public:
-    explicit QAVIODevicePrivate(QAVIODevice *q, QIODevice &device)
+    explicit QAVIODevicePrivate(QAVIODevice *q, const QSharedPointer<QIODevice> &device)
         : q_ptr(q)
         , device(device)
         , buffer(static_cast<unsigned char*>(av_malloc(buffer_size)))
-        , ctx(avio_alloc_context(buffer, static_cast<int>(buffer_size), 0, this, &QAVIODevicePrivate::read, nullptr, !device.isSequential() ? &QAVIODevicePrivate::seek : nullptr))
+        , ctx(avio_alloc_context(buffer, static_cast<int>(buffer_size), 0, this, &QAVIODevicePrivate::read, nullptr, !device->isSequential() ? &QAVIODevicePrivate::seek : nullptr))
     {
-        if (!device.isSequential())
+        if (!device->isSequential())
             ctx->seekable = AVIO_SEEKABLE_NORMAL;
     }
 
@@ -52,7 +52,7 @@ public:
         if (readRequest.data == nullptr || readRequest.wroteBytes)
             return;
 
-        readRequest.wroteBytes = !device.atEnd() ? device.read((char *)readRequest.data, readRequest.maxSize) : AVERROR_EOF;
+        readRequest.wroteBytes = !device->atEnd() ? device->read((char *)readRequest.data, readRequest.maxSize) : AVERROR_EOF;
         // Unblock the decoder thread when there is available bytes
         if (readRequest.wroteBytes) {
             waitCond.wakeAll();
@@ -96,14 +96,14 @@ public:
         QMetaObject::invokeMethod(d->q_ptr, [&] {
             QMutexLocker locker(&d->mutex);
             if (whence == AVSEEK_SIZE) {
-                pos = d->device.size() > 0 ? d->device.size() : 0;
+                pos = d->device->size() > 0 ? d->device->size() : 0;
             } else {
                 if (whence == SEEK_END)
-                    offset = d->device.size() - offset;
+                    offset = d->device->size() - offset;
                 else if (whence == SEEK_CUR)
-                    offset = d->device.pos() + offset;
+                    offset = d->device->pos() + offset;
 
-                pos = d->device.seek(offset) ? d->device.pos() : -1;
+                pos = d->device->seek(offset) ? d->device->pos() : -1;
             }
             d->waitCond.wakeAll();
             wake = true;
@@ -116,23 +116,23 @@ public:
         return pos;
     }
 
-    const size_t buffer_size = 64 * 1024;
+    size_t buffer_size = 64 * 1024;
     QAVIODevice *q_ptr = nullptr;
-    QIODevice &device;
+    QSharedPointer<QIODevice> device;
     unsigned char *buffer = nullptr;
     AVIOContext *ctx = nullptr;
-    QMutex mutex;
+    mutable QMutex mutex;
     QWaitCondition waitCond;
     bool aborted = false;
     bool wakeRead = false;
     ReadRequest readRequest;
 };
 
-QAVIODevice::QAVIODevice(QIODevice &device, QObject *parent)
+QAVIODevice::QAVIODevice(const QSharedPointer<QIODevice> &device, QObject *parent)
     : QObject(parent)
     , d_ptr(new QAVIODevicePrivate(this, device))
 {
-    connect(&device, &QIODevice::readyRead, this, [this] {
+    connect(device.get(), &QIODevice::readyRead, this, [this] {
         Q_D(QAVIODevice);
         d->readData();
     });
@@ -154,6 +154,20 @@ void QAVIODevice::abort(bool aborted)
     QMutexLocker locker(&d->mutex);
     d->aborted = aborted;
     d->waitCond.wakeAll();
+}
+
+void QAVIODevice::setBufferSize(size_t size)
+{
+    Q_D(QAVIODevice);
+    QMutexLocker locker(&d->mutex);
+    d->buffer_size = size;
+}
+
+size_t QAVIODevice::bufferSize() const
+{
+    Q_D(const QAVIODevice);
+    QMutexLocker locker(&d->mutex);
+    return d->buffer_size;
 }
 
 QT_END_NAMESPACE

@@ -18,7 +18,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QIODevice;
+class QAVIODevice;
 class QAVPlayerPrivate;
 class QAVPlayer : public QObject
 {
@@ -53,7 +53,7 @@ public:
     QAVPlayer(QObject *parent = nullptr);
     ~QAVPlayer();
 
-    void setSource(const QString &url, QIODevice *dev = nullptr);
+    void setSource(const QString &url, const QSharedPointer<QAVIODevice> &dev = {});
     QString source() const;
 
     QList<QAVStream> availableVideoStreams() const;
