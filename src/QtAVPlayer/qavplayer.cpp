@@ -7,7 +7,7 @@
 
 #include "qavplayer.h"
 #include "qavdemuxer_p.h"
-#include "qaviodevice_p.h"
+#include "qaviodevice.h"
 #include "qavvideocodec_p.h"
 #include "qavaudiocodec_p.h"
 #include "qavvideoframe.h"
@@ -110,7 +110,7 @@ public:
 
     QAVPlayer *q_ptr = nullptr;
     QString url;
-    QScopedPointer<QAVIODevice> dev;
+    QSharedPointer<QAVIODevice> dev;
     QAVPlayer::MediaStatus mediaStatus = QAVPlayer::NoMedia;
     QList<PendingMediaStatus> pendingMediaStatuses;
     QAVPlayer::State state = QAVPlayer::StoppedState;
@@ -502,7 +502,7 @@ void QAVPlayerPrivate::doLoad()
 {
     demuxer.abort(false);
     demuxer.unload();
-    int ret = demuxer.load(url, dev.data());
+    int ret = demuxer.load(url, dev.get());
     if (ret < 0) {
         setError(QAVPlayer::ResourceError, err_str(ret));
         return;
@@ -867,7 +867,7 @@ QAVPlayer::~QAVPlayer()
     d->terminate();
 }
 
-void QAVPlayer::setSource(const QString &url, QIODevice *dev)
+void QAVPlayer::setSource(const QString &url, const QSharedPointer<QAVIODevice> &dev)
 {
     Q_D(QAVPlayer);
     if (d->url == url)
@@ -877,8 +877,7 @@ void QAVPlayer::setSource(const QString &url, QIODevice *dev)
 
     d->terminate();
     d->url = url;
-    if (dev)
-        d->dev.reset(new QAVIODevice(*dev));
+    d->dev = dev;
     emit sourceChanged(url);
     d->wait(true);
     d->quit = false;
