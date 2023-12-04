@@ -39,9 +39,10 @@ Free and open-source Qt Media Player library based on FFmpeg.
        player.setSource("/home/lana/The Matrix Resurrections.mov");
 
        // Playing from qrc
-       QFile file(QLatin1String(":/alarm.wav"));
-       file.open(QIODevice::ReadOnly));
-       player.setSource("alarm", &file);
+       QSharedPointer<QIODevice> file(new QFile(":/alarm.wav"));
+       file->open(QIODevice::ReadOnly);
+       QSharedPointer<QAVIODevice> dev(new QAVIODevice(file));
+       player.setSource("alarm", dev);
 
        // Getting frames from the camera in Linux
        player.setSource("/dev/video0");
@@ -60,7 +61,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
        // Using various protocols
        player.setSource("subfile,,start,0,end,0,,:/root/Downloads/why-qtmm-must-die.mkv");
 
-2. Easy getting video and audio frames:
+3. Easy getting video and audio frames:
 
        QObject::connect(&player, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) {
            // QAVVideoFrame is comppatible with QVideoFrame
@@ -75,7 +76,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
            
            // The frame might contain OpenGL or MTL textures, for copy-free rendering
            qDebug() << frame.handleType() << frame.handle();
-       });
+       }, Qt::DirectConnection);
 
        // Audio frames could be played using QAVAudioOutput
        QAVAudioOutput audioOutput;
@@ -83,7 +84,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
             // Access to the data
             qDebug() << autioFrame.format() << autioFrame.data().size();
             audioOutput.play(frame);
-       });
+       }, Qt::DirectConnection);
        
        QObject::connect(&p, &QAVPlayer::subtitleFrame, &p, [](const QAVSubtitleFrame &frame) {
             for (unsigned i = 0; i < frame.subtitle()->num_rects; ++i) {
@@ -92,10 +93,10 @@ Free and open-source Qt Media Player library based on FFmpeg.
                 else
                     qDebug() << "ass:" << frame.subtitle()->rects[i]->ass;
            }
-       });
+       }, Qt::DirectConnection);
        
 
-3. Each action is confirmed by a signal:
+4. Each action is confirmed by a signal:
 
        // All signals are added to a queue and guaranteed to be emitted in proper order.
        QObject::connect(&player, &QAVPlayer::played, [&](qint64 pos) { qDebug() << "Playing started from pos" << pos;  });
