@@ -10,6 +10,7 @@
 
 #include <QtAVPlayer/qavaudioframe.h>
 #include <QtAVPlayer/qtavplayerglobal.h>
+#include <QAudioFormat>
 #include <QObject>
 #include <memory>
 
@@ -26,6 +27,10 @@ public:
     qreal volume() const;
     void setBufferSize(int bytes);
     int bufferSize() const;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+    void setChannelConfig(QAudioFormat::ChannelConfig);
+    QAudioFormat::ChannelConfig channelConfig() const;
+#endif
 
     bool play(const QAVAudioFrame &frame);
 

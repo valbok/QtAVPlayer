@@ -6,7 +6,6 @@
  *********************************************************/
 
 #include "qavaudiooutput.h"
-#include <QAudioFormat>
 #include <QDebug>
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <QFuture>
@@ -98,6 +97,10 @@ public:
     AudioOutput *audioOutput = nullptr;
     qreal volume = 1.0;
     int bufferSize = 0;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+    QAudioFormat::ChannelConfig channelConfig = QAudioFormat::ChannelConfigUnknown;
+#endif
+
     QList<QAVAudioFrame> frames;
     qint64 offset = 0;
     bool quit = 0;
@@ -153,6 +156,7 @@ public:
 #else
         auto audioDevice = QMediaDevices::defaultAudioOutput();
 #endif
+
         if (!audioOutput
             || (fmt.isValid() && audioOutput->format() != fmt)
             || audioOutput->state() == QAudio::StoppedState
@@ -192,6 +196,9 @@ public:
             QMutexLocker locker(&mutex);
             cond.wait(&mutex, 10);
             auto fmt =  !frames.isEmpty() ? format(frames.first().format()) : QAudioFormat();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+            fmt.setChannelConfig(channelConfig);
+#endif
             locker.unlock();
             if (fmt.isValid())
                 init(fmt);
@@ -251,6 +258,23 @@ int QAVAudioOutput::bufferSize() const
     QMutexLocker locker(&d->mutex);
     return d->bufferSize;
 }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+void QAVAudioOutput::setChannelConfig(QAudioFormat::ChannelConfig config)
+{
+    Q_D(QAVAudioOutput);
+    QMutexLocker locker(&d->mutex);
+    d->channelConfig = config;
+}
+
+QAudioFormat::ChannelConfig QAVAudioOutput::channelConfig() const
+{
+    Q_D(const QAVAudioOutput);
+    QMutexLocker locker(&d->mutex);
+    return d->channelConfig;
+}
+
+#endif
 
 bool QAVAudioOutput::play(const QAVAudioFrame &frame)
 {
