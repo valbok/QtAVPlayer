@@ -112,6 +112,10 @@ int main(int argc, char *argv[])
     }, Qt::DirectConnection);
 #endif
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+    //audioOutput.setChannelConfig(QAudioFormat::channelConfig(QAudioFormat::FrontLeft));
+#endif
+
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); }, Qt::DirectConnection);
     QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QLatin1String("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
     QString filter = argc > 2 ? QString::fromUtf8(argv[2]) : QString();

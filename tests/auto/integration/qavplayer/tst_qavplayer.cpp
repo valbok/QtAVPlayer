@@ -1853,7 +1853,12 @@ void tst_QAVPlayer::audioOutput()
     p.setSource(file1.absoluteFilePath());
     p.play();
     QTest::qWait(100);
-
+    out.setVolume(0.9);
+    QCOMPARE(out.volume(), 0.9);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+    out.setChannelConfig(QAudioFormat::channelConfig(QAudioFormat::FrontRight));
+    QCOMPARE(out.channelConfig(), QAudioFormat::channelConfig(QAudioFormat::FrontRight));
+#endif
     p.setSource(file2.absoluteFilePath());
     p.play();
     QTRY_VERIFY(p.position() > 500);
@@ -3015,11 +3020,18 @@ void tst_QAVPlayer::multipleFilters()
     };
 
     QMap<QString, int> framesCount;
+    QMutex mutex;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) {
+        QMutexLocker locker(&mutex);
+        if (!framesCount.contains(f.filterName()))
+            qDebug() << "video [" << f.filterName() << "]";
         ++framesCount[f.filterName()];
     }, Qt::DirectConnection);
 
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) {
+        QMutexLocker locker(&mutex);
+        if (!framesCount.contains(f.filterName()))
+            qDebug() << "audio [" << f.filterName() << "]";
         ++framesCount[f.filterName()];
     }, Qt::DirectConnection);
 
@@ -3027,21 +3039,21 @@ void tst_QAVPlayer::multipleFilters()
     p.setFilters(filters);
     p.play();
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
-    QVERIFY(framesCount.contains("stats"));
+    QTRY_VERIFY(framesCount.contains("stats"));
     QCOMPARE(framesCount["stats"], 250);
-    QVERIFY(framesCount.contains("1:0"));
+    QTRY_VERIFY(framesCount.contains("1:0"));
     QCOMPARE(framesCount["1:0"], 101);
-    QVERIFY(framesCount.contains("thumbnails"));
+    QTRY_VERIFY(framesCount.contains("thumbnails"));
     QCOMPARE(framesCount["thumbnails"], 250);
-    QVERIFY(framesCount.contains("panel_0"));
+    QTRY_VERIFY(framesCount.contains("panel_0"));
     QCOMPARE(framesCount["panel_0"], 1);
-    QVERIFY(framesCount.contains("panel_1"));
+    QTRY_VERIFY(framesCount.contains("panel_1"));
     QCOMPARE(framesCount["panel_1"], 1);
-    QVERIFY(framesCount.contains("panel_2"));
+    QTRY_VERIFY(framesCount.contains("panel_2"));
     QCOMPARE(framesCount["panel_2"], 1);
-    QVERIFY(framesCount.contains("panel_3"));
+    QTRY_VERIFY(framesCount.contains("panel_3"));
     QCOMPARE(framesCount["panel_3"], 1);
-    QVERIFY(framesCount.contains("panel_4"));
+    QTRY_VERIFY(framesCount.contains("panel_4"));
     QCOMPARE(framesCount["panel_4"], 1);
 }
 
