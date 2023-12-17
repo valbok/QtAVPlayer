@@ -1853,6 +1853,8 @@ void tst_QAVPlayer::audioOutput()
     p.setSource(file1.absoluteFilePath());
     p.play();
     QTest::qWait(100);
+    out.setVolume(0.9);
+    QCOMPARE(out.volume(), 0.9);
 
     p.setSource(file2.absoluteFilePath());
     p.play();

@@ -231,6 +231,13 @@ void QAVAudioOutput::setVolume(qreal v)
     d->volume = v;
 }
 
+qreal QAVAudioOutput::volume() const
+{
+    Q_D(const QAVAudioOutput);
+    QMutexLocker locker(&d->mutex);
+    return d->volume;
+}
+
 void QAVAudioOutput::setBufferSize(int bytes)
 {
     Q_D(QAVAudioOutput);

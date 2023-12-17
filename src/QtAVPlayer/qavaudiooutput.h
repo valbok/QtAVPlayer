@@ -23,6 +23,7 @@ public:
     ~QAVAudioOutput();
 
     void setVolume(qreal v);
+    qreal volume() const;
     void setBufferSize(int bytes);
     int bufferSize() const;
 
