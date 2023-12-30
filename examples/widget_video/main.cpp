@@ -102,29 +102,26 @@ int main(int argc, char *argv[])
     p.play();
 
     QAVAudioOutput audioOutput;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); });
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); }, Qt::DirectConnection);
 
-    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
         if (vr.m_surface == nullptr)
             return;
-#endif
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         QVideoFrame videoFrame = frame.convertTo(AV_PIX_FMT_RGB32);
-#else
-        QVideoFrame videoFrame = frame;
-#endif
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         if (!vr.m_surface->isActive() || vr.m_surface->surfaceFormat().frameSize() != videoFrame.size()) {
             QVideoSurfaceFormat f(videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType());
             vr.m_surface->start(f);
         }
         if (vr.m_surface->isActive())
             vr.m_surface->present(videoFrame);
+    }, Qt::DirectConnection);
 #else
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
+        QVideoFrame videoFrame = frame;
         w.videoSink()->setVideoFrame(videoFrame);
+    }, Qt::DirectConnection);
 #endif
-    });
 
     return app.exec();
 }
