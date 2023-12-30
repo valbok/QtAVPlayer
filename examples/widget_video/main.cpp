@@ -109,7 +109,11 @@ int main(int argc, char *argv[])
         if (vr.m_surface == nullptr)
             return;
 #endif
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         QVideoFrame videoFrame = frame.convertTo(AV_PIX_FMT_RGB32);
+#else
+        QVideoFrame videoFrame = frame;
+#endif
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         if (!vr.m_surface->isActive() || vr.m_surface->surfaceFormat().frameSize() != videoFrame.size()) {
             QVideoSurfaceFormat f(videoFrame.size(), videoFrame.pixelFormat(), videoFrame.handleType());
