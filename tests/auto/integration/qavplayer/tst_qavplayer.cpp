@@ -1848,7 +1848,11 @@ void tst_QAVPlayer::audioOutput()
 
     QAVPlayer p;
     QAVAudioOutput out;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &out, [&out](const QAVAudioFrame &f) { out.play(f); });
+    QAVAudioFrame frame;
+    QObject::connect(&p, &QAVPlayer::audioFrame, &out, [&out, &frame](const QAVAudioFrame &f) {
+        out.play(f);
+        frame = f;
+    });
 
     p.setSource(file1.absoluteFilePath());
     p.play();
@@ -1862,6 +1866,10 @@ void tst_QAVPlayer::audioOutput()
     p.setSource(file2.absoluteFilePath());
     p.play();
     QTRY_VERIFY(p.position() > 500);
+    auto fmt = frame.format();
+    auto af = QAVAudioFrame(fmt, frame.data());
+    QCOMPARE(af.format(), fmt);
+    QCOMPARE(af.data(), frame.data());
 }
 #endif // #ifndef QT_AVPLAYER_MULTIMEDIA
 

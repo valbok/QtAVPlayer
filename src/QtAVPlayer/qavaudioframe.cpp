@@ -50,6 +50,14 @@ QAVAudioFrame::QAVAudioFrame(const QAVAudioFrame &other)
     operator=(other);
 }
 
+QAVAudioFrame::QAVAudioFrame(const QAVAudioFormat &format, const QByteArray &data)
+    : QAVAudioFrame()
+{
+    Q_D(QAVAudioFrame);
+    d->outAudioFormat = format;
+    d->data = data;
+}
+
 QAVAudioFrame &QAVAudioFrame::operator=(const QAVFrame &other)
 {
     Q_D(QAVAudioFrame);
@@ -63,9 +71,17 @@ QAVAudioFrame &QAVAudioFrame::operator=(const QAVAudioFrame &other)
 {
     Q_D(QAVAudioFrame);
     QAVFrame::operator=(other);
-    d->data.clear();
+    auto rhs = reinterpret_cast<QAVAudioFramePrivate *>(other.d_ptr.get());
+    d->outAudioFormat = rhs->outAudioFormat;
+    d->data = rhs->data;
 
     return *this;
+}
+
+QAVAudioFrame::operator bool() const
+{
+    Q_D(const QAVAudioFrame);
+    return (d->outAudioFormat &&!d->data.isEmpty()) || QAVFrame::operator bool();
 }
 
 static const QAVAudioCodec *audioCodec(const QAVCodec *c)
@@ -76,6 +92,9 @@ static const QAVAudioCodec *audioCodec(const QAVCodec *c)
 QAVAudioFormat QAVAudioFrame::format() const
 {
     Q_D(const QAVAudioFrame);
+    if (d->outAudioFormat)
+        return d->outAudioFormat;
+
     if (!d->stream)
         return {};
 
@@ -93,14 +112,14 @@ QAVAudioFormat QAVAudioFrame::format() const
 QByteArray QAVAudioFrame::data() const
 {
     auto d = const_cast<QAVAudioFramePrivate *>(reinterpret_cast<QAVAudioFramePrivate *>(d_ptr.get()));
-    auto frame = d->frame;
+    const auto frame = d->frame;
     if (!frame)
         return {};
 
-    auto fmt = format();
-    if (d->outAudioFormat == fmt && !d->data.isEmpty())
+    if (d->outAudioFormat && !d->data.isEmpty())
         return d->data;
 
+    const auto fmt = format();
     AVSampleFormat outFormat = AV_SAMPLE_FMT_NONE;
 #if LIBAVUTIL_VERSION_MAJOR < 58
     int64_t outChannelLayout = av_get_default_channel_layout(fmt.channelCount());
@@ -124,7 +143,7 @@ QByteArray QAVAudioFrame::data() const
         outFormat = AV_SAMPLE_FMT_FLT;
         break;
     default:
-        qWarning() << "Could not negotiate output format";
+        qWarning() << "Could not negotiate output format:" << fmt.sampleFormat();
         return {};
     }
 
@@ -175,7 +194,8 @@ QByteArray QAVAudioFrame::data() const
         }
 
         int size = samples * fmt.channelCount() * av_get_bytes_per_sample(outFormat);
-        d->data = QByteArray::fromRawData((const char *)d->audioBuf, size);
+        // Make deep copy
+        d->data = QByteArray((const char *)d->audioBuf, size);
     } else {
         int size = av_samples_get_buffer_size(nullptr,
 #if LIBAVUTIL_VERSION_MAJOR < 58
