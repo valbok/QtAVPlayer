@@ -69,7 +69,7 @@ static QAudioFormat format(const QAVAudioFormat &from)
 #endif
         break;
     default:
-        qWarning() << "Could not negotiate output format";
+        qWarning() << "Could not negotiate output format:" << from.sampleFormat();
         return {};
     }
 
