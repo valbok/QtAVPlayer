@@ -194,7 +194,7 @@ public:
     {
         while (!quit) {
             QMutexLocker locker(&mutex);
-            cond.wait(&mutex, 10);
+            cond.wait(&mutex);
             auto fmt =  !frames.isEmpty() ? format(frames.first().format()) : QAudioFormat();
 #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
             fmt.setChannelConfig(channelConfig);
