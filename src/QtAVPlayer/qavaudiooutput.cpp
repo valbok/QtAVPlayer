@@ -149,7 +149,7 @@ public:
     bool isSequential() const override { return true; }
     bool atEnd() const override { return false; }
 
-    void init(const QAudioFormat &fmt)
+    void init(const QAudioFormat &fmt, qreal v, int bsize)
     {
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         auto audioDevice = QAudioDeviceInfo::defaultOutputDevice();
@@ -182,12 +182,11 @@ public:
                                  }
                              });
 
-            if (bufferSize > 0)
-                audioOutput->setBufferSize(bufferSize);
+            if (bsize > 0)
+                audioOutput->setBufferSize(bsize);
             audioOutput->start(this);
         }
-
-        audioOutput->setVolume(volume);
+        audioOutput->setVolume(v);
     }
 
     void doPlayAudio()
@@ -195,13 +194,14 @@ public:
         while (!quit) {
             QMutexLocker locker(&mutex);
             cond.wait(&mutex);
-            auto fmt =  !frames.isEmpty() ? format(frames.first().format()) : QAudioFormat();
+            auto fmt = !frames.isEmpty() ? format(frames.first().format()) : QAudioFormat();
 #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
             fmt.setChannelConfig(channelConfig);
 #endif
+            auto v = volume;
+            auto bsize = bufferSize;
             locker.unlock();
-            if (fmt.isValid())
-                init(fmt);
+            init(fmt, v, bsize);
             QCoreApplication::processEvents();
         }
         if (audioOutput) {
@@ -210,17 +210,23 @@ public:
         }
         audioOutput = nullptr;
     }
+
+    void startThreadIfNeeded()
+    {
+        if (!audioPlayFuture.isRunning()) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+            audioPlayFuture = QtConcurrent::run(&threadPool, this, &QAVAudioOutputPrivate::doPlayAudio);
+#else
+            audioPlayFuture = QtConcurrent::run(&threadPool, &QAVAudioOutputPrivate::doPlayAudio, this);
+#endif
+        }
+    }
 };
 
 QAVAudioOutput::QAVAudioOutput(QObject *parent)
     : QObject(parent)
     , d_ptr(new QAVAudioOutputPrivate)
 {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    d_ptr->audioPlayFuture = QtConcurrent::run(&d_ptr->threadPool, d_ptr.get(), &QAVAudioOutputPrivate::doPlayAudio);
-#else
-    d_ptr->audioPlayFuture = QtConcurrent::run(&d_ptr->threadPool, &QAVAudioOutputPrivate::doPlayAudio, d_ptr.get());
-#endif
 }
 
 QAVAudioOutput::~QAVAudioOutput()
@@ -236,6 +242,7 @@ void QAVAudioOutput::setVolume(qreal v)
     Q_D(QAVAudioOutput);
     QMutexLocker locker(&d->mutex);
     d->volume = v;
+    d->cond.wakeAll();
 }
 
 qreal QAVAudioOutput::volume() const
@@ -250,6 +257,8 @@ void QAVAudioOutput::setBufferSize(int bytes)
     Q_D(QAVAudioOutput);
     QMutexLocker locker(&d->mutex);
     d->bufferSize = bytes;
+    if (d->bufferSize > 0 && d->audioOutput)
+        d->audioOutput->setBufferSize(d->bufferSize);
 }
 
 int QAVAudioOutput::bufferSize() const
@@ -283,6 +292,7 @@ bool QAVAudioOutput::play(const QAVAudioFrame &frame)
         return false;
 
     QMutexLocker locker(&d->mutex);
+    d->startThreadIfNeeded();
     d->frames.push_back(frame);
     d->cond.wakeAll();
 
