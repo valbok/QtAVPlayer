@@ -76,6 +76,7 @@ jobs:
         include:
           - compiler: clang-9
             packages: llvm@13
+            ffmpeg-version: 6.1.1_2
             env: { 'CC': 'clang', 'CXX': 'clang++', 'CXXFLAGS': '-DNS_FORMAT_ARGUMENT\(A\)= -fapplication-extension -std=c++17' }
 
     runs-on: macos-latest
@@ -93,6 +94,7 @@ jobs:
         run: |
           echo "/usr/local/opt/qt5/bin" >> $GITHUB_PATH
           echo "/usr/local/Cellar/ffmpeg/6.0_2/include" >> $GITHUB_PATH
+          echo "/usr/local/Cellar/ffmpeg/6.1.1_2/include" >> $GITHUB_PATH
           echo "/usr/local/opt/llvm@9/bin" >> $GITHUB_PATH
 
       - name: QMake Test
@@ -100,21 +102,21 @@ jobs:
           ls -l /usr/local/Cellar/ffmpeg/
           export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
           cd tests/auto/integration/qavdemuxer
-          qmake INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0_2/include" LIBS="-L/usr/local/Cellar/ffmpeg/6.0_2/lib"
+          qmake INCLUDEPATH+="/usr/local/Cellar/ffmpeg/${{ matrix.ffmpeg-version }}/include" LIBS="-L/usr/local/Cellar/ffmpeg/${{ matrix.ffmpeg-version }}/lib"
           make CC=$CC CXX=$CXX
           tst_qavdemuxer.app/Contents/MacOS/tst_qavdemuxer
           cd ../qavplayer
-          qmake INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0_2/include" LIBS="-L/usr/local/Cellar/ffmpeg/6.0_2/lib"
+          qmake INCLUDEPATH+="/usr/local/Cellar/ffmpeg/${{ matrix.ffmpeg-version }}/include" LIBS="-L/usr/local/Cellar/ffmpeg/${{ matrix.ffmpeg-version }}/lib"
           make CC=$CC CXX=$CXX
           tst_qavplayer.app/Contents/MacOS/tst_qavplayer --platform minimal -maxwarnings 100000
 
       - name: Examples
         run: |
           cd examples/qml_video
-          qmake INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0_2/include" LIBS+="-L/usr/local/Cellar/ffmpeg/6.0_2/lib"
+          qmake INCLUDEPATH+="/usr/local/Cellar/ffmpeg/${{ matrix.ffmpeg-version }}/include" LIBS+="-L/usr/local/Cellar/ffmpeg/${{ matrix.ffmpeg-version }}/lib"
           make CC=$CC CXX=$CXX
           cd ../extract_frames
-          qmake INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0_2/include" LIBS+="-L/usr/local/Cellar/ffmpeg/6.0_2/lib"
+          qmake INCLUDEPATH+="/usr/local/Cellar/ffmpeg/${{ matrix.ffmpeg-version }}/include" LIBS+="-L/usr/local/Cellar/ffmpeg/${{ matrix.ffmpeg-version }}/lib"
           make CC=$CC CXX=$CXX
 
   windows:
