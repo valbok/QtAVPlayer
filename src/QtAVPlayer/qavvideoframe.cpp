@@ -189,6 +189,7 @@ public:
     }
 
     MapMode mapMode() const override { return m_mode; }
+    using QAbstractPlanarVideoBuffer::map;
     int map(MapMode mode, int *numBytes, int bytesPerLine[4], uchar *data[4]) override
     {
         if (m_mode != NotMapped || mode == NotMapped)
