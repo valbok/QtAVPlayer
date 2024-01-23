@@ -149,7 +149,7 @@ public:
     bool isSequential() const override { return true; }
     bool atEnd() const override { return false; }
 
-    void init(const QAudioFormat &fmt, qreal v, int bsize)
+    void init(const QAudioFormat &fmt, int bsize)
     {
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         auto audioDevice = QAudioDeviceInfo::defaultOutputDevice();
@@ -186,7 +186,6 @@ public:
                 audioOutput->setBufferSize(bsize);
             audioOutput->start(this);
         }
-        audioOutput->setVolume(v);
     }
 
     void doPlayAudio()
@@ -201,7 +200,10 @@ public:
             auto v = volume;
             auto bsize = bufferSize;
             locker.unlock();
-            init(fmt, v, bsize);
+            if (fmt.isValid())
+                init(fmt, bsize);
+            if (audioOutput)
+                audioOutput->setVolume(v);
             QCoreApplication::processEvents();
         }
         if (audioOutput) {
