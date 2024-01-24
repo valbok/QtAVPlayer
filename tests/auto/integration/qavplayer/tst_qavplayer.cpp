@@ -40,6 +40,7 @@ private slots:
     void stopAudio();
     void seekAudio();
     void speedAudio();
+    void audioPositionWithCover();
     void playVideo();
     void pauseVideo();
     void seekVideo();
@@ -432,6 +433,23 @@ void tst_QAVPlayer::speedAudio()
     QTest::qWait(50);
     p.setSpeed(2.0);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+}
+
+void tst_QAVPlayer::audioPositionWithCover()
+{
+    QAVPlayer p;
+    qint64 pos = 0;
+    QAVAudioFrame audioFrame;
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { pos = p.position(); audioFrame = f; });
+
+    QFileInfo file(testData("test.mp3"));
+    p.setSource(file.absoluteFilePath());
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    p.play();
+    p.setSynced(false);
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+    QVERIFY(audioFrame);
+    QVERIFY(pos > 0);
 }
 
 void tst_QAVPlayer::playVideo()
@@ -1886,9 +1904,9 @@ void tst_QAVPlayer::multiPlayers()
     int framesCount2 = 0;
     qint64 pos1 = 0;
     qint64 pos2 = 0;
-    QObject::connect(&p1, &QAVPlayer::videoFrame, &p1, [&](const QAVVideoFrame &f) { ++framesCount1; pos1 = p1.position(); }, Qt::DirectConnection);
+    QObject::connect(&p1, &QAVPlayer::videoFrame, &p1, [&](const QAVVideoFrame &) { ++framesCount1; pos1 = p1.position(); }, Qt::DirectConnection);
     QObject::connect(&p1, &QAVPlayer::audioFrame, &p1, [&](const QAVAudioFrame &f) { o1.play(f); }, Qt::DirectConnection);
-    QObject::connect(&p2, &QAVPlayer::videoFrame, &p2, [&](const QAVVideoFrame &f) { ++framesCount2; pos2 = p2.position(); }, Qt::DirectConnection);
+    QObject::connect(&p2, &QAVPlayer::videoFrame, &p2, [&](const QAVVideoFrame &) { ++framesCount2; pos2 = p2.position(); }, Qt::DirectConnection);
     QObject::connect(&p2, &QAVPlayer::audioFrame, &p2, [&](const QAVAudioFrame &f) { o2.play(f); }, Qt::DirectConnection);
     p1.play();
     p2.play();

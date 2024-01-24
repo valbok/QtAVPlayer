@@ -92,6 +92,8 @@ public:
     void onFrameSent(const QAVStreamFrame &frame);
     QAVStream::Progress progress(const QAVStream &s) const;
 
+    bool isMasterStream(const QAVStream &stream) const;
+
     static QStringList supportedFormats();
     static QStringList supportedVideoCodecs();
     static QStringList supportedProtocols();
