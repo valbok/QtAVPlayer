@@ -89,7 +89,7 @@ public:
         QList<QAVFrame> &filteredFrames);
 
     void doPlayStep(
-        bool master,
+        bool &master,
         double refPts,
         QAVQueueClock &clock,
         QAVPacketQueue<QAVFrame> &queue,
@@ -279,7 +279,8 @@ void QAVPlayerPrivate::setVideoFrameRate(double v)
 void QAVPlayerPrivate::setPts(double v)
 {
     QMutexLocker locker(&positionMutex);
-    currPts = v;
+    if (!isnan(v))
+        currPts = v;
 }
 
 double QAVPlayerPrivate::pts() const
@@ -689,7 +690,7 @@ bool QAVPlayerPrivate::skipFrame(
 }
 
 void QAVPlayerPrivate::doPlayStep(
-    bool master,
+    bool &master,
     double refPts,
     QAVQueueClock &clock,
     QAVPacketQueue<QAVFrame> &queue,
@@ -703,6 +704,10 @@ void QAVPlayerPrivate::doPlayStep(
     queue.frontFrame(decodedFrame);
     bool flushEvents = false;
     int ret = 0;
+
+    // Determine if current thread is handling events and pts
+    if (decodedFrame)
+        master = demuxer.isMasterStream(decodedFrame.stream());
 
     // 2. Filter decoded frame
     QList<QAVFrame> filteredFrames;
@@ -755,7 +760,7 @@ void QAVPlayerPrivate::doPlayStep(
 void QAVPlayerPrivate::doPlayVideo()
 {
     videoClock.setFrameRate(demuxer.videoFrameRate());
-    const bool master = true;
+    bool master = true;
     bool sync = true;
 
     while (!quit) {
@@ -777,7 +782,7 @@ void QAVPlayerPrivate::doPlayVideo()
 
 void QAVPlayerPrivate::doPlayAudio()
 {
-    const bool master = demuxer.currentVideoStreams().isEmpty();
+    bool master = false;
     const double ref = -1;
     bool sync = true;
 

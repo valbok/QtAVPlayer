@@ -831,6 +831,25 @@ void QAVDemuxer::onFrameSent(const QAVStreamFrame &frame)
         d->progress[index].onFrameSent(frame.pts());
 }
 
+bool QAVDemuxer::isMasterStream(const QAVStream &stream) const
+{
+    auto s = stream.stream();
+    switch (s->codecpar->codec_type) {
+        case AVMEDIA_TYPE_VIDEO:
+            return s->disposition != AV_DISPOSITION_ATTACHED_PIC;
+        case AVMEDIA_TYPE_AUDIO:
+            // Check if there are any video streams available
+            for (const auto &vs: currentVideoStreams()) {
+                if (vs.stream()->disposition != AV_DISPOSITION_ATTACHED_PIC)
+                    return false;
+            }
+            return true;
+        default:
+            Q_ASSERT(false);
+            return false;
+    }
+}
+
 QAVStream::Progress QAVDemuxer::progress(const QAVStream &s) const
 {
     Q_D(const QAVDemuxer);
