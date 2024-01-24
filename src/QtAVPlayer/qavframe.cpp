@@ -110,7 +110,7 @@ double QAVFramePrivate::duration() const
     return frameRate.den && frameRate.num
            ? av_q2d(AVRational{frameRate.den, frameRate.num})
            :
-#if LIBAVUTIL_VERSION_MAJOR < 57
+#if LIBAVUTIL_VERSION_MAJOR < 58
              frame->pkt_duration
 #else
              frame->duration
