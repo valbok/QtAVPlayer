@@ -33,7 +33,7 @@ public:
 
     AVSampleFormat format = AV_SAMPLE_FMT_NONE;
     int sample_rate = 0;
-#if LIBAVUTIL_VERSION_MAJOR < 58
+#if LIBAVUTIL_VERSION_MAJOR < 57
     uint64_t channel_layout = 0;
     int channels = 0;
 #else
@@ -54,7 +54,7 @@ QAVAudioInputFilter::QAVAudioInputFilter(const QAVFrame &frame)
     const auto & stream = frame.stream().stream();
     d->format = frm->format != AV_SAMPLE_FMT_NONE ? AVSampleFormat(frm->format) : AVSampleFormat(stream->codecpar->format);
     d->sample_rate = frm->sample_rate ? frm->sample_rate : stream->codecpar->sample_rate;
-#if LIBAVUTIL_VERSION_MAJOR < 58
+#if LIBAVUTIL_VERSION_MAJOR < 57
     d->channel_layout = frm->channel_layout ? frm->channel_layout : stream->codecpar->channel_layout;
     d->channels = frm->channels ? frm->channels : stream->codecpar->channels;
 #else
@@ -76,7 +76,7 @@ QAVAudioInputFilter &QAVAudioInputFilter::operator=(const QAVAudioInputFilter &o
     QAVInOutFilter::operator=(other);
     d->format = other.d_func()->format;
     d->sample_rate = other.d_func()->sample_rate;
-#if LIBAVUTIL_VERSION_MAJOR < 58
+#if LIBAVUTIL_VERSION_MAJOR < 57
     d->channel_layout = other.d_func()->channel_layout;
     d->channels = other.d_func()->channels;
 #else
@@ -96,7 +96,7 @@ int QAVAudioInputFilter::configure(AVFilterGraph *graph, AVFilterInOut *in)
              d->sample_rate,
              av_get_sample_fmt_name(AVSampleFormat(d->format)));
 
-#if LIBAVUTIL_VERSION_MAJOR < 58
+#if LIBAVUTIL_VERSION_MAJOR < 57
     if (d->channel_layout)
         av_bprintf(&args, ":channel_layout=0x%" PRIx64, d->channel_layout);
     else
