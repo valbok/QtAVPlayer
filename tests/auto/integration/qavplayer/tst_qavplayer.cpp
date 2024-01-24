@@ -55,15 +55,14 @@ private slots:
     void convert();
     void map_data();
     void map();
-#ifdef QT_AVPLAYER_MULTIMEDIA
-    void cast2QVideoFrame_data();
-    void cast2QVideoFrame();
-#endif
     void stepForward();
     void stepBackward();
     void availableAudioStreams();
 #ifdef QT_AVPLAYER_MULTIMEDIA
+    void cast2QVideoFrame_data();
+    void cast2QVideoFrame();
     void audioOutput();
+    void multiPlayers();
 #endif
     void setEmptySource();
     void accurateSeek_data();
@@ -1415,51 +1414,6 @@ void tst_QAVPlayer::map()
     QVERIFY(mapData.data[1] != nullptr);
 }
 
-#ifdef QT_AVPLAYER_MULTIMEDIA
-void tst_QAVPlayer::cast2QVideoFrame_data()
-{
-    QTest::addColumn<QString>("path");
-    QTest::addColumn<QSize>("size");
-
-    QTest::newRow("colors.mp4") << testData("colors.mp4") << QSize(160, 120);
-    QTest::newRow("dv_dsf_1_stype_1.dv") << testData("dv_dsf_1_stype_1.dv") << QSize(720, 576);
-    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QSize(720, 576);
-    QTest::newRow("small.mp4") << testData("small.mp4") << QSize(560, 320);
-    QTest::newRow("Earth_Zoom_In.mov") << testData("Earth_Zoom_In.mov") << QSize(1920, 1080);
-}
-
-void tst_QAVPlayer::cast2QVideoFrame()
-{
-    QFETCH(QString, path);
-    QFETCH(QSize, size);
-
-    QAVPlayer p;
-
-    QFileInfo file(path);
-    p.setSource(file.absoluteFilePath());
-
-    QAVVideoFrame frame;
-    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame](const QAVVideoFrame &f) { frame = f; });
-
-    p.pause();
-    QTRY_VERIFY(frame);
-
-    QVideoFrame q = frame;
-    QVERIFY(q.isValid());
-    QVERIFY(!q.size().isEmpty());
-    QCOMPARE(q.size(), size);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    q.map(QAbstractVideoBuffer::ReadOnly);
-    QVERIFY(q.bits() != nullptr);
-    QVERIFY(q.bytesPerLine() > 0);
-#else
-    q.map(QVideoFrame::ReadOnly);
-    QVERIFY(q.bits(0) != nullptr);
-    QVERIFY(q.bytesPerLine(0) > 0);
-#endif
-}
-#endif // #ifdef QT_AVPLAYER_MULTIMEDIA
-
 void tst_QAVPlayer::stepForward()
 {
     QAVPlayer p;
@@ -1841,6 +1795,49 @@ void tst_QAVPlayer::availableAudioStreams()
 }
 
 #ifdef QT_AVPLAYER_MULTIMEDIA
+void tst_QAVPlayer::cast2QVideoFrame_data()
+{
+    QTest::addColumn<QString>("path");
+    QTest::addColumn<QSize>("size");
+
+    QTest::newRow("colors.mp4") << testData("colors.mp4") << QSize(160, 120);
+    QTest::newRow("dv_dsf_1_stype_1.dv") << testData("dv_dsf_1_stype_1.dv") << QSize(720, 576);
+    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QSize(720, 576);
+    QTest::newRow("small.mp4") << testData("small.mp4") << QSize(560, 320);
+    QTest::newRow("Earth_Zoom_In.mov") << testData("Earth_Zoom_In.mov") << QSize(1920, 1080);
+}
+
+void tst_QAVPlayer::cast2QVideoFrame()
+{
+    QFETCH(QString, path);
+    QFETCH(QSize, size);
+
+    QAVPlayer p;
+
+    QFileInfo file(path);
+    p.setSource(file.absoluteFilePath());
+
+    QAVVideoFrame frame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame](const QAVVideoFrame &f) { frame = f; });
+
+    p.pause();
+    QTRY_VERIFY(frame);
+
+    QVideoFrame q = frame;
+    QVERIFY(q.isValid());
+    QVERIFY(!q.size().isEmpty());
+    QCOMPARE(q.size(), size);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    q.map(QAbstractVideoBuffer::ReadOnly);
+    QVERIFY(q.bits() != nullptr);
+    QVERIFY(q.bytesPerLine() > 0);
+#else
+    q.map(QVideoFrame::ReadOnly);
+    QVERIFY(q.bits(0) != nullptr);
+    QVERIFY(q.bytesPerLine(0) > 0);
+#endif
+}
+
 void tst_QAVPlayer::audioOutput()
 {
     QFileInfo file1(testData("guido.mp4"));
@@ -1871,6 +1868,38 @@ void tst_QAVPlayer::audioOutput()
     QCOMPARE(af.format(), fmt);
     QCOMPARE(af.data(), frame.data());
 }
+
+void tst_QAVPlayer::multiPlayers()
+{
+    QFileInfo file(testData("av_sample.mkv"));
+    QAVPlayer p1;
+    QAVPlayer p2;
+    p1.setSource(file.absoluteFilePath());
+    p2.setSource(file.absoluteFilePath());
+    p1.setSynced(false);
+    p2.setSynced(false);
+    QAVAudioOutput o1;
+    QAVAudioOutput o2;
+    o1.setVolume(0);
+    o2.setVolume(0);
+    int framesCount1 = 0;
+    int framesCount2 = 0;
+    qint64 pos1 = 0;
+    qint64 pos2 = 0;
+    QObject::connect(&p1, &QAVPlayer::videoFrame, &p1, [&](const QAVVideoFrame &f) { ++framesCount1; pos1 = p1.position(); }, Qt::DirectConnection);
+    QObject::connect(&p1, &QAVPlayer::audioFrame, &p1, [&](const QAVAudioFrame &f) { o1.play(f); }, Qt::DirectConnection);
+    QObject::connect(&p2, &QAVPlayer::videoFrame, &p2, [&](const QAVVideoFrame &f) { ++framesCount2; pos2 = p2.position(); }, Qt::DirectConnection);
+    QObject::connect(&p2, &QAVPlayer::audioFrame, &p2, [&](const QAVAudioFrame &f) { o2.play(f); }, Qt::DirectConnection);
+    p1.play();
+    p2.play();
+    QTRY_COMPARE(p1.mediaStatus(), QAVPlayer::EndOfMedia);
+    QTRY_COMPARE(p2.mediaStatus(), QAVPlayer::EndOfMedia);
+    QVERIFY(pos1 > 0);
+    QVERIFY(pos2 > 0);
+    QVERIFY(framesCount1 > 0);
+    QVERIFY(framesCount2 > 0);
+}
+
 #endif // #ifndef QT_AVPLAYER_MULTIMEDIA
 
 void tst_QAVPlayer::setEmptySource()
