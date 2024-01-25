@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 #endif
 
     QAVPlayer p;
-    QString file = argc > 1 ? QLatin1String(argv[1]) : QLatin1String("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
+    QString file = argc > 1 ? argv[1] : "http://archive.org/download/big-bunny-sample-video/SampleVideo.ia.mp4";
     p.setSource(file);
     p.play();
 

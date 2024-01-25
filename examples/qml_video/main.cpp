@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 #endif
 
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); }, Qt::DirectConnection);
-    QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QLatin1String("https://archive.org/download/big-bunny-sample-video/SampleVideo.ia.mp4");
+    QString file = argc > 1 ? QString::fromUtf8(argv[1]) : "http://archive.org/download/big-bunny-sample-video/SampleVideo.ia.mp4";
     QString filter = argc > 2 ? QString::fromUtf8(argv[2]) : QString();
 
     QObject::connect(&p, &QAVPlayer::stateChanged, [&](auto s) { qDebug() << "stateChanged" << s << p.mediaStatus(); });

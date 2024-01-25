@@ -1,6 +1,6 @@
 TEMPLATE = app
 TARGET = qml_video
-DEFINES+="QT_AVPLAYER_MULTIMEDIA"
+DEFINES += "QT_AVPLAYER_MULTIMEDIA"
 INCLUDEPATH += . ../../src
 include(../../src/QtAVPlayer/QtAVPlayer.pri)
 # Example
