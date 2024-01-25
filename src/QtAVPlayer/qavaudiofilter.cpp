@@ -109,7 +109,7 @@ int QAVAudioFilter::read(QAVFrame &frame)
                 if (ret < 0)
                     break;
 
-#if LIBAVUTIL_VERSION_MAJOR < 58
+#if LIBAVUTIL_VERSION_INT <= AV_VERSION_INT(57, 30, 0)
                 if (!out.frame()->pkt_duration)
                     out.frame()->pkt_duration = d->sourceFrame.frame()->pkt_duration;
 #else
