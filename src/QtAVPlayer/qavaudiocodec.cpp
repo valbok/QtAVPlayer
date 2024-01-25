@@ -37,7 +37,7 @@ QAVAudioFormat QAVAudioCodec::audioFormat() const
         format.setSampleFormat(QAVAudioFormat::Float);
 
     format.setSampleRate(d->avctx->sample_rate);
-#if LIBAVUTIL_VERSION_MAJOR < 58
+#if LIBAVCODEC_VERSION_INT <= AV_VERSION_INT(59, 23, 0)
     format.setChannelCount(d->avctx->channels);
 #else
     format.setChannelCount(d->avctx->ch_layout.nb_channels);
