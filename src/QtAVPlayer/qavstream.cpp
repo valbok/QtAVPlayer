@@ -14,6 +14,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/display.h>
 #include <libavutil/time.h>
+#include <libavcodec/version.h>
 }
 
 QT_BEGIN_NAMESPACE
@@ -79,27 +80,24 @@ int QAVStream::index() const
     return d_func()->index;
 }
 
-static const AVPacketSideData *streamSideData(const AVStream *stream, AVPacketSideDataType type)
-{
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(60, 29, 0)
-    return av_packet_side_data_get(stream->codecpar->coded_side_data,
-                                   stream->codecpar->nb_coded_side_data, type);
-#else
-    auto cb = [type](const auto &data) { return data.type == type; };
-    auto end = stream->side_data + stream->nb_side_data;
-    auto it = std::find_if(stream->side_data, end, cb);
-    return it != end ? it : nullptr;
-#endif
-}
-
 static int streamRotation(const AVStream *stream)
 {
-    size_t size = sizeof(int32_t) * 9;
-    auto sideData = streamSideData(stream, AV_PKT_DATA_DISPLAYMATRIX);
-    if (!sideData || static_cast<size_t>(sideData->size) < size)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(60, 29, 100)
+    auto ptr = av_packet_side_data_get(stream->codecpar->coded_side_data,
+                                       stream->codecpar->nb_coded_side_data,
+                                       AV_PKT_DATA_DISPLAYMATRIX);
+    auto sideData = ptr ? ptr->data : nullptr;
+#elif LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(55, 18, 0)
+    auto sideData = av_stream_get_side_data(stream, AV_PKT_DATA_DISPLAYMATRIX, nullptr);
+#else
+    auto cb = [](const auto &data) { return data.type == AV_PKT_DATA_DISPLAYMATRIX; };
+    auto end = stream->side_data + stream->nb_side_data;
+    auto ptr = std::find_if(stream->side_data, end, cb);
+    auto sideData = ptr != end ? ptr->data : nullptr;
+#endif
+    if (!sideData)
         return 0;
-    auto matrix = reinterpret_cast<const int32_t *>(sideData->data);
-    auto rotation = static_cast<int>(std::round(av_display_rotation_get(matrix)));
+    auto rotation = static_cast<int>(std::round(av_display_rotation_get(reinterpret_cast<const int32_t *>(sideData))));
     if (rotation % 90 != 0)
         return 0;
     return rotation > 0 ? -rotation % 360 + 360 : -rotation % 360;
