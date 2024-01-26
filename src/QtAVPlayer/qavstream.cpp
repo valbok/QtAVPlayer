@@ -86,22 +86,17 @@ static const AVPacketSideData *streamSideData(const AVStream *stream, AVPacketSi
                                    stream->codecpar->nb_coded_side_data, type);
 #else
     auto cb = [type](const auto &data) { return data.type == type; };
-    const auto end = stream->side_data + stream->nb_side_data;
-    const auto it = std::find_if(stream->side_data, end, cb);
+    auto end = stream->side_data + stream->nb_side_data;
+    auto it = std::find_if(stream->side_data, end, cb);
     return it != end ? it : nullptr;
 #endif
 }
 
 static int streamRotation(const AVStream *stream)
 {
-#if FF_API_BUFFER_SIZE_T
-    int
-#else
-    size_t
-#endif
-    size = sizeof(int32_t) * 9;
+    size_t size = sizeof(int32_t) * 9;
     auto sideData = streamSideData(stream, AV_PKT_DATA_DISPLAYMATRIX);
-    if (!sideData || sideData->size < size)
+    if (!sideData || static_cast<size_t>(sideData->size) < size)
         return 0;
     auto matrix = reinterpret_cast<const int32_t *>(sideData->data);
     auto rotation = static_cast<int>(std::round(av_display_rotation_get(matrix)));
