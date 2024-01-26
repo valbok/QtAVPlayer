@@ -102,6 +102,7 @@ private slots:
     void flushCodecs();
     void multiFilterInputs_data();
     void multiFilterInputs();
+    void streamMetadata();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -3408,6 +3409,20 @@ void tst_QAVPlayer::multiFilterInputs()
     QVERIFY(p.progress(s).fps() > 0.0);
     QVERIFY(p.progress(s).frameRate() > 0.0);
     QVERIFY(p.progress(s).expectedFrameRate() > 0.0);
+}
+
+void tst_QAVPlayer::streamMetadata()
+{
+    QAVPlayer p;
+    QFileInfo file(testData("rotated_90.mp4"));
+    p.setSource(file.absoluteFilePath());
+    p.play();
+
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QCOMPARE(p.currentVideoStreams().size(), 1);
+    QVERIFY(!p.currentVideoStreams()[0].metadata().isEmpty());
+    QVERIFY(p.currentVideoStreams()[0].metadata().contains("rotate"));
+    QCOMPARE(p.currentVideoStreams()[0].metadata()["rotate"], "90");
 }
 
 QTEST_MAIN(tst_QAVPlayer)

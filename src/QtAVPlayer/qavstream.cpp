@@ -12,6 +12,7 @@
 
 extern "C" {
 #include <libavformat/avformat.h>
+#include <libavutil/display.h>
 #include <libavutil/time.h>
 }
 
@@ -27,6 +28,7 @@ public:
     int index = -1;
     AVFormatContext *ctx = nullptr;
     QSharedPointer<QAVCodec> codec;
+    QMap<QString, QString> metadata;
 };
 
 QAVStream::QAVStream()
@@ -77,17 +79,58 @@ int QAVStream::index() const
     return d_func()->index;
 }
 
+static const AVPacketSideData *streamSideData(const AVStream *stream, AVPacketSideDataType type)
+{
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(60, 29, 0)
+    return av_packet_side_data_get(stream->codecpar->coded_side_data,
+                                   stream->codecpar->nb_coded_side_data, type);
+#else
+    auto cb = [type](const auto &data) { return data.type == type; };
+    const auto end = stream->side_data + stream->nb_side_data;
+    const auto it = std::find_if(stream->side_data, end, cb);
+    return it != end ? it : nullptr;
+#endif
+}
+
+static int streamRotation(const AVStream *stream)
+{
+#if FF_API_BUFFER_SIZE_T
+    int
+#else
+    size_t
+#endif
+    size = sizeof(int32_t) * 9;
+    auto sideData = streamSideData(stream, AV_PKT_DATA_DISPLAYMATRIX);
+    if (!sideData || sideData->size < size)
+        return 0;
+    auto matrix = reinterpret_cast<const int32_t *>(sideData->data);
+    auto rotation = static_cast<int>(std::round(av_display_rotation_get(matrix)));
+    if (rotation % 90 != 0)
+        return 0;
+    return rotation > 0 ? -rotation % 360 + 360 : -rotation % 360;
+}
+
+static QMap<QString, QString> streamMetadata(const AVStream *stream)
+{
+    QMap<QString, QString> metadata;
+    AVDictionaryEntry *tag = nullptr;
+    while ((tag = av_dict_get(stream->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
+        metadata[QString::fromUtf8(tag->key)] = QString::fromUtf8(tag->value);
+    if (!metadata.contains("rotate"))
+        metadata["rotate"] = QString::number(streamRotation(stream));
+    return metadata;
+}
+
 QMap<QString, QString> QAVStream::metadata() const
 {
-    QMap<QString, QString> result;
+    Q_D(const QAVStream);
+    if (!d->metadata.isEmpty())
+        return d->metadata;
     auto s = stream();
-    if (s != nullptr) {
-        AVDictionaryEntry *tag = nullptr;
-        while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
-            result[QString::fromUtf8(tag->key)] = QString::fromUtf8(tag->value);
-    }
-
-    return result;
+    if (!s)
+        return {};
+    const_cast<QAVStreamPrivate *>(d)->metadata = streamMetadata(s);
+    return d->metadata;
 }
 
 QSharedPointer<QAVCodec> QAVStream::codec() const

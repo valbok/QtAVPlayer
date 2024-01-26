@@ -123,6 +123,14 @@ int main(int argc, char *argv[])
     }, Qt::DirectConnection);
 #endif
 
+    QObject::connect(&p, &QAVPlayer::mediaStatusChanged, [&](auto status) {
+        qDebug() << "mediaStatusChanged"<< status << p.state();
+        if (status == QAVPlayer::LoadedMedia) {
+            qDebug() << "Video streams:" << p.currentVideoStreams().size();
+            for (const auto &s: p.currentVideoStreams())
+                qDebug() << "[" << s.index() << "]" << s.metadata() << s.framesCount() << "frames," << s.frameRate() << "frame rate";
+        }
+    });
     return app.exec();
 }
 
