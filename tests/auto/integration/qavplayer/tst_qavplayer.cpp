@@ -102,7 +102,7 @@ private slots:
     void flushCodecs();
     void multiFilterInputs_data();
     void multiFilterInputs();
-    void streamMetadata();
+    void streamMetadataRotate();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -440,8 +440,8 @@ void tst_QAVPlayer::audioPositionWithCover()
 {
     QAVPlayer p;
     qint64 pos = 0;
-    QAVAudioFrame audioFrame;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { pos = p.position(); audioFrame = f; });
+    QAVAudioFrame frame;
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { pos = p.position(); frame = f; });
 
     QFileInfo file(testData("test.mp3"));
     p.setSource(file.absoluteFilePath());
@@ -449,7 +449,7 @@ void tst_QAVPlayer::audioPositionWithCover()
     p.play();
     p.setSynced(false);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
-    QVERIFY(audioFrame);
+    QTRY_VERIFY(frame);
     QVERIFY(pos > 0);
 }
 
@@ -3411,7 +3411,7 @@ void tst_QAVPlayer::multiFilterInputs()
     QVERIFY(p.progress(s).expectedFrameRate() > 0.0);
 }
 
-void tst_QAVPlayer::streamMetadata()
+void tst_QAVPlayer::streamMetadataRotate()
 {
     QAVPlayer p;
     QFileInfo file(testData("rotated_90.mp4"));
