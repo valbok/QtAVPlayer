@@ -1,6 +1,7 @@
 TEMPLATE = app
 TARGET = widget_video
 DEFINES += "QT_AVPLAYER_MULTIMEDIA"
+DEFINES += "QT_NO_CAST_FROM_ASCII"
 INCLUDEPATH += . ../../src
 include(../../src/QtAVPlayer/QtAVPlayer.pri)
 
