@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     QQuickView viewer;
-    viewer.setSource(QUrl("qrc:///main.qml"));
+    viewer.setSource(QUrl(QString::fromLatin1("qrc:///main.qml")));
     viewer.setResizeMode(QQuickView::SizeRootObjectToView);
     QObject::connect(viewer.engine(), SIGNAL(quit()), &viewer, SLOT(close()));
 
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     using VideoOutput = QQuickVideoOutput;
 #endif
 
-    auto vo = rootObject->findChild<VideoOutput *>("videoOutput");
+    auto vo = rootObject->findChild<VideoOutput *>(QString::fromLatin1("videoOutput"));
 
     QAVAudioOutput audioOutput;
     QAVPlayer p;
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 #endif
 
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); }, Qt::DirectConnection);
-    QString file = argc > 1 ? QString::fromUtf8(argv[1]) : "http://archive.org/download/big-bunny-sample-video/SampleVideo.ia.mp4";
+    QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QString::fromLatin1("http://archive.org/download/big-bunny-sample-video/SampleVideo.ia.mp4");
     QString filter = argc > 2 ? QString::fromUtf8(argv[2]) : QString();
 
     QObject::connect(&p, &QAVPlayer::stateChanged, [&](auto s) { qDebug() << "stateChanged" << s << p.mediaStatus(); });
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
             auto availableSubtitleStreams = p.availableSubtitleStreams();
             qDebug() << "Subtitle streams:" << availableSubtitleStreams.size();
             for (auto &s : availableSubtitleStreams) {
-                if (s.metadata()["language"] == "eng") {
+                if (s.metadata()[QString::fromLatin1("language")] == QString::fromLatin1("eng")) {
                     p.setSubtitleStream(s);
                     break;
                 }
@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
     });
 
     QSharedPointer<QAVIODevice> qrc;
-    if (file.startsWith(":/")) {
+    if (file.startsWith(QString::fromLatin1(":/"))) {
         QSharedPointer<QIODevice> io(new QFile(file));
         if (io->open(QIODevice::ReadOnly))
             qrc.reset(new QAVIODevice(io));

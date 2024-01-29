@@ -109,8 +109,8 @@ static QMap<QString, QString> streamMetadata(const AVStream *stream)
     AVDictionaryEntry *tag = nullptr;
     while ((tag = av_dict_get(stream->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
         metadata[QString::fromUtf8(tag->key)] = QString::fromUtf8(tag->value);
-    if (!metadata.contains("rotate"))
-        metadata["rotate"] = QString::number(streamRotation(stream));
+    if (!metadata.contains(QString::fromLatin1("rotate")))
+        metadata[QString::fromLatin1("rotate")] = QString::number(streamRotation(stream));
     return metadata;
 }
 
