@@ -189,7 +189,7 @@ void QAVPlayerPrivate::setMediaStatus(QAVPlayer::MediaStatus status)
         mediaStatus = status;
     }
 
-    emit q_ptr->mediaStatusChanged(status);
+    Q_EMIT q_ptr->mediaStatusChanged(status);
 }
 
 void QAVPlayerPrivate::resetPendingStatuses()
@@ -221,7 +221,7 @@ bool QAVPlayerPrivate::setState(QAVPlayer::State s)
         result = true;
     }
 
-    emit q->stateChanged(s);
+    Q_EMIT q->stateChanged(s);
     return result;
 }
 
@@ -233,7 +233,7 @@ void QAVPlayerPrivate::setSeekable(bool s)
 
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << seekable << "->" << s;
     seekable = s;
-    emit q->seekableChanged(seekable);
+    Q_EMIT q->seekableChanged(seekable);
 }
 
 void QAVPlayerPrivate::setDuration(double d)
@@ -244,7 +244,7 @@ void QAVPlayerPrivate::setDuration(double d)
 
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << duration << "->" << d;
     duration = d;
-    emit q->durationChanged(q->duration());
+    Q_EMIT q->durationChanged(q->duration());
 }
 
 bool QAVPlayerPrivate::isSeeking() const
@@ -273,7 +273,7 @@ void QAVPlayerPrivate::setVideoFrameRate(double v)
 
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << videoFrameRate << "->" << v;
     videoFrameRate = v;
-    emit q->videoFrameRateChanged(v);
+    Q_EMIT q->videoFrameRateChanged(v);
 }
 
 void QAVPlayerPrivate::setPts(double v)
@@ -304,7 +304,7 @@ void QAVPlayerPrivate::setError(QAVPlayer::Error err, const QString &str)
     }
 
     qWarning() << err << ":" << str;
-    emit q->errorOccurred(err, str);
+    Q_EMIT q->errorOccurred(err, str);
     setMediaStatus(QAVPlayer::InvalidMedia);
     setState(QAVPlayer::StoppedState);
     resetPendingStatuses();
@@ -377,7 +377,7 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
             if (valid) {
                 result = true;
                 qCDebug(lcAVPlayer) << "Played from pos:" << q_ptr->position();
-                emit q_ptr->played(q_ptr->position());
+                Q_EMIT q_ptr->played(q_ptr->position());
                 wait(false);
             }
             break;
@@ -386,7 +386,7 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
             if (valid) {
                 result = true;
                 qCDebug(lcAVPlayer) << "Paused to pos:" << q_ptr->position();
-                emit q_ptr->paused(q_ptr->position());
+                Q_EMIT q_ptr->paused(q_ptr->position());
                 wait(true);
             }
             break;
@@ -397,7 +397,7 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
                 if (q_ptr->mediaStatus() == QAVPlayer::EndOfMedia)
                     setMediaStatus(QAVPlayer::LoadedMedia);
                 qCDebug(lcAVPlayer) << "Seeked to pos:" << q_ptr->position();
-                emit q_ptr->seeked(q_ptr->position());
+                Q_EMIT q_ptr->seeked(q_ptr->position());
                 QAVPlayer::State currState = q_ptr->state();
                 if (currState == QAVPlayer::PausedState || currState == QAVPlayer::StoppedState)
                     wait(true);
@@ -408,7 +408,7 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
             if (q_ptr->mediaStatus() != QAVPlayer::NoMedia) {
                 result = true;
                 qCDebug(lcAVPlayer) << "Stopped to pos:" << q_ptr->position();
-                emit q_ptr->stopped(q_ptr->position());
+                Q_EMIT q_ptr->stopped(q_ptr->position());
                 wait(true);
             }
             break;
@@ -418,7 +418,7 @@ bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
             if (valid) {
                 result = true;
                 qCDebug(lcAVPlayer) << "Stepped to pos:" << q_ptr->position();
-                emit q_ptr->stepped(q_ptr->position());
+                Q_EMIT q_ptr->stepped(q_ptr->position());
                 wait(true);
             }
             break;
@@ -770,7 +770,7 @@ void QAVPlayerPrivate::doPlayVideo()
             videoClock,
             videoQueue,
             sync,
-            [&](const QAVFrame &frame) { emit q_ptr->videoFrame(frame); }
+            [&](const QAVFrame &frame) { Q_EMIT q_ptr->videoFrame(frame); }
         );
     }
 
@@ -795,7 +795,7 @@ void QAVPlayerPrivate::doPlayAudio()
             sync,
             [this](const QAVFrame &frame) {
                 frame.frame()->sample_rate *= q_ptr->speed();
-                emit q_ptr->audioFrame(frame);
+                Q_EMIT q_ptr->audioFrame(frame);
             }
         );
     }
@@ -844,7 +844,7 @@ void QAVPlayerPrivate::doPlaySubtitle()
             subtitleClock,
             subtitleQueue,
             sync,
-            [this](const QAVSubtitleFrame &frame) { emit q_ptr->subtitleFrame(frame); }
+            [this](const QAVSubtitleFrame &frame) { Q_EMIT q_ptr->subtitleFrame(frame); }
         );
     }
 
@@ -883,7 +883,7 @@ void QAVPlayer::setSource(const QString &url, const QSharedPointer<QAVIODevice> 
     d->terminate();
     d->url = url;
     d->dev = dev;
-    emit sourceChanged(url);
+    Q_EMIT sourceChanged(url);
     d->wait(true);
     d->quit = false;
     if (url.isEmpty())
@@ -922,7 +922,7 @@ void QAVPlayer::setVideoStream(const QAVStream &stream)
         return;
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << d->demuxer.currentVideoStreams() << "->" << stream.index();
     if (d->demuxer.setVideoStreams({stream}))
-        emit videoStreamsChanged(d->demuxer.currentVideoStreams());
+        Q_EMIT videoStreamsChanged(d->demuxer.currentVideoStreams());
 }
 
 void QAVPlayer::setVideoStreams(const QList<QAVStream> &streams)
@@ -932,7 +932,7 @@ void QAVPlayer::setVideoStreams(const QList<QAVStream> &streams)
         return;
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << d->demuxer.currentVideoStreams() << "->" << streams;
     if (d->demuxer.setVideoStreams(streams))
-        emit videoStreamsChanged(d->demuxer.currentVideoStreams());
+        Q_EMIT videoStreamsChanged(d->demuxer.currentVideoStreams());
 }
 
 QList<QAVStream> QAVPlayer::availableAudioStreams() const
@@ -954,7 +954,7 @@ void QAVPlayer::setAudioStream(const QAVStream &stream)
         return;
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << d->demuxer.currentAudioStreams() << "->" << stream.index();
     if (d->demuxer.setAudioStreams({stream}))
-        emit audioStreamsChanged(d->demuxer.currentAudioStreams());
+        Q_EMIT audioStreamsChanged(d->demuxer.currentAudioStreams());
 }
 
 void QAVPlayer::setAudioStreams(const QList<QAVStream> &streams)
@@ -964,7 +964,7 @@ void QAVPlayer::setAudioStreams(const QList<QAVStream> &streams)
         return;
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << d->demuxer.currentAudioStreams() << "->" << streams;
     if (d->demuxer.setAudioStreams(streams))
-        emit audioStreamsChanged(d->demuxer.currentAudioStreams());
+        Q_EMIT audioStreamsChanged(d->demuxer.currentAudioStreams());
 }
 
 QList<QAVStream> QAVPlayer::availableSubtitleStreams() const
@@ -986,7 +986,7 @@ void QAVPlayer::setSubtitleStream(const QAVStream &stream)
         return;
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << d->demuxer.currentSubtitleStreams() << "->" << stream.index();
     if (d->demuxer.setSubtitleStreams({stream}))
-        emit subtitleStreamsChanged(d->demuxer.currentSubtitleStreams());
+        Q_EMIT subtitleStreamsChanged(d->demuxer.currentSubtitleStreams());
 }
 
 void QAVPlayer::setSubtitleStreams(const QList<QAVStream> &streams)
@@ -996,7 +996,7 @@ void QAVPlayer::setSubtitleStreams(const QList<QAVStream> &streams)
         return;
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << d->demuxer.currentSubtitleStreams() << "->" << streams;
     if (d->demuxer.setSubtitleStreams(streams))
-        emit subtitleStreamsChanged(d->demuxer.currentSubtitleStreams());
+        Q_EMIT subtitleStreamsChanged(d->demuxer.currentSubtitleStreams());
 }
 
 QAVPlayer::State QAVPlayer::state() const
@@ -1161,7 +1161,7 @@ void QAVPlayer::setSpeed(qreal r)
         qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << d->speed << "->" << r;
         d->speed = r;
     }
-    emit speedChanged(r);
+    Q_EMIT speedChanged(r);
 }
 
 qreal QAVPlayer::speed() const
@@ -1192,7 +1192,7 @@ void QAVPlayer::setFilter(const QString &desc)
             d->filterDescs = {desc};
     }
 
-    emit filtersChanged({desc});
+    Q_EMIT filtersChanged({desc});
     if (mediaStatus() != QAVPlayer::NoMedia)
         d->applyFilters();
 }
@@ -1206,7 +1206,7 @@ void QAVPlayer::setFilters(const QList<QString> &filters)
         d->filterDescs = filters;
     }
 
-    emit filtersChanged(filters);
+    Q_EMIT filtersChanged(filters);
     if (mediaStatus() != QAVPlayer::NoMedia)
         d->applyFilters();
 }
@@ -1227,7 +1227,7 @@ void QAVPlayer::setBitstreamFilter(const QString &desc)
 
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << bsf << "->" << desc;
     int ret = d->demuxer.applyBitstreamFilter(desc);
-    emit bitstreamFilterChanged(desc);
+    Q_EMIT bitstreamFilterChanged(desc);
     if (ret < 0)
         d->setError(QAVPlayer::FilterError, QLatin1String("Could not parse bitstream filter desc: ") + err_str(ret));
 }
@@ -1251,7 +1251,7 @@ void QAVPlayer::setSynced(bool sync)
         return;
 
     d->synced = sync;
-    emit syncedChanged(sync);
+    Q_EMIT syncedChanged(sync);
 }
 
 QString QAVPlayer::inputFormat() const
@@ -1269,7 +1269,7 @@ void QAVPlayer::setInputFormat(const QString &format)
 
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << current << "->" << format;
     d->demuxer.setInputFormat(format);
-    emit inputFormatChanged(format);
+    Q_EMIT inputFormatChanged(format);
 }
 
 QString QAVPlayer::inputVideoCodec() const
@@ -1287,7 +1287,7 @@ void QAVPlayer::setInputVideoCodec(const QString &codec)
 
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << current << "->" << codec;
     d->demuxer.setInputVideoCodec(codec);
-    emit inputVideoCodecChanged(codec);
+    Q_EMIT inputVideoCodecChanged(codec);
 }
 
 QStringList QAVPlayer::supportedVideoCodecs()
@@ -1310,7 +1310,7 @@ void QAVPlayer::setInputOptions(const QMap<QString, QString>  &opts)
 
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << current << "->" << opts;
     d->demuxer.setInputOptions(opts);
-    emit inputOptionsChanged(opts);
+    Q_EMIT inputOptionsChanged(opts);
 }
 
 QAVStream::Progress QAVPlayer::progress(const QAVStream &s) const
