@@ -292,7 +292,7 @@ double QAVPlayerPrivate::pts() const
 template <class T>
 void QAVPlayerPrivate::dispatch(T fn)
 {
-    QMetaObject::invokeMethod(q_ptr, fn, nullptr);
+    QMetaObject::invokeMethod(q_ptr, fn);
 }
 
 void QAVPlayerPrivate::setError(QAVPlayer::Error err, const QString &str)
@@ -515,7 +515,7 @@ void QAVPlayerPrivate::doLoad()
     }
 
     applyFilters(true, {});
-    dispatch([this] {
+    dispatch([this]() -> void {
         qCDebug(lcAVPlayer) << "[" << url << "]: Loaded, seekable:" << demuxer.seekable() << ", duration:" << demuxer.duration();
         setSeekable(demuxer.seekable());
         setDuration(demuxer.duration());
