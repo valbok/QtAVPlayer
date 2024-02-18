@@ -165,8 +165,8 @@ public:
             return {};
 
         if (!m_texture) {
-            if (frame().format() != AV_PIX_FMT_NV12) {
-                qWarning() << "Only NV12 is supported";
+            if (frame().format() != AV_PIX_FMT_D3D11) {
+                qWarning() << "Only AV_PIX_FMT_D3D11 is supported, but got" << frame().formatName();
                 return {};
             }
             auto av_frame = frame().frame();
