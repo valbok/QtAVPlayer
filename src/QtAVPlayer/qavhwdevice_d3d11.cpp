@@ -20,9 +20,14 @@
 #include <private/qwindowsiupointer_p.h>
 template <class T>
 using ComPtr = QWindowsIUPointer<T>;
+#endif // #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 2)
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+#include <private/quniquehandle_p.h>
 #endif
+
 #include <system_error>
-#endif
+#endif // #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
 
 #endif // QT_AVPLAYER_MULTIMEDIA
 
@@ -146,6 +151,157 @@ static ComPtr<ID3D11Texture2D> copyTexture(ID3D11Device *dev, ID3D11Texture2D *f
     return copy;
 }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+
+static ComPtr<ID3D11Device1> D3D11Device(QRhi *rhi)
+{
+    auto native = static_cast<const QRhiD3D11NativeHandles *>(rhi->nativeHandles());
+    if (!native) {
+        qWarning() << "Failed to get nativeHandles";
+        return {};
+    }
+
+    ComPtr<ID3D11Device> rhiDevice = static_cast<ID3D11Device *>(native->dev);
+    ComPtr<ID3D11Device1> dev;
+    auto hr = rhiDevice.As(&dev);
+    if (FAILED(hr)) {
+        qWarning() << "Failed to get ID3D11Device1:" << hr << std::system_category().message(hr);
+        return nullptr;
+    }
+    return dev;
+}
+
+class QAVVideoFrame_D3D11
+{
+public:
+    QAVVideoFrame_D3D11(const AVFrame *frame)
+        : m_texture((ID3D11Texture2D *)(uintptr_t)frame->data[0])
+        , m_textureIndex((intptr_t)frame->data[1])
+    {
+        auto ctx = reinterpret_cast<AVHWFramesContext *>(frame->hw_frames_ctx->data);
+        m_hwctx = static_cast<AVD3D11VADeviceContext *>(ctx->device_ctx->hwctx);
+    }
+
+    ComPtr<ID3D11Texture2D> copyTexture(const ComPtr<ID3D11Device1> &dev,
+                                        const ComPtr<ID3D11DeviceContext> &ctx);
+private:
+    bool copyToShared();
+
+    const ComPtr<ID3D11Texture2D> m_texture;
+    const UINT m_textureIndex = 0;
+    AVD3D11VADeviceContext *m_hwctx = nullptr;
+
+    struct SharedTextureHandleTraits
+    {
+        using Type = HANDLE;
+        static Type invalidValue() { return nullptr; }
+        static bool close(Type handle) { return CloseHandle(handle) != 0; }
+    };
+    QUniqueHandle<SharedTextureHandleTraits> m_sharedHandle;
+
+    const UINT m_srcKey = 0;
+    ComPtr<ID3D11Texture2D> m_srcTex;
+    ComPtr<IDXGIKeyedMutex> m_srcMutex;
+
+    const UINT m_destKey = 1;
+    ComPtr<ID3D11Texture2D> m_destTex;
+    ComPtr<IDXGIKeyedMutex> m_destMutex;
+};
+
+bool QAVVideoFrame_D3D11::copyToShared()
+{
+    m_hwctx->lock(m_hwctx->lock_ctx);
+    QScopeGuard autoUnlock([&] { m_hwctx->unlock(m_hwctx->lock_ctx); });
+
+    CD3D11_TEXTURE2D_DESC desc{};
+    m_texture->GetDesc(&desc);
+
+    CD3D11_TEXTURE2D_DESC texDesc{ desc.Format, desc.Width, desc.Height };
+    texDesc.MipLevels = 1;
+    texDesc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
+
+    auto hr = m_hwctx->device->CreateTexture2D(&texDesc, nullptr, m_srcTex.ReleaseAndGetAddressOf());
+    if (FAILED(hr)) {
+        qWarning() << "Failed to CreateTexture2D:" << hr << std::system_category().message(hr);
+        return false;
+    }
+
+    ComPtr<IDXGIResource1> res;
+    hr = m_srcTex.As(&res);
+    if (FAILED(hr)) {
+        qWarning() << "Failed to get m_srcTex:" << hr << std::system_category().message(hr);
+        return false;
+    }
+
+    hr = res->CreateSharedHandle(nullptr, DXGI_SHARED_RESOURCE_READ, nullptr, &m_sharedHandle);
+    if (FAILED(hr) || !m_sharedHandle) {
+        qWarning() << "Failed to CreateSharedHandle:" << hr << std::system_category().message(hr);
+        return false;
+    }
+
+    hr = m_srcTex.As(&m_srcMutex);
+    if (FAILED(hr) || !m_srcMutex) {
+        qWarning() << "Failed to get m_srcMutex:" << hr << std::system_category().message(hr);
+        return false;
+    }
+
+    m_hwctx->device_context->Flush();
+
+    hr = m_srcMutex->AcquireSync(m_srcKey, INFINITE);
+    if (FAILED(hr)) {
+        qWarning() << "Failed to AcquireSync:" << hr << std::system_category().message(hr);
+        return false;
+    }
+
+    m_hwctx->device_context->CopySubresourceRegion(m_srcTex.Get(), 0, 0, 0, 0, m_texture.Get(), m_textureIndex, nullptr);
+    m_srcMutex->ReleaseSync(m_destKey);
+    return true;
+}
+
+ComPtr<ID3D11Texture2D> QAVVideoFrame_D3D11::copyTexture(const ComPtr<ID3D11Device1> &dev,
+                                                         const ComPtr<ID3D11DeviceContext> &ctx)
+{
+    if (!copyToShared())
+        return {};
+
+    auto hr = dev->OpenSharedResource1(m_sharedHandle.get(), IID_PPV_ARGS(&m_destTex));
+    if (FAILED(hr)) {
+        qWarning() << "Failed to OpenSharedResource1:" << hr << std::system_category().message(hr);
+        return {};
+    }
+
+    CD3D11_TEXTURE2D_DESC desc{};
+    m_destTex->GetDesc(&desc);
+
+    desc.MiscFlags = 0;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    ComPtr<ID3D11Texture2D> outputTex;
+    hr = dev->CreateTexture2D(&desc, nullptr, outputTex.ReleaseAndGetAddressOf());
+    if (FAILED(hr)) {
+        qWarning() << "Failed to CreateTexture2D:" << hr << std::system_category().message(hr);
+        return {};
+    }
+
+    hr = m_destTex.As(&m_destMutex);
+    if (FAILED(hr)) {
+        qWarning() << "Failed to get m_destMutex:" << hr << std::system_category().message(hr);
+        return {};
+    }
+
+    hr = m_destMutex->AcquireSync(m_destKey, INFINITE);
+    if (FAILED(hr)) {
+        qWarning() << "Failed to get AcquireSync:" << hr << std::system_category().message(hr);
+        return {};
+    }
+
+    ctx->CopySubresourceRegion(outputTex.Get(), 0, 0, 0, 0, m_destTex.Get(), 0, nullptr);
+    m_destMutex->ReleaseSync(m_srcKey);
+    return outputTex;
+}
+
+#endif // #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+
 class VideoBuffer_D3D11: public QAVVideoBuffer_GPU
 {
 public:
@@ -169,6 +325,7 @@ public:
                 qWarning() << "Only AV_PIX_FMT_D3D11 is supported, but got" << frame().formatName();
                 return {};
             }
+#if QT_VERSION < QT_VERSION_CHECK(6, 6, 0)
             auto av_frame = frame().frame();
             auto texture = (ID3D11Texture2D *)(uintptr_t)av_frame->data[0];
             auto texture_index = (intptr_t)av_frame->data[1];
@@ -190,8 +347,28 @@ public:
             auto shared = shareTexture(dev, texture);
             if (shared)
                 const_cast<VideoBuffer_D3D11*>(this)->m_texture = copyTexture(dev, get(shared), texture_index);
+#else
+            auto devRHI = D3D11Device(rhi);
+            if (!devRHI) {
+                qWarning() << "No device for RHI";
+                return {};
+            }
+            ComPtr<ID3D11DeviceContext> ctxRHI;
+            devRHI->GetImmediateContext(ctxRHI.GetAddressOf());
+
+            QAVVideoFrame_D3D11 videoFrame(frame().frame());
+            auto outputTex = videoFrame.copyTexture(devRHI, ctxRHI);
+            if (!outputTex) {
+                qWarning() << "Could not copy d3d11 texture";
+                return {};
+            }
+
+            // Keep alive texture while the frame is alive
+            const_cast<VideoBuffer_D3D11*>(this)->m_texture = outputTex;
+#endif
         }
 
+        // Return 2 textures since we explicitly use NV12 pixel format
         QList<quint64> textures = {quint64(get(m_texture)), quint64(get(m_texture))};
         return QVariant::fromValue(textures);
     }
