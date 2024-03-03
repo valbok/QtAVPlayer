@@ -21,7 +21,7 @@ public:
     QAVAudioFrame();
     ~QAVAudioFrame();
     QAVAudioFrame(const QAVFrame &other);
-    QAVAudioFrame(const QAVAudioFrame &other);
+    explicit QAVAudioFrame(const QAVAudioFrame &other);
     QAVAudioFrame(const QAVAudioFormat &format, const QByteArray &data);
     QAVAudioFrame &operator=(const QAVFrame &other);
     QAVAudioFrame &operator=(const QAVAudioFrame &other);

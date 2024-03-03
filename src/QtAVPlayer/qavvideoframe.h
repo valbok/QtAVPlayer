@@ -38,7 +38,7 @@ public:
 
     QAVVideoFrame();
     QAVVideoFrame(const QAVFrame &other);
-    QAVVideoFrame(const QAVVideoFrame &other);
+    explicit QAVVideoFrame(const QAVVideoFrame &other);
     QAVVideoFrame(const QSize &size, AVPixelFormat fmt);
 
     QAVVideoFrame &operator=(const QAVFrame &other);

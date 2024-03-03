@@ -24,7 +24,7 @@ class QAVStream
 public:
     QAVStream();
     QAVStream(int index, AVFormatContext *ctx = nullptr, const QSharedPointer<QAVCodec> &codec = {});
-    QAVStream(const QAVStream &other);
+    explicit QAVStream(const QAVStream &other);
     ~QAVStream();
     QAVStream &operator=(const QAVStream &other);
     operator bool() const;

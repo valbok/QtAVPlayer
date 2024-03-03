@@ -50,7 +50,7 @@ public:
         FilterError
     };
 
-    QAVPlayer(QObject *parent = nullptr);
+    explicit QAVPlayer(QObject *parent = nullptr);
     ~QAVPlayer();
 
     void setSource(const QString &url, const QSharedPointer<QAVIODevice> &dev = {});

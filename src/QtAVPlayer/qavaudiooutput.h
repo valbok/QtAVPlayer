@@ -20,7 +20,7 @@ class QAVAudioOutputPrivate;
 class QAVAudioOutput : public QObject
 {
 public:
-    QAVAudioOutput(QObject *parent = nullptr);
+    explicit QAVAudioOutput(QObject *parent = nullptr);
     ~QAVAudioOutput();
 
     void setVolume(qreal v);

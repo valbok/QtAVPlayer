@@ -19,7 +19,7 @@ class QAVStreamFrame
 {
 public:
     QAVStreamFrame();
-    QAVStreamFrame(const QAVStreamFrame &other);
+    explicit QAVStreamFrame(const QAVStreamFrame &other);
     ~QAVStreamFrame();
     QAVStreamFrame &operator=(const QAVStreamFrame &other);
 

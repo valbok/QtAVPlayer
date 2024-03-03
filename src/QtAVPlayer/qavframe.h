@@ -32,7 +32,7 @@ public:
     void setFilterName(const QString &name);
 
 protected:
-    QAVFrame(QAVFramePrivate &d);
+    explicit QAVFrame(QAVFramePrivate &d);
     Q_DECLARE_PRIVATE(QAVFrame)
 };
 
