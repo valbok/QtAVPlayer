@@ -22,7 +22,7 @@ template <class T>
 using ComPtr = QWindowsIUPointer<T>;
 #endif // #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 2)
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 2)
 #include <private/quniquehandle_p.h>
 #endif
 
@@ -151,7 +151,7 @@ static ComPtr<ID3D11Texture2D> copyTexture(ID3D11Device *dev, ID3D11Texture2D *f
     return copy;
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 2)
 
 static ComPtr<ID3D11Device1> D3D11Device(QRhi *rhi)
 {
@@ -300,7 +300,7 @@ ComPtr<ID3D11Texture2D> QAVVideoFrame_D3D11::copyTexture(const ComPtr<ID3D11Devi
     return outputTex;
 }
 
-#endif // #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+#endif // #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 2)
 
 class VideoBuffer_D3D11: public QAVVideoBuffer_GPU
 {
@@ -325,7 +325,7 @@ public:
                 qWarning() << "Only AV_PIX_FMT_D3D11 is supported, but got" << frame().formatName();
                 return {};
             }
-#if QT_VERSION < QT_VERSION_CHECK(6, 6, 0)
+#if QT_VERSION < QT_VERSION_CHECK(6, 6, 2)
             auto av_frame = frame().frame();
             auto texture = (ID3D11Texture2D *)(uintptr_t)av_frame->data[0];
             auto texture_index = (intptr_t)av_frame->data[1];
@@ -365,7 +365,7 @@ public:
 
             // Keep alive texture while the frame is alive
             const_cast<VideoBuffer_D3D11*>(this)->m_texture = outputTex;
-#endif
+#endif // #if QT_VERSION < QT_VERSION_CHECK(6, 6, 2)
         }
 
         // Return 2 textures since we explicitly use NV12 pixel format
