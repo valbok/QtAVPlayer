@@ -92,9 +92,7 @@ jobs:
 
       - name: Set environment path
         run: |
-          echo "/usr/local/opt/qt5/bin" >> $GITHUB_PATH
-          echo "/usr/local/Cellar/ffmpeg/6.0_2/include" >> $GITHUB_PATH
-          echo "/usr/local/Cellar/ffmpeg/6.1.1_2/include" >> $GITHUB_PATH
+          echo "/usr/local/opt/qt@5/bin" >> $GITHUB_PATH
           echo "/usr/local/opt/llvm@9/bin" >> $GITHUB_PATH
 
       - name: QMake Test
