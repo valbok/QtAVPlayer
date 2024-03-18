@@ -297,7 +297,7 @@ void tst_QAVPlayer::playAudioOutput()
     p.setSource(file.absoluteFilePath());
 
     QAVAudioFrame frame;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { frame = f; });
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { frame = f; }, Qt::DirectConnection);
     p.play();
 
     QTRY_VERIFY(p.position() != 0);
@@ -441,7 +441,7 @@ void tst_QAVPlayer::audioPositionWithCover()
     QAVPlayer p;
     qint64 pos = 0;
     QAVAudioFrame frame;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { pos = p.position(); frame = f; });
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { pos = p.position(); frame = f; }, Qt::DirectConnection);
 
     QFileInfo file(testData("test.mp3"));
     p.setSource(file.absoluteFilePath());
@@ -1175,7 +1175,7 @@ void tst_QAVPlayer::files()
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { videoFrame = f; if (f) ++vf; });
     int af = 0;
     QAVAudioFrame audioFrame;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { audioFrame = f; if (f) ++af; });
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { audioFrame = f; if (f) ++af; }, Qt::DirectConnection);
 
     p.pause();
     if (hasVideo) {
@@ -1294,7 +1294,7 @@ void tst_QAVPlayer::files_io()
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { videoFrame = f; if (f) ++vf; });
     int af = 0;
     QAVAudioFrame audioFrame;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { audioFrame = f; if (f) ++af; });
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { audioFrame = f; if (f) ++af; }, Qt::DirectConnection);
 
     p.pause();
     if (hasVideo) {
@@ -1752,7 +1752,7 @@ void tst_QAVPlayer::availableAudioStreams()
 
     int framesCount = 0;
     QAVAudioFrame frame;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { frame = f; ++framesCount; });
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { frame = f; ++framesCount; }, Qt::DirectConnection);
 
     p.setSource(file.absoluteFilePath());
 
@@ -1862,13 +1862,13 @@ void tst_QAVPlayer::audioOutput()
     QFileInfo file1(testData("guido.mp4"));
     QFileInfo file2(testData("small.mp4"));
 
-    QAVPlayer p;
     QAVAudioOutput out;
     QAVAudioFrame frame;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &out, [&out, &frame](const QAVAudioFrame &f) {
+    QAVPlayer p;
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&out, &frame](const QAVAudioFrame &f) {
         out.play(f);
         frame = f;
-    });
+    }, Qt::DirectConnection);
 
     p.setSource(file1.absoluteFilePath());
     p.play();
@@ -1891,14 +1891,14 @@ void tst_QAVPlayer::audioOutput()
 void tst_QAVPlayer::multiPlayers()
 {
     QFileInfo file(testData("av_sample.mkv"));
+    QAVAudioOutput o1;
+    QAVAudioOutput o2;
     QAVPlayer p1;
     QAVPlayer p2;
     p1.setSource(file.absoluteFilePath());
     p2.setSource(file.absoluteFilePath());
     p1.setSynced(false);
     p2.setSynced(false);
-    QAVAudioOutput o1;
-    QAVAudioOutput o2;
     o1.setVolume(0);
     o2.setVolume(0);
     int framesCount1 = 0;
@@ -3050,7 +3050,6 @@ void tst_QAVPlayer::audioFilterVideoFrames()
         ++audioFramesCount;
     }, Qt::DirectConnection);
 
-
     p.setSynced(false);
     p.play();
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
@@ -3208,7 +3207,7 @@ void tst_QAVPlayer::multipleAudioStreams()
     QSignalSpy spy(&p, &QAVPlayer::audioStreamsChanged);
 
     QSet<int> streams;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { streams.insert(f.stream().index()); });
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { streams.insert(f.stream().index()); }, Qt::DirectConnection);
 
     p.setSource(file.absoluteFilePath());
 
@@ -3290,7 +3289,7 @@ void tst_QAVPlayer::emptyStreams()
     QAVVideoFrame frameVideo;
     QSet<int> streamsAudio;
     QSet<int> streamsVideo;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { frameAudio = f; streamsAudio.insert(f.stream().index()); });
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { frameAudio = f; streamsAudio.insert(f.stream().index()); }, Qt::DirectConnection);
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frameVideo = f; streamsVideo.insert(f.stream().index()); });
 
     p.setSource(file.absoluteFilePath());
