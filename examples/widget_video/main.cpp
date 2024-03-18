@@ -129,6 +129,11 @@ int main(int argc, char *argv[])
             qDebug() << "Video streams:" << p.currentVideoStreams().size();
             for (const auto &s: p.currentVideoStreams())
                 qDebug() << "[" << s.index() << "]" << s.metadata() << s.framesCount() << "frames," << s.frameRate() << "frame rate";
+            qDebug() << "Audio streams:" << p.currentAudioStreams().size();
+            for (const auto &s: p.currentAudioStreams())
+                qDebug() << "[" << s.index() << "]" << s.metadata() << s.framesCount() << "frames," << s.frameRate() << "frame rate";
+        } else if (status == QAVPlayer::EndOfMedia) {
+            audioOutput.stop();
         }
     });
     return app.exec();

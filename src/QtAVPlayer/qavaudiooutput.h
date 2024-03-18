@@ -19,6 +19,7 @@ QT_BEGIN_NAMESPACE
 class QAVAudioOutputPrivate;
 class QAVAudioOutput : public QObject
 {
+    Q_OBJECT
 public:
     QAVAudioOutput(QObject *parent = nullptr);
     ~QAVAudioOutput();
@@ -34,12 +35,18 @@ public:
 
     bool play(const QAVAudioFrame &frame);
 
+public Q_SLOTS:
+    void stop();
+
 protected:
     std::unique_ptr<QAVAudioOutputPrivate> d_ptr;
 
 private:
     Q_DISABLE_COPY(QAVAudioOutput)
     Q_DECLARE_PRIVATE(QAVAudioOutput)
+
+private Q_SLOTS:
+    void startThread();
 };
 
 QT_END_NAMESPACE

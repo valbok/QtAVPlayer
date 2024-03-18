@@ -76,8 +76,8 @@ contains(DEFINES, QT_AVPLAYER_MULTIMEDIA) {
     QT += multimedia
     # Needed for QAbstractVideoBuffer
     equals(QT_MAJOR_VERSION, 6): QT += multimedia-private
-    HEADERS += $$PWD/qavaudiooutput.h
-    SOURCES += $$PWD/qavaudiooutput.cpp
+    HEADERS += $$PWD/qavaudiooutput.h $$PWD/qavaudiooutputdevice.h
+    SOURCES += $$PWD/qavaudiooutput.cpp $$PWD/qavaudiooutputdevice.cpp
 }
 
 contains(DEFINES, QT_AVPLAYER_VA_X11):qtConfig(opengl) {
