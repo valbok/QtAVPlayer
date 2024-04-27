@@ -349,9 +349,14 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
     locker.relock();
     av_log_set_callback(log_callback);
 
+#if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(59, 8, 0)
     d->seekable = d->ctx->iformat->read_seek || d->ctx->iformat->read_seek2;
     if (d->ctx->pb)
         d->seekable |= bool(d->ctx->pb->seekable);
+#else
+    // TODO: Search and implement replacement function for seek
+    d->seekable = false;
+#endif
 
     ret = resetCodecs();
     if (ret < 0)
