@@ -355,7 +355,7 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
         d->seekable |= bool(d->ctx->pb->seekable);
 #else
     // TODO: Search and implement replacement function for seek
-    d->seekable = false;
+    d->seekable = true;
 #endif
 
     ret = resetCodecs();
