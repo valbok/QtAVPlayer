@@ -3198,14 +3198,13 @@ void tst_QAVPlayer::flushFilters()
 
 void tst_QAVPlayer::multipleAudioStreams()
 {
+    QSet<int> streams;
     QAVPlayer p;
 
     QFileInfo file(testData("guido.mp4"));
 
     QSignalSpy spy(&p, &QAVPlayer::audioStreamsChanged);
-
-    QSet<int> streams;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { streams.insert(f.stream().index()); }, Qt::DirectConnection);
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&streams](const QAVAudioFrame &f) { streams.insert(f.stream().index()); }, Qt::DirectConnection);
 
     p.setSource(file.absoluteFilePath());
 
