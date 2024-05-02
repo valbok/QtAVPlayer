@@ -100,9 +100,11 @@ int main(int argc, char *argv[])
     QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QString::fromLatin1("http://archive.org/download/big-bunny-sample-video/SampleVideo.ia.mp4");
     p.setSource(file);
     p.play();
+    //p.seek(55000);
 
     QAVAudioOutput audioOutput;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); }, Qt::DirectConnection);
+    //audioOutput.setBufferSize(128 * 1024);
+    QObject::connect(&p, &QAVPlayer::audioFrame, &audioOutput, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); }, Qt::DirectConnection);
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
@@ -129,8 +131,14 @@ int main(int argc, char *argv[])
             qDebug() << "Video streams:" << p.currentVideoStreams().size();
             for (const auto &s: p.currentVideoStreams())
                 qDebug() << "[" << s.index() << "]" << s.metadata() << s.framesCount() << "frames," << s.frameRate() << "frame rate";
+            qDebug() << "Audio streams:" << p.currentAudioStreams().size();
+            for (const auto &s: p.currentAudioStreams())
+                qDebug() << "[" << s.index() << "]" << s.metadata() << s.framesCount() << "frames," << s.frameRate() << "frame rate";
+        } else if (status == QAVPlayer::EndOfMedia) {
+            audioOutput.stop();
         }
     });
+
     return app.exec();
 }
 

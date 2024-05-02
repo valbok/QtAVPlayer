@@ -6,6 +6,7 @@
  *********************************************************/
 
 #include "qavaudiooutput.h"
+#include "qavaudiooutputdevice.h"
 #include <QDebug>
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <QFuture>
@@ -76,17 +77,9 @@ static QAudioFormat format(const QAVAudioFormat &from)
     return out;
 }
 
-class QAVAudioOutputPrivate : public QIODevice
+class QAVAudioOutputPrivate
 {
 public:
-    QAVAudioOutputPrivate()
-    {
-        open(QIODevice::ReadOnly);
-        threadPool.setMaxThreadCount(1);
-    }
-
-    QFuture<void> audioPlayFuture;
-
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     using AudioOutput = QAudioOutput;
     using AudioDevice = QAudioDeviceInfo;
@@ -94,6 +87,10 @@ public:
     using AudioOutput = QAudioSink;
     using AudioDevice = QAudioDevice;
 #endif
+
+    QAVAudioOutputPrivate(QAVAudioOutput *q): q_ptr(q) {}
+
+    QAVAudioOutput *q_ptr = nullptr;
     AudioOutput *audioOutput = nullptr;
     qreal volume = 1.0;
     int bufferSize = 0;
@@ -101,143 +98,77 @@ public:
     QAudioFormat::ChannelConfig channelConfig = QAudioFormat::ChannelConfigUnknown;
 #endif
 
-    QList<QAVAudioFrame> frames;
-    qint64 offset = 0;
-    bool quit = 0;
+    std::unique_ptr<QAVAudioOutputDevice> device;
+    std::unique_ptr<QThread> audioThread;
     AudioDevice defaultAudioDevice;
     mutable QMutex mutex;
-    QWaitCondition cond;
-    QThreadPool threadPool;
 
-    qint64 readData(char *data, qint64 len) override
+    void resetIfNeeded(const QAudioFormat &fmt, int bsize, qreal v)
     {
-        if (!len)
-            return 0;
-
         QMutexLocker locker(&mutex);
-        qint64 bytesWritten = 0;
-        while (len && !quit) {
-            if (frames.isEmpty()) {
-                // Wait for more frames
-                if (bytesWritten == 0)
-                    cond.wait(&mutex);
-                if (frames.isEmpty())
-                    break;
-            }
-
-            auto frame = frames.front();
-            auto sampleData = frame.data();
-            const int toWrite = qMin(sampleData.size() - offset, len);
-            memcpy(data, sampleData.constData() + offset, toWrite);
-            bytesWritten += toWrite;
-            data += toWrite;
-            len -= toWrite;
-            offset += toWrite;
-
-            if (offset >= sampleData.size()) {
-                offset = 0;
-                frames.removeFirst();
-            }
-        }
-
-        return bytesWritten;
-    }
-
-    qint64 writeData(const char *, qint64) override { return 0; }
-    qint64 size() const override { return 0; }
-    qint64 bytesAvailable() const override { return std::numeric_limits<qint64>::max(); }
-    bool isSequential() const override { return true; }
-    bool atEnd() const override { return false; }
-
-    void tryInit(const QAudioFormat &fmt, int bsize, qreal v)
-    {
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         auto audioDevice = QAudioDeviceInfo::defaultOutputDevice();
+        auto deviceName = audioDevice.deviceName();
 #else
         auto audioDevice = QMediaDevices::defaultAudioOutput();
+        auto deviceName = audioDevice.description();
 #endif
-
         if (!audioOutput
-            || (fmt.isValid() && audioOutput->format() != fmt)
+            || audioOutput->format() != fmt
             || audioOutput->state() == QAudio::StoppedState
             || defaultAudioDevice != audioDevice)
         {
+            if (QThread::currentThread() != audioThread.get()) {
+                qWarning() << "QAVAudioOutput initialization must be on the audio thread";
+                return;
+            }
+
             if (audioOutput) {
                 audioOutput->stop();
                 audioOutput->deleteLater();
+                audioOutput = nullptr;
+            }
+            if (audioDevice.isNull() || deviceName.toLower() == QLatin1String("null audio device")) {
+                qDebug() << "Audio device is not supported:" << deviceName;
+                return;
             }
 
             audioOutput = new AudioOutput(audioDevice, fmt);
+            QObject::connect(audioThread.get(), &QThread::finished, audioOutput, [o=audioOutput] {
+                o->stop();
+                o->deleteLater();
+            });
             defaultAudioDevice = audioDevice;
-
-            QObject::connect(audioOutput, &AudioOutput::stateChanged, audioOutput,
-                             [&](QAudio::State state) {
-                                 switch (state) {
-                                 case QAudio::StoppedState:
-                                     if (audioOutput->error() != QAudio::NoError)
-                                         qWarning() << "QAudioOutput stopped:" << audioOutput->error();
-                                     break;
-                                 default:
-                                     break;
-                                 }
-                             });
-
             if (bsize > 0)
                 audioOutput->setBufferSize(bsize);
             audioOutput->setVolume(v);
-            audioOutput->start(this);
-        }
-    }
-
-    void doPlayAudio()
-    {
-        while (!quit) {
-            QMutexLocker locker(&mutex);
-            cond.wait(&mutex);
-            auto fmt = !frames.isEmpty() ? format(frames.first().format()) : QAudioFormat();
-#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
-            fmt.setChannelConfig(channelConfig);
-#endif
-            auto v = volume;
-            auto bsize = bufferSize;
-            locker.unlock();
-            if (fmt.isValid())
-                tryInit(fmt, bsize, v);
-            if (audioOutput)
-                audioOutput->setVolume(v);
-            QCoreApplication::processEvents();
-        }
-        if (audioOutput) {
-            audioOutput->stop();
-            audioOutput->deleteLater();
-        }
-        audioOutput = nullptr;
-    }
-
-    void startThreadIfNeeded()
-    {
-        if (!audioPlayFuture.isRunning()) {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-            audioPlayFuture = QtConcurrent::run(&threadPool, this, &QAVAudioOutputPrivate::doPlayAudio);
-#else
-            audioPlayFuture = QtConcurrent::run(&threadPool, &QAVAudioOutputPrivate::doPlayAudio, this);
-#endif
+            // Start sending the audio frames from the queue to render
+            device->start();
+            audioOutput->start(device.get());
         }
     }
 };
 
 QAVAudioOutput::QAVAudioOutput(QObject *parent)
     : QObject(parent)
-    , d_ptr(new QAVAudioOutputPrivate)
+    , d_ptr(new QAVAudioOutputPrivate(this))
 {
+    Q_D(QAVAudioOutput);
+    // The audio is rendered by this thread
+    d->audioThread.reset(new QThread);
+    moveToThread(d->audioThread.get());
+    // QAVAudioOutputDevice::readData() should be called on audioThread
+    d->device.reset(new QAVAudioOutputDevice);
+    d->device->open(QIODevice::ReadOnly);
+    d->audioThread->start();
 }
 
 QAVAudioOutput::~QAVAudioOutput()
 {
     Q_D(QAVAudioOutput);
-    d->quit = true;
-    d->cond.wakeAll();
-    d->audioPlayFuture.waitForFinished();
+    stop();
+    d->audioThread->quit();
+    d->audioThread->wait();
 }
 
 void QAVAudioOutput::setVolume(qreal v)
@@ -245,7 +176,8 @@ void QAVAudioOutput::setVolume(qreal v)
     Q_D(QAVAudioOutput);
     QMutexLocker locker(&d->mutex);
     d->volume = v;
-    d->cond.wakeAll();
+    if (d->audioOutput)
+        d->audioOutput->setVolume(v);
 }
 
 qreal QAVAudioOutput::volume() const
@@ -261,7 +193,7 @@ void QAVAudioOutput::setBufferSize(int bytes)
     QMutexLocker locker(&d->mutex);
     d->bufferSize = bytes;
     if (d->bufferSize > 0 && d->audioOutput)
-        d->audioOutput->setBufferSize(d->bufferSize);
+        qWarning() << "QAVAudioOutput: Cannot set buffer size after audioOutput is started";
 }
 
 int QAVAudioOutput::bufferSize() const
@@ -285,21 +217,39 @@ QAudioFormat::ChannelConfig QAVAudioOutput::channelConfig() const
     QMutexLocker locker(&d->mutex);
     return d->channelConfig;
 }
-
 #endif
 
 bool QAVAudioOutput::play(const QAVAudioFrame &frame)
 {
     Q_D(QAVAudioOutput);
-    if (d->quit || !frame)
+    if (!frame)
         return false;
-
-    QMutexLocker locker(&d->mutex);
-    d->startThreadIfNeeded();
-    d->frames.push_back(frame);
-    d->cond.wakeAll();
-
+    auto fmt = format(frame.format());
+    if (!fmt.isValid())
+        return false;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+    fmt.setChannelConfig(d->channelConfig);
+#endif
+    if (QThread::currentThread() == d->audioThread.get()) {
+        qCritical() << "QAVAudioOutput::play() must not be called on the audio thread";
+    } else {
+        quint64 bufferSize = d->bufferSize ? qMin(d->bufferSize, 96000) : 96000;
+        if (d->device->bytesInQueue() >= bufferSize) {
+            // Reset the output on QAVAudioOutput's thread
+            QMetaObject::invokeMethod(this, [fmt, d] {
+                d->resetIfNeeded(fmt, d->bufferSize, d->volume);
+            });
+        }
+    }
+    // Add frames on current thread
+    d->device->play(frame);
     return true;
+}
+
+void QAVAudioOutput::stop()
+{
+    Q_D(QAVAudioOutput);
+    d->device->stop();
 }
 
 QT_END_NAMESPACE
