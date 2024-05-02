@@ -1744,14 +1744,12 @@ void tst_QAVPlayer::stepBackward()
 
 void tst_QAVPlayer::availableAudioStreams()
 {
+    int framesCount = 0;
+    QAVAudioFrame frame;
     QAVPlayer p;
 
     QFileInfo file(testData("guido.mp4"));
-
     QSignalSpy spy(&p, &QAVPlayer::audioStreamsChanged);
-
-    int framesCount = 0;
-    QAVAudioFrame frame;
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { frame = f; ++framesCount; }, Qt::DirectConnection);
 
     p.setSource(file.absoluteFilePath());
