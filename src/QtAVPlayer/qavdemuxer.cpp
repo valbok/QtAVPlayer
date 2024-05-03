@@ -610,46 +610,45 @@ bool QAVDemuxer::eof() const
 QAVPacket QAVDemuxer::read()
 {
     Q_D(QAVDemuxer);
-    QMutexLocker locker(&d->mutex);
-    if (!d->packets.isEmpty())
-        return d->packets.takeFirst();
+    {
+        QMutexLocker locker(&d->mutex);
+        if (!d->packets.isEmpty())
+            return d->packets.takeFirst();
 
-    if (!d->ctx || d->eof)
-        return {};
+        if (!d->ctx || d->eof)
+            return {};
+    }
 
     QAVPacket pkt;
-    locker.unlock();
+    bool eof = d->eof;
     int ret = av_read_frame(d->ctx, pkt.packet());
     if (ret < 0) {
         if (ret == AVERROR_EOF || avio_feof(d->ctx->pb)) {
-            locker.relock();
-            d->eof = true;
-            locker.unlock();
-        }
-    }
-    locker.relock();
-
-    QAVStream stream = pkt.packet()->stream_index < d->availableStreams.size()
-                       ? d->availableStreams[pkt.packet()->stream_index]
-                       : QAVStream();
-    Q_ASSERT(stream.stream());
-    pkt.setStream(stream);
-
-    if (d->bsf_ctx) {
-        ret = av_bsf_send_packet(d->bsf_ctx, d->eof ? NULL : pkt.packet());
-        if (ret >= 0) {
-            while ((ret = av_bsf_receive_packet(d->bsf_ctx, pkt.packet())) >= 0)
-                d->packets.append(pkt);
-        }
-        if (ret < 0 && ret != AVERROR_EOF && ret != AVERROR(EAGAIN)) {
-            qWarning() << "Error applying bitstream filters to an output:" << ret;
+            eof = true;
+        } else {
+            qDebug() << "av_read_frame: unexpected result:" << ret;
             return {};
         }
-    } else {
-        d->packets.append(pkt);
     }
-
-    return !d->packets.isEmpty() ? d->packets.takeFirst() : QAVPacket{};
+    {
+        QMutexLocker locker(&d->mutex);
+        d->eof = eof;
+        if (pkt.packet()->stream_index < d->availableStreams.size())
+            pkt.setStream(d->availableStreams[pkt.packet()->stream_index]);
+        if (d->bsf_ctx) {
+            ret = av_bsf_send_packet(d->bsf_ctx, d->eof ? NULL : pkt.packet());
+            if (ret >= 0) {
+                while ((ret = av_bsf_receive_packet(d->bsf_ctx, pkt.packet())) >= 0)
+                    d->packets.append(pkt);
+            }
+            if (ret < 0 && ret != AVERROR_EOF && ret != AVERROR(EAGAIN)) {
+                qWarning() << "Error applying bitstream filters to an output:" << ret;
+                return {};
+            }
+            return !d->packets.isEmpty() ? d->packets.takeFirst() : QAVPacket{};
+        }
+    }
+    return pkt;
 }
 
 void QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const
