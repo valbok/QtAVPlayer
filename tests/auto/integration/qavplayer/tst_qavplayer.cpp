@@ -1868,6 +1868,11 @@ void tst_QAVPlayer::audioOutput()
         frame = f;
     }, Qt::DirectConnection);
 
+    auto outWithParent = new QAVAudioOutput(&p);
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&outWithParent](const QAVAudioFrame &f) {
+        outWithParent->play(f);
+    }, Qt::DirectConnection);
+
     p.setSource(file1.absoluteFilePath());
     p.play();
     QTest::qWait(100);
