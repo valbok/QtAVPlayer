@@ -77,7 +77,7 @@ static QAudioFormat format(const QAVAudioFormat &from)
     return out;
 }
 
-class QAVAudioOutputPrivate
+class QAVAudioOutputPrivate : public QObject
 {
 public:
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -156,7 +156,7 @@ QAVAudioOutput::QAVAudioOutput(QObject *parent)
     Q_D(QAVAudioOutput);
     // The audio is rendered by this thread
     d->audioThread.reset(new QThread);
-    moveToThread(d->audioThread.get());
+    d->moveToThread(d->audioThread.get());
     // QAVAudioOutputDevice::readData() should be called on audioThread
     d->device.reset(new QAVAudioOutputDevice);
     d->device->open(QIODevice::ReadOnly);
@@ -236,7 +236,7 @@ bool QAVAudioOutput::play(const QAVAudioFrame &frame)
         quint64 bufferSize = d->bufferSize ? qMin(d->bufferSize, 96000) : 96000;
         if (d->device->bytesInQueue() >= bufferSize) {
             // Reset the output on QAVAudioOutput's thread
-            QMetaObject::invokeMethod(this, [fmt, d] {
+            QMetaObject::invokeMethod(d, [fmt, d] {
                 d->resetIfNeeded(fmt, d->bufferSize, d->volume);
             });
         }
