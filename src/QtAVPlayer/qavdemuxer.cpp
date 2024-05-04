@@ -620,7 +620,7 @@ QAVPacket QAVDemuxer::read()
     }
 
     QAVPacket pkt;
-    bool eof = d->eof;
+    bool eof = false;
     int ret = av_read_frame(d->ctx, pkt.packet());
     if (ret < 0) {
         if (ret == AVERROR_EOF || avio_feof(d->ctx->pb)) {
