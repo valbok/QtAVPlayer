@@ -60,7 +60,7 @@ jobs:
           make CC=$CC CXX=$CXX
           ./tst_qavplayer --platform minimal -maxwarnings 100000
 
-      - name: Examples
+      - name: QMake Examples
         run: |
           cd examples/qml_video
           qmake
@@ -68,6 +68,15 @@ jobs:
           cd ../extract_frames
           qmake
           make CC=$CC CXX=$CXX
+
+      - name: CMake Examples
+        run: |
+          cd examples/qml_video
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
+          cd ../widget_video
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
 
   macos:
     strategy:
@@ -110,7 +119,7 @@ jobs:
           make CC=$CC CXX=$CXX
           tst_qavplayer.app/Contents/MacOS/tst_qavplayer --platform minimal -maxwarnings 100000
 
-      - name: Examples
+      - name: QMake Examples
         run: |
           export FFMPEG=`brew --prefix ffmpeg`
           cd examples/qml_video
@@ -119,6 +128,16 @@ jobs:
           cd ../extract_frames
           qmake INCLUDEPATH+="$FFMPEG/include" LIBS+="-L$FFMPEG/lib"
           make CC=$CC CXX=$CXX
+
+      - name: CMake Examples
+        run: |
+          export FFMPEG=`brew --prefix ffmpeg`
+          cd examples/qml_video
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=$FFMPEG/include -DCMAKE_LIBRARY_PATH=$FFMPEG/lib
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
+          cd ../widget_video
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=$FFMPEG/include -DCMAKE_LIBRARY_PATH=$FFMPEG/lib
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
 
   windows:
     strategy:
@@ -221,7 +240,7 @@ jobs:
           mingw32-make
           release\tst_qavplayer.exe -maxwarnings 100000
 
-      - name: Examples
+      - name: QMake Examples
         if: ${{ matrix.type == 'MSVC' }}
         run: |
           cd examples/qml_video
@@ -231,7 +250,17 @@ jobs:
           qmake
           nmake
 
-      - name: Examples
+      - name: CMake Examples
+        if: ${{ matrix.type == 'MSVC' }}
+        run: |
+          cd examples/qml_video
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib
+          cmake --build . -v
+          cd ../widget_video
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib
+          cmake --build . -v
+
+      - name: QMake Examples
         if: ${{ matrix.type == 'MINGW' }}
         run: |
           cd examples/qml_video
@@ -240,3 +269,4 @@ jobs:
           cd ../extract_frames
           qmake
           mingw32-make
+
