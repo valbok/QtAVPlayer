@@ -209,6 +209,10 @@ FFmpeg on custom path:
     add_executable(${PROJECT_NAME} ${QtAVPlayer_SOURCES})
     target_link_libraries(${PROJECT_NAME} ${QtAVPlayer_LIBS})
 
+If `QtMultimedia` should be used:
+
+    $ cmake ../ -DQT_AVPLAYER_MULTIMEDIA=ON
+
 ## Android:
 
 Some exports could be also used: vars that point to libraries in armeabi-v7a, arm64-v8a, x86 and x86_64 target archs.
