@@ -185,7 +185,7 @@ Some defines should be provided to opt some features.
 * `QT_AVPLAYER_VA_DRM` - enables support of `libva-drm` for HW acceleration. For linux only.
 * `QT_AVPLAYER_VDPAU` - enables support of `libvdpau` for HW acceleration. For linux only.
 
-CMake is not supported.
+## QMake
 
 Include QtAVPlayer.pri in your pro file:
 
@@ -199,6 +199,15 @@ And then for your app:
 FFmpeg on custom path:
 
     $ qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA" INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0/include" LIBS="-L/usr/local/Cellar/ffmpeg/6.0/lib"
+
+## CMake
+
+    # Path to QtAVPlayer
+    include_directories(QtAVPlayer/src/)
+    set(QT_AVPLAYER_DIR QtAVPlayer/src/QtAVPlayer/)
+    include(QtAVPlayer/src/QtAVPlayer/QtAVPlayer.cmake)
+    add_executable(${PROJECT_NAME} ${QtAVPlayer_SOURCES})
+    target_link_libraries(${PROJECT_NAME} ${QtAVPlayer_LIBS})
 
 ## Android:
 
