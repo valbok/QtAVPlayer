@@ -20,7 +20,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
   * Audio frames could be played by `QAVAudioOutput` which is a wrapper of QtMultimedia's [QAudioSink](https://doc-snapshots.qt.io/qt6-dev/qaudiosink.html)
 - Supports accurate seek, it starts playing the closest frame. No weird jumps on pts anymore.
 - Supports DASH / mpd: `./qml_video https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8`
-- It is bundled directly into an app using qmake pri.
+- It is bundled directly into an app.
 - Designed to be as simple and understandable as possible, to share knowledge about creating efficient FFmpeg applications.
 - Might be used for media analytics software like [qctools](https://github.com/bavc/qctools) or [dvrescue](https://github.com/mipops/dvrescue).
 - Implements and replaces a combination of FFmpeg and FFplay:
@@ -178,7 +178,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
 # How to build
 
-QtAVPlayer should be directly bundled into an app using QMake and [QtAVPlayer.pri](https://github.com/valbok/QtAVPlayer/blob/master/src/QtAVPlayer/QtAVPlayer.pri).
+QtAVPlayer should be directly bundled into an app.
 Some defines should be provided to opt some features.
 * `QT_AVPLAYER_MULTIMEDIA` - enables support of `QtMultimedia` which requires `QtGUI`, `QtQuick` etc.
 * `QT_AVPLAYER_VA_X11` - enables support of `libva-x11` for HW acceleration. For linux only.
@@ -187,24 +187,23 @@ Some defines should be provided to opt some features.
 
 ## QMake
 
-Include QtAVPlayer.pri in your pro file:
+Include [QtAVPlayer.pri](https://github.com/valbok/QtAVPlayer/blob/master/src/QtAVPlayer/QtAVPlayer.pri) in your pro file:
 
+    DEFINES += "QT_AVPLAYER_MULTIMEDIA"
     INCLUDEPATH += ../../src/
     include(../../src/QtAVPlayer/QtAVPlayer.pri)
 
-And then for your app:
-
-    $ qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA"
-
 FFmpeg on custom path:
 
-    $ qmake DEFINES+="QT_AVPLAYER_MULTIMEDIA" INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0/include" LIBS="-L/usr/local/Cellar/ffmpeg/6.0/lib"
+    $ qmake INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0/include" LIBS="-L/usr/local/Cellar/ffmpeg/6.0/lib"
 
 ## CMake
 
+Include [QtAVPlayer.cmake](https://github.com/valbok/QtAVPlayer/blob/master/src/QtAVPlayer/QtAVPlayer.cmake) in your project:
+
     # Path to QtAVPlayer
-    include_directories(QtAVPlayer/src/)
-    set(QT_AVPLAYER_DIR QtAVPlayer/src/QtAVPlayer/)
+    include_directories(QtAVPlayer/src)
+    set(QT_AVPLAYER_DIR QtAVPlayer/src/QtAVPlayer)
     include(QtAVPlayer/src/QtAVPlayer/QtAVPlayer.cmake)
     add_executable(${PROJECT_NAME} ${QtAVPlayer_SOURCES})
     target_link_libraries(${PROJECT_NAME} ${QtAVPlayer_LIBS})
