@@ -16,7 +16,12 @@
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
 #include <va/va_drmcommon.h>
+
+#ifdef USE_LIBDRM
+#include <libdrm/drm_fourcc.h>
+#else
 #include <drm/drm_fourcc.h>
+#endif
 
 extern "C" {
 #include <libavutil/hwcontext_vaapi.h>
