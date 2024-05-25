@@ -1,3 +1,5 @@
+include(CheckIncludeFile)
+
 if(NOT QT_AVPLAYER_DIR)
     set(QT_AVPLAYER_DIR ${CMAKE_SOURCE_DIR})
 endif()
@@ -182,6 +184,16 @@ endif()
 
 if(QT_AVPLAYER_VA_DRM)
     message(STATUS "QT_AVPLAYER_VA_DRM is defined")
+
+    check_include_file("drm/drm_fourcc.h" HAVE_DRM_FOURCC_H)
+
+    if(HAVE_DRM_FOURCC_H)
+        message(STATUS "Found drm/drm_fourcc.h")
+    else()
+        message(STATUS "drm/drm_fourcc.h not found, using libdrm")
+        add_definitions(-DUSE_LIBDRM)
+    endif()
+    
     add_definitions(-DQT_AVPLAYER_VA_DRM)
 
     set(QtAVPlayer_LIBS
