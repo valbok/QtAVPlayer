@@ -208,9 +208,9 @@ Include [QtAVPlayer.cmake](https://github.com/valbok/QtAVPlayer/blob/master/src/
     add_executable(${PROJECT_NAME} ${QtAVPlayer_SOURCES})
     target_link_libraries(${PROJECT_NAME} ${QtAVPlayer_LIBS})
 
-If `QtMultimedia` should be used:
+FFmpeg on custom path:
 
-    $ cmake ../ -DQT_AVPLAYER_MULTIMEDIA=ON
+    % cmake ../ -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_PREFIX_PATH=/opt/Qt/6.7.1/macos/lib/cmake -DCMAKE_LIBRARY_PATH=/opt/homebrew/Cellar/ffmpeg/7.0_1/lib
 
 ## Android:
 
