@@ -184,6 +184,7 @@ if(QT_AVPLAYER_VA_DRM)
     message(STATUS "QT_AVPLAYER_VA_DRM is defined")
     add_definitions(-DQT_AVPLAYER_VA_DRM)
 
+    find_package(OpenGL REQUIRED COMPONENTS OpenGL EGL)
     set(QtAVPlayer_LIBS
         ${QtAVPlayer_LIBS}
         OpenGL::GL

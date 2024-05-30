@@ -9,5 +9,7 @@
 #define QTAVPLAYERGLOBAL_H
 
 #include <QtCore/qglobal.h>
-
+#if defined(QT_AVPLAYER_VA_DRM)
+#include <QtGui/private/qtgui-config_p.h>
+#endif
 #endif

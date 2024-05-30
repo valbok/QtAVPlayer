@@ -1,5 +1,6 @@
 TEMPLATE = app
 TARGET = qml_video
+QT += gui gui-private multimedia
 DEFINES += "QT_AVPLAYER_MULTIMEDIA"
 DEFINES += "QT_NO_CAST_FROM_ASCII"
 INCLUDEPATH += . ../../src
@@ -13,7 +14,6 @@ include(../../src/QtAVPlayer/QtAVPlayer.pri)
 #    /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libswscale.so \
 #    /opt/mobile-ffmpeg/prebuilt/android-arm/ffmpeg/lib/libswresample.so
 CONFIG += c++1z
-QT += gui multimedia
 lessThan(QT_MAJOR_VERSION, 6): QT += qtmultimediaquicktools-private
 equals(QT_MAJOR_VERSION, 6): QT += multimediaquick-private
 
