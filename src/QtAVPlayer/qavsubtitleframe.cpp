@@ -28,6 +28,7 @@ public:
 static void subtitle_free(AVSubtitle *subtitle)
 {
     avsubtitle_free(subtitle);
+    delete subtitle;
 }
 
 QAVSubtitleFrame::QAVSubtitleFrame()
