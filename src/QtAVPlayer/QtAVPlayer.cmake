@@ -1,5 +1,3 @@
-include(CheckIncludeFile)
-
 if(NOT QT_AVPLAYER_DIR)
     set(QT_AVPLAYER_DIR ${CMAKE_SOURCE_DIR})
 endif()
@@ -185,15 +183,31 @@ endif()
 if(QT_AVPLAYER_VA_DRM)
     message(STATUS "QT_AVPLAYER_VA_DRM is defined")
 
-    check_include_file("drm/drm_fourcc.h" HAVE_DRM_FOURCC_H)
+    # Search for the drm_fourcc.h file in both possible locations
+    find_path(DRM_FOURCC_H_PATH drm_fourcc.h
+            PATHS
+            /usr/include/drm
+            /usr/include/libdrm
+            NO_DEFAULT_PATH
+    )
 
-    if(HAVE_DRM_FOURCC_H)
-        message(STATUS "Found drm/drm_fourcc.h")
+    # Check if the file was found
+    if (DRM_FOURCC_H_PATH)
+        message(STATUS "Found drm_fourcc.h at ${DRM_FOURCC_H_PATH}")
+
+        # Check if the file is in both locations and prefer the drm version
+        find_path(DRM_PATH drm_fourcc.h PATHS /usr/include/drm NO_DEFAULT_PATH)
+        if (DRM_PATH AND DRM_PATH STREQUAL DRM_FOURCC_H_PATH)
+            message(STATUS "Using /usr/include/drm version of drm_fourcc.h")
+            include_directories(/usr/include/drm)
+        else()
+            message(STATUS "Using ${DRM_FOURCC_H_PATH} version of drm_fourcc.h")
+            include_directories(${DRM_FOURCC_H_PATH})
+        endif()
     else()
-        message(STATUS "drm/drm_fourcc.h not found, using libdrm")
-        add_definitions(-DUSE_LIBDRM)
+        message(FATAL_ERROR "drm_fourcc.h not found in the specified paths")
     endif()
-    
+
     add_definitions(-DQT_AVPLAYER_VA_DRM)
 
     find_package(OpenGL REQUIRED COMPONENTS OpenGL EGL)
