@@ -90,6 +90,8 @@ contains(DEFINES, QT_AVPLAYER_VA_X11):qtConfig(opengl) {
 contains(DEFINES, QT_AVPLAYER_VA_DRM):qtConfig(egl) {
     QMAKE_USE += egl opengl
     LIBS += -lva-drm -lva
+    exists(/usr/include/drm):INCLUDEPATH += /usr/include/drm
+    exists(/usr/include/libdrm):INCLUDEPATH += /usr/include/libdrm
     PRIVATE_HEADERS += $$PWD/qavhwdevice_vaapi_drm_egl_p.h
     SOURCES += $$PWD/qavhwdevice_vaapi_drm_egl.cpp
 }
