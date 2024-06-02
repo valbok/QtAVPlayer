@@ -16,7 +16,7 @@
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
 #include <va/va_drmcommon.h>
-#include <drm/drm_fourcc.h>
+#include <drm_fourcc.h>
 
 extern "C" {
 #include <libavutil/hwcontext_vaapi.h>
