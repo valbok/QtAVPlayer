@@ -175,7 +175,7 @@ if(QT_AVPLAYER_VA_X11)
     )
 
     set(QtAVPlayer_SOURCES
-        ${QT_AVPLAYER_SOURCES}
+        ${QtAVPlayer_SOURCES}
         ${QT_AVPLAYER_DIR}/qavhwdevice_vaapi_x11_glx.cpp
     )
 endif()
