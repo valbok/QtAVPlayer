@@ -321,6 +321,9 @@ public:
             return {};
 
         if (!m_texture) {
+            if (!frame())
+                return {};
+
             if (frame().format() != AV_PIX_FMT_D3D11) {
                 qWarning() << "Only AV_PIX_FMT_D3D11 is supported, but got" << frame().formatName();
                 return {};
