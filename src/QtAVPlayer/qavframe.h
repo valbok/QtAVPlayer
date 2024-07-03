@@ -22,7 +22,7 @@ public:
     QAVFrame();
     ~QAVFrame();
     QAVFrame(const QAVFrame &other);
-    virtual QAVFrame &operator=(const QAVFrame &other);
+    QAVFrame &operator=(const QAVFrame &other);
     operator bool() const;
     AVFrame *frame() const;
 
