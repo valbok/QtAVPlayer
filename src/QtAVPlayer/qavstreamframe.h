@@ -25,7 +25,7 @@ public:
 
     QAVStream stream() const;
     void setStream(const QAVStream &stream);
-    operator bool() const;
+    virtual explicit operator bool() const;
 
     double pts() const;
     double duration() const;
@@ -34,7 +34,7 @@ public:
     int receive();
 
 protected:
-    QAVStreamFrame(QAVStreamFramePrivate &d);
+    explicit QAVStreamFrame(QAVStreamFramePrivate &d);
 
     std::unique_ptr<QAVStreamFramePrivate> d_ptr;
     Q_DECLARE_PRIVATE(QAVStreamFrame)
