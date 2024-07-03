@@ -26,7 +26,7 @@ extern "C" {
 #include <libavutil/pixdesc.h>
 #include "libavutil/imgutils.h"
 #include <libavutil/mastering_display_metadata.h>
-};
+}
 
 QT_BEGIN_NAMESPACE
 
@@ -39,7 +39,7 @@ class QAVVideoFramePrivate : public QAVFramePrivate
 {
     Q_DECLARE_PUBLIC(QAVVideoFrame)
 public:
-    QAVVideoFramePrivate(QAVVideoFrame *q) : q_ptr(q) { }
+    explicit QAVVideoFramePrivate(QAVVideoFrame *q) : q_ptr(q) { }
 
     QAVVideoBuffer &videoBuffer() const
     {
@@ -229,7 +229,7 @@ public:
     {
     }
 
-    quint64 textureHandle(int plane) const override
+    quint64 textureHandle(int plane) const // override todo: FIX 6.7.2
     {
         if (m_textures.isNull())
             const_cast<PlanarVideoBuffer *>(this)->m_textures = m_frame.handle(m_rhi);
@@ -241,7 +241,8 @@ public:
         return m_textures.toULongLong();
     }
 
-    QVideoFrame::MapMode mapMode() const override { return m_mode; }
+    QVideoFrame::MapMode mapMode() const // override todo: FIX 6.7.2
+    { return m_mode; }
     MapData map(QVideoFrame::MapMode mode) override
     {
         MapData res;
