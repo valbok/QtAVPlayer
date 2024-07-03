@@ -25,7 +25,7 @@ public:
 
     QAVStream stream() const;
     void setStream(const QAVStream &stream);
-    virtual explicit operator bool() const;
+    virtual operator bool() const;
 
     double pts() const;
     double duration() const;
