@@ -229,7 +229,15 @@ public:
     {
     }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 7, 2)
+    QVideoFrame::MapMode mapMode() const override { return m_mode; }
+
     quint64 textureHandle(int plane) const override
+#else
+    QVideoFrame::MapMode mapMode() const { return m_mode; }
+
+    quint64 textureHandle(QRhi*, int plane) const override
+#endif
     {
         if (m_textures.isNull())
             const_cast<PlanarVideoBuffer *>(this)->m_textures = m_frame.handle(m_rhi);
@@ -241,7 +249,6 @@ public:
         return m_textures.toULongLong();
     }
 
-    QVideoFrame::MapMode mapMode() const override { return m_mode; }
     MapData map(QVideoFrame::MapMode mode) override
     {
         MapData res;
