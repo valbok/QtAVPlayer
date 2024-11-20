@@ -5,8 +5,8 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#ifndef QAVFAUDIORAME_H
-#define QAVFAUDIORAME_H
+#ifndef QAVFAUDIOFRAME_H
+#define QAVFAUDIOFRAME_H
 
 #include <QtAVPlayer/qavframe.h>
 #include <QtAVPlayer/qavaudioformat.h>
@@ -19,7 +19,6 @@ class QAVAudioFrame : public QAVFrame
 {
 public:
     QAVAudioFrame();
-    ~QAVAudioFrame();
     QAVAudioFrame(const QAVFrame &other);
     QAVAudioFrame(const QAVAudioFrame &other);
     QAVAudioFrame(const QAVAudioFormat &format, const QByteArray &data);

@@ -6,18 +6,21 @@
  *********************************************************/
 
 #include "qavaudiooutputdevice.h"
+#include "qavaudioconverter.h"
 #include <QDebug>
 #include <QMutex>
 #include <QWaitCondition>
 #include <QThread>
+
 QT_BEGIN_NAMESPACE
 
 class QAVAudioOutputDevicePrivate
 {
 public:
-    QList<QAVAudioFrame> frames;
+    QList<QByteArray> frames;
     qint64 offset = 0;
     quint64 bytes = 0;
+    QAVAudioConverter conv;
     mutable QMutex mutex;
     QWaitCondition cond;
     bool quit = false;
@@ -49,8 +52,7 @@ qint64 QAVAudioOutputDevice::readData(char *data, qint64 len)
                 break;
         }
 
-        auto frame = d->frames.front();
-        auto sampleData = frame.data();
+        auto &sampleData = d->frames.front();
         const int toWrite = qMin(sampleData.size() - d->offset, len);
         memcpy(data, sampleData.constData() + d->offset, toWrite);
         bytesWritten += toWrite;
@@ -60,8 +62,8 @@ qint64 QAVAudioOutputDevice::readData(char *data, qint64 len)
 
         if (d->offset >= sampleData.size()) {
             d->offset = 0;
-            d->frames.removeFirst();
             d->bytes -= sampleData.size();
+            d->frames.removeFirst();
         }
     }
     if (d->quit) {
@@ -76,8 +78,9 @@ void QAVAudioOutputDevice::play(const QAVAudioFrame &frame)
     Q_D(QAVAudioOutputDevice);
     {
         QMutexLocker locker(&d->mutex);
-        d->frames.push_back(frame);
-        d->bytes += frame.data().size();
+        auto data = d->conv.data(frame);
+        d->bytes += data.size();
+        d->frames.push_back(std::move(data));
     }
     d->cond.wakeAll();
 }

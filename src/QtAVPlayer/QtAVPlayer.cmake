@@ -66,6 +66,7 @@ set(QtAVPlayer_PUBLIC_HEADERS
     ${QT_AVPLAYER_DIR}/qtavplayerglobal.h
     ${QT_AVPLAYER_DIR}/qavstream.h
     ${QT_AVPLAYER_DIR}/qavplayer.h
+    ${QT_AVPLAYER_DIR}/qavaudioconverter.h
 )
 
 set(QtAVPlayer_SOURCES
@@ -96,6 +97,7 @@ set(QtAVPlayer_SOURCES
     ${QT_AVPLAYER_DIR}/qaviodevice.cpp
     ${QT_AVPLAYER_DIR}/qavstream.cpp
     ${QT_AVPLAYER_DIR}/qavfilters.cpp
+    ${QT_AVPLAYER_DIR}/qavaudioconverter.cpp
 )
 
 if(WIN32)
