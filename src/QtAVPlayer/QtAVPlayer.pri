@@ -42,6 +42,7 @@ PUBLIC_HEADERS += \
     $$PWD/qtavplayerglobal.h \
     $$PWD/qavstream.h \
     $$PWD/qavplayer.h \
+    $$PWD/qavaudioconverter.h \
 
 SOURCES += \
     $$PWD/qavplayer.cpp \
@@ -70,7 +71,8 @@ SOURCES += \
     $$PWD/qavaudiooutputfilter.cpp \
     $$PWD/qaviodevice.cpp \
     $$PWD/qavstream.cpp \
-    $$PWD/qavfilters.cpp
+    $$PWD/qavfilters.cpp \
+    $$PWD/qavaudioconverter.cpp \
 
 contains(DEFINES, QT_AVPLAYER_MULTIMEDIA) {
     QT += multimedia
