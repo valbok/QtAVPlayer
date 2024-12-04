@@ -109,6 +109,45 @@ public:
     QString bsfs;
 };
 
+static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
+{
+    /* Do we need to log ? */
+    if(level > av_log_get_level()){
+        return;
+    }
+
+    /* Format log line */
+    char line[1024];
+    static int print_prefix = 1;
+
+    av_log_format_line(ptr, level, fmt, vl, line, sizeof(line), &print_prefix);
+
+    /* Adapt it to Qt log format */
+    switch(level)
+    {
+        case AV_LOG_PANIC:{
+            qFatal("[ffmpeg] %s", line);
+        }break;
+        
+        case AV_LOG_FATAL:
+        case AV_LOG_ERROR:{
+            qCritical("[ffmpeg] %s", line);
+        }break;
+
+        case AV_LOG_WARNING:{
+            qWarning("[ffmpeg] %s", line);
+        }break;
+
+        case AV_LOG_INFO:{
+            qInfo("[ffmpeg] %s", line);
+        }break;
+
+        default:{
+            qDebug("[ffmpeg] %s", line);
+        }break;
+    }
+}
+
 static int decode_interrupt_cb(void *ctx)
 {
     auto d = reinterpret_cast<QAVDemuxerPrivate *>(ctx);
@@ -125,6 +164,7 @@ QAVDemuxer::QAVDemuxer()
         avcodec_register_all();
 #endif
         avdevice_register_all();
+        av_log_set_callback(log_callback);
         loaded = true;
     }
 }
@@ -209,22 +249,6 @@ static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, Q
     }
 
     return 0;
-}
-
-static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
-{
-    if (level > av_log_get_level())
-        return;
-
-    va_list vl2;
-    char line[1024];
-    static int print_prefix = 1;
-
-    va_copy(vl2, vl);
-    av_log_format_line(ptr, level, fmt, vl2, line, sizeof(line), &print_prefix);
-    va_end(vl2);
-
-    qDebug() << "FFmpeg:" << line;
 }
 
 QStringList QAVDemuxer::supportedFormats()
@@ -369,7 +393,6 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
         return ret;
 
     locker.relock();
-    av_log_set_callback(log_callback);
 
 #if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(59, 8, 0)
     d->seekable = d->ctx->iformat->read_seek || d->ctx->iformat->read_seek2;
