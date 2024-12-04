@@ -1313,6 +1313,19 @@ void QAVPlayer::setInputOptions(const QMap<QString, QString>  &opts)
     Q_EMIT inputOptionsChanged(opts);
 }
 
+
+/*!
+ * \brief Use to set log level of FFmpeg backend
+ * \param[in] level
+ * Level log to use. Please see:
+ * https://ffmpeg.org/doxygen/trunk/group__lavu__log__constants.html
+ * for value details
+ */
+void QAVPlayer::setLogsLevelBackend(int level)
+{
+    av_log_set_level(level);
+}
+
 QAVStream::Progress QAVPlayer::progress(const QAVStream &s) const
 {
     return d_func()->demuxer.progress(s);
