@@ -139,6 +139,9 @@ Q_SIGNALS:
     void audioFrame(const QAVAudioFrame &frame);
     void subtitleFrame(const QAVSubtitleFrame &frame);
 
+public:
+    static void setLogsLevelBackend(int level);
+    
 protected:
     std::unique_ptr<QAVPlayerPrivate> d_ptr;
 
