@@ -146,11 +146,12 @@ public:
     void enqueue(const QAVPacket &packet)
     {
         QMutexLocker locker(&m_mutex);
+        if (m_abort)
+            return;
         m_packets.append(packet);
         m_bytes += packet.packet()->size + sizeof(packet);
         m_duration += packet.duration();
         m_consumerWaiter.wakeAll();
-        m_abort = false;
         m_waitingForPackets = false;
     }
 
@@ -180,10 +181,10 @@ public:
             m_producerWaiter.wait(&m_mutex);
     }
 
-    void abort()
+    void abort(bool aborted = true)
     {
         QMutexLocker locker(&m_mutex);
-        m_abort = true;
+        m_abort = aborted;
         m_waitingForPackets = true;
         m_consumerWaiter.wakeAll();
         m_producerWaiter.wakeAll();

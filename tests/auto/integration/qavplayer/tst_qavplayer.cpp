@@ -103,6 +103,7 @@ private slots:
     void multiFilterInputs_data();
     void multiFilterInputs();
     void streamMetadataRotate();
+    void switchingSource();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -3424,6 +3425,21 @@ void tst_QAVPlayer::streamMetadataRotate()
     QVERIFY(!p.currentVideoStreams()[0].metadata().isEmpty());
     QVERIFY(p.currentVideoStreams()[0].metadata().contains("rotate"));
     QCOMPARE(p.currentVideoStreams()[0].metadata()["rotate"], "90");
+}
+
+void tst_QAVPlayer::switchingSource()
+{
+    QAVPlayer p;
+    QList<QString> files = {"av_sample.mkv", "test.mkv", "small.mp4"};
+    p.setSynced(false);
+    for (const auto &f : files) {
+        QFileInfo file(testData(f));
+        p.setSource(file.absoluteFilePath());
+        p.play();
+        QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia || p.mediaStatus() == QAVPlayer::EndOfMedia);
+    }
+
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
