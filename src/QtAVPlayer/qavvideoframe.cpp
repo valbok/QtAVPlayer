@@ -491,6 +491,14 @@ QAVVideoFrame::operator QVideoFrame() const
     return QVideoFrame(new PlanarVideoBuffer(result, type), size(), format);
 #else
     QVideoFrameFormat videoFormat(size(), format);
+    
+    QRect viewport(
+        frame()->crop_left,
+        frame()->crop_top,
+        frame()->width - frame()->crop_left - frame()->crop_right,
+        frame()->height - frame()->crop_top - frame()->crop_bottom
+    );
+    videoFormat.setViewport(viewport);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
     videoFormat.setColorSpace(PlanarVideoBuffer::colorSpace(frame()));
     videoFormat.setColorTransfer(PlanarVideoBuffer::colorTransfer(frame()));
