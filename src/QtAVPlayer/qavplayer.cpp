@@ -1316,6 +1316,24 @@ void QAVPlayer::setInputOptions(const QMap<QString, QString>  &opts)
     Q_EMIT inputOptionsChanged(opts);
 }
 
+QMap<QString, QString> QAVPlayer::codecOptions() const
+{
+    Q_D(const QAVPlayer);
+    return d->demuxer.codecOptions();
+}
+
+void QAVPlayer::setCodecOptions(const QMap<QString, QString> &opts)
+{
+    Q_D(QAVPlayer);
+
+    auto current = codecOptions();
+    if (opts == current)
+        return;
+
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << current << "->" << opts;
+    d->demuxer.setCodecOptions(opts);
+    Q_EMIT codecOptionsChanged(opts);
+}
 
 /*!
  * \brief Use to set log level of FFmpeg backend
