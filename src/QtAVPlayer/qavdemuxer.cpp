@@ -103,6 +103,7 @@ public:
     QString inputFormat;
     QString inputVideoCodec;
     QMap<QString, QString> inputOptions;
+    QMap<QString, QString> videoCodecOptions;
 
     bool eof = false;
     QList<QAVPacket> packets;
@@ -181,7 +182,7 @@ void QAVDemuxer::abort(bool stop)
     d->abortRequest = stop;
 }
 
-static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, QAVVideoCodec &codec)
+static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, QAVVideoCodec &codec, AVDictionary **codecOpts)
 {
     const AVCodec *videoCodec = nullptr;
     if (!inputVideoCodec.isEmpty()) {
@@ -243,7 +244,7 @@ static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, Q
     }
 
     // Open codec after hwdevices
-    if (!codec.open(stream)) {
+    if (!codec.open(stream, codecOpts)) {
         qWarning() << "Could not open video codec for stream";
         return AVERROR(EINVAL);
     }
@@ -455,13 +456,18 @@ int QAVDemuxer::resetCodecs()
             qWarning() << "Could not find codecpar";
             return AVERROR(EINVAL);
         }
+
         const AVMediaType type = d->ctx->streams[i]->codecpar->codec_type;
         switch (type) {
             case AVMEDIA_TYPE_VIDEO:
             {
+                QAVDictionaryHolder opts;
+                for (const auto & key: d->videoCodecOptions.keys())
+                    av_dict_set(&opts.dict, key.toUtf8().constData(), d->videoCodecOptions[key].toUtf8().constData(), 0);
+
                 QSharedPointer<QAVCodec> codec(new QAVVideoCodec);
                 d->availableStreams.push_back({ int(i), d->ctx, codec });
-                ret = setup_video_codec(d->inputVideoCodec, d->ctx->streams[i], *static_cast<QAVVideoCodec *>(codec.data()));
+                ret = setup_video_codec(d->inputVideoCodec, d->ctx->streams[i], *static_cast<QAVVideoCodec *>(codec.data()), &opts.dict);
             } break;
             case AVMEDIA_TYPE_AUDIO:
                 d->availableStreams.push_back({ int(i), d->ctx, QSharedPointer<QAVCodec>(new QAVAudioCodec) });
@@ -869,6 +875,20 @@ void QAVDemuxer::setInputOptions(const QMap<QString, QString> &opts)
     Q_D(QAVDemuxer);
     QMutexLocker locker(&d->mutex);
     d->inputOptions = opts;
+}
+
+QMap<QString, QString> QAVDemuxer::videoCodecOptions() const
+{
+    Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    return d->videoCodecOptions;
+}
+
+void QAVDemuxer::setVideoCodecOptions(const QMap<QString, QString> &opts)
+{
+    Q_D(QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    d->videoCodecOptions = opts;
 }
 
 void QAVDemuxer::onFrameSent(const QAVStreamFrame &frame)

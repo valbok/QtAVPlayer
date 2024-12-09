@@ -24,6 +24,10 @@
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <memory>
 
+extern "C" {
+#include <libavutil/dict.h>
+}
+
 QT_BEGIN_NAMESPACE
 
 struct AVCodec;
@@ -35,7 +39,7 @@ class QAVCodec
 public:
     virtual ~QAVCodec();
 
-    bool open(AVStream *stream);
+    bool open(AVStream *stream, AVDictionary** opts = NULL);
     AVCodecContext *avctx() const;
     void setCodec(const AVCodec *c);
     const AVCodec *codec() const;

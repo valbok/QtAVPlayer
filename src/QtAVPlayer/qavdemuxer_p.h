@@ -89,6 +89,9 @@ public:
     QMap<QString, QString> inputOptions() const;
     void setInputOptions(const QMap<QString, QString> &opts);
 
+    QMap<QString, QString> videoCodecOptions() const;
+    void setVideoCodecOptions(const QMap<QString, QString> &opts);
+
     void onFrameSent(const QAVStreamFrame &frame);
     QAVStream::Progress progress(const QAVStream &s) const;
 

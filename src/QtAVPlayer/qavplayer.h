@@ -100,6 +100,9 @@ public:
     QMap<QString, QString> inputOptions() const;
     void setInputOptions(const QMap<QString, QString> &opts);
 
+    QMap<QString, QString> videoCodecOptions() const;
+    void setVideoCodecOptions(const QMap<QString, QString> &opts);
+
     QAVStream::Progress progress(const QAVStream &stream) const;
 
 public Q_SLOTS:
@@ -134,6 +137,7 @@ Q_SIGNALS:
     void inputFormatChanged(const QString &format);
     void inputVideoCodecChanged(const QString &codec);
     void inputOptionsChanged(const QMap<QString, QString> &opts);
+    void videoCodecOptionsChanged(const QMap<QString, QString> &opts);
 
     void videoFrame(const QAVVideoFrame &frame);
     void audioFrame(const QAVAudioFrame &frame);

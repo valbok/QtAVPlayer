@@ -41,7 +41,7 @@ void QAVCodec::setCodec(const AVCodec *c)
     d_func()->codec = c;
 }
 
-bool QAVCodec::open(AVStream *stream)
+bool QAVCodec::open(AVStream *stream, AVDictionary** opts)
 {
     Q_D(QAVCodec);
 
@@ -67,7 +67,7 @@ bool QAVCodec::open(AVStream *stream)
 
     av_opt_set_int(d->avctx, "refcounted_frames", true, 0);
     av_opt_set_int(d->avctx, "threads", 1, 0);
-    ret = avcodec_open2(d->avctx, d->codec, nullptr);
+    ret = avcodec_open2(d->avctx, d->codec, opts);
     if (ret < 0) {
         qWarning() << "Could not open the codec:" << d->codec->name << ret;
         return false;
