@@ -103,7 +103,7 @@ public:
     QString inputFormat;
     QString inputVideoCodec;
     QMap<QString, QString> inputOptions;
-    QMap<QString, QString> codecOptions;
+    QMap<QString, QString> videoCodecOptions;
 
     bool eof = false;
     QList<QAVPacket> packets;
@@ -451,11 +451,6 @@ int QAVDemuxer::resetCodecs()
 {
     Q_D(QAVDemuxer);
     int ret = 0;
-
-    QAVDictionaryHolder opts;
-    for (const auto & key: d->codecOptions.keys())
-        av_dict_set(&opts.dict, key.toUtf8().constData(), d->codecOptions[key].toUtf8().constData(), 0);
-
     for (std::size_t i = 0; i < d->ctx->nb_streams && ret >= 0; ++i) {
         if (!d->ctx->streams[i]->codecpar) {
             qWarning() << "Could not find codecpar";
@@ -466,18 +461,22 @@ int QAVDemuxer::resetCodecs()
         switch (type) {
             case AVMEDIA_TYPE_VIDEO:
             {
+                QAVDictionaryHolder opts;
+                for (const auto & key: d->videoCodecOptions.keys())
+                    av_dict_set(&opts.dict, key.toUtf8().constData(), d->videoCodecOptions[key].toUtf8().constData(), 0);
+
                 QSharedPointer<QAVCodec> codec(new QAVVideoCodec);
                 d->availableStreams.push_back({ int(i), d->ctx, codec });
                 ret = setup_video_codec(d->inputVideoCodec, d->ctx->streams[i], *static_cast<QAVVideoCodec *>(codec.data()), &opts.dict);
             } break;
             case AVMEDIA_TYPE_AUDIO:
                 d->availableStreams.push_back({ int(i), d->ctx, QSharedPointer<QAVCodec>(new QAVAudioCodec) });
-                if (!d->availableStreams.last().codec()->open(d->ctx->streams[i], &opts.dict))
+                if (!d->availableStreams.last().codec()->open(d->ctx->streams[i]))
                     qWarning() << "Could not open audio codec for stream:" << i;
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
                 d->availableStreams.push_back({ int(i), d->ctx, QSharedPointer<QAVCodec>(new QAVSubtitleCodec) });
-                if (!d->availableStreams.last().codec()->open(d->ctx->streams[i], &opts.dict))
+                if (!d->availableStreams.last().codec()->open(d->ctx->streams[i]))
                     qWarning() << "Could not open subtitle codec for stream:" << i;
                 break;
             default:
@@ -878,18 +877,18 @@ void QAVDemuxer::setInputOptions(const QMap<QString, QString> &opts)
     d->inputOptions = opts;
 }
 
-QMap<QString, QString> QAVDemuxer::codecOptions() const
+QMap<QString, QString> QAVDemuxer::videoCodecOptions() const
 {
     Q_D(const QAVDemuxer);
     QMutexLocker locker(&d->mutex);
-    return d->codecOptions;
+    return d->videoCodecOptions;
 }
 
-void QAVDemuxer::setCodecOptions(const QMap<QString, QString> &opts)
+void QAVDemuxer::setVideoCodecOptions(const QMap<QString, QString> &opts)
 {
     Q_D(QAVDemuxer);
     QMutexLocker locker(&d->mutex);
-    d->codecOptions = opts;
+    d->videoCodecOptions = opts;
 }
 
 void QAVDemuxer::onFrameSent(const QAVStreamFrame &frame)

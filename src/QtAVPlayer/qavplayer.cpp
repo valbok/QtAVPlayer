@@ -1316,23 +1316,23 @@ void QAVPlayer::setInputOptions(const QMap<QString, QString>  &opts)
     Q_EMIT inputOptionsChanged(opts);
 }
 
-QMap<QString, QString> QAVPlayer::codecOptions() const
+QMap<QString, QString> QAVPlayer::videoCodecOptions() const
 {
     Q_D(const QAVPlayer);
-    return d->demuxer.codecOptions();
+    return d->demuxer.videoCodecOptions();
 }
 
-void QAVPlayer::setCodecOptions(const QMap<QString, QString> &opts)
+void QAVPlayer::setVideoCodecOptions(const QMap<QString, QString> &opts)
 {
     Q_D(QAVPlayer);
 
-    auto current = codecOptions();
+    auto current = videoCodecOptions();
     if (opts == current)
         return;
 
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << current << "->" << opts;
-    d->demuxer.setCodecOptions(opts);
-    Q_EMIT codecOptionsChanged(opts);
+    d->demuxer.setVideoCodecOptions(opts);
+    Q_EMIT videoCodecOptionsChanged(opts);
 }
 
 /*!
