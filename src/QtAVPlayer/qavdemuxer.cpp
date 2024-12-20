@@ -631,6 +631,12 @@ bool QAVDemuxer::setSubtitleStreams(const QList<QAVStream> &streams)
         d->currentSubtitleStreams);
 }
 
+AVFormatContext *QAVDemuxer::avctx() const
+{
+    Q_D(const QAVDemuxer);
+    return d->ctx;
+}
+
 void QAVDemuxer::unload()
 {
     Q_D(QAVDemuxer);

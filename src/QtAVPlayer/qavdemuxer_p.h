@@ -63,6 +63,8 @@ public:
     QList<QAVStream> currentSubtitleStreams() const;
     bool setSubtitleStreams(const QList<QAVStream> &streams);
 
+    AVFormatContext *avctx() const;
+
     QAVPacket read();
 
     void decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const;

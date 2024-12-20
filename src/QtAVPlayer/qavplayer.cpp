@@ -1005,6 +1005,12 @@ void QAVPlayer::setSubtitleStreams(const QList<QAVStream> &streams)
         Q_EMIT subtitleStreamsChanged(d->demuxer.currentSubtitleStreams());
 }
 
+AVFormatContext *QAVPlayer::avctx() const
+{
+    Q_D(const QAVPlayer);
+    return d->demuxer.avctx();
+}
+
 QAVPlayer::State QAVPlayer::state() const
 {
     Q_D(const QAVPlayer);
