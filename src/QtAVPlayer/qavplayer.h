@@ -18,6 +18,7 @@
 
 QT_BEGIN_NAMESPACE
 
+struct AVFormatContext;
 class QAVIODevice;
 class QAVPlayerPrivate;
 class QAVPlayer : public QObject
@@ -70,6 +71,8 @@ public:
     QList<QAVStream> currentSubtitleStreams() const;
     void setSubtitleStream(const QAVStream &stream);
     void setSubtitleStreams(const QList<QAVStream> &streams);
+
+    AVFormatContext *avctx() const;
 
     State state() const;
     MediaStatus mediaStatus() const;
