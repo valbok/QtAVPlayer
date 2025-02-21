@@ -84,7 +84,7 @@ jobs:
         compiler: ['clang-9']
         include:
           - compiler: clang-9
-            packages: llvm@13
+            packages: llvm@14
             env: { 'CC': 'clang', 'CXX': 'clang++', 'CXXFLAGS': '-DNS_FORMAT_ARGUMENT\(A\)= -fapplication-extension -std=c++17' }
 
     runs-on: macos-latest
