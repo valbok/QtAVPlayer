@@ -200,6 +200,7 @@ static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, Q
     QList<QSharedPointer<QAVHWDevice>> devices;
     QAVDictionaryHolder opts;
     Q_UNUSED(opts);
+    static const bool ignoreHW = qEnvironmentVariableIsSet("QT_AVPLAYER_NO_HWDEVICE");
 
 #if defined(QT_AVPLAYER_VA_X11) && QT_CONFIG(opengl)
     devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VAAPI_X11_GLX));
@@ -219,13 +220,12 @@ static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, Q
 #endif
 #if defined(Q_OS_ANDROID)
     devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_MediaCodec));
-    if (!codec.codec())
+    if (!ignoreHW && !codec.codec())
         codec.setCodec(avcodec_find_decoder_by_name("h264_mediacodec"));
     auto vm = QtAndroidPrivate::javaVM();
     av_jni_set_java_vm(vm, NULL);
 #endif
 
-    const bool ignoreHW = qEnvironmentVariableIsSet("QT_AVPLAYER_NO_HWDEVICE");
     if (!ignoreHW) {
         AVBufferRef *hw_device_ctx = nullptr;
         for (auto &device : devices) {
