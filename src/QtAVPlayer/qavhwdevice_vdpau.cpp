@@ -115,7 +115,6 @@ public:
 
         if (gl_texture) {
             glDeleteTextures(1, &gl_texture);
-            s_VDPAUFiniNV();
         }
     }
 
