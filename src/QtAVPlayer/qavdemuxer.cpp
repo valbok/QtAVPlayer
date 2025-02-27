@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #include "qavdemuxer_p.h"
 #include "qavvideocodec_p.h"
@@ -384,7 +384,6 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
     for (const auto & key: d->inputOptions.keys())
         av_dict_set(&opts.dict, key.toUtf8().constData(), d->inputOptions[key].toUtf8().constData(),
                     0);
-    locker.unlock();
     int ret = avformat_open_input(&d->ctx, url.toUtf8().constData(), inputFormat, &opts.dict);
     if (ret < 0)
         return ret;
@@ -392,8 +391,6 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
     ret = avformat_find_stream_info(d->ctx, NULL);
     if (ret < 0)
         return ret;
-
-    locker.relock();
 
 #if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(59, 8, 0)
     d->seekable = d->ctx->iformat->read_seek || d->ctx->iformat->read_seek2;
@@ -529,6 +526,13 @@ static QList<QAVStream> availableStreamsByType(
     return ret;
 }
 
+QList<QAVStream> QAVDemuxer::availableStreams() const
+{
+    Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
+    return d->availableStreams;
+}
+
 QList<QAVStream> QAVDemuxer::availableVideoStreams() const
 {
     Q_D(const QAVDemuxer);
@@ -634,6 +638,7 @@ bool QAVDemuxer::setSubtitleStreams(const QList<QAVStream> &streams)
 AVFormatContext *QAVDemuxer::avctx() const
 {
     Q_D(const QAVDemuxer);
+    QMutexLocker locker(&d->mutex);
     return d->ctx;
 }
 

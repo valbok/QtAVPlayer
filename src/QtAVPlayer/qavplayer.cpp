@@ -1,12 +1,13 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #include "qavplayer.h"
 #include "qavdemuxer_p.h"
+#include "qavmuxer_p.h"
 #include "qaviodevice.h"
 #include "qavvideocodec_p.h"
 #include "qavaudiocodec_p.h"
@@ -72,6 +73,7 @@ public:
     double pts() const;
     void applyFilters();
     void applyFilters(bool reset, const QAVFrame &frame);
+    void resetMuxer();
 
     void terminate();
 
@@ -111,6 +113,7 @@ public:
     QAVPlayer *q_ptr = nullptr;
     QString url;
     QSharedPointer<QAVIODevice> dev;
+    QString outputFilename;
     QAVPlayer::MediaStatus mediaStatus = QAVPlayer::NoMedia;
     QList<PendingMediaStatus> pendingMediaStatuses;
     QAVPlayer::State state = QAVPlayer::StoppedState;
@@ -131,6 +134,7 @@ public:
     QAVPlayer::Error error = QAVPlayer::NoError;
 
     QAVDemuxer demuxer;
+    QAVMuxer muxer;
 
     QThreadPool threadPool;
     QFuture<void> loaderFuture;
@@ -337,6 +341,8 @@ void QAVPlayerPrivate::terminate()
     audioQueue.abort(false);
     subtitleQueue.abort(false);
     demuxer.abort(false);
+    demuxer.unload();
+    muxer.unload();
 
     pendingPosition = 0;
     pendingSeek = false;
@@ -505,6 +511,20 @@ void QAVPlayerPrivate::applyFilters(bool reset, const QAVFrame &frame)
         setMediaStatus(QAVPlayer::LoadedMedia);
 }
 
+void QAVPlayerPrivate::resetMuxer()
+{
+    muxer.unload();
+    QString filename = q_ptr->output();
+    if (filename.isEmpty() || !demuxer.avctx())
+        return;
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << filename;
+    int ret = muxer.load(demuxer.avctx(), demuxer.availableStreams(), filename);
+    if (ret < 0) {
+        muxer.unload();
+        setError(QAVPlayer::ResourceError, err_str(ret));
+    }
+}
+
 void QAVPlayerPrivate::doLoad()
 {
     demuxer.abort(false);
@@ -521,6 +541,7 @@ void QAVPlayerPrivate::doLoad()
     }
 
     applyFilters(true, {});
+    resetMuxer();
     dispatch([this]() -> void {
         qCDebug(lcAVPlayer) << "[" << url << "]: Loaded, seekable:" << demuxer.seekable() << ", duration:" << demuxer.duration();
         setSeekable(demuxer.seekable());
@@ -631,6 +652,7 @@ void QAVPlayerPrivate::doDemux()
                 setPendingMediaStatus(EndOfMedia);
                 q_ptr->stop();
                 wait(false);
+                muxer.flush();
             }
 
             QMutexLocker locker(&waiterMutex);
@@ -753,6 +775,7 @@ void QAVPlayerPrivate::doPlayStep(
                 cb(frame);
                 demuxer.onFrameSent(frame);
             }
+            muxer.enqueue(frame);
             filteredFrames.pop_front();
         } else {
             flushEvents = isLastFrame(frame, demuxer);
@@ -907,6 +930,27 @@ void QAVPlayer::setSource(const QString &url, const QSharedPointer<QAVIODevice> 
 QString QAVPlayer::source() const
 {
     return d_func()->url;
+}
+
+void QAVPlayer::setOutput(const QString &filename)
+{
+    Q_D(QAVPlayer);
+    {
+        QMutexLocker locker(&d->stateMutex);
+        if (d->outputFilename == filename)
+            return;
+        d->outputFilename = filename;
+    }
+    qCDebug(lcAVPlayer) << __FUNCTION__<< ":" << filename;
+    Q_EMIT outputChanged(filename);
+    d->resetMuxer();
+}
+
+QString QAVPlayer::output() const
+{
+    Q_D(const QAVPlayer);
+    QMutexLocker locker(&d->stateMutex);
+    return d->outputFilename;
 }
 
 QList<QAVStream> QAVPlayer::availableVideoStreams() const

@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #include "qavvideocodec_p.h"
 #include "qavhwdevice_p.h"
@@ -122,8 +122,8 @@ static AVPixelFormat negotiate_pixel_format(AVCodecContext *c, const AVPixelForm
     return pf;
 }
 
-QAVVideoCodec::QAVVideoCodec()
-    : QAVFrameCodec(*new QAVVideoCodecPrivate)
+QAVVideoCodec::QAVVideoCodec(const AVCodec *codec)
+    : QAVFrameCodec(*new QAVVideoCodecPrivate, codec)
 {
     d_ptr->avctx->opaque = d_ptr.get();
     d_ptr->avctx->get_format = negotiate_pixel_format;

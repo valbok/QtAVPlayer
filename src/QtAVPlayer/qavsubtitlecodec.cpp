@@ -44,6 +44,11 @@ int QAVSubtitleCodec::write(const QAVPacket &pkt)
         const_cast<AVPacket *>(pkt.packet()));
 }
 
+int QAVSubtitleCodec::write(const QAVStreamFrame &)
+{
+    return -1;
+}
+
 int QAVSubtitleCodec::read(QAVStreamFrame &frame)
 {
     Q_D(QAVSubtitleCodec);
@@ -55,6 +60,11 @@ int QAVSubtitleCodec::read(QAVStreamFrame &frame)
     d->gotOutput = 0;
     d->frame = {};
     return 0;
+}
+
+int QAVSubtitleCodec::read(QAVPacket &)
+{
+    return -1;
 }
 
 QT_END_NAMESPACE

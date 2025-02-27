@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #ifndef QAVSUBTITLECODEC_P_H
 #define QAVSUBTITLECODEC_P_H
@@ -32,7 +32,9 @@ public:
     QAVSubtitleCodec();
 
     int write(const QAVPacket &pkt) override;
+    int write(const QAVStreamFrame &frame) override;
     int read(QAVStreamFrame &frame) override;
+    int read(QAVPacket &pkt) override;
 
 private:
     Q_DECLARE_PRIVATE(QAVSubtitleCodec)
