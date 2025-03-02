@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #ifndef QAVVIDEOCODEC_P_H
 #define QAVVIDEOCODEC_P_H
@@ -28,7 +28,7 @@ class QAVHWDevice;
 class QAVVideoCodec : public QAVFrameCodec
 {
 public:
-    QAVVideoCodec();
+    QAVVideoCodec(const AVCodec *codec = nullptr);
     ~QAVVideoCodec();
 
     void setDevice(const QSharedPointer<QAVHWDevice> &d);

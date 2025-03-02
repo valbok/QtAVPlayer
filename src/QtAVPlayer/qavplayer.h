@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #ifndef QAVPLAYER_H
 #define QAVPLAYER_H
@@ -56,6 +56,9 @@ public:
 
     void setSource(const QString &url, const QSharedPointer<QAVIODevice> &dev = {});
     QString source() const;
+
+    void setOutput(const QString &filename);
+    QString output() const;
 
     QList<QAVStream> availableVideoStreams() const;
     QList<QAVStream> currentVideoStreams() const;
@@ -119,6 +122,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     void sourceChanged(const QString &url);
+    void outputChanged(const QString &filename);
     void stateChanged(QAVPlayer::State newState);
     void mediaStatusChanged(QAVPlayer::MediaStatus status);
     void errorOccurred(QAVPlayer::Error, const QString &str);

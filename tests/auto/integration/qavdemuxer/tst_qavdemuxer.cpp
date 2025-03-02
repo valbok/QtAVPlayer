@@ -1,11 +1,12 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #include "qavdemuxer_p.h"
+#include "qavmuxer_p.h"
 #include "qavaudioframe.h"
 #include "qavvideoframe.h"
 #include "qaviodevice.h"
@@ -40,6 +41,8 @@ private slots:
     void metadata();
     void videoCodecs();
     void inputOptions();
+    void muxerWrite();
+    void muxerEnqueue();
 };
 
 void tst_QAVDemuxer::construction()
@@ -432,6 +435,57 @@ void tst_QAVDemuxer::inputOptions()
     QFileInfo file(testData("colors.mp4"));
     d.setInputOptions({{"user_agent", "QAVPlayer"}});
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
+}
+
+void tst_QAVDemuxer::muxerWrite()
+{
+    QFileInfo file(testData("colors.mp4"));
+    QAVDemuxer d;
+    QAVMuxer m;
+
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
+    QVERIFY(m.load(d.avctx(), d.availableStreams(), "colors.mkv") >= 0);
+
+    QAVPacket p;
+    while ((p = d.read())) {
+        QList<QAVFrame> fs;
+        d.decode(p, fs);
+        if (fs.size()) {
+            QVERIFY(fs.size() == 1);
+            auto &f = fs[0];
+            QVERIFY(m.write(f) >= 0);
+        }
+    }
+    QVERIFY(m.flush() >= 0);
+    m.unload();
+    d.unload();
+    QVERIFY(d.load("colors.mkv") >= 0);
+}
+
+void tst_QAVDemuxer::muxerEnqueue()
+{
+    QFileInfo file(testData("colors.mp4"));
+    QAVDemuxer d;
+    QAVMuxer m;
+
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
+    QVERIFY(m.load(d.avctx(), d.availableStreams(), "colors.mkv") >= 0);
+
+    QAVPacket p;
+    while ((p = d.read())) {
+        QList<QAVFrame> fs;
+        d.decode(p, fs);
+        if (fs.size()) {
+            QVERIFY(fs.size() == 1);
+            auto &f = fs[0];
+            m.enqueue(f);
+        }
+    }
+    QTRY_VERIFY(m.size() == 0);
+    QVERIFY(m.flush() >= 0);
+    m.unload();
+    d.unload();
+    QVERIFY(d.load("colors.mkv") >= 0);
 }
 
 QTEST_MAIN(tst_QAVDemuxer)

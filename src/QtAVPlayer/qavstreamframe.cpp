@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #include "qavstreamframe.h"
 #include "qavstreamframe_p.h"
@@ -76,6 +76,12 @@ int QAVStreamFrame::receive()
 {
     Q_D(QAVStreamFrame);
     return d->stream ? d->stream.codec()->read(*this) : 0;
+}
+
+int QAVStreamFrame::send() const
+{
+    Q_D(const QAVStreamFrame);
+    return d->stream ? d->stream.codec()->write(*this) : 0;
 }
 
 QT_END_NAMESPACE

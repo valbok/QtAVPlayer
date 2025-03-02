@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #ifndef QAVDEMUXER_H
 #define QAVDEMUXER_H
@@ -37,7 +37,6 @@ class QAVVideoCodec;
 class QAVAudioCodec;
 class QAVIODevice;
 struct AVStream;
-struct AVCodecContext;
 struct AVFormatContext;
 class QAVDemuxer
 {
@@ -50,6 +49,8 @@ public:
     void unload();
 
     AVMediaType currentCodecType(int index) const;
+
+    QList<QAVStream> availableStreams() const;
 
     QList<QAVStream> availableVideoStreams() const;
     QList<QAVStream> currentVideoStreams() const;

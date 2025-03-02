@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #include "qavplayer.h"
 #include "qavaudiooutput.h"
@@ -104,6 +104,7 @@ private slots:
     void multiFilterInputs();
     void streamMetadataRotate();
     void switchingSource();
+    void outputFile();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -3440,6 +3441,53 @@ void tst_QAVPlayer::switchingSource()
     }
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+}
+
+void tst_QAVPlayer::outputFile()
+{
+    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
+    QAVPlayer p;
+    QList<QString> files = {"av_sample.mkv", "small.mp4"};
+    p.setSynced(false);
+    for (const auto &f : files) {
+        QFileInfo file(testData(f));
+        p.setSource(file.absoluteFilePath());
+        p.setOutput("output.mkv");
+        QCOMPARE(p.output(), "output.mkv");
+        p.play();
+        QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
+    }
+
+    p.setSource(QLatin1String("unknown.mp4"), nullptr);
+    p.setOutput("output.mkv");
+    p.play();
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::InvalidMedia);
+
+    p.setOutput("");
+    p.setSource(QFileInfo(testData("av_sample.mkv")).absoluteFilePath());
+    p.play();
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia || p.mediaStatus() == QAVPlayer::EndOfMedia);
+
+    p.setSource(QFileInfo(testData("rotated_90.mp4")).absoluteFilePath());
+    p.setOutput("output");
+    p.play();
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::InvalidMedia);
+
+    // Set before the source
+    p.setOutput({});
+    p.setSource(QFileInfo(testData("av_sample.mkv")).absoluteFilePath());
+    p.play();
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia || p.mediaStatus() == QAVPlayer::EndOfMedia);
+
+    p.setSource(QFileInfo(testData("av_sample.mkv")).absoluteFilePath());
+    p.play();
+    p.setOutput("output.mkv");
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia || p.mediaStatus() == QAVPlayer::EndOfMedia);
+
+    p.setSource(QFileInfo(testData("small.mp4")).absoluteFilePath());
+    p.setFilter("curves=vintage");
+    p.play();
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
