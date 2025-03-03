@@ -5,19 +5,13 @@ Free and open-source Qt Media Player library based on FFmpeg.
 - Designed to decode _video_/_audio_/_subtitle_ frames.
 - Supports [FFmpeg Bitstream Filters](https://ffmpeg.org/ffmpeg-bitstream-filters.html) and [FFmpeg Filters](https://ffmpeg.org/ffmpeg-filters.html) including `filter_complex`.
 - Supports multiple parallel filters for one input (one input frame produces multiple outputs).
-- Supports decoding all available streams at the same time.
-- Based on Qt platform the video frames are sent using specific hardware context:
-  * `VA-API` for Linux: DRM with EGL or X11 with GLX.
-  * `VDPAU` for Linux.
-  * `Video Toolbox` for macOS and iOS.
-  * `D3D11` for Windows.
-  * `MediaCodec` for Android.
-  
-  Note: Not all ffmpeg decoders or filters support HW acceleration. In this case software decoders are used.
+- Supports decoding of all available streams at the same time.
+- Based on Qt platform the video frames are sent using specific hardware context.
 - It is up to an application to decide how to process the frames.
   * But there is _experimental_ support of converting the video frames to QtMultimedia's [QVideoFrame](https://doc.qt.io/qt-5/qvideoframe.html) for copy-free rendering if possible.
   Note: Not all Qt's renders support copy-free rendering. Also QtMultimedia does not always provide public API to render the video frames. And, of course, for best performance both decoding and rendering should be accelerated.
   * Audio frames could be played by `QAVAudioOutput` which is a wrapper of QtMultimedia's [QAudioSink](https://doc-snapshots.qt.io/qt6-dev/qaudiosink.html)
+- Supports encoding of the streams and writing to file by `QAVPlayer::setOutput`.
 - Supports accurate seek, it starts playing the closest frame. No weird jumps on pts anymore.
 - Supports DASH / mpd: `./qml_video https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8`
 - It is bundled directly into an app.
@@ -57,7 +51,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
        player.setSource("0:0");
        
        player.setInputOptions({{"user_agent", "QAVPlayer"}});
-    
+       player.setOutput("output.mkv");
        // Using various protocols
        player.setSource("subfile,,start,0,end,0,,:/root/Downloads/why-qtmm-must-die.mkv");
 
@@ -172,6 +166,8 @@ Free and open-source Qt Media Player library based on FFmpeg.
   * `Video Toolbox` for macOS and iOS: the frames are returned with Metal Textures.
   * `D3D11` for Windows: the frames are returned with D3D11Texture2D textures. 
   * `MediaCodec` for Android: the frames are returned with OpenGL textures.
+
+Note: Not all ffmpeg decoders or filters support HW acceleration. In this case software decoders are used.
 
 10. QtMultimedia could be used to render video frames to QML or Widgets. See [examples](examples)
 11. Qt 5.12 - **6**.x is supported
