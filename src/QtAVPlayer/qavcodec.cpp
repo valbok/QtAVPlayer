@@ -48,7 +48,6 @@ bool QAVCodec::open(AVStream *stream, AVDictionary** opts)
 
     if (!stream)
         return false;
-
     int ret = avcodec_parameters_to_context(d->avctx, stream->codecpar);
     if (ret < 0) {
         qWarning() << "Failed avcodec_parameters_to_context:" << ret;
@@ -60,14 +59,15 @@ bool QAVCodec::open(AVStream *stream, AVDictionary** opts)
     if (!d->codec)
         d->codec = avcodec_find_decoder(d->avctx->codec_id);
     if (!d->codec) {
-        qWarning() << "No decoder could be found for codec:" << d->avctx->codec_id;
+        qWarning() << "No decoder could be found for codec:" << d->avctx->codec_id <<
+            (d->avctx->codec ? d->avctx->codec->name : "");
         return false;
     }
 
     d->avctx->codec_id = d->codec->id;
     ret = avcodec_open2(d->avctx, d->codec, opts);
     if (ret < 0) {
-        qWarning() << "Could not open the codec:" << d->codec->name << ret;
+        qWarning() << "Could not open the codec:" << d->codec->name << d->codec->id << ret;
         return false;
     }
 

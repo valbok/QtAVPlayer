@@ -97,6 +97,7 @@ int QAVMuxer::load(const AVFormatContext *ictx, const QList<QAVStream> &streams,
         qWarning() << filename << ": Could not create output context:" << err2str(ret);
         return ret;
     }
+    d->filename = filename;
     Q_ASSERT(streams.size() == int(ictx->nb_streams));
     for (unsigned i = 0; i < ictx->nb_streams; ++i) {
         auto stream = streams[i];
@@ -108,68 +109,38 @@ int QAVMuxer::load(const AVFormatContext *ictx, const QList<QAVStream> &streams,
             return AVERROR_UNKNOWN;
         }
 
+        const auto pix_fmt_desc = av_pix_fmt_desc_get(dec_ctx->pix_fmt);
+        qDebug() << "[" << filename << "][" << i << "][" <<
+            av_get_media_type_string(dec_ctx->codec_type) << "]: Using" <<
+            stream.codec()->codec()->name << ", codec_id" << dec_ctx->codec_id <<
+            ", pix_fmt:" << dec_ctx->pix_fmt << (pix_fmt_desc ? pix_fmt_desc->name : "");
+        // Transcoding to same codec
+        auto encoder = avcodec_find_encoder(dec_ctx->codec_id);
+        if (!encoder) {
+            qWarning() << "Encoder not found:" << stream.codec()->codec()->name;
+            return AVERROR_INVALIDDATA;
+        }
+        AVCodecContext *enc_ctx = nullptr;
+        QSharedPointer<QAVCodec> codec;
+
         switch (dec_ctx->codec_type) {
-        case AVMEDIA_TYPE_VIDEO:
-        case AVMEDIA_TYPE_AUDIO: {
-            // Transcoding to same codec
-            auto encoder = avcodec_find_encoder(dec_ctx->codec_id);
-            if (!encoder) {
-                qWarning() << "Necessary encoder not found" << stream.codec()->codec()->name;
-                return AVERROR_INVALIDDATA;
-            }
-            // pix_fmt might be not supported by the encoder, so falling back to software pixel format
+        case AVMEDIA_TYPE_VIDEO: {
+            // pix_fmt might be not supported by the encoder, f.e. vdpau
+            // so falling back to software pixel format
             if (dec_ctx->sw_pix_fmt != AV_PIX_FMT_NONE)
                 dec_ctx->pix_fmt = dec_ctx->sw_pix_fmt;
-            auto pix_fmt_desc = av_pix_fmt_desc_get(dec_ctx->pix_fmt);
-            qDebug() << "[" << filename << "][" << av_get_media_type_string(dec_ctx->codec_type) << "]: Using" <<
-                stream.codec()->codec()->name << ", pix_fmt:" << dec_ctx->pix_fmt << (pix_fmt_desc ? pix_fmt_desc->name : "");
-            QSharedPointer<QAVCodec> codec;
-            AVCodecContext *enc_ctx = nullptr;
-            if (dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
-                codec.reset(new QAVVideoCodec(encoder));
-                enc_ctx = codec->avctx();
-
-                enc_ctx->height = dec_ctx->height;
-                enc_ctx->width = dec_ctx->width;
-                enc_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(61, 31, 0)
-                const enum AVPixelFormat *pix_fmts = NULL;
-                ret = avcodec_get_supported_config(dec_ctx, NULL,
-                                                   AV_CODEC_CONFIG_PIX_FORMAT, 0,
-                                                   (const void**)&pix_fmts, NULL);
-                // Take first format from list of supported formats
-                enc_ctx->pix_fmt = (ret >= 0 && pix_fmts) ? pix_fmts[0] : dec_ctx->pix_fmt;
-#else
-                enc_ctx->pix_fmt = dec_ctx->pix_fmt;
-#endif
-                enc_ctx->time_base = in_stream->time_base;
-            } else {
-                codec.reset(new QAVAudioCodec(encoder));
-                enc_ctx = codec->avctx();
-
-                enc_ctx->sample_rate = dec_ctx->sample_rate;
-                ret = av_channel_layout_copy(&enc_ctx->ch_layout, &dec_ctx->ch_layout);
-                if (ret < 0)
-                    return ret;
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(61, 31, 0)
-                const enum AVSampleFormat *sample_fmts = NULL;
-                ret = avcodec_get_supported_config(dec_ctx, NULL,
-                                                   AV_CODEC_CONFIG_SAMPLE_FORMAT, 0,
-                                                   (const void**)&sample_fmts, NULL);
-                // Take first format from list of supported formats
-                enc_ctx->sample_fmt = (ret >= 0 && sample_fmts) ? sample_fmts[0] : dec_ctx->sample_fmt;
-#else
-                enc_ctx->sample_fmt = dec_ctx->sample_fmt;
-#endif
-
-                enc_ctx->time_base = in_stream->time_base;
-            }
+            codec.reset(new QAVVideoCodec(encoder));
+            enc_ctx = codec->avctx();
+            enc_ctx->height = dec_ctx->height;
+            enc_ctx->width = dec_ctx->width;
+            enc_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
+            enc_ctx->pix_fmt = dec_ctx->pix_fmt;
+            enc_ctx->time_base = in_stream->time_base;
             if (d->ctx->oformat->flags & AVFMT_GLOBALHEADER)
                 enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
-            Q_ASSERT(codec);
             if (!codec->open(out_stream)) {
-                qWarning() << "Cannot open" << encoder->name << "encoder for stream" << i;
+                qWarning() << i << ": Cannot open encoder: " << encoder->name;
                 return AVERROR_UNKNOWN;
             }
             ret = avcodec_parameters_from_context(out_stream->codecpar, enc_ctx);
@@ -177,29 +148,66 @@ int QAVMuxer::load(const AVFormatContext *ictx, const QList<QAVStream> &streams,
                 qWarning() << "Failed to copy encoder parameters to output stream:" << err2str(ret);
                 return ret;
             }
-
+            out_stream->time_base = enc_ctx->time_base;
+            d->streams.push_back({ int(i), d->ctx, codec });
+            break;
+        }
+        case AVMEDIA_TYPE_AUDIO: {
+            codec.reset(new QAVAudioCodec(encoder));
+            enc_ctx = codec->avctx();
+            enc_ctx->sample_rate = dec_ctx->sample_rate;
+            ret = av_channel_layout_copy(&enc_ctx->ch_layout, &dec_ctx->ch_layout);
+            if (ret < 0) {
+                qWarning() << "Failed av_channel_layout_copy:" << err2str(ret);
+                return ret;
+            }
+            enc_ctx->sample_fmt = dec_ctx->sample_fmt;
+            enc_ctx->time_base = in_stream->time_base;
+            if (d->ctx->oformat->flags & AVFMT_GLOBALHEADER)
+                enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+            if (!codec->open(out_stream)) {
+                qWarning() << i << ": Cannot open encoder: " << encoder->name;
+                return AVERROR_UNKNOWN;
+            }
+            ret = avcodec_parameters_from_context(out_stream->codecpar, enc_ctx);
+            if (ret < 0) {
+                qWarning() << "Failed to copy encoder parameters to output stream:" << err2str(ret);
+                return ret;
+            }
             out_stream->time_base = enc_ctx->time_base;
             d->streams.push_back({ int(i), d->ctx, codec });
             break;
         }
         case AVMEDIA_TYPE_SUBTITLE: {
-            // If this stream must be remuxed
+            codec.reset(new QAVSubtitleCodec(encoder));
+            enc_ctx = codec->avctx();
+            enc_ctx->time_base = AV_TIME_BASE_Q;
+            enc_ctx->height = dec_ctx->height;
+            enc_ctx->width = dec_ctx->width;
+            if (dec_ctx->subtitle_header) {
+                // ASS code assumes this buffer is null terminated so add extra byte.
+                enc_ctx->subtitle_header = (uint8_t*) av_mallocz(dec_ctx->subtitle_header_size + 1);
+                if (!enc_ctx->subtitle_header)
+                    return AVERROR(ENOMEM);
+                memcpy(enc_ctx->subtitle_header, dec_ctx->subtitle_header,
+                       dec_ctx->subtitle_header_size);
+                enc_ctx->subtitle_header_size = dec_ctx->subtitle_header_size;
+            }
+            if (!codec->open(out_stream)) {
+                qWarning() << i << ": Cannot open encoder: " << encoder->name;
+                return AVERROR_UNKNOWN;
+            }
             ret = avcodec_parameters_copy(out_stream->codecpar, in_stream->codecpar);
             if (ret < 0) {
                 qWarning() << "Copying parameters for stream failed:" << err2str(ret);
                 return ret;
-            }
-            QSharedPointer<QAVCodec> codec(new QAVSubtitleCodec);
-            if (!codec->open(out_stream)) {
-                qWarning() << "Cannot open SUBTITLE encoder for stream:" << i;
-                return AVERROR_UNKNOWN;
             }
             out_stream->time_base = in_stream->time_base;
             d->streams.push_back({ int(i), d->ctx, codec });
             break;
         }
         default:
-            qWarning() << "Elementary stream is of unknown type, cannot proceed";
+            qWarning() << "Unexpected stream:" << dec_ctx->codec_type;
             return AVERROR_INVALIDDATA;
         }
     }
@@ -273,19 +281,31 @@ void QAVMuxerPrivate::doWork()
                 break;
         }
         auto frame = frames.takeFirst();
-        q_ptr->write(frame);
+        q_ptr->write(frame, frame.stream().index());
     }
 }
 
 int QAVMuxer::write(const QAVFrame &frame)
 {
+    Q_D(QAVMuxer);
+    QMutexLocker locker(&d->mutex);
+    if (!d->loaded)
+        return 0;
+    return write(frame, frame.stream().index());
+}
+
+int QAVMuxer::write(const QAVSubtitleFrame &frame)
+{
+    Q_D(QAVMuxer);
+    QMutexLocker locker(&d->mutex);
+    if (!d->loaded)
+        return 0;
     return write(frame, frame.stream().index());
 }
 
 int QAVMuxer::write(QAVFrame frame, int streamIndex)
 {
     Q_D(QAVMuxer);
-    Q_ASSERT(d->ctx);
     Q_ASSERT(streamIndex < d->streams.size());
     auto &encStream = d->streams[streamIndex];
     auto enc_ctx = encStream.codec()->avctx();
@@ -298,6 +318,7 @@ int QAVMuxer::write(QAVFrame frame, int streamIndex)
             QAVVideoFrame videoFrame = frame;
             frame = videoFrame.convertTo(enc_ctx->pix_fmt);
         }
+        frame.frame()->pict_type = AV_PICTURE_TYPE_NONE;
     }
 
     // Set encoder stream to frame to send to
@@ -327,13 +348,47 @@ int QAVMuxer::write(QAVFrame frame, int streamIndex)
     return 0;
 }
 
-int QAVMuxer::flush() {
+int QAVMuxer::write(QAVSubtitleFrame frame, int streamIndex)
+{
+    Q_D(QAVMuxer);
+    Q_ASSERT(streamIndex < d->streams.size());
+    auto &encStream = d->streams[streamIndex];
+    auto enc_ctx = encStream.codec()->avctx();
+    auto stream = encStream.stream();
+
+    // Set encoder stream to frame to send to
+    frame.setStream(encStream);
+    int sent = frame.send();
+    if (sent < 0 && sent != AVERROR(EAGAIN)){
+        return sent;
+    }
+    QAVPacket pkt;
+    pkt.setStream(encStream);
+    int received = pkt.receive();
+    if (received < 0)
+        return received;
+    auto enc_pkt = pkt.packet();
+    enc_pkt->stream_index = streamIndex;
+    av_packet_rescale_ts(enc_pkt, enc_ctx->time_base, stream->time_base);
+    enc_pkt->time_base = stream->time_base;
+    int wrote = av_interleaved_write_frame(d->ctx, enc_pkt);
+    return wrote;
+}
+
+int QAVMuxer::flush()
+{
     Q_D(QAVMuxer);
     QMutexLocker locker(&d->mutex);
     for (int i = 0; i < d->streams.size(); ++i) {
-        int ret = write({}, i);
-        if (ret < 0)
+        // no flushing for subtitles
+        bool isSub = d->streams[i].codec()->avctx()->codec_type == AVMEDIA_TYPE_SUBTITLE;
+        if (isSub)
+            continue;
+        int ret = write(QAVFrame(), i);
+        if (ret < 0 && ret != AVERROR_EOF) {
+            qWarning() << d->filename << ": Could not flush:" << err2str(ret);
             return ret;
+        }
     }
     return 0;
 }
