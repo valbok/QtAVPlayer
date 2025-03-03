@@ -22,7 +22,6 @@
 #include "qavstream.h"
 #include "qavframe.h"
 #include "qavsubtitleframe.h"
-#include <QMutexLocker>
 #include <memory>
 
 struct AVFormatContext;

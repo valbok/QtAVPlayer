@@ -12,6 +12,7 @@
 #include "qavvideoframe.h"
 
 #include <QObject>
+#include <QMutexLocker>
 #include <QThread>
 #include <QWaitCondition>
 #include <QDebug>
@@ -272,8 +273,8 @@ size_t QAVMuxer::size() const
 
 void QAVMuxerPrivate::doWork()
 {
+    QMutexLocker locker(&mutex);
     while (!quit) {
-        QMutexLocker locker(&mutex);
         if (frames.isEmpty()) {
             cond.wait(&mutex);
             if (quit || frames.isEmpty())
