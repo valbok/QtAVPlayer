@@ -69,13 +69,13 @@ int QAVSubtitleCodec::write(const QAVStreamFrame &frame)
     av_shrink_packet(pkt, subtitle_out_size);
     pkt->time_base = AV_TIME_BASE_Q;
     pkt->pts = sub->pts;
-    pkt->duration = av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, pkt->time_base);
+    pkt->duration = av_rescale_q(sub->end_display_time, AVRational{ 1, 1000 }, pkt->time_base);
     auto enc = frame.stream().codec()->avctx();
     if (enc->codec_id == AV_CODEC_ID_DVB_SUBTITLE) {
         if (frame.stream().index() == 0)
-            pkt->pts += av_rescale_q(sub->start_display_time, (AVRational){ 1, 1000 }, pkt->time_base);
+            pkt->pts += av_rescale_q(sub->start_display_time, AVRational{ 1, 1000 }, pkt->time_base);
         else
-            pkt->pts += av_rescale_q(sub->end_display_time, (AVRational){ 1, 1000 }, pkt->time_base);
+            pkt->pts += av_rescale_q(sub->end_display_time, AVRational{ 1, 1000 }, pkt->time_base);
     }
     pkt->dts = pkt->pts;
     return 0;
