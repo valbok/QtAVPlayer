@@ -860,6 +860,7 @@ void QAVPlayerPrivate::doPlayStep(
         if (sync && decodedFrame) {
             cb(decodedFrame);
             demuxer.onFrameSent(decodedFrame);
+            muxer.write(decodedFrame);
         }
         queue.popFrame();
     }

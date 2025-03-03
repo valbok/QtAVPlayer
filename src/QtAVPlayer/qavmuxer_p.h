@@ -21,6 +21,8 @@
 
 #include "qavstream.h"
 #include "qavframe.h"
+#include "qavsubtitleframe.h"
+#include <QMutexLocker>
 #include <memory>
 
 struct AVFormatContext;
@@ -49,6 +51,7 @@ public:
 
     // Directly writes the frame to the encoder
     int write(const QAVFrame &frame);
+    int write(const QAVSubtitleFrame &frame);
     // Flushes buffer frames to the encoder
     int flush();
 
@@ -56,6 +59,7 @@ private:
     void close();
     void reset();
     int write(QAVFrame frame, int streamIndex);
+    int write(QAVSubtitleFrame frame, int streamIndex);
     void stop();
 
     Q_DISABLE_COPY(QAVMuxer)

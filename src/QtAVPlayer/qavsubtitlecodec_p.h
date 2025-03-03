@@ -29,7 +29,7 @@ class QAVSubtitleCodecPrivate;
 class QAVSubtitleCodec : public QAVCodec
 {
 public:
-    QAVSubtitleCodec();
+    QAVSubtitleCodec(const AVCodec *codec = nullptr);
 
     int write(const QAVPacket &pkt) override;
     int write(const QAVStreamFrame &frame) override;
