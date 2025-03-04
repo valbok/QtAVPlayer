@@ -6,6 +6,7 @@ option(QT_AVPLAYER_MULTIMEDIA "Enable QtMultimedia" OFF)
 option(QT_AVPLAYER_VA_X11 "Enable libva-x11" OFF)
 option(QT_AVPLAYER_VA_DRM "Enable libva-drm" OFF)
 option(QT_AVPLAYER_VDPAU "Enable vdpau" OFF)
+option(QT_AVPLAYER_WIDGET_OPENGL "Enable widget opengl" OFF)
 
 find_library(AVDEVICE_LIBRARY REQUIRED NAMES avdevice)
 find_library(AVCODEC_LIBRARY REQUIRED NAMES avcodec)
@@ -249,8 +250,22 @@ if(QT_AVPLAYER_VDPAU)
         ${QT_AVPLAYER_DIR}/qavhwdevice_vdpau_p.h
     )
 
+
     set(QtAVPlayer_SOURCES
         ${QtAVPlayer_SOURCES}
         ${QT_AVPLAYER_DIR}/qavhwdevice_vdpau.cpp
+    )
+endif()
+
+if(QT_AVPLAYER_WIDGET_OPENGL)
+    message(STATUS "QT_AVPLAYER_WIDGET_OPENGL is defined")
+    set(QtAVPlayer_PUBLIC_HEADERS
+        ${QtAVPlayer_PUBLIC_HEADERS}
+        ${QT_AVPLAYER_DIR}/qavwidget_opengl.h
+    )
+
+    set(QtAVPlayer_SOURCES
+        ${QtAVPlayer_SOURCES}
+        ${QT_AVPLAYER_DIR}/qavwidget_opengl.cpp
     )
 endif()
