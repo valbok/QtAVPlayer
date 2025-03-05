@@ -18,6 +18,8 @@ else()
     add_definitions(${Qt5Core_DEFINITIONS})
 endif()
 
+set(QT_AVPLAYER_WIDGET_OPENGL ON CACHE BOOL "" FORCE)
+set(QT_AVPLAYER_MULTIMEDIA ON CACHE BOOL "" FORCE)
 include_directories(../../src/)
 set(QT_AVPLAYER_DIR ../../src/QtAVPlayer/)
 include(../../src/QtAVPlayer/QtAVPlayer.cmake)

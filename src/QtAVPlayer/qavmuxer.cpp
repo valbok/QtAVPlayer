@@ -156,11 +156,13 @@ int QAVMuxer::load(const AVFormatContext *ictx, const QList<QAVStream> &streams,
             codec.reset(new QAVAudioCodec(encoder));
             enc_ctx = codec->avctx();
             enc_ctx->sample_rate = dec_ctx->sample_rate;
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 0, 0)
             ret = av_channel_layout_copy(&enc_ctx->ch_layout, &dec_ctx->ch_layout);
             if (ret < 0) {
                 qWarning() << "Failed av_channel_layout_copy:" << err2str(ret);
                 return ret;
             }
+#endif
             enc_ctx->sample_fmt = dec_ctx->sample_fmt;
             enc_ctx->time_base = in_stream->time_base;
             if (d->ctx->oformat->flags & AVFMT_GLOBALHEADER)
@@ -341,7 +343,9 @@ int QAVMuxer::write(QAVFrame frame, int streamIndex)
             auto enc_pkt = pkt.packet();
             enc_pkt->stream_index = streamIndex;
             av_packet_rescale_ts(enc_pkt, enc_ctx->time_base, stream->time_base);
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 0, 0)
             enc_pkt->time_base = stream->time_base;
+#endif
             wrote = av_interleaved_write_frame(d->ctx, enc_pkt);
         }
     } while (sent == AVERROR(EAGAIN));
@@ -370,7 +374,9 @@ int QAVMuxer::write(QAVSubtitleFrame frame, int streamIndex)
     auto enc_pkt = pkt.packet();
     enc_pkt->stream_index = streamIndex;
     av_packet_rescale_ts(enc_pkt, enc_ctx->time_base, stream->time_base);
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 0, 0)
     enc_pkt->time_base = stream->time_base;
+#endif
     int wrote = av_interleaved_write_frame(d->ctx, enc_pkt);
     return wrote;
 }
