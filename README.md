@@ -172,7 +172,8 @@ Free and open-source Qt Media Player library based on FFmpeg.
 Note: Not all ffmpeg decoders or filters support HW acceleration. In this case software decoders are used.
 
 10. QtMultimedia could be used to render video frames to QML or Widgets. See [examples](examples)
-11. Qt 5.12 - **6**.x is supported
+11. Widget `QAVWidget_OpenGL` could be used to render to OpenGL. See [examples/widget_video_opengl](examples/widget_video_opengl)
+12. Qt 5.12 - **6**.x is supported
 
 # How to build
 
