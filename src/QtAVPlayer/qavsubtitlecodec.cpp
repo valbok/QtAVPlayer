@@ -67,6 +67,7 @@ int QAVSubtitleCodec::write(const QAVStreamFrame &frame)
         return subtitle_out_size;
     }
     av_shrink_packet(pkt, subtitle_out_size);
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 0, 0)
     pkt->time_base = AV_TIME_BASE_Q;
     pkt->pts = sub->pts;
     pkt->duration = av_rescale_q(sub->end_display_time, AVRational{ 1, 1000 }, pkt->time_base);
@@ -78,6 +79,7 @@ int QAVSubtitleCodec::write(const QAVStreamFrame &frame)
             pkt->pts += av_rescale_q(sub->end_display_time, AVRational{ 1, 1000 }, pkt->time_base);
     }
     pkt->dts = pkt->pts;
+#endif
     return 0;
 }
 
