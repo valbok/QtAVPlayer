@@ -2,18 +2,17 @@
 ![example workflow](https://github.com/valbok/QtAVPlayer/actions/workflows/main.yaml/badge.svg)
 
 Free and open-source Qt Media Player library based on FFmpeg.
-- Designed to decode _video_/_audio_/_subtitle_ frames.
-- Supports [FFmpeg Bitstream Filters](https://ffmpeg.org/ffmpeg-bitstream-filters.html) and [FFmpeg Filters](https://ffmpeg.org/ffmpeg-filters.html) including `filter_complex`.
-- Supports multiple parallel filters for one input (one input frame produces multiple outputs).
-- Supports decoding of all available streams at the same time.
-- Based on Qt platform the video frames are sent using specific hardware context.
+- Decodes _video_/_audio_/_subtitle_ frames.
+- Encodes and saves to output file.
+- [FFmpeg Bitstream Filters](https://ffmpeg.org/ffmpeg-bitstream-filters.html) and [FFmpeg Filters](https://ffmpeg.org/ffmpeg-filters.html) including `filter_complex`.
+- Multiple parallel filters for one input (one input frame produces multiple outputs).
+- Decoding of all available streams at the same time.
+- Hardware acceleration.
 - It is up to an application to decide how to process the frames.
   * But there is _experimental_ support of converting the video frames to QtMultimedia's [QVideoFrame](https://doc.qt.io/qt-5/qvideoframe.html) for copy-free rendering if possible.
   Note: Not all Qt's renders support copy-free rendering. Also QtMultimedia does not always provide public API to render the video frames. And, of course, for best performance both decoding and rendering should be accelerated.
   * Audio frames could be played by `QAVAudioOutput` which is a wrapper of QtMultimedia's [QAudioSink](https://doc-snapshots.qt.io/qt6-dev/qaudiosink.html)
-- Supports encoding of the streams and writing to file by `QAVPlayer::setOutput`.
-- Supports accurate seek, it starts playing the closest frame. No weird jumps on pts anymore.
-- Supports DASH / mpd: `./qml_video https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8`
+- Accurate seek, it starts playing the closest frame.
 - It is bundled directly into an app.
 - Designed to be as simple and understandable as possible, to share knowledge about creating efficient FFmpeg applications.
 - Might be used for media analytics software like [qctools](https://github.com/bavc/qctools) or [dvrescue](https://github.com/mipops/dvrescue).
@@ -23,7 +22,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
   but using QML or Qt Widgets:
 
-      ./qml_video :/valbok "if:you:like[cats];remove[this]"
+      ./qml_video :/valbok "if:you:like[cats];remove[this-sentence]"
 
 # Features
 
@@ -31,6 +30,8 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
        player.setSource("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
        player.setSource("/home/lana/The Matrix Resurrections.mov");
+       // Dash player
+       player.setSource("https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8")
 
        // Playing from qrc
        QSharedPointer<QIODevice> file(new QFile(":/alarm.wav"));
@@ -51,6 +52,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
        player.setSource("0:0");
        
        player.setInputOptions({{"user_agent", "QAVPlayer"}});
+       // Save to file
        player.setOutput("output.mkv");
        // Using various protocols
        player.setSource("subfile,,start,0,end,0,,:/root/Downloads/why-qtmm-must-die.mkv");
@@ -180,6 +182,7 @@ Some defines should be provided to opt some features.
 * `QT_AVPLAYER_VA_X11` - enables support of `libva-x11` for HW acceleration. For linux only.
 * `QT_AVPLAYER_VA_DRM` - enables support of `libva-drm` for HW acceleration. For linux only.
 * `QT_AVPLAYER_VDPAU` - enables support of `libvdpau` for HW acceleration. For linux only.
+* `QT_AVPLAYER_WIDGET_OPENGL` - builds the widget based on opengl.
 
 ## QMake
 
