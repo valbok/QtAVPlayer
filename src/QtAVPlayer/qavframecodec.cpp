@@ -39,7 +39,7 @@ int QAVFrameCodec::write(const QAVStreamFrame &frame)
     Q_D(QAVCodec);
     if (!d->avctx)
         return AVERROR(EINVAL);
-    auto f = static_cast<const QAVFrame &>(frame);
+    auto &f = static_cast<const QAVFrame &>(frame);
     return avcodec_send_frame(d->avctx, f ? f.frame() : nullptr);
 }
 

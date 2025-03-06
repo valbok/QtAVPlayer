@@ -445,7 +445,7 @@ void tst_QAVDemuxer::muxerWrite()
     QAVMuxer m;
 
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
-    QVERIFY(m.load(d.avctx(), d.availableStreams(), "colors.mkv") >= 0);
+    QVERIFY(m.load(d.availableStreams(), "colors.mkv") >= 0);
 
     QAVPacket p;
     while ((p = d.read())) {
@@ -470,7 +470,7 @@ void tst_QAVDemuxer::muxerWriteSubtitles()
     QAVMuxer m;
 
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
-    QVERIFY(m.load(d.avctx(), d.availableStreams(), "colors.mkv") >= 0);
+    QVERIFY(m.load(d.availableStreams(), "colors.mkv") >= 0);
 
     QAVPacket p;
     while ((p = d.read())) {
@@ -514,7 +514,7 @@ void tst_QAVDemuxer::muxerEnqueue()
     QAVMuxer m;
 
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
-    QVERIFY(m.load(d.avctx(), d.availableStreams(), "colors.mkv") >= 0);
+    QVERIFY(m.load(d.availableStreams(), "colors.mkv") >= 0);
 
     QAVPacket p;
     while ((p = d.read())) {

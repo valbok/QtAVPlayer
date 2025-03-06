@@ -507,10 +507,10 @@ QAVVideoFrame::operator QVideoFrame() const
     QVideoFrameFormat videoFormat(size(), format);
     
     QRect viewport(
-        frame()->crop_left,
-        frame()->crop_top,
-        frame()->width - frame()->crop_left - frame()->crop_right,
-        frame()->height - frame()->crop_top - frame()->crop_bottom
+        static_cast<int>(frame()->crop_left),
+        static_cast<int>(frame()->crop_top),
+        static_cast<int>(frame()->width - frame()->crop_left - frame()->crop_right),
+        static_cast<int>(frame()->height - frame()->crop_top - frame()->crop_bottom)
     );
     videoFormat.setViewport(viewport);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)

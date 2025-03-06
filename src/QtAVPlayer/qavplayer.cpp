@@ -518,7 +518,7 @@ void QAVPlayerPrivate::resetMuxer()
     if (filename.isEmpty() || !demuxer.avctx())
         return;
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << filename;
-    int ret = muxer.load(demuxer.avctx(), demuxer.availableStreams(), filename);
+    int ret = muxer.load(demuxer.availableStreams(), filename);
     if (ret < 0) {
         muxer.unload();
         setError(QAVPlayer::ResourceError, err_str(ret));
