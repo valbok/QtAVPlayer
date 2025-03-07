@@ -38,8 +38,8 @@ public:
     QAVMuxer();
     ~QAVMuxer();
 
-    // Loads the encoder based on ictx and parsed streams, format is negotiated from filename
-    int load(const AVFormatContext *ictx, const QList<QAVStream> &streams, const QString &filename);
+    // Loads the encoder based on parsed streams, format is negotiated from filename
+    int load(const QList<QAVStream> &streams, const QString &filename);
     // Stops and unloads the encoder
     void unload();
 
