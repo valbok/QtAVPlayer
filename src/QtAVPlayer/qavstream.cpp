@@ -9,6 +9,7 @@
 #include "qavdemuxer_p.h"
 #include "qavcodec_p.h"
 #include <QDebug>
+#include <cmath>
 
 extern "C" {
 #include <libavformat/avformat.h>
