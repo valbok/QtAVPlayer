@@ -8,6 +8,7 @@
 #include <QtAVPlayer/qavplayer.h>
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QtAVPlayer/qavaudiooutput.h>
+#include <QtAVPlayer/qavmuxer.h>
 #include <QtAVPlayer/qaviodevice.h>
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QAbstractVideoSurface>
@@ -76,6 +77,7 @@ int main(int argc, char *argv[])
     auto vo = rootObject->findChild<VideoOutput *>(QString::fromLatin1("videoOutput"));
 
     QAVAudioOutput audioOutput;
+    QAVMuxerFrames muxer;
     QAVPlayer p;
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
@@ -152,6 +154,12 @@ int main(int argc, char *argv[])
             for (auto &s : availableSubtitleStreams) {
                 qDebug() << "[" << s.index() << "]" << s.metadata() << s.framesCount() << "frames," << s.frameRate() << "frame rate" << (isStreamCurrent(s.index(), subtitleStreams) ? "---current" : "");
             }
+            if (!filter.isEmpty() && !output.isEmpty()) {
+                muxer.load(p.availableStreams(), output);
+                QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { muxer.enqueue(f); }, Qt::DirectConnection);
+                QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { muxer.enqueue(f); }, Qt::DirectConnection);
+                QObject::connect(&p, &QAVPlayer::subtitleFrame, &p, [&](const QAVSubtitleFrame &f) { muxer.write(f); }, Qt::DirectConnection);
+            }
             p.play();
         } else if (status == QAVPlayer::EndOfMedia) {
             for (const auto &s : p.availableVideoStreams())
@@ -182,7 +190,8 @@ int main(int argc, char *argv[])
     }
     p.setSource(file, qrc);
     p.setFilter(filter);
-    p.setOutput(output);
+    if (filter.isEmpty())
+        p.setOutput(output);
     //p.setSynced(false);
 
     viewer.setMinimumSize(QSize(300, 360));

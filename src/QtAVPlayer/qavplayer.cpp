@@ -7,7 +7,7 @@
 
 #include "qavplayer.h"
 #include "qavdemuxer_p.h"
-#include "qavmuxer_p.h"
+#include "qavmuxer.h"
 #include "qaviodevice.h"
 #include "qavvideocodec_p.h"
 #include "qavaudiocodec_p.h"
@@ -134,7 +134,7 @@ public:
     QAVPlayer::Error error = QAVPlayer::NoError;
 
     QAVDemuxer demuxer;
-    QAVMuxer muxer;
+    QAVMuxerPackets muxer;
 
     QThreadPool threadPool;
     QFuture<void> loaderFuture;
@@ -623,6 +623,7 @@ void QAVPlayerPrivate::doDemux()
 
         auto packet = demuxer.read();
         if (packet.stream()) {
+            muxer.write(packet);
             endOfFile(false);
             // Empty packet points to EOF and it needs to flush codecs
             switch (demuxer.currentCodecType(packet.packet()->stream_index)) {
@@ -775,7 +776,6 @@ void QAVPlayerPrivate::doPlayStep(
                 cb(frame);
                 demuxer.onFrameSent(frame);
             }
-            muxer.enqueue(frame);
             filteredFrames.pop_front();
         } else {
             flushEvents = isLastFrame(frame, demuxer);
@@ -860,7 +860,6 @@ void QAVPlayerPrivate::doPlayStep(
         if (sync && decodedFrame) {
             cb(decodedFrame);
             demuxer.onFrameSent(decodedFrame);
-            muxer.write(decodedFrame);
         }
         queue.popFrame();
     }
@@ -952,6 +951,12 @@ QString QAVPlayer::output() const
     Q_D(const QAVPlayer);
     QMutexLocker locker(&d->stateMutex);
     return d->outputFilename;
+}
+
+QList<QAVStream> QAVPlayer::availableStreams() const
+{
+    Q_D(const QAVPlayer);
+    return d->demuxer.availableStreams();
 }
 
 QList<QAVStream> QAVPlayer::availableVideoStreams() const

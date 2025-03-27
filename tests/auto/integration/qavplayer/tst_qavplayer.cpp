@@ -6,6 +6,7 @@
  ***************************************************************/
 
 #include "qavplayer.h"
+#include "qavmuxer.h"
 #include "qavaudiooutput.h"
 #include "qaviodevice.h"
 
@@ -105,6 +106,7 @@ private slots:
     void streamMetadataRotate();
     void switchingSource();
     void outputFile();
+    void muxerFilters();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -3445,7 +3447,6 @@ void tst_QAVPlayer::switchingSource()
 
 void tst_QAVPlayer::outputFile()
 {
-    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QAVPlayer p;
     QList<QString> files = {"av_sample.mkv", "small.mp4"};
     p.setSynced(false);
@@ -3483,11 +3484,28 @@ void tst_QAVPlayer::outputFile()
     p.play();
     p.setOutput("output.mkv");
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia || p.mediaStatus() == QAVPlayer::EndOfMedia);
+}
 
+void tst_QAVPlayer::muxerFilters()
+{
+    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
+    QAVPlayer p;
+    QAVMuxerFrames m;
+    p.setSynced(false);
     p.setSource(QFileInfo(testData("small.mp4")).absoluteFilePath());
     p.setFilter("curves=vintage");
-    p.play();
+
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { m.enqueue(f); }, Qt::DirectConnection);
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { m.enqueue(f); }, Qt::DirectConnection);
+    QObject::connect(&p, &QAVPlayer::mediaStatusChanged, &p, [&](auto status) {
+        if (status == QAVPlayer::LoadedMedia) {
+            QVERIFY(m.load(p.availableStreams(), "output.mkv") == 0);
+            p.play();
+        }
+    });
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
+    m.unload();
+    QVERIFY(m.load(p.availableStreams(), "output.mkv") == 0);
 }
 
 QTEST_MAIN(tst_QAVPlayer)

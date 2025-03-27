@@ -57,8 +57,16 @@ public:
     void setSource(const QString &url, const QSharedPointer<QAVIODevice> &dev = {});
     QString source() const;
 
+    /**
+     * Writes the original packets to the output filename
+     */
     void setOutput(const QString &filename);
     QString output() const;
+
+    /**
+     * Returns all available streams after LoadedMedia
+     */
+    QList<QAVStream> availableStreams() const;
 
     QList<QAVStream> availableVideoStreams() const;
     QList<QAVStream> currentVideoStreams() const;
