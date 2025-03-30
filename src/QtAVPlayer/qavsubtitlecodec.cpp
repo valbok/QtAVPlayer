@@ -57,7 +57,6 @@ int QAVSubtitleCodec::write(const QAVStreamFrame &frame)
     if (ret < 0)
         return AVERROR(ENOMEM);
     auto f = static_cast<const QAVSubtitleFrame *>(&frame);
-    auto sub = f->subtitle();
     auto subtitle_out_size = avcodec_encode_subtitle(
         d->avctx,
         pkt->data,
@@ -68,6 +67,7 @@ int QAVSubtitleCodec::write(const QAVStreamFrame &frame)
     }
     av_shrink_packet(pkt, subtitle_out_size);
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 0, 0)
+    auto sub = f->subtitle();
     pkt->time_base = AV_TIME_BASE_Q;
     pkt->pts = sub->pts;
     pkt->duration = av_rescale_q(sub->end_display_time, AVRational{ 1, 1000 }, pkt->time_base);

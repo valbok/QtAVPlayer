@@ -6,7 +6,7 @@
  ***************************************************************/
 
 #include "qavdemuxer_p.h"
-#include "qavmuxer_p.h"
+#include "qavmuxer.h"
 #include "qavaudioframe.h"
 #include "qavvideoframe.h"
 #include "qaviodevice.h"
@@ -41,7 +41,8 @@ private slots:
     void metadata();
     void videoCodecs();
     void inputOptions();
-    void muxerWrite();
+    void muxerWritePackets();
+    void muxerWriteFrames();
     void muxerWriteSubtitles();
     void muxerEnqueue();
 };
@@ -438,11 +439,30 @@ void tst_QAVDemuxer::inputOptions()
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
 }
 
-void tst_QAVDemuxer::muxerWrite()
+void tst_QAVDemuxer::muxerWritePackets()
 {
     QFileInfo file(testData("colors.mp4"));
     QAVDemuxer d;
-    QAVMuxer m;
+    QAVMuxerPackets m;
+
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
+    QVERIFY(m.load(d.availableStreams(), "colors.mkv") >= 0);
+
+    QAVPacket p;
+    while ((p = d.read())) {
+        QVERIFY(m.write(p) >= 0);
+    }
+    QVERIFY(m.flush() >= 0);
+    m.unload();
+    d.unload();
+    QVERIFY(d.load("colors.mkv") >= 0);
+}
+
+void tst_QAVDemuxer::muxerWriteFrames()
+{
+    QFileInfo file(testData("colors.mp4"));
+    QAVDemuxer d;
+    QAVMuxerFrames m;
 
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(m.load(d.availableStreams(), "colors.mkv") >= 0);
@@ -467,7 +487,7 @@ void tst_QAVDemuxer::muxerWriteSubtitles()
 {
     QFileInfo file(testData("colors_subtitles.mkv"));
     QAVDemuxer d;
-    QAVMuxer m;
+    QAVMuxerFrames m;
 
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(m.load(d.availableStreams(), "colors.mkv") >= 0);
@@ -511,7 +531,7 @@ void tst_QAVDemuxer::muxerEnqueue()
 {
     QFileInfo file(testData("colors.mp4"));
     QAVDemuxer d;
-    QAVMuxer m;
+    QAVMuxerFrames m;
 
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(m.load(d.availableStreams(), "colors.mkv") >= 0);
