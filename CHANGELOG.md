@@ -1,32 +1,21 @@
-2025-03-05
-----------
+2025-03
+-------
 
+- #524 - Intorduced `QAVMuxerPackets` and `QAVMuxerFrames` muxers.
+         Fixed `QAVPlayer::setOutput` to use `QAVMuxerPackets`.
+- #522 - Added missing cmath include
+- #523 - Added Qt 6.8.2 to CI
+- #522 - Added missing include
 - Fixed compile errors for ffmpeg 4
-
-2025-03-04
-----------
-
 - #502 - Added `QAVWidget_Opengl` to render using OpenGL
-
-2025-03-03
-----------
-
 - #517 - Added support of muxing of subtitle
-
-2025-03-02
-----------
-
 - #509 - Added `QAVMuxer` to encode and save to output file
 
-2025-02-26
-----------
+2025-02
+-------
 
 - #515 - Fixed hardcoded `h264_mediacodec` for android
 - #514 - Fixed VDPAU rendering on 6.8.2.
-
-2025-02-21
-----------
-
 - #512 - Ported to Qt 6.8.2
 
 2024
