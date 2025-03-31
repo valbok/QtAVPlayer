@@ -143,7 +143,7 @@ int QAVMuxer::load(const QList<QAVStream> &streams, const QString &filename)
     if (!(d->ctx->oformat->flags & AVFMT_NOFILE)) {
         ret = avio_open(&d->ctx->pb, filename.toUtf8().constData(), AVIO_FLAG_WRITE);
         if (ret < 0) {
-            qWarning() <<" Could not open output file:" << filename << ":"<< err2str(ret);
+            qWarning() << "Could not open output file:" << filename << ":"<< err2str(ret);
             return ret;
         }
     }
@@ -151,7 +151,7 @@ int QAVMuxer::load(const QList<QAVStream> &streams, const QString &filename)
     // Init muxer, write output file header
     ret = avformat_write_header(d->ctx, nullptr);
     if (ret < 0) {
-        qWarning() << "Failed avformat_write_header:" << err2str(ret);
+        qWarning() << filename << ": Failed avformat_write_header:" << err2str(ret);
         return ret;
     }
     init(locker);
@@ -339,7 +339,7 @@ int QAVMuxerFrames::initMuxer(const QAVStream &stream, Locker &)
             }
             ret = avcodec_parameters_from_context(out_stream->codecpar, enc_ctx);
             if (ret < 0) {
-                qWarning() << "Failed to copy encoder parameters to output stream:" << err2str(ret);
+                qWarning() << stream.index() << ": Failed to copy encoder parameters to output stream:" << err2str(ret);
                 return ret;
             }
             out_stream->time_base = enc_ctx->time_base;
@@ -353,7 +353,7 @@ int QAVMuxerFrames::initMuxer(const QAVStream &stream, Locker &)
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 0, 0)
             ret = av_channel_layout_copy(&enc_ctx->ch_layout, &dec_ctx->ch_layout);
             if (ret < 0) {
-                qWarning() << "Failed av_channel_layout_copy:" << err2str(ret);
+                qWarning() << stream.index() << ": Failed av_channel_layout_copy:" << err2str(ret);
                 return ret;
             }
 #endif
@@ -367,7 +367,7 @@ int QAVMuxerFrames::initMuxer(const QAVStream &stream, Locker &)
             }
             ret = avcodec_parameters_from_context(out_stream->codecpar, enc_ctx);
             if (ret < 0) {
-                qWarning() << "Failed to copy encoder parameters to output stream:" << err2str(ret);
+                qWarning() << stream.index() << ": Failed to copy encoder parameters to output stream:" << err2str(ret);
                 return ret;
             }
             out_stream->time_base = enc_ctx->time_base;
@@ -395,7 +395,7 @@ int QAVMuxerFrames::initMuxer(const QAVStream &stream, Locker &)
             }
             ret = avcodec_parameters_copy(out_stream->codecpar, in_stream->codecpar);
             if (ret < 0) {
-                qWarning() << "Copying parameters for stream failed:" << err2str(ret);
+                qWarning() << stream.index() << ": Copying parameters for stream failed:" << err2str(ret);
                 return ret;
             }
             out_stream->time_base = in_stream->time_base;
@@ -450,9 +450,8 @@ int QAVMuxerFrames::write(QAVFrame frame, int streamIndex, Locker &)
     int sent = 0;
     do {
         sent = frame.send();
-        if (sent < 0 && sent != AVERROR(EAGAIN)){
+        if (sent < 0 && sent != AVERROR(EAGAIN))
             return sent;
-        }
 
         int wrote = 0;
         while (wrote >= 0) {
@@ -484,9 +483,8 @@ int QAVMuxerFrames::write(QAVSubtitleFrame frame, int streamIndex, Locker &)
     // Set encoder stream to frame to send to
     frame.setStream(encStream);
     int sent = frame.send();
-    if (sent < 0 && sent != AVERROR(EAGAIN)){
+    if (sent < 0 && sent != AVERROR(EAGAIN))
         return sent;
-    }
     QAVPacket pkt;
     pkt.setStream(encStream);
     int received = pkt.receive();
@@ -506,9 +504,10 @@ void QAVMuxerFrames::stop(Locker &locker)
 {
     Q_D(QAVMuxerFrames);
     d->quit = true;
+    bool loaded = static_cast<bool>(d->workerThread);
     locker.unlock();
     d->cond.wakeAll();
-    if (d->workerThread) {
+    if (loaded) {
         d->workerThread->quit();
         d->workerThread->wait();
     }
