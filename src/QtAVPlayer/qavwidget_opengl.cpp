@@ -6,80 +6,89 @@
  *********************************************************/
 
 #include "qavwidget_opengl.h"
-
+#include "qavvideobuffer_p.h"
 #include <QOpenGLShaderProgram>
 #include <QMutexLocker>
 #include <qmath.h>
 #include <QDebug>
 
-static const char *qt_glsl_vertexShaderProgram =
-        "attribute highp vec4 vertexCoordArray;\n"
-        "attribute highp vec2 textureCoordArray;\n"
-        "uniform highp mat4 positionMatrix;\n"
-        "uniform highp float planeWidth1;\n"
-        "uniform highp float planeWidth2;\n"
-        "uniform highp float planeWidth3;\n"
-        "varying highp vec2 plane1TexCoord;\n"
-        "varying highp vec2 plane2TexCoord;\n"
-        "varying highp vec2 plane3TexCoord;\n"
-        "varying highp vec2 textureCoord;\n"
-        "void main(void)\n"
-        "{\n"
-        "   plane1TexCoord = textureCoordArray * vec2(planeWidth1, 1);\n"
-        "   plane2TexCoord = textureCoordArray * vec2(planeWidth2, 1);\n"
-        "   plane3TexCoord = textureCoordArray * vec2(planeWidth3, 1);\n"
-        "   gl_Position = positionMatrix * vertexCoordArray;\n"
-        "   textureCoord = textureCoordArray;\n"
-        "}\n";
+#if defined(Q_OS_WIN)
+#include "qavhwdevice_d3d11_p.h"
+#endif
 
-static const char *qt_glsl_rgbShaderProgram =
-        "uniform sampler2D tex1;\n"
-        "varying highp vec2 textureCoord;\n"
-        "void main(void)\n"
-        "{\n"
-        "   highp vec4 color = vec4(texture2D(tex1, textureCoord.st).rgb, 1.0);\n"
-        "   gl_FragColor = vec4(color.rgb, texture2D(tex1, textureCoord.st).a);\n"
-        "}\n";
+static const char *vertexShaderProgram = R"(
+    attribute highp vec4 vertexCoordArray;
+    attribute highp vec2 textureCoordArray;
+    uniform highp mat4 positionMatrix;
+    uniform highp float planeWidth1;
+    uniform highp float planeWidth2;
+    uniform highp float planeWidth3;
+    varying highp vec2 plane1TexCoord;
+    varying highp vec2 plane2TexCoord;
+    varying highp vec2 plane3TexCoord;
+    varying highp vec2 textureCoord;
+    void main(void)
+    {
+        plane1TexCoord = textureCoordArray * vec2(planeWidth1, 1);
+        plane2TexCoord = textureCoordArray * vec2(planeWidth2, 1);
+        plane3TexCoord = textureCoordArray * vec2(planeWidth3, 1);
+        gl_Position = positionMatrix * vertexCoordArray;
+        textureCoord = textureCoordArray;
+    }
+)";
 
-static const char *qt_glsl_bgrShaderProgram =
-        "uniform sampler2D tex1;\n"
-        "varying highp vec2 textureCoord;\n"
-        "void main(void)\n"
-        "{\n"
-        "   highp vec4 color = vec4(texture2D(tex1, textureCoord.st).rgb, 1.0);\n"
-        "   gl_FragColor = vec4(color.bgr, texture2D(tex1, textureCoord.st).a);\n"
-        "}\n";
+static const char *rgbShaderProgram = R"(
+    uniform sampler2D tex1;
+    varying highp vec2 textureCoord;
+    void main(void)
+    {
+        highp vec4 color = vec4(texture2D(tex1, textureCoord.st).rgb, 1.0);
+        gl_FragColor = vec4(color.rgb, texture2D(tex1, textureCoord.st).a);
+    }
+)";
 
-static const char *qt_glsl_yuvPlanarShaderProgram =
-        "uniform sampler2D tex1;\n"
-        "uniform sampler2D tex2;\n"
-        "uniform sampler2D tex3;\n"
-        "uniform mediump mat4 colorMatrix;\n"
-        "varying highp vec2 plane1TexCoord;\n"
-        "varying highp vec2 plane2TexCoord;\n"
-        "varying highp vec2 plane3TexCoord;\n"
-        "void main(void)\n"
-        "{\n"
-        "   mediump float Y = texture2D(tex1, plane1TexCoord).r;\n"
-        "   mediump float U = texture2D(tex2, plane2TexCoord).r;\n"
-        "   mediump float V = texture2D(tex3, plane3TexCoord).r;\n"
-        "   mediump vec4 color = vec4(Y, U, V, 1.);\n"
-        "   gl_FragColor = colorMatrix * color;\n"
-        "}\n";
+static const char *bgrShaderProgram = R"(
+    uniform sampler2D tex1;
+    varying highp vec2 textureCoord;
+    void main(void)
+    {
+        highp vec4 color = vec4(texture2D(tex1, textureCoord.st).rgb, 1.0);
+        gl_FragColor = vec4(color.bgr, texture2D(tex1, textureCoord.st).a);
+    }
+)";
 
-static const char *qt_glsl_nvPlanarShaderProgram =
-        "uniform sampler2D tex1;\n"
-        "uniform sampler2D tex2;\n"
-        "uniform mediump mat4 colorMatrix;\n"
-        "varying highp vec2 plane1TexCoord;\n"
-        "varying highp vec2 plane2TexCoord;\n"
-        "void main()\n"
-        "{\n"
-        "    mediump float Y = texture2D(tex1, plane1TexCoord).r;\n"
-        "    mediump vec2 UV = texture2D(tex2, plane2TexCoord).ra;\n"
-        "    mediump vec4 color = vec4(Y, UV.x, UV.y, 1.);\n"
-        "    gl_FragColor = colorMatrix * color;\n"
-        "}\n";
+static const char *yuvPlanarShaderProgram = R"(
+    uniform sampler2D tex1;
+    uniform sampler2D tex2;
+    uniform sampler2D tex3;
+    uniform mediump mat4 colorMatrix;
+    varying highp vec2 plane1TexCoord;
+    varying highp vec2 plane2TexCoord;
+    varying highp vec2 plane3TexCoord;
+    void main(void)
+    {
+        mediump float Y = texture2D(tex1, plane1TexCoord).r;
+        mediump float U = texture2D(tex2, plane2TexCoord).r;
+        mediump float V = texture2D(tex3, plane3TexCoord).r;
+        mediump vec4 color = vec4(Y, U, V, 1.);
+        gl_FragColor = colorMatrix * color;
+    }
+)";
+
+static const char *nvPlanarShaderProgram = R"(
+    uniform sampler2D tex1;
+    uniform sampler2D tex2;
+    uniform mediump mat4 colorMatrix;
+    varying highp vec2 plane1TexCoord;
+    varying highp vec2 plane2TexCoord;
+    void main()
+    {
+        mediump float Y = texture2D(tex1, plane1TexCoord).r;
+        mediump vec2 UV = texture2D(tex2, plane2TexCoord).ra;
+        mediump vec4 color = vec4(Y, UV.x, UV.y, 1.);
+        gl_FragColor = colorMatrix * color;
+    }
+)";
 
 class QAVWidget_OpenGLPrivate
 {
@@ -94,6 +103,8 @@ public:
 
     QAVVideoFrame currentFrame;
     AVPixelFormat currentFormat = AV_PIX_FMT_NONE;
+    // Custom video buffer
+    std::unique_ptr<QAVVideoBuffer> videoBuffer;
     mutable QMutex mutex;
 
     QOpenGLShaderProgram program;
@@ -108,12 +119,12 @@ public:
     void cleanupTextures();
     void bindTexture(int id, int w, int h, const uchar *bits, GLenum format);
 
-    bool resetGL(const QAVVideoFrame &frame);
+    bool resetGL();
 
     template<AVPixelFormat fmt>
-    void initTextureInfo(const QAVVideoFrame &frame);
+    void initTextureInfo();
 
-    bool setVideoFrame(const QAVVideoFrame &frame);
+    bool initTextureInfo();
 
     static QMatrix4x4 getColorMatrix(const QAVVideoFrame &frame);
 };
@@ -124,6 +135,7 @@ void QAVWidget_OpenGLPrivate::cleanupTextures()
     if (texturesGenerated)
         q->glDeleteTextures(textureCount, textureIds);
     texturesGenerated = false;
+    textureIds[0] = textureIds[1] = textureIds[2] = 0;
 }
 
 QMatrix4x4 QAVWidget_OpenGLPrivate::getColorMatrix(const QAVVideoFrame &frame)
@@ -181,64 +193,64 @@ void QAVWidget_OpenGLPrivate::bindTexture(int id, int w, int h, const uchar *bit
 }
 
 template<>
-void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_BGR32>(const QAVVideoFrame &frame)
+void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_BGR32>()
 {
     Q_Q(QAVWidget_OpenGL);
-    fragmentProgram = qt_glsl_rgbShaderProgram;
+    fragmentProgram = rgbShaderProgram;
     textureCount = 1;
-    if (frame.handleType() == QAVVideoFrame::NoHandle) {
+    if (currentFrame.handleType() == QAVVideoFrame::NoHandle) {
         cleanupTextures();
         q->glGenTextures(textureCount, textureIds);
         texturesGenerated = true;
-        auto w = frame.size().width();
-        auto h = frame.size().height();
-        auto data = frame.map();
+        auto w = currentFrame.size().width();
+        auto h = currentFrame.size().height();
+        auto data = currentFrame.map();
         q->glActiveTexture(GL_TEXTURE0);
         bindTexture(textureIds[0], w, h, data.data[0], GL_RGBA);
     }
 }
 
 template<>
-void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_RGB32>(const QAVVideoFrame &frame)
+void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_RGB32>()
 {
     Q_Q(QAVWidget_OpenGL);
-    fragmentProgram = qt_glsl_bgrShaderProgram;
+    fragmentProgram = bgrShaderProgram;
     textureCount = 1;
-    if (frame.handleType() == QAVVideoFrame::NoHandle) {
+    if (currentFrame.handleType() == QAVVideoFrame::NoHandle) {
         cleanupTextures();
         q->glGenTextures(textureCount, textureIds);
         texturesGenerated = true;
-        auto w = frame.size().width();
-        auto h = frame.size().height();
-        auto data = frame.map();
+        auto w = currentFrame.size().width();
+        auto h = currentFrame.size().height();
+        auto data = currentFrame.map();
         q->glActiveTexture(GL_TEXTURE0);
         bindTexture(textureIds[0], w, h, data.data[0], GL_RGBA);
     }
 }
 
 template<>
-void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_VDPAU>(const QAVVideoFrame &frame)
+void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_VDPAU>()
 {
-    Q_ASSERT(frame.handleType() == QAVVideoFrame::GLTextureHandle);
-    initTextureInfo<AV_PIX_FMT_BGR32>(frame);
+    Q_ASSERT(currentFrame.handleType() == QAVVideoFrame::GLTextureHandle);
+    initTextureInfo<AV_PIX_FMT_BGR32>();
     cleanupTextures();
-    textureIds[0] = frame.handle().toInt();
+    textureIds[0] = currentFrame.handle().toInt();
 }
 
 template<>
-void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_YUV420P>(const QAVVideoFrame &frame)
+void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_YUV420P>()
 {
     Q_Q(QAVWidget_OpenGL);
-    colorMatrix = getColorMatrix(frame);
-    fragmentProgram = qt_glsl_yuvPlanarShaderProgram;
+    colorMatrix = getColorMatrix(currentFrame);
+    fragmentProgram = yuvPlanarShaderProgram;
     textureCount = 3;
-    if (frame.handleType() == QAVVideoFrame::NoHandle) {
+    if (currentFrame.handleType() == QAVVideoFrame::NoHandle) {
         cleanupTextures();
         q->glGenTextures(textureCount, textureIds);
         texturesGenerated = true;
-        auto w = frame.size().width();
-        auto h = frame.size().height();
-        auto data = frame.map();
+        auto w = currentFrame.size().width();
+        auto h = currentFrame.size().height();
+        auto data = currentFrame.map();
         planeWidth[0] = qreal(w) / data.bytesPerLine[0];
         planeWidth[1] = planeWidth[2] = qreal(w) / (2 * data.bytesPerLine[1]);
         q->glActiveTexture(GL_TEXTURE1);
@@ -251,19 +263,19 @@ void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_YUV420P>(const QAVVideo
 }
 
 template<>
-void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_NV12>(const QAVVideoFrame &frame)
+void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_NV12>()
 {
     Q_Q(QAVWidget_OpenGL);
-    colorMatrix = getColorMatrix(frame);
-    fragmentProgram = qt_glsl_nvPlanarShaderProgram;
+    colorMatrix = getColorMatrix(currentFrame);
+    fragmentProgram = nvPlanarShaderProgram;
     textureCount = 2;
-    if (frame.handleType() == QAVVideoFrame::NoHandle) {
+    if (currentFrame.handleType() == QAVVideoFrame::NoHandle) {
         cleanupTextures();
         q->glGenTextures(textureCount, textureIds);
         texturesGenerated = true;
-        auto w = frame.size().width();
-        auto h = frame.size().height();
-        auto data = frame.map();
+        auto w = currentFrame.size().width();
+        auto h = currentFrame.size().height();
+        auto data = currentFrame.map();
         planeWidth[0] = planeWidth[1] = qreal(w) / data.bytesPerLine[0];
         planeWidth[2] = 0;
         q->glActiveTexture(GL_TEXTURE1);
@@ -273,46 +285,67 @@ void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_NV12>(const QAVVideoFra
     }
 }
 
-bool QAVWidget_OpenGLPrivate::setVideoFrame(const QAVVideoFrame &frame)
+#if defined(Q_OS_WIN)
+template<>
+void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_D3D11>()
 {
-    if (!frame)
-        return false;
-    switch (frame.format()) {
+    Q_ASSERT(currentFrame.handleType() == QAVVideoFrame::D3D11Texture2DHandle);
+    initTextureInfo<AV_PIX_FMT_NV12>();
+
+    QAVHWDevice_D3D11_GL device;
+    videoBuffer.reset(device.videoBuffer(currentFrame));
+
+    // Convert to opengl textures
+    auto handle = videoBuffer->handle();
+    Q_ASSERT(handle.canConvert<QList<QVariant>>());
+    auto textures = handle.toList();
+    Q_ASSERT(textures.size() == 2);
+    cleanupTextures();
+    textureIds[0] = textures[0].toULongLong();
+    textureIds[1] = textures[1].toULongLong();
+    planeWidth[0] = planeWidth[1] = 1;
+}
+#endif
+
+bool QAVWidget_OpenGLPrivate::initTextureInfo()
+{
+    switch (currentFrame.format()) {
         case AV_PIX_FMT_BGR32:
-            initTextureInfo<AV_PIX_FMT_BGR32>(frame);
+            initTextureInfo<AV_PIX_FMT_BGR32>();
             break;
         case AV_PIX_FMT_RGB32:
-            initTextureInfo<AV_PIX_FMT_RGB32>(frame);
+            initTextureInfo<AV_PIX_FMT_RGB32>();
             break;
         case AV_PIX_FMT_VDPAU:
-            initTextureInfo<AV_PIX_FMT_VDPAU>(frame);
+            initTextureInfo<AV_PIX_FMT_VDPAU>();
             break;
         case AV_PIX_FMT_YUV420P:
-            initTextureInfo<AV_PIX_FMT_YUV420P>(frame);
+            initTextureInfo<AV_PIX_FMT_YUV420P>();
             break;
         case AV_PIX_FMT_NV12:
-            initTextureInfo<AV_PIX_FMT_NV12>(frame);
+            initTextureInfo<AV_PIX_FMT_NV12>();
             break;
+#if defined(Q_OS_WIN)
+        case AV_PIX_FMT_D3D11:
+            initTextureInfo<AV_PIX_FMT_D3D11>();
+            break;
+#endif
         default:
-            qWarning() << "Pixel format is not supported:" << frame.formatName() << "AVPixelFormat(" << frame.format() << ")";
+            qWarning() << "Pixel format is not supported:" << currentFrame.formatName() << "AVPixelFormat(" << currentFrame.format() << ")";
             return false;
     }
     return true;
 }
 
-
-bool QAVWidget_OpenGLPrivate::resetGL(const QAVVideoFrame &frame)
+bool QAVWidget_OpenGLPrivate::resetGL()
 {
     // No need to reset
-    if (currentFormat == frame.format())
+    if (currentFormat == currentFrame.format())
         return true;
 
-    if (!fragmentProgram) {
-        qWarning() << "fragmentProgram not found";
-        return false;
-    }
+    Q_ASSERT(fragmentProgram);
     program.removeAllShaders();
-    if (!program.addShaderFromSourceCode(QOpenGLShader::Vertex, qt_glsl_vertexShaderProgram)) {
+    if (!program.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderProgram)) {
         qWarning() << "Vertex compile error:" << qPrintable(program.log());
         return false;
     }
@@ -327,13 +360,26 @@ bool QAVWidget_OpenGLPrivate::resetGL(const QAVVideoFrame &frame)
         return false;
     }
 
-    currentFormat = frame.format();
+    currentFormat = currentFrame.format();
     return true;
 }
+
+#ifdef DEBUG
+void MessageCallback(GLenum, GLenum type,
+    GLuint, GLenum severity, GLsizei, const GLchar *message, const void *)
+{
+    fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+        type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "", type, severity, message);
+}
+#endif
 
 void QAVWidget_OpenGL::initializeGL()
 {
     initializeOpenGLFunctions();
+#ifdef DEBUG
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(MessageCallback, 0);
+#endif
     glColor3f(0.0, 0.0, 1.0);
 }
 
@@ -341,7 +387,7 @@ void QAVWidget_OpenGL::paintGL()
 {
     Q_D(QAVWidget_OpenGL);
     QMutexLocker lock(&d->mutex);
-    if (!d->setVideoFrame(d->currentFrame) || !d->resetGL(d->currentFrame)) {
+    if (!d->currentFrame || !d->initTextureInfo() || !d->resetGL()) {
         return;
     }
 
@@ -457,6 +503,7 @@ void QAVWidget_OpenGL::paintGL()
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     d->program.release();
     d->currentFrame = QAVVideoFrame();
+    d->videoBuffer.reset();
 }
 
 void QAVWidget_OpenGL::resizeGL(int width, int height)
