@@ -119,6 +119,10 @@ macos|darwin {
 }
 
 win32 {
+    QT += opengl
+    QMAKE_USE += opengl
+    # Needed by mingw
+    LIBS += -ld3d11 -lopengl32 -lD3DCompiler
     PRIVATE_HEADERS += $$PWD/qavhwdevice_d3d11_p.h
     SOURCES += $$PWD/qavhwdevice_d3d11.cpp
 }
