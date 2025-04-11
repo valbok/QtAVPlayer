@@ -17,15 +17,13 @@
 #include <wrl/client.h>
 using Microsoft::WRL::ComPtr;
 
-#ifdef QT_AVPLAYER_MULTIMEDIA
-    #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
-        #include <private/qrhi_p.h>
-        #include <private/qrhid3d11_p.h>
-        #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 2)
-            #include <private/quniquehandle_p.h>
-        #endif
-    #endif // #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
-#endif // QT_AVPLAYER_MULTIMEDIA
+#if defined(QT_AVPLAYER_MULTIMEDIA) && QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+    #include <private/qrhi_p.h>
+    #include <private/qrhid3d11_p.h>
+    #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 2)
+        #include <private/quniquehandle_p.h>
+    #endif
+#endif
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -141,11 +139,7 @@ static ComPtr<ID3D11Texture2D> copyTexture(ID3D11Device *dev, ID3D11Texture2D *f
     return copy;
 }
 
-#ifdef QT_AVPLAYER_MULTIMEDIA
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 2)
+#if defined(QT_AVPLAYER_MULTIMEDIA) && QT_VERSION >= QT_VERSION_CHECK(6, 6, 2)
 
 static ComPtr<ID3D11Device1> D3D11Device(QRhi *rhi)
 {
@@ -247,8 +241,6 @@ ComPtr<ID3D11Texture2D> QAVVideoFrame_D3D11::copyTexture(const ComPtr<ID3D11Devi
     return outputTex;
 }
 
-#endif // #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 2)
-
 class VideoBuffer_D3D11: public QAVVideoBuffer_GPU
 {
 public:
@@ -332,23 +324,14 @@ QAVVideoBuffer *QAVHWDevice_D3D11::videoBuffer(const QAVVideoFrame &frame) const
     return new VideoBuffer_D3D11(frame);
 }
 
-#else // QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+#else // #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 2)
 
 QAVVideoBuffer *QAVHWDevice_D3D11::videoBuffer(const QAVVideoFrame &frame) const
 {
     return new QAVVideoBuffer_GPU(frame);
 }
 
-#endif
-
-#else // QT_AVPLAYER_MULTIMEDIA
-
-QAVVideoBuffer *QAVHWDevice_D3D11::videoBuffer(const QAVVideoFrame &frame) const
-{
-    return new QAVVideoBuffer_GPU(frame);
-}
-
-#endif // QT_AVPLAYER_MULTIMEDIA
+#endif // #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 2)
 
 static constexpr const char* hlsl = R"(
     Texture2D<float> texY : register(t0);         // Y plane
