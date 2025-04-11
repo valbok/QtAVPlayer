@@ -165,12 +165,9 @@ public:
 
 static QString err_str(int err)
 {
-    char errbuf[128];
-    const char *errbuf_ptr = errbuf;
-    if (av_strerror(err, errbuf, sizeof(errbuf)) < 0)
-        errbuf_ptr = strerror(AVUNERROR(err));
-
-    return QString::fromUtf8(errbuf_ptr);
+    thread_local char str[AV_ERROR_MAX_STRING_SIZE];
+    memset(str, 0, sizeof(str));
+    return QString::fromUtf8(av_make_error_string(str, AV_ERROR_MAX_STRING_SIZE, err));
 }
 
 QAVPlayer::Error QAVPlayerPrivate::currentError() const
