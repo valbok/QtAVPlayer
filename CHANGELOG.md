@@ -1,8 +1,15 @@
+2025-04
+-------
+
+- #526 - Introduced converting of ID3D11Texture2D to OpenGL textures and use it in `QAVWidget_Opengl`
+
 2025-03
 -------
 
 - #524 - Intorduced `QAVMuxerPackets` and `QAVMuxerFrames` muxers.
          Fixed `QAVPlayer::setOutput` to use `QAVMuxerPackets`.
+         Now possible to save the streams to output files without reencoding.
+         But if needed, `QAVMuxerFrames` is used to encode frames retrieved after applied filters.
 - #522 - Added missing cmath include
 - #523 - Added Qt 6.8.2 to CI
 - #522 - Added missing include
