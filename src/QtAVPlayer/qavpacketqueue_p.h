@@ -31,6 +31,7 @@
 #include <QList>
 #include <math.h>
 #include <memory>
+#include <QDebug>
 
 extern "C" {
 #include <libavutil/time.h>
@@ -70,10 +71,15 @@ public:
         delay /= speed;
         const double time = av_gettime_relative() / 1000000.0;
         if (shouldSync) {
+            if (pts < prevPts) {
+                qDebug()<<" +pts"<<pts<<prevPts<<"delay"<<delay;
+                return true;
+            }
             if (time < frameTimer + delay) {
                 double remaining_time = qMin(frameTimer + delay - time, refreshRate);
                 locker.unlock();
                 av_usleep((int64_t)(remaining_time * 1000000.0));
+                qDebug()<<" pts"<<pts<<prevPts<<"delay"<<delay<<(remaining_time)<< "frameTimer + delay - time:"<<(frameTimer + delay - time);
                 return false;
             }
         }

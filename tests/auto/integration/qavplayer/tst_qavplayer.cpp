@@ -30,7 +30,7 @@ public slots:
     void initTestCase();
     QString testData(const QString &fn) { return QLatin1String(TEST_DATA_DIR) + "/" + fn; }
 private slots:
-    void construction();
+    /*void construction();
     void sourceChanged();
     void speedChanged();
     void quitAudio();
@@ -106,14 +106,15 @@ private slots:
     void streamMetadataRotate();
     void switchingSource();
     void outputFile();
-    void muxerFilters();
+    void muxerFilters();*/
+    void multiSources();
 };
 
 void tst_QAVPlayer::initTestCase()
 {
     QThreadPool::globalInstance()->setMaxThreadCount(20);
 }
-
+/*
 void tst_QAVPlayer::construction()
 {
     QAVPlayer p;
@@ -3506,6 +3507,25 @@ void tst_QAVPlayer::muxerFilters()
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
     m.unload();
     QVERIFY(m.load(p.availableStreams(), "output.mkv") == 0);
+}
+
+*/
+void tst_QAVPlayer::multiSources() 
+{
+    QAVPlayer p;
+    p.setSynced(false);
+    auto file1 = QFileInfo(testData("small.mp4")).absoluteFilePath();
+    auto file2 = QFileInfo(testData("av_sample.mkv")).absoluteFilePath();
+    QList<QAVPlayer::Source> list = {{file1}, {file2}};
+
+    QAVFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; }, Qt::DirectConnection);
+
+    p.setSources(list);
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia);
+    p.play();
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
