@@ -51,11 +51,24 @@ public:
         FilterError
     };
 
+    struct Source
+    {
+        QString url;
+        QString format;
+        QMap<QString, QString> formatOpts;
+        QString codec;
+        QMap<QString, QString> codecOpts;
+        QSharedPointer<QAVIODevice> dev;
+        Source(const QString &url);
+    };
+
     QAVPlayer(QObject *parent = nullptr);
     ~QAVPlayer();
 
     void setSource(const QString &url, const QSharedPointer<QAVIODevice> &dev = {});
     QString source() const;
+
+    void setSources(const QList<Source> &list);
 
     /**
      * Writes the original packets to the output filename
