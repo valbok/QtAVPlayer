@@ -68,8 +68,8 @@ public:
 
     QAVPacket read();
 
-    void decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const;
-    void decode(const QAVPacket &pkt, QList<QAVSubtitleFrame> &frames) const;
+    static void decode(const QAVPacket &pkt, QList<QAVFrame> &frames);
+    static void decode(const QAVPacket &pkt, QList<QAVSubtitleFrame> &frames);
     void flushCodecBuffers();
 
     double duration() const;
