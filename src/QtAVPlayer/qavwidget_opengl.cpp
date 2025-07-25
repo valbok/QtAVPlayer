@@ -141,20 +141,51 @@ void QAVWidget_OpenGLPrivate::cleanupTextures()
 QMatrix4x4 QAVWidget_OpenGLPrivate::getColorMatrix(const QAVVideoFrame &frame)
 {
     switch (frame.frame()->colorspace) {
+        default:
         case AVCOL_SPC_BT709:
-            return QMatrix4x4(
-                    1.164f,  0.000f,  1.793f, -0.5727f,
-                    1.164f, -0.534f, -0.213f,  0.3007f,
-                    1.164f,  2.115f,  0.000f, -1.1302f,
-                    0.0f,    0.000f,  0.000f,  1.0000f);
+            if (frame.frame()->color_range != AVCOL_RANGE_UNSPECIFIED)
+                return {
+                    1.0f,  0.0f,       1.5748f,   -0.790488f,
+                    1.0f, -0.187324f, -0.468124f,  0.329010f,
+                    1.0f,  1.855600f,  0.0f,      -0.931439f,
+                    0.0f,  0.0f,       0.0f,       1.0f
+                };
+            return {
+                1.1644f,  0.0000f,  1.7927f, -0.9729f,
+                1.1644f, -0.2132f, -0.5329f,  0.3015f,
+                1.1644f,  2.1124f,  0.0000f, -1.1334f,
+                0.0000f,  0.0000f,  0.0000f,  1.0000f
+            };
         case AVCOL_SPC_BT470BG: // BT601
         case AVCOL_SPC_SMPTE170M: // Also BT601
-        default:
-            return QMatrix4x4(
-                    1.164f,  0.000f,  1.596f, -0.8708f,
-                    1.164f, -0.392f, -0.813f,  0.5296f,
-                    1.164f,  2.017f,  0.000f, -1.081f,
-                    0.0f,    0.000f,  0.000f,  1.0000f);
+            if (frame.frame()->color_range != AVCOL_RANGE_UNSPECIFIED)
+                return {
+                    1.f,  0.000f,   1.772f,   -0.886f,
+                    1.f, -0.1646f, -0.57135f,  0.36795f,
+                    1.f,  1.42f,    0.000f,   -0.71f,
+                    0.0f, 0.000f,   0.000f,    1.0000f
+                };
+            return {
+                1.164f,  0.000f,  1.596f, -0.8708f,
+                1.164f, -0.392f, -0.813f,  0.5296f,
+                1.164f,  2.017f,  0.000f, -1.0810f,
+                0.000f,  0.000f,  0.000f,  1.0000f
+            };
+        case AVCOL_SPC_BT2020_NCL:
+        case AVCOL_SPC_BT2020_CL:
+            if (frame.frame()->color_range != AVCOL_RANGE_UNSPECIFIED)
+                return {
+                    1.f,  0.0000f,  1.4746f, -0.7402f,
+                    1.f, -0.1646f, -0.5714f,  0.3694f,
+                    1.f,  1.8814f,  0.000f,  -0.9445f,
+                    0.0f, 0.0000f,  0.000f,   1.0000f
+                };
+            return {
+                1.1644f,  0.000f,   1.6787f, -0.9157f,
+                1.1644f, -0.1874f, -0.6504f,  0.3475f,
+                1.1644f,  2.1418f,  0.0000f, -1.1483f,
+                0.0000f,  0.0000f,  0.0000f,  1.0000f
+            };
     }
 }
 
