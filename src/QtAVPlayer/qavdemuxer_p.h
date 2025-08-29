@@ -67,6 +67,7 @@ public:
     AVFormatContext *avctx() const;
 
     QAVPacket read();
+    int lastError() const;
 
     void decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const;
     void decode(const QAVPacket &pkt, QList<QAVSubtitleFrame> &frames) const;

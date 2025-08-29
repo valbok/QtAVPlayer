@@ -637,6 +637,10 @@ void QAVPlayerPrivate::doDemux()
                     break;
             }
         } else {
+            if (int err = demuxer.lastError()) {
+                setError(QAVPlayer::ResourceError, QLatin1String("av_read_frame: unexpected result: ") + err_str(err));
+                return;
+            }
             if (demuxer.eof()
                 && videoQueue.isEmpty()
                 && audioQueue.isEmpty()
