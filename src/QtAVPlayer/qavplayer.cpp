@@ -618,8 +618,9 @@ void QAVPlayerPrivate::doDemux()
             }
         }
 
-        auto packet = demuxer.read();
-        if (packet.stream()) {
+        QAVPacket packet;
+        int ret = demuxer.read(packet);
+        if (ret >= 0 && packet.stream()) {
             muxer.write(packet);
             endOfFile(false);
             // Empty packet points to EOF and it needs to flush codecs
@@ -637,6 +638,11 @@ void QAVPlayerPrivate::doDemux()
                     break;
             }
         } else {
+            if (ret < 0 && ret != AVERROR_EOF) {
+                setError(QAVPlayer::ResourceError, err_str(ret));
+                break;
+            }
+
             if (demuxer.eof()
                 && videoQueue.isEmpty()
                 && audioQueue.isEmpty()
