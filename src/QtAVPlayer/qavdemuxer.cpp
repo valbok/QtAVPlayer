@@ -108,7 +108,6 @@ public:
     bool eof = false;
     QList<QAVPacket> packets;
     QString bsfs;
-    int lastError = 0;
 };
 
 static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
@@ -684,19 +683,11 @@ QAVPacket QAVDemuxer::read()
 
     QAVPacket pkt;
     bool eof = false;
-    {
-        QMutexLocker locker(&d->mutex);
-        d->lastError = 0;
-    }
     int ret = av_read_frame(d->ctx, pkt.packet());
     if (ret < 0) {
         if (ret == AVERROR_EOF || avio_feof(d->ctx->pb)) {
             eof = true;
         } else {
-            {
-                QMutexLocker locker(&d->mutex);
-                d->lastError = ret;
-            }
             qDebug() << "av_read_frame: unexpected result:" << ret;
             return {};
         }
@@ -720,13 +711,6 @@ QAVPacket QAVDemuxer::read()
         }
     }
     return pkt;
-}
-
-int QAVDemuxer::lastError() const
-{
-    Q_D(const QAVDemuxer);
-    QMutexLocker locker(&d->mutex);
-    return d->lastError;
 }
 
 void QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const
