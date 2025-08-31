@@ -698,7 +698,7 @@ int QAVDemuxer::read(QAVPacket &pkt)
     {
         QMutexLocker locker(&d->mutex);
         d->eof = eof;
-        if (ret >= 0 && pkt.packet()->stream_index < d->availableStreams.size())
+        if ((ret >= 0 || eof) && pkt.packet()->stream_index < d->availableStreams.size())
             pkt.setStream(d->availableStreams[pkt.packet()->stream_index]);
         // Allow EOF to flush BSF (send NULL)
         if ((ret >= 0 || eof) && d->bsf_ctx) {
@@ -713,9 +713,9 @@ int QAVDemuxer::read(QAVPacket &pkt)
             }
             if (!d->packets.isEmpty())
                 pkt = d->packets.takeFirst();
-            else
+            else if (!eof)
                 pkt = QAVPacket();
-        } else if (ret < 0) {
+        } else if (ret < 0 && !eof) {
             pkt = QAVPacket();
         }
     }
