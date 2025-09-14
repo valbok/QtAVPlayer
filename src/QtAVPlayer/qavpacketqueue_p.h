@@ -70,6 +70,8 @@ public:
         delay /= speed;
         const double time = av_gettime_relative() / 1000000.0;
         if (shouldSync) {
+            if (pts < prevPts)
+                return true;
             if (time < frameTimer + delay) {
                 double remaining_time = qMin(frameTimer + delay - time, refreshRate);
                 locker.unlock();
