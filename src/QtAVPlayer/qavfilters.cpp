@@ -19,7 +19,8 @@ QT_BEGIN_NAMESPACE
 int QAVFilters::createFilters(
     const QList<QString> &filterDescs,
     const QAVFrame &frame,
-    const QAVDemuxer &demuxer)
+    const QAVStream &videoStream,
+    const QAVStream &audioStream)
 {
     QMutexLocker locker(&m_mutex);
     m_videoFilters.clear();
@@ -36,11 +37,7 @@ int QAVFilters::createFilters(
             }
             QAVFrame videoFrame;
             QAVFrame audioFrame;
-            const auto videoStreams = demuxer.currentVideoStreams();
-            const auto videoStream = !videoStreams.isEmpty() ? videoStreams.first() : QAVStream();
             videoFrame.setStream(videoStream);
-            const auto audioStreams = demuxer.currentAudioStreams();
-            const auto audioStream = !audioStreams.isEmpty() ? audioStreams.first() : QAVStream();
             audioFrame.setStream(audioStream);
             auto stream = frame.stream().stream();
             if (stream) {
