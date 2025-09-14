@@ -45,6 +45,8 @@ private slots:
     void muxerWriteFrames();
     void muxerWriteSubtitles();
     void muxerEnqueue();
+    void muxerEnqueueFramesFromMultiSources();
+    void muxerEnqueueFramesFromDev();
 };
 
 void tst_QAVDemuxer::construction()
@@ -555,6 +557,100 @@ void tst_QAVDemuxer::muxerEnqueue()
     m.unload();
     d.unload();
     QVERIFY(d.load("colors.mkv") >= 0);
+}
+
+void tst_QAVDemuxer::muxerEnqueueFramesFromMultiSources()
+{
+    QFileInfo file1(testData("colors.mp4"));
+    QFileInfo file2(testData("small.mp4"));
+    QAVDemuxer d1;
+    QAVDemuxer d2;
+    QAVMuxerFrames m;
+
+    QVERIFY(d1.load(file1.absoluteFilePath()) >= 0);
+    QVERIFY(d2.load(file2.absoluteFilePath()) >= 0);
+    auto streams = d1.availableStreams() + d2.availableStreams();
+    QVERIFY(m.load(streams, "colors.mkv") >= 0);
+
+    auto decode = [&](auto &p) {
+        if (!p.stream())
+            return;
+        QList<QAVFrame> fs;
+        QAVDemuxer::decode(p, fs);
+        if (fs.size()) {
+            QVERIFY(fs.size() == 1);
+            auto &f = fs[0];
+            m.enqueue(f);
+        }
+    };
+
+    QAVPacket p1;
+    QAVPacket p2;
+    while (d1.read(p1) >= 0 || d2.read(p2) >= 0) {
+        decode(p1);
+        decode(p2);
+    }
+    QVERIFY(m.flush() >= 0);
+    m.unload();
+    d1.unload();
+    d2.unload();
+    QVERIFY(d1.load("colors.mkv") >= 0);
+    QVERIFY(d1.availableStreams().size() == 4);
+    QVERIFY(d1.availableVideoStreams().size() == 2);
+    QVERIFY(d1.availableAudioStreams().size() == 2);
+}
+
+void tst_QAVDemuxer::muxerEnqueueFramesFromDev()
+{
+    QAVDemuxer d1;
+    QAVDemuxer d2;
+    QAVMuxerFrames m;
+    auto fmts = QAVDemuxer::supportedFormats();
+    QVERIFY(!fmts.isEmpty());
+    QVERIFY(!QAVDemuxer::supportedProtocols().isEmpty());
+    if (!fmts.contains(QLatin1String("v4l2")))
+        return;
+    QFileInfo file1(QLatin1String("/dev/video0"));
+    if (!file1.exists())
+        return;
+
+    d1.setInputFormat(QLatin1String("v4l2"));
+    QVERIFY(d1.load(QLatin1String("/dev/video0")) >= 0);
+    QFileInfo file2(testData("small.mp4"));
+    QVERIFY(d2.load(file2.absoluteFilePath()) >= 0);
+    auto streams = d1.availableStreams() + d2.availableStreams();
+    QVERIFY(m.load(streams, "output.mkv") >= 0);
+
+    auto decode = [&](auto &p) {
+        if (!p.stream())
+            return;
+        QList<QAVFrame> fs;
+        QAVDemuxer::decode(p, fs);
+        if (fs.size()) {
+            QVERIFY(fs.size() == 1);
+            auto &f = fs[0];
+            m.enqueue(f);
+        }
+    };
+
+    QAVPacket p1;
+    QAVPacket p2;
+    while (d1.read(p1) >= 0 && d2.read(p2) >= 0) {
+        decode(p1);
+        decode(p2);
+    }
+
+    QVERIFY(m.flush() >= 0);
+    m.unload();
+    p1 = {};
+    p2 = {};
+    d1.unload();
+    d2.unload();
+    QAVDemuxer d;
+    QVERIFY(d.load("output.mkv") >= 0);
+    QVERIFY(d.availableStreams().size() == 3);
+    QVERIFY(d.availableVideoStreams().size() == 2);
+    QVERIFY(d.availableAudioStreams().size() == 1);
 }
 
 QTEST_MAIN(tst_QAVDemuxer)

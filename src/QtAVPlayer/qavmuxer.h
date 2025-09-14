@@ -46,7 +46,7 @@ protected:
 
     virtual void init(Locker &) = 0;
     int initMuxer(Locker &);
-    virtual int initMuxer(const QAVStream &stream, Locker &) = 0;
+    virtual int initMuxer(const QAVStream &stream, AVStream *out_stream, Locker &) = 0;
     virtual int flushFrames(Locker &) = 0;
     virtual void reset(Locker &);
     void close(Locker &);
@@ -70,7 +70,7 @@ public:
 
 private:
     void init(Locker &) override;
-    int initMuxer(const QAVStream &stream, Locker &) override;
+    int initMuxer(const QAVStream &stream, AVStream *out_stream, Locker &) override;
     int flushFrames(Locker &) override;
     // Need to make a copy of packet
     int write(QAVPacket packet, int streamIndex, Locker &);
@@ -98,8 +98,9 @@ public:
 
 private:
     void init(Locker &) override;
-    int initMuxer(const QAVStream &stream, Locker &) override;
+    int initMuxer(const QAVStream &stream, AVStream *out_stream, Locker &) override;
     // Need to make a copy of frame
+    // streamIndex is needed to flush empty frame
     int write(QAVFrame frame, int streamIndex, Locker &);
     int write(QAVSubtitleFrame frame, int streamIndex, Locker &);
     void stop(Locker &);
