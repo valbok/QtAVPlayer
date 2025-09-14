@@ -19,7 +19,7 @@
 // We mean it.
 //
 
-#include "qavpacket_p.h"
+#include "qavpacket.h"
 #include "qavfilter_p.h"
 #include "qavfiltergraph_p.h"
 #include "qavframe.h"

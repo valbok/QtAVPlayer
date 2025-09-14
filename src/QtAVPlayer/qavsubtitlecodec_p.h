@@ -21,7 +21,7 @@
 
 #include "qavsubtitleframe.h"
 #include "qavcodec_p.h"
-#include "qavpacket_p.h"
+#include "qavpacket.h"
 
 QT_BEGIN_NAMESPACE
 

@@ -11,7 +11,6 @@ PRIVATE_HEADERS += \
     $$PWD/qavsubtitlecodec_p.h \
     $$PWD/qavhwdevice_p.h \
     $$PWD/qavdemuxer_p.h \
-    $$PWD/qavpacket_p.h \
     $$PWD/qavstreamframe_p.h \
     $$PWD/qavframe_p.h \
     $$PWD/qavpacketqueue_p.h \
@@ -34,6 +33,7 @@ PRIVATE_HEADERS += \
 PUBLIC_HEADERS += \
     $$PWD/qaviodevice.h \
     $$PWD/qavaudioformat.h \
+    $$PWD/qavpacket.h \
     $$PWD/qavstreamframe.h \
     $$PWD/qavframe.h \
     $$PWD/qavvideoframe.h \
