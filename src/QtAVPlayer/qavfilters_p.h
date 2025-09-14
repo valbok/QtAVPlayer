@@ -22,7 +22,6 @@
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include "qavframe.h"
 #include "qavfilter_p.h"
-#include "qavdemuxer_p.h"
 #include "qavfiltergraph_p.h"
 #include <QMutex>
 #include <vector>
@@ -37,7 +36,8 @@ public:
     int createFilters(
         const QList<QString> &filterDescs,
         const QAVFrame &frame,
-        const QAVDemuxer &demuxer);
+        const QAVStream &videoStream,
+        const QAVStream &audioStream);
     int write(
         AVMediaType mediaType,
         const QAVFrame &decodedFrame);

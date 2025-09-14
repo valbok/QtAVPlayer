@@ -497,7 +497,13 @@ void QAVPlayerPrivate::applyFilters(bool reset, const QAVFrame &frame)
     if ((filterDescs == filters.filterDescs()) && !reset)
         return;
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << filters.filterDescs() << "->" << filterDescs << "reset:" << reset;
-    int ret = filters.createFilters(filterDescs, frame, demuxer);
+    const auto videoStreams = demuxer.currentVideoStreams();
+    const auto audioStreams = demuxer.currentAudioStreams();
+    int ret = filters.createFilters(
+        filterDescs,
+        frame,
+        !videoStreams.isEmpty() ? videoStreams.first() : QAVStream(),
+        !audioStreams.isEmpty() ? audioStreams.first() : QAVStream());
     if (ret < 0) {
         setError(QAVPlayer::FilterError, QLatin1String("Could not create filters: ") + err_str(ret));
         return;
