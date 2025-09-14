@@ -723,13 +723,6 @@ int QAVDemuxer::read(QAVPacket &pkt)
     return ret;
 }
 
-QAVPacket QAVDemuxer::read()
-{
-    QAVPacket pkt;
-    read(pkt);
-    return pkt;
-}
-
 void QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVFrame> &frames)
 {
     if (!pkt.stream())

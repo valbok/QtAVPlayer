@@ -25,7 +25,6 @@
 #include "qavframe.h"
 #include "qavsubtitleframe.h"
 #include "qavstreamframe.h"
-#include "qavdemuxer_p.h"
 #include <QMutex>
 #include <QWaitCondition>
 #include <QList>
