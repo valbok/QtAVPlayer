@@ -19,7 +19,7 @@
 // We mean it.
 //
 
-#include "qavpacket_p.h"
+#include "qavpacket.h"
 #include "qavstream.h"
 #include "qavframe.h"
 #include "qavsubtitleframe.h"

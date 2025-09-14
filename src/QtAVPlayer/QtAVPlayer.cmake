@@ -35,7 +35,6 @@ set(QtAVPlayer_PRIVATE_HEADERS
     ${QT_AVPLAYER_DIR}/qavsubtitlecodec_p.h
     ${QT_AVPLAYER_DIR}/qavhwdevice_p.h
     ${QT_AVPLAYER_DIR}/qavdemuxer_p.h
-    ${QT_AVPLAYER_DIR}/qavpacket_p.h
     ${QT_AVPLAYER_DIR}/qavstreamframe_p.h
     ${QT_AVPLAYER_DIR}/qavframe_p.h
     ${QT_AVPLAYER_DIR}/qavpacketqueue_p.h
@@ -59,6 +58,7 @@ set(QtAVPlayer_PRIVATE_HEADERS
 set(QtAVPlayer_PUBLIC_HEADERS
     ${QT_AVPLAYER_DIR}/qaviodevice.h
     ${QT_AVPLAYER_DIR}/qavaudioformat.h
+    ${QT_AVPLAYER_DIR}/qavpacket.h
     ${QT_AVPLAYER_DIR}/qavstreamframe.h
     ${QT_AVPLAYER_DIR}/qavframe.h
     ${QT_AVPLAYER_DIR}/qavvideoframe.h

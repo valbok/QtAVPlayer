@@ -8,7 +8,7 @@
 #include "qavvideocodec_p.h"
 #include "qavhwdevice_p.h"
 #include "qavcodec_p_p.h"
-#include "qavpacket_p.h"
+#include "qavpacket.h"
 #include "qavframe.h"
 #include "qavvideoframe.h"
 #include <QDebug>
