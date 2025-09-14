@@ -48,9 +48,9 @@ class QAVPlayerPrivate
 public:
     QAVPlayerPrivate(QAVPlayer *q)
         : q_ptr(q)
-        , videoQueue(AVMEDIA_TYPE_VIDEO, demuxer)
-        , audioQueue(AVMEDIA_TYPE_AUDIO, demuxer)
-        , subtitleQueue(AVMEDIA_TYPE_SUBTITLE, demuxer)
+        , videoQueue(AVMEDIA_TYPE_VIDEO)
+        , audioQueue(AVMEDIA_TYPE_AUDIO)
+        , subtitleQueue(AVMEDIA_TYPE_SUBTITLE)
     {
         threadPool.setMaxThreadCount(4);
     }

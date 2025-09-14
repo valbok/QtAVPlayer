@@ -108,6 +108,7 @@ contains(DEFINES, QT_AVPLAYER_VA_DRM):qtConfig(egl) {
 }
 
 contains(DEFINES, QT_AVPLAYER_VDPAU) {
+    QT += opengl
     PRIVATE_HEADERS += $$PWD/qavhwdevice_vdpau_p.h
     SOURCES += $$PWD/qavhwdevice_vdpau.cpp
 }

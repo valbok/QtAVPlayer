@@ -730,7 +730,7 @@ QAVPacket QAVDemuxer::read()
     return pkt;
 }
 
-void QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const
+void QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVFrame> &frames)
 {
     if (!pkt.stream())
         return;
@@ -754,7 +754,7 @@ void QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVFrame> &frames) const
     } while (sent == AVERROR(EAGAIN));
 }
 
-void QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVSubtitleFrame> &frames) const
+void QAVDemuxer::decode(const QAVPacket &pkt, QList<QAVSubtitleFrame> &frames)
 {
     if (!pkt.stream())
         return;
