@@ -65,9 +65,11 @@ public:
     bool setSubtitleStreams(const QList<QAVStream> &streams);
 
     AVFormatContext *avctx() const;
+    /**
+     * Reads and returns a packet from AVFormatContext
+     * @return AVERROR
+     */
     int read(QAVPacket &pkt);
-
-    QT_DEPRECATED_X("Use read(QAVPacket &outPacket)") QAVPacket read();
 
     static void decode(const QAVPacket &pkt, QList<QAVFrame> &frames);
     static void decode(const QAVPacket &pkt, QList<QAVSubtitleFrame> &frames);
