@@ -1,3 +1,21 @@
+2025-09
+-------
+
+- #543 - Allowed to mux multiple streams to one file from different sources
+- #542 - Made QAVPacket public
+- #541 - Cleanup
+- #540 - Delivered a frame immediately If it has pts in the past.
+         This is usefull when frames are synced from different sources.
+- #539 - Removed demuxer dep from QAVFilters
+- #538 - Removed deprecated `QPacket QDemuxer::read()`
+- #537 - Made QDemuxer::decode static and cleaned up
+- #535 - Fixed EOF handling in QAVDemuxer::read and its usage in QAVPlayer - tangmingcheng <45536906+tangmingcheng@users.noreply.github.com>
+
+2025-06
+-------
+
+- #531 - Fixed the color space for gl widget
+
 2025-04
 -------
 

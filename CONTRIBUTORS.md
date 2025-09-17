@@ -1,5 +1,6 @@
 Special thanks for all the people who had helped this project:
 
+- tangmingcheng <45536906+tangmingcheng@users.noreply.github.com>
 - DevelopRepo <philonenko@gmail.com>
 - Mauricio Ferrari <m10ferrari1200@gmail.com>
 - Alexander Ivash <elderorb@gmail.com>
