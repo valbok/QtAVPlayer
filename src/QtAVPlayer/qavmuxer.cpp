@@ -233,9 +233,10 @@ int QAVMuxerPackets::write(const QAVPacket &packet)
 {
     Q_D(QAVMuxer);
     QMutexLocker locker(&d->mutex);
-    if (!d->loaded)
+    if (!d->loaded || !packet.stream())
         return 0;
-    return write(packet, packet.stream().index(), locker);
+    int index = d->outputStreamIndex(packet.stream(), locker);
+    return write(packet, index, locker);
 }
 
 int QAVMuxerPackets::write(QAVPacket packet, int streamIndex, Locker &)
