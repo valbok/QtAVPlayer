@@ -47,6 +47,8 @@ private slots:
     void muxerEnqueue();
     void muxerEnqueueFramesFromMultiSources();
     void muxerEnqueueFramesFromDev();
+    void muxerWritePacketsFromMultiSources();
+    void muxerWritePacketsFromDev();
 };
 
 void tst_QAVDemuxer::construction()
@@ -651,6 +653,64 @@ void tst_QAVDemuxer::muxerEnqueueFramesFromDev()
     QVERIFY(d.availableStreams().size() == 3);
     QVERIFY(d.availableVideoStreams().size() == 2);
     QVERIFY(d.availableAudioStreams().size() == 1);
+}
+
+void tst_QAVDemuxer::muxerWritePacketsFromMultiSources()
+{
+    QFileInfo file1(testData("colors.mp4"));
+    QFileInfo file2(testData("small.mp4"));
+    QAVDemuxer d1;
+    QAVDemuxer d2;
+    QAVMuxerPackets m;
+
+    QVERIFY(d1.load(file1.absoluteFilePath()) >= 0);
+    QVERIFY(d2.load(file2.absoluteFilePath()) >= 0);
+    auto streams = d1.availableStreams() + d2.availableStreams();
+    QVERIFY(m.load(streams, "colors.mkv") >= 0);
+
+    QAVPacket p1;
+    QAVPacket p2;
+    while (d1.read(p1) >= 0 || d2.read(p2) >= 0) {
+        m.write(p1);
+        m.write(p2);
+    }
+    QVERIFY(m.flush() >= 0);
+    m.unload();
+    d1.unload();
+    d2.unload();
+    QVERIFY(d1.load("colors.mkv") >= 0);
+    QVERIFY(d1.availableStreams().size() == 4);
+    QVERIFY(d1.availableVideoStreams().size() == 2);
+    QVERIFY(d1.availableAudioStreams().size() == 2);
+}
+
+void tst_QAVDemuxer::muxerWritePacketsFromDev()
+{
+    QAVDemuxer d1;
+    QAVMuxerPackets m;
+    auto fmts = QAVDemuxer::supportedFormats();
+    QVERIFY(!fmts.isEmpty());
+    QVERIFY(!QAVDemuxer::supportedProtocols().isEmpty());
+    if (!fmts.contains(QLatin1String("v4l2")))
+        return;
+    QFileInfo file1(QLatin1String("/dev/video0"));
+    if (!file1.exists())
+        return;
+
+    d1.setInputFormat(QLatin1String("v4l2"));
+    d1.setInputVideoCodec("h264");
+    QVERIFY(d1.load(QLatin1String("/dev/video0")) >= 0);
+    auto streams = d1.availableStreams();
+    QVERIFY(m.load(streams, "output.yuv") >= 0);
+
+    QAVPacket p1;
+    int i = 30;
+    while (d1.read(p1) >= 0 && i-- > 0) {
+        m.write(p1);
+    }
+
+    QVERIFY(m.flush() >= 0);
+    // ffmpeg -f rawvideo -pix_fmt yuyv422 -s:v 640x480 -r 25 -i output.yuv -c:v libx264 output.mp4
 }
 
 QTEST_MAIN(tst_QAVDemuxer)
