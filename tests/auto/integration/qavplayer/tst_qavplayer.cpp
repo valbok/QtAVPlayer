@@ -107,6 +107,7 @@ private slots:
     void switchingSource();
     void outputFile();
     void muxerFilters();
+    void muxerMultiSourceFrames();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -3506,6 +3507,37 @@ void tst_QAVPlayer::muxerFilters()
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
     m.unload();
     QVERIFY(m.load(p.availableStreams(), "output.mkv") == 0);
+}
+
+void tst_QAVPlayer::muxerMultiSourceFrames()
+{
+    QAVPlayer p1;
+    QAVPlayer p2;
+    QAVMuxerFrames m;
+    p1.setSynced(false);
+    p1.setSource(QFileInfo(testData("small.mp4")).absoluteFilePath());
+    p2.setSynced(false);
+    p2.setSource(QFileInfo(testData("av_sample.mkv")).absoluteFilePath());
+
+    QObject::connect(&p1, &QAVPlayer::videoFrame, &p1, [&](const QAVVideoFrame &f) { m.enqueue(f); }, Qt::DirectConnection);
+    QObject::connect(&p1, &QAVPlayer::audioFrame, &p1, [&](const QAVAudioFrame &f) { m.enqueue(f); }, Qt::DirectConnection);
+    QObject::connect(&p2, &QAVPlayer::videoFrame, &p2, [&](const QAVVideoFrame &f) { m.enqueue(f); }, Qt::DirectConnection);
+    QObject::connect(&p2, &QAVPlayer::audioFrame, &p2, [&](const QAVAudioFrame &f) { m.enqueue(f); }, Qt::DirectConnection);
+
+    QTRY_VERIFY(p1.mediaStatus() == QAVPlayer::LoadedMedia);
+    QTRY_VERIFY(p2.mediaStatus() == QAVPlayer::LoadedMedia);
+    auto streams = p1.availableStreams() + p2.availableStreams();
+    QVERIFY(m.load(streams, "output.mkv") == 0);
+    p1.play();
+    p2.play();
+    QTRY_VERIFY(p1.mediaStatus() == QAVPlayer::EndOfMedia);
+    QTRY_VERIFY(p2.mediaStatus() == QAVPlayer::EndOfMedia);
+    m.unload();
+    QAVPlayer p;
+    p.setSource("output.mkv");
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia);
+    QVERIFY(!p.availableStreams().isEmpty());
+    QCOMPARE(p.availableStreams().size(), 4);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
