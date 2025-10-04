@@ -1,3 +1,9 @@
+2025-10
+-------
+
+- #547 - Added a test to mux the streams from different players to one file
+- #546 - Added support to mux packets from multiple sources
+
 2025-09
 -------
 

@@ -2,8 +2,8 @@
 ![example workflow](https://github.com/valbok/QtAVPlayer/actions/workflows/main.yaml/badge.svg)
 
 Free and open-source Qt Media Player library based on FFmpeg.
-- Decodes _video_/_audio_/_subtitle_ frames.
-- Encodes and saves to output file.
+- Demuxes and decodes _video_/_audio_/_subtitle_ frames.
+- Muxes, encodes and saves the streams from different sources to one output file.
 - [FFmpeg Bitstream Filters](https://ffmpeg.org/ffmpeg-bitstream-filters.html) and [FFmpeg Filters](https://ffmpeg.org/ffmpeg-filters.html) including `filter_complex`.
 - Multiple parallel filters for one input (one input frame produces multiple outputs).
 - Decoding of all available streams at the same time.
@@ -13,8 +13,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
   Note: Not all Qt's renders support copy-free rendering. Also QtMultimedia does not always provide public API to render the video frames. And, of course, for best performance both decoding and rendering should be accelerated.
   * Audio frames could be played by `QAVAudioOutput` which is a wrapper of QtMultimedia's [QAudioSink](https://doc-snapshots.qt.io/qt6-dev/qaudiosink.html)
 - Accurate seek, it starts playing the closest frame.
-- It is bundled directly into an app.
-- Designed to be as simple and understandable as possible, to share knowledge about creating efficient FFmpeg applications.
+- It is bundled directly into an app, using cmake or qmake.
 - Might be used for media analytics software like [qctools](https://github.com/bavc/qctools) or [dvrescue](https://github.com/mipops/dvrescue).
 - Implements and replaces a combination of FFmpeg and FFplay:
 
@@ -160,7 +159,34 @@ Free and open-source Qt Media Player library based on FFmpeg.
        for (const auto &s : p.availableVideoStreams())
            qDebug() << s << p.progress(s);
 
-9. HW accelerations:
+9. Muxing the streams:
+
+        // Muxes all streams to the file without reencoding the packets.
+        // `QAVMuxerPackets` is used internally.
+        player.setOutput("output.mkv");
+
+        // Multiple players could be used to mux to one files
+        QAVPlayer p1;
+        QAVPlayer p2;
+        QAVMuxerFrames m;
+
+        // Wait until QAVPlayer::LoadedMedia
+        QTRY_VERIFY(p1.mediaStatus() == QAVPlayer::LoadedMedia);
+        QTRY_VERIFY(p2.mediaStatus() == QAVPlayer::LoadedMedia);
+        // Use all available streams from both players
+        auto streams = p1.availableStreams() + p2.availableStreams();
+        // Mux the streams to one file
+        m.load(streams, "output.mkv");
+
+        QObject::connect(&p1, &QAVPlayer::videoFrame, &p1, [&](const QAVVideoFrame &f) { m.enqueue(f); }, Qt::DirectConnection);
+        QObject::connect(&p1, &QAVPlayer::audioFrame, &p1, [&](const QAVAudioFrame &f) { m.enqueue(f); }, Qt::DirectConnection);
+        QObject::connect(&p2, &QAVPlayer::videoFrame, &p2, [&](const QAVVideoFrame &f) { m.enqueue(f); }, Qt::DirectConnection);
+        QObject::connect(&p2, &QAVPlayer::audioFrame, &p2, [&](const QAVAudioFrame &f) { m.enqueue(f); }, Qt::DirectConnection);
+
+        p1.play();
+        p2.play();
+
+10. HW accelerations:
 
    QT_AVPLAYER_NO_HWDEVICE can be used to force using software decoding. The video codec is negotiated automatically.
    
@@ -171,9 +197,9 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
 Note: Not all ffmpeg decoders or filters support HW acceleration. In this case software decoders are used.
 
-10. QtMultimedia could be used to render video frames to QML or Widgets. See [examples](examples)
-11. Widget `QAVWidget_OpenGL` could be used to render to OpenGL. See [examples/widget_video_opengl](examples/widget_video_opengl)
-12. Qt 5.12 - **6**.x is supported
+11. QtMultimedia could be used to render video frames to QML or Widgets. See [examples](examples)
+12. Widget `QAVWidget_OpenGL` could be used to render to OpenGL. See [examples/widget_video_opengl](examples/widget_video_opengl)
+13. Qt 5.12 - **6**.x is supported
 
 # How to build
 
