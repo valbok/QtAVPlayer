@@ -21,6 +21,7 @@
 
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QVariant>
+#include <QSize>
 
 QT_BEGIN_NAMESPACE
 
@@ -36,6 +37,8 @@ public:
     virtual QAVVideoFrame::MapData map() = 0;
     virtual QAVVideoFrame::HandleType handleType() const { return QAVVideoFrame::NoHandle; }
     virtual QVariant handle(QRhi */*rhi*/ = nullptr) const { return {}; }
+    // Returns the size of the frame from internal codec
+    virtual QSize size() const { return m_frame.size(); }
 protected:
     QAVVideoFrame m_frame;
 };
