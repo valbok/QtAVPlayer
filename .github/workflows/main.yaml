@@ -243,6 +243,9 @@ jobs:
           set QT_FORCE_STDERR_LOGGING=1
           set QT_ASSUME_STDERR_HAS_CONSOLE=1
           cd tests/auto/integration/qavdemuxer
+          g++ --version
+          whereis g++
+          ls -l D:\a\QtAVPlayer\Qt\5.15.2\mingw81_64
           qmake
           mingw32-make
           release\tst_qavdemuxer.exe
