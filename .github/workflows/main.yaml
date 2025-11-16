@@ -210,8 +210,7 @@ jobs:
           dir ffmpeg\bin
           SET FFMPEG=%CD%\ffmpeg
           echo FFMPEG=%FFMPEG%>>%GITHUB_ENV%
-          echo LIBRARY_PATH=%FFMPEG%\lib;%FFMPEG%\bin;%PATH%>>%GITHUB_ENV%
-          echo LD_LIBRARY_PATH=%FFMPEG%\lib;%FFMPEG%\bin;%PATH%>>%GITHUB_ENV%
+          echo LIBRARY_PATH=%FFMPEG%\lib;%FFMPEG%\bin>>%GITHUB_ENV%
           echo %FFMPEG%\lib;%FFMPEG%\bin>>%GITHUB_PATH%
           echo INCLUDE=%FFMPEG%\include;%INCLUDE%>>%GITHUB_ENV%
           echo CPLUS_INCLUDE_PATH=%FFMPEG%\include;%CPLUS_INCLUDE_PATH%>>%GITHUB_ENV%
@@ -242,10 +241,9 @@ jobs:
         run: |
           set QT_LOGGING_RULES=qt.QtAVPlayer.debug=true
           set QT_FORCE_STDERR_LOGGING=1
-          set QT_ASSUME_STDERR_HAS_CONSOLE=1          
+          set QT_ASSUME_STDERR_HAS_CONSOLE=1
           cd tests/auto/integration/qavdemuxer
           qmake
-          ls -l
           mingw32-make
           release\tst_qavdemuxer.exe
           cd ../qavplayer
