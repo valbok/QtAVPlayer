@@ -167,9 +167,7 @@ jobs:
         if: ${{ matrix.type == 'MINGW' && matrix.qt_version == '5.15.2' }}
         uses: jurplel/install-qt-action@v3
         with:
-          aqtversion: '==3.1.*'
-          arch: win64_mingw73
-          target: 'desktop'
+          arch: win64_mingw730
           version: ${{ matrix.qt_version }}
 
       - name: Install Qt
