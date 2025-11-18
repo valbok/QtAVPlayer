@@ -505,13 +505,19 @@ QAVVideoFrame::operator QVideoFrame() const
     return QVideoFrame(new PlanarVideoBuffer(result, type), size(), format);
 #else
     QVideoFrameFormat videoFormat(size(), format);
-    
+
     QRect viewport(
         static_cast<int>(frame()->crop_left),
         static_cast<int>(frame()->crop_top),
         static_cast<int>(frame()->width - frame()->crop_left - frame()->crop_right),
         static_cast<int>(frame()->height - frame()->crop_top - frame()->crop_bottom)
     );
+    // Special case when the codec already cropped the frame and need to render only part of the frame
+    auto bufSize = reinterpret_cast<QAVVideoFramePrivate *>(result.d_ptr.get())->videoBuffer().size();
+    if (handleType() == GLTextureHandle && bufSize.height() > size().height() && size().height() == viewport.height()) {
+        auto diff = bufSize.height() - size().height();
+        viewport.setHeight(viewport.height() - diff - 1);
+    }
     videoFormat.setViewport(viewport);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
     videoFormat.setColorSpace(PlanarVideoBuffer::colorSpace(frame()));
