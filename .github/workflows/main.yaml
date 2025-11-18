@@ -246,7 +246,7 @@ jobs:
           ls -l
           set QMAKE_CC=gcc
           set QMAKE_CXX=g++
-          find / -iname g++
+          where g++
           qmake
           mingw32-make
           release\tst_qavdemuxer.exe
