@@ -169,7 +169,6 @@ jobs:
         with:
           arch: win64_mingw81
           version: ${{ matrix.qt_version }}
-          modules: ${{ matrix.qt_modules }}
 
       - name: Install Qt
         if: ${{ matrix.type == 'MINGW' && matrix.qt_version == '6.8.2' }}
@@ -244,6 +243,9 @@ jobs:
           set QT_FORCE_STDERR_LOGGING=1
           set QT_ASSUME_STDERR_HAS_CONSOLE=1
           cd tests/auto/integration/qavdemuxer
+          ls -l
+          set QMAKE_CC=gcc
+          set QMAKE_CC=g++
           qmake
           mingw32-make
           release\tst_qavdemuxer.exe
