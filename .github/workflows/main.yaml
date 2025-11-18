@@ -243,10 +243,9 @@ jobs:
           set QT_FORCE_STDERR_LOGGING=1
           set QT_ASSUME_STDERR_HAS_CONSOLE=1
           cd tests/auto/integration/qavdemuxer
-          ls -l
-          set QMAKE_CC=gcc
-          set QMAKE_CXX=g++
           where g++
+          set QMAKE_CC=C:\mingw64\bin\gcc.exe
+          set QMAKE_CXX=C:\mingw64\bin\g++.exe
           qmake
           mingw32-make
           release\tst_qavdemuxer.exe
