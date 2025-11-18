@@ -165,7 +165,7 @@ jobs:
 
       - name: Install Qt
         if: ${{ matrix.type == 'MINGW' && matrix.qt_version == '5.15.2' }}
-        uses: jurplel/install-qt-action@v4
+        uses: jurplel/install-qt-action@v3
         with:
           arch: win64_mingw81
           version: ${{ matrix.qt_version }}
@@ -245,7 +245,8 @@ jobs:
           cd tests/auto/integration/qavdemuxer
           ls -l
           set QMAKE_CC=gcc
-          set QMAKE_CC=g++
+          set QMAKE_CXX=g++
+          find / -iname g++
           qmake
           mingw32-make
           release\tst_qavdemuxer.exe
