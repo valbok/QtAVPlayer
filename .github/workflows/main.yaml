@@ -244,13 +244,11 @@ jobs:
           set QT_ASSUME_STDERR_HAS_CONSOLE=1
           cd tests/auto/integration/qavdemuxer
           where g++
-          set QMAKE_CC=C:\mingw64\bin\gcc.exe
-          set QMAKE_CXX=C:\mingw64\bin\g++.exe
-          qmake
+          qmake QMAKE_CC=C:\mingw64\bin\gcc.exe QMAKE_CXX=C:\mingw64\bin\g++.exe
           mingw32-make
           release\tst_qavdemuxer.exe
           cd ../qavplayer
-          qmake
+          qmake QMAKE_CC=C:\mingw64\bin\gcc.exe QMAKE_CXX=C:\mingw64\bin\g++.exe
           mingw32-make
           release\tst_qavplayer.exe -maxwarnings 100000
 
