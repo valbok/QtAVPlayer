@@ -1,0 +1,139 @@
+/*********************************************************
+ * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
+ *                                                       *
+ * This file is part of QtAVPlayer.                      *
+ * Free Qt Media Player based on FFmpeg.                 *
+ *********************************************************/
+
+#ifndef QTAVPLAYERGLOBAL_H
+#define QTAVPLAYERGLOBAL_H
+
+#include <QtGlobal>
+
+#if defined(QT_AVPLAYER_VA_DRM)
+#   include <QtGui/private/qtgui-config_p.h>
+#endif
+
+/**********************************
+ * Library informations
+ *********************************/
+#define QTAVPLAYER_INFO_ID     "@PROJECT_NAME@"
+#define QTAVPLAYER_INFO_NAME   "@PRJ_READABLE_NAME@"
+
+/**********************************
+ * Version management
+ *********************************/
+
+/*!
+ * \brief Use to perform compilation version comparaisons
+ * \details
+ * For example:
+ * \code{.cpp}
+ * #if QTAVPLAYER_VERSION >= QTAVPLAYER_VERSION_ENCODE(1,0,0)
+ *     // Do stuff for version 1.0.0 or higher
+ * #else
+ *     // Do stuff for version 0.0.x
+ * #endif
+ * \endcode
+ */
+#define QTAVPLAYER_VERSION_ENCODE(major, minor, path)    ((major) * 10000 + (minor) * 100 + (patch))
+
+#define QTAVPLAYER_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define QTAVPLAYER_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define QTAVPLAYER_VERSION_PATCH @PROJECT_VERSION_PATCH@
+#define QTAVPLAYER_VERSION       QTAVPLAYER_VERSION_ENCODE(QTAVPLAYER_VERSION_MAJOR, QTAVPLAYER_VERSION_MINOR, QTAVPLAYER_VERSION_PATCH)
+#define QTAVPLAYER_VERSION_STR   "@PROJECT_VERSION@"
+
+/*!
+ * \cond INTERNAL
+ */
+
+/**********************************
+ * Library management
+ *********************************/
+#if defined(QTAVPLAYER_LIBRARY_BUILD)
+#  define QTAVPLAYER_EXPORT Q_DECL_EXPORT
+#else
+#  define QTAVPLAYER_EXPORT Q_DECL_IMPORT
+#endif
+
+/**********************************
+ * Deprecations warnings
+ *********************************/
+#define QTAVPLAYER_DEPREC              [[deprecated]]          /**< Use to mark a method as deprecated. \n\code{.cpp}QTAVPLAYER_DEPREC void myOldFct(); \endcode */
+#define QTAVPLAYER_DEPREC_X(reason)    [[deprecated(reason)]] 	/**< Use to mark a method as deprecated and specify a reason. \n\code{.cpp}QTAVPLAYER_DEPREC_X("Use myNewFct() instead") void myOldFunc(); \endcode */
+
+/**********************************
+ * Custom macros used to detect custom
+ * built-in functions
+ * Sources:
+ * - MSVC: No equivalent
+ * - GCC: https://gcc.gnu.org/onlinedocs/gcc-13.2.0/cpp/_005f_005fhas_005fbuiltin.html
+ * - Clang: https://clang.llvm.org/docs/LanguageExtensions.html#has-builtin
+ *********************************/
+#if defined(__GNUC__) || defined(__clang__)
+#   define QTAVPLAYER_BUILTIN(x)  __has_builtin(x)
+#else
+#   define QTAVPLAYER_BUILTIN(x)  0
+#endif
+
+/**********************************
+ * Custom macros in order to
+ * not trigger warning on expected
+ * behaviour
+ *********************************/
+#define QTAVPLAYER_FALLTHROUGH  [[fallthrough]]    /**< Indicates that the fall through from the previous case label is intentional and should not be diagnosed by a compiler that warns on fallthrough */
+
+/**********************************
+ * Context informations
+ *********************************/
+#define QTAVPLAYER_FILE            __FILE__
+#define QTAVPLAYER_LINE            __LINE__
+#define QTAVPLAYER_FCTNAME         __func__
+
+#define QTAVPLAYER_FCTSIG          Q_FUNC_INFO
+
+/**********************************
+ * Variables attributes
+ *********************************/
+#define QTAVPLAYER_VAR_MAYBE_UNUSED    [[maybe_unused]]
+#define QTAVPLAYER_VAR_UNUSED          QTAVPLAYER_VAR_MAYBE_UNUSED
+
+/**********************************
+ * Classes behaviours
+ *********************************/
+#define QTAVPLAYER_DISABLE_COPY(Class) \
+    Q_DISABLE_COPY(Class)
+
+#define QTAVPLAYER_DISABLE_MOVE(Class) \
+    Q_DISABLE_MOVE(Class)
+
+#define QTAVPLAYER_DISABLE_COPY_MOVE(Class) \
+    Q_DISABLE_COPY_MOVE(Class)
+
+/**********************************
+ * Qt Compatibility workaround
+ *********************************/
+
+ #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#   define QTAVPLAYER_QTCOMPAT_VARIANT_TYPE(var)    (var.type())
+#else
+#   define QTAVPLAYER_QTCOMPAT_VARIANT_TYPE(var)    (var.metaType())
+#endif
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
+#   define QTAVPLAYER_QTCOMPAT_STR_VIEW const QString&
+#else
+#   define QTAVPLAYER_QTCOMPAT_STR_VIEW QAnyStringView
+#endif
+
+/**********************************
+ * Helpers
+ *********************************/
+#define QTAVPLAYER_E2I(enumValue)  (static_cast<int>(enumValue))
+
+/*!
+ * \endcond
+ */
+
+#endif // QTAVPLAYERGLOBAL_H
