@@ -22,6 +22,7 @@
 #include "qavfilter_p.h"
 #include "qavvideoinputfilter_p.h"
 #include "qavvideooutputfilter_p.h"
+
 #include <QMutex>
 
 QT_BEGIN_NAMESPACE

@@ -19,9 +19,10 @@
 // We mean it.
 //
 
-#include "qavpacket.h"
-#include "qavframe.h"
-#include <QtAVPlayer/qtavplayerglobal.h>
+#include "qtavplayer/qavpacket.h"
+#include "qtavplayer/qavframe.h"
+#include <qtavplayer/qtavplayerglobal.h>
+
 #include <memory>
 
 extern "C" {

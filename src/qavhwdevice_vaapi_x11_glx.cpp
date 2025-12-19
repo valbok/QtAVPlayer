@@ -5,10 +5,12 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
+#include "qtavplayer/qavstream.h"
+
 #include "qavhwdevice_vaapi_x11_glx_p.h"
 #include "qavvideocodec_p.h"
-#include "qavstream.h"
 #include "qavvideobuffer_gpu_p.h"
+
 #include <QDebug>
 
 #include <GL/glx.h>

@@ -19,9 +19,10 @@
 // We mean it.
 //
 
-#include "qavframe.h"
+#include "qtavplayer/qavframe.h"
+#include "qtavplayer/qavpacket.h"
+
 #include "qavcodec_p.h"
-#include "qavpacket.h"
 
 QT_BEGIN_NAMESPACE
 

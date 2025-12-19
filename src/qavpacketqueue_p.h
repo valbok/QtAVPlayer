@@ -19,15 +19,18 @@
 // We mean it.
 //
 
-#include "qavpacket.h"
+#include "qtavplayer/qavframe.h"
+#include "qtavplayer/qavpacket.h"
+#include "qtavplayer/qavstreamframe.h"
+#include "qtavplayer/qavsubtitleframe.h"
+
 #include "qavfilter_p.h"
 #include "qavfiltergraph_p.h"
-#include "qavframe.h"
-#include "qavsubtitleframe.h"
-#include "qavstreamframe.h"
+
 #include <QMutex>
 #include <QWaitCondition>
 #include <QList>
+
 #include <math.h>
 #include <memory>
 

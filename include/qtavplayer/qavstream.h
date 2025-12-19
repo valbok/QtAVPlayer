@@ -8,9 +8,11 @@
 #ifndef QAVSTREAM_H
 #define QAVSTREAM_H
 
-#include <QtAVPlayer/qtavplayerglobal.h>
+#include <qtavplayer/qtavplayerglobal.h>
+
 #include <QMap>
 #include <QSharedPointer>
+
 #include <memory>
 
 QT_BEGIN_NAMESPACE

@@ -19,8 +19,8 @@
 // We mean it.
 //
 
-#include "qavvideoframe.h"
-#include "qtavplayerglobal.h"
+#include "qtavplayer/qavvideoframe.h"
+#include "qtavplayer/qtavplayerglobal.h"
 
 extern "C" {
 #include <libavformat/avformat.h>

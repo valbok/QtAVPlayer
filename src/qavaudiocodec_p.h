@@ -20,7 +20,7 @@
 //
 
 #include "qavframecodec_p.h"
-#include "qavaudioformat.h"
+#include "qtavplayer/qavaudioformat.h"
 
 QT_BEGIN_NAMESPACE
 

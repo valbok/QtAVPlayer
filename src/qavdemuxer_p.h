@@ -19,10 +19,11 @@
 // We mean it.
 //
 
-#include "qavpacket.h"
-#include "qavstream.h"
-#include "qavframe.h"
-#include "qavsubtitleframe.h"
+#include "qtavplayer/qavpacket.h"
+#include "qtavplayer/qavstream.h"
+#include "qtavplayer/qavframe.h"
+#include "qtavplayer/qavsubtitleframe.h"
+
 #include <QMap>
 #include <memory>
 

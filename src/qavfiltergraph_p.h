@@ -19,14 +19,16 @@
 // We mean it.
 //
 
+#include <qtavplayer/qtavplayerglobal.h>
+#include <qtavplayer/qavframe.h>
+#include <qtavplayer/qavvideoframe.h>
+#include <qtavplayer/qavaudioframe.h>
+
 #include "qavvideoinputfilter_p.h"
 #include "qavvideooutputfilter_p.h"
 #include "qavaudioinputfilter_p.h"
 #include "qavaudiooutputfilter_p.h"
-#include <QtAVPlayer/qtavplayerglobal.h>
-#include <QtAVPlayer/qavframe.h>
-#include <QtAVPlayer/qavvideoframe.h>
-#include <QtAVPlayer/qavaudioframe.h>
+
 #include <QMutex>
 #include <memory>
 

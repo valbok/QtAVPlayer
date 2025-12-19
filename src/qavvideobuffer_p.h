@@ -19,7 +19,7 @@
 // We mean it.
 //
 
-#include <QtAVPlayer/qavvideoframe.h>
+#include <qtavplayer/qavvideoframe.h>
 #include <QVariant>
 #include <QSize>
 
