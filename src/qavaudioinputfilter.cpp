@@ -10,10 +10,12 @@
 #endif
 #include <inttypes.h>
 
-#include "qavframe.h"
+#include "qtavplayer/qavframe.h"
+
 #include "qavaudioinputfilter_p.h"
 #include "qavinoutfilter_p_p.h"
 #include "qavdemuxer_p.h"
+
 #include <QDebug>
 
 extern "C" {

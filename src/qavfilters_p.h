@@ -19,10 +19,12 @@
 // We mean it.
 //
 
-#include <QtAVPlayer/qtavplayerglobal.h>
-#include "qavframe.h"
+#include <qtavplayer/qtavplayerglobal.h>
+#include "qtavplayer/qavframe.h"
+
 #include "qavfilter_p.h"
 #include "qavfiltergraph_p.h"
+
 #include <QMutex>
 #include <vector>
 #include <memory>

@@ -8,7 +8,7 @@
 #ifndef QAVFSUBTITLERAME_H
 #define QAVFSUBTITLERAME_H
 
-#include <QtAVPlayer/qavstreamframe.h>
+#include <qtavplayer/qavstreamframe.h>
 
 QT_BEGIN_NAMESPACE
 

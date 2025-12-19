@@ -8,7 +8,7 @@
 #ifndef QAVFAUDIOCONVERTER_H
 #define QAVFAUDIOCONVERTER_H
 
-#include <QtAVPlayer/qavaudioframe.h>
+#include <qtavplayer/qavaudioframe.h>
 
 QT_BEGIN_NAMESPACE
 

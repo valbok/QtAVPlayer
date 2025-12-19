@@ -5,7 +5,8 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#include "qaviodevice.h"
+#include "qtavplayer/qaviodevice.h"
+
 #include <QMutex>
 #include <QWaitCondition>
 

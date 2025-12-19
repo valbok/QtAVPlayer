@@ -8,7 +8,8 @@
 #ifndef QAVFVIDEORAME_H
 #define QAVFVIDEORAME_H
 
-#include <QtAVPlayer/qavframe.h>
+#include <qtavplayer/qavframe.h>
+
 #include <QVariant>
 #ifdef QT_AVPLAYER_MULTIMEDIA
 #include <QVideoFrame>

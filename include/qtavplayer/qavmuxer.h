@@ -8,10 +8,12 @@
 #ifndef QAVMUXER_H
 #define QAVMUXER_H
 
-#include <QtAVPlayer/qavstream.h>
-#include <QtAVPlayer/qavframe.h>
-#include <QtAVPlayer/qavsubtitleframe.h>
+#include <qtavplayer/qavstream.h>
+#include <qtavplayer/qavframe.h>
+#include <qtavplayer/qavsubtitleframe.h>
+
 #include <QMutexLocker>
+
 #include <memory>
 
 QT_BEGIN_NAMESPACE

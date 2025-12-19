@@ -8,9 +8,11 @@
 #ifndef QAVWIDGET_OPENGL_H
 #define QAVWIDGET_OPENGL_H
 
-#include "qavvideoframe.h"
+#include "qtavplayer/qavvideoframe.h"
+
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions_3_0>
+
 #include <memory>
 
 QT_BEGIN_NAMESPACE

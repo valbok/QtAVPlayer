@@ -19,8 +19,9 @@
 // We mean it.
 //
 
-#include <QtAVPlayer/qavframe.h>
-#include <QtAVPlayer/qavstream.h>
+#include <qtavplayer/qavframe.h>
+#include <qtavplayer/qavstream.h>
+
 #include <QList>
 #include <QMutex>
 

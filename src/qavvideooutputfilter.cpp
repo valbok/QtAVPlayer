@@ -7,6 +7,7 @@
 
 #include "qavvideooutputfilter_p.h"
 #include "qavinoutfilter_p_p.h"
+
 #include <QDebug>
 
 extern "C" {
