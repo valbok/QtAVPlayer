@@ -29,7 +29,7 @@ class QAVPacket;
  * Allows to mux and write the input streams to output file
  */
 class QAVMuxerPrivate;
-class QAVMuxer
+class QTAVPLAYER_EXPORT QAVMuxer
 {
 public:
     virtual ~QAVMuxer();

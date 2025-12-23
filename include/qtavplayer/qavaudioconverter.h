@@ -13,7 +13,7 @@
 QT_BEGIN_NAMESPACE
 
 class QAVAudioConverterPrivate;
-class QAVAudioConverter
+class QTAVPLAYER_EXPORT QAVAudioConverter
 {
 public:
     QAVAudioConverter();
