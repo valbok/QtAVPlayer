@@ -21,7 +21,7 @@ struct AVStream;
 struct AVFormatContext;
 class QAVCodec;
 class QAVStreamPrivate;
-class QAVStream
+class QTAVPLAYER_EXPORT QAVStream
 {
 public:
     QAVStream();

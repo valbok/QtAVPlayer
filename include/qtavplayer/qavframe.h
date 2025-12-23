@@ -16,7 +16,7 @@ QT_BEGIN_NAMESPACE
 struct AVFrame;
 struct AVRational;
 class QAVFramePrivate;
-class QAVFrame : public QAVStreamFrame
+class QTAVPLAYER_EXPORT QAVFrame : public QAVStreamFrame
 {
 public:
     QAVFrame();

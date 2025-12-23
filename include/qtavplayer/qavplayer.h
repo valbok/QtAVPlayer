@@ -23,7 +23,7 @@ QT_BEGIN_NAMESPACE
 struct AVFormatContext;
 class QAVIODevice;
 class QAVPlayerPrivate;
-class QAVPlayer : public QObject
+class QTAVPLAYER_EXPORT QAVPlayer : public QObject
 {
     Q_OBJECT
     Q_ENUMS(State)

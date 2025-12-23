@@ -17,7 +17,7 @@
 QT_BEGIN_NAMESPACE
 
 class QAVAudioOutputPrivate;
-class QAVAudioOutput : public QObject
+class QTAVPLAYER_EXPORT QAVAudioOutput : public QObject
 {
     Q_OBJECT
 public:

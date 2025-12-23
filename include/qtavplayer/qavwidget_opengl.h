@@ -18,7 +18,7 @@
 QT_BEGIN_NAMESPACE
 
 class QAVWidget_OpenGLPrivate;
-class QAVWidget_OpenGL : public QOpenGLWidget, public QOpenGLFunctions_3_0
+class QTAVPLAYER_EXPORT QAVWidget_OpenGL : public QOpenGLWidget, public QOpenGLFunctions_3_0
 {
     Q_OBJECT
 public:
