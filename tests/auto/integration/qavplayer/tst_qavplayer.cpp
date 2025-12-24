@@ -5,20 +5,22 @@
  * Free Qt Media Player based on FFmpeg.                       *
  ***************************************************************/
 
-#include "qavplayer.h"
-#include "qavmuxer.h"
-#include "qavaudiooutput.h"
-#include "qaviodevice.h"
+#include "qtavplayer/qavplayer.h"
+#include "qtavplayer/qavaudiooutput.h"
+#include "qtavplayer/qaviodevice.h"
+#include "qtavplayer/qavmuxer.h"
 
 #include <QDebug>
-#include <QtTest/QtTest>
+#include <QSignalSpy>
+#include <QTest>
+#include <QThreadPool>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
 }
 
-#ifndef TEST_DATA_DIR
-#define TEST_DATA_DIR "../testdata"
+#ifndef QAVPLAYER_TESTS_DIR_EXTERNAL_RSC
+#   error "Macro QAVPLAYER_TESTS_DIR_EXTERNAL_RSC is not defined, please set it"
 #endif
 
 QT_USE_NAMESPACE
@@ -28,7 +30,7 @@ class tst_QAVPlayer : public QObject
     Q_OBJECT
 public slots:
     void initTestCase();
-    QString testData(const QString &fn) { return QLatin1String(TEST_DATA_DIR) + "/" + fn; }
+    QString testData(const QString &fn) { return QLatin1String(QAVPLAYER_TESTS_DIR_EXTERNAL_RSC) + "/" + fn; }
 private slots:
     void construction();
     void sourceChanged();

@@ -29,7 +29,6 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 # Define project options
-# Example: option(QTAVPLAYER_BUILD_TESTS "Use to enable/disable build of unit-tests." ON)
 option(QTAVPLAYER_MULTIMEDIA                "Use to enable/disable QtMultimedia support" OFF)
 option(QTAVPLAYER_WIDGET_OPENGL             "Use to enable/disable OpenGL widget support" OFF)
 
@@ -424,11 +423,6 @@ target_include_directories(${PROJECT_NAME}
         ${PROJECT_DIR_PRIV_SOURCES}         # Internal headers, only for internal use
         ${QT_DIR_PRIV_SOURCES}              # Private Qt headers
 )
-
-# Do we need to build tests ?
-if(QTAVPLAYER_BUILD_TESTS)
-    add_subdirectory(tests)
-endif()
 
 # Add linker specific flags due to FFMPEG.
 # For more details, please refer to:
