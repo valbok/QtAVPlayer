@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 # Set project properties
-set(PROJECT_NAME "qtavplayer-widget-video")
+set(PROJECT_NAME "qtavplayer-extract-frames")
 set(PROJECT_VERSION_CPP_MIN 17)
 
 # Set project configuration
@@ -28,8 +28,6 @@ message(STATUS "Project \"${PROJECT_NAME}\" compiled with C++ standard ${CMAKE_C
 ## Qt packages
 set(PROJECT_QT_PACKAGES
     Core
-    Multimedia
-    MultimediaWidgets
 )
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS ${PROJECT_QT_PACKAGES} REQUIRED)
