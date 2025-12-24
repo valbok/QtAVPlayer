@@ -303,6 +303,8 @@ if((CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND QTAVPLAYER_HW_SUPPORT_MACOS) OR (CMA
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_package(PkgConfig REQUIRED)
+
     if(QTAVPLAYER_HW_SUPPORT_LINUX_VA_DRM)
         message(STATUS "Project \"${PROJECT_NAME}\" have enabled accelerated hardware support for \"Linux va-drm\" systems")
 
@@ -318,10 +320,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
             "QT_AVPLAYER_VA_DRM"
         )
 
+        pkg_check_modules(LIBVA REQUIRED libva)
+        find_package(OpenGL REQUIRED COMPONENTS EGL GLES2)
+        set(PROJECT_LINKING_DIR ${PROJECT_LINKING_DIR}
+            ${LIBVA_INCLUDE_DIRS}
+        )
+
         set(PROJECT_LINKING_LIB ${PROJECT_LINKING_LIB}
-            EGL
-            va      #libva
-            va-drm
+            ${LIBVA_LIBRARIES}
+            OpenGL::EGL
+            OpenGL::GLES2
         )
     endif()
 

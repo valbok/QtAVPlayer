@@ -5,20 +5,19 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#include "qtavplayer/qavstream.h"
-
 #include "qavhwdevice_vaapi_drm_egl_p.h"
+
 #include "qavvideocodec_p.h"
 #include "qavvideobuffer_gpu_p.h"
 
 #include <QDebug>
 
+#include <drm/drm_fourcc.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
 #include <va/va_drmcommon.h>
-#include <drm/drm_fourcc.h>
 
 extern "C" {
 #include <libavutil/hwcontext_vaapi.h>
