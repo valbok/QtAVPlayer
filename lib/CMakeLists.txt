@@ -348,9 +348,19 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
             "QT_AVPLAYER_VA_X11"
         )
 
+        pkg_check_modules(LIBVA REQUIRED libva)
+        pkg_check_modules(LIBVA_X11 REQUIRED libva-x11)
+        pkg_check_modules(X11 REQUIRED x11)
+        set(PROJECT_LINKING_DIR ${PROJECT_LINKING_DIR}
+            ${LIBVA_INCLUDE_DIRS}
+            ${LIBVA_X11_INCLUDE_DIRS}
+            ${X11_INCLUDE_DIRS}
+        )
+
         set(PROJECT_LINKING_LIB ${PROJECT_LINKING_LIB}
-            va      #libva
-            va-x11
+            ${LIBVA_LIBRARIES}
+            ${LIBVA_X11_LIBRARIES}
+            ${X11_LIBRARIES}
         )
     endif()
 
