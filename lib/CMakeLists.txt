@@ -378,6 +378,17 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         set(PROJECT_DEFS_PRIV ${PROJECT_DEFS_PRIV}
             "QT_AVPLAYER_VDPAU"
         )
+
+        pkg_check_modules(VDPAU REQUIRED vdpau)
+        find_package(OpenGL REQUIRED)
+        set(PROJECT_LINKING_DIR ${PROJECT_LINKING_DIR}
+            ${VDPAU_INCLUDE_DIRS}
+        )
+
+        set(PROJECT_LINKING_LIB ${PROJECT_LINKING_LIB}
+            ${VDPAU_LIBRARIES}
+            OpenGL::GL
+        )
     endif()
 endif()
 
