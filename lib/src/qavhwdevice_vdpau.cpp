@@ -6,8 +6,10 @@
  *********************************************************/
 
 #include "qavhwdevice_vdpau_p.h"
-#include "qavvideocodec_p.h"
+
 #include "qavvideobuffer_gpu_p.h"
+#include "qavvideocodec_p.h"
+
 #include <QDebug>
 
 #include <GL/glx.h>
