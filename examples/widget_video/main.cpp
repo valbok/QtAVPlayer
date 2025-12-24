@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 #endif
 
     QAVPlayer p;
-    QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QString::fromLatin1("http://archive.org/download/big-bunny-sample-video/SampleVideo.ia.mp4");
+    QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QString::fromLatin1("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
     p.setSource(file);
     p.play();
     //p.seek(55000);

@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     w.show();
 
     QAVPlayer p;
-    QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QString::fromLatin1("http://archive.org/download/big-bunny-sample-video/SampleVideo.ia.mp4");
+    QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QString::fromLatin1("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
     p.setSource(file);
 
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
