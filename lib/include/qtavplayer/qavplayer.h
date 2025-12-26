@@ -26,9 +26,6 @@ class QAVPlayerPrivate;
 class QTAVPLAYER_EXPORT QAVPlayer : public QObject
 {
     Q_OBJECT
-    Q_ENUMS(State)
-    Q_ENUMS(MediaStatus)
-    Q_ENUMS(Error)
 
 public:
     enum State
@@ -37,6 +34,7 @@ public:
         PlayingState,
         PausedState
     };
+    Q_ENUM(State)
 
     enum MediaStatus
     {
@@ -45,6 +43,7 @@ public:
         EndOfMedia,
         InvalidMedia
     };
+    Q_ENUM(MediaStatus)
 
     enum Error
     {
@@ -52,7 +51,9 @@ public:
         ResourceError,
         FilterError
     };
+    Q_ENUM(Error)
 
+public:
     QAVPlayer(QObject *parent = nullptr);
     ~QAVPlayer();
 
@@ -172,14 +173,10 @@ private:
 };
 
 #ifndef QT_NO_DEBUG_STREAM
-QDebug operator<<(QDebug, QAVPlayer::State);
-QDebug operator<<(QDebug, QAVPlayer::MediaStatus);
-QDebug operator<<(QDebug, QAVPlayer::Error);
+QTAVPLAYER_EXPORT QDebug operator<<(QDebug, QAVPlayer::State);
+QTAVPLAYER_EXPORT QDebug operator<<(QDebug, QAVPlayer::MediaStatus);
+QTAVPLAYER_EXPORT QDebug operator<<(QDebug, QAVPlayer::Error);
 #endif
-
-Q_DECLARE_METATYPE(QAVPlayer::State)
-Q_DECLARE_METATYPE(QAVPlayer::MediaStatus)
-Q_DECLARE_METATYPE(QAVPlayer::Error)
 
 QT_END_NAMESPACE
 
