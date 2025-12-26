@@ -58,6 +58,7 @@ message(STATUS "Project \"${PROJECT_NAME}\" compiled with C++ standard ${CMAKE_C
 find_package(FFMPEG 7.0.0 REQUIRED)
 
 ## Qt packages
+find_package(QT NAMES Qt6 Qt5)  # Load Qt CMake specific cfg (allow to have access to ${QT_VERSION_MAJOR} for example)
 set(PROJECT_QT_PACKAGES
     Core
     Gui
@@ -70,28 +71,28 @@ if(QTAVPLAYER_MULTIMEDIA)
 endif()
 
 if(QTAVPLAYER_WIDGET_OPENGL)
-    set(PROJECT_QT_PACKAGES ${PROJECT_QT_PACKAGES}
-        OpenGLWidgets
-    )
+    if(${QT_VERSION_MAJOR} EQUAL 6)
+        set(PROJECT_QT_PACKAGES ${PROJECT_QT_PACKAGES}
+            OpenGLWidgets
+        )
+
+    else()
+        set(PROJECT_QT_PACKAGES ${PROJECT_QT_PACKAGES}
+            Widgets
+        )
+
+    endif()
 endif()
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS ${PROJECT_QT_PACKAGES} REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${PROJECT_QT_PACKAGES} REQUIRED)
-
 list(TRANSFORM PROJECT_QT_PACKAGES PREPEND "Qt${QT_VERSION_MAJOR}::")
 
 ## Qt private packages
 if(QTAVPLAYER_MULTIMEDIA)
     if(${QT_VERSION_MAJOR} EQUAL 6)
-        message(STATUS "Project \"${PROJECT_NAME}\" compiled with Qt6 toolchain")
         set(QT_DIR_PRIV_SOURCES ${Qt6Multimedia_PRIVATE_INCLUDE_DIRS})
-
-    elseif(${QT_VERSION_MAJOR} EQUAL 5)
-        message(STATUS "Project \"${PROJECT_NAME}\" compiled with Qt5 toolchain")
+    else(${QT_VERSION_MAJOR} EQUAL 5)
         set(QT_DIR_PRIV_SOURCES ${Qt5Multimedia_PRIVATE_INCLUDE_DIRS})
-
-    else()
-        message(FATAL_ERROR "Project ${PROJECT_NAME} only support Qt5 or Qt6 toolchains, found Qt${QT_VERSION_MAJOR} toolchain")
     endif()
 endif()
 

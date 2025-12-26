@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
+set(PROJECT_NAME "qtavplayer-root")
+project(${PROJECT_NAME})
+
 option(QTAVPLAYER_BUILD_EXAMPLES    "Use to enable/disable examples build" OFF)
 option(QTAVPLAYER_BUILD_TESTS       "Use to enable/disable tests build" OFF)
 

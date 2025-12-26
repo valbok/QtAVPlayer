@@ -61,7 +61,7 @@ protected:
 /**
  * Remuxes the same packets from demuxer
  */
-class QAVMuxerPackets : public QAVMuxer
+class QTAVPLAYER_EXPORT QAVMuxerPackets : public QAVMuxer
 {
 public:
     QAVMuxerPackets() = default;
@@ -82,7 +82,7 @@ private:
  * Reencodes the frames using the same encoder
  */
 class QAVMuxerFramesPrivate;
-class QAVMuxerFrames : public QAVMuxer
+class QTAVPLAYER_EXPORT QAVMuxerFrames : public QAVMuxer
 {
 public:
     QAVMuxerFrames();

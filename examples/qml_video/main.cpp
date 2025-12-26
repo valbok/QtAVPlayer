@@ -10,6 +10,7 @@
 #include "qtavplayer/qavmuxer.h"
 #include "qtavplayer/qavplayer.h"
 
+#include <QElapsedTimer>
 #include <QFile>
 #include <QGuiApplication>
 #include <QQmlEngine>

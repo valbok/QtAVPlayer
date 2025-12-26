@@ -26,30 +26,32 @@ message(STATUS "Project \"${PROJECT_NAME}\" compiled with C++ standard ${CMAKE_C
 
 # Set needed packages
 ## Qt packages
+find_package(QT NAMES Qt6 Qt5)  # Load Qt CMake specific cfg (allow to have access to ${QT_VERSION_MAJOR} for example)
 set(PROJECT_QT_PACKAGES
     Core
     Gui
     Multimedia
-    MultimediaQuickPrivate
     Quick
 )
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS ${PROJECT_QT_PACKAGES} REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${PROJECT_QT_PACKAGES} REQUIRED)
+if(${QT_VERSION_MAJOR} EQUAL 6)
+    set(PROJECT_QT_PACKAGES ${PROJECT_QT_PACKAGES}
+        MultimediaQuickPrivate
+    )
+else()
+    set(PROJECT_QT_PACKAGES ${PROJECT_QT_PACKAGES}
+        MultimediaQuick
+    )
+endif()
 
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${PROJECT_QT_PACKAGES} REQUIRED)
 list(TRANSFORM PROJECT_QT_PACKAGES PREPEND "Qt${QT_VERSION_MAJOR}::")
 
 ## Qt private packages
 if(${QT_VERSION_MAJOR} EQUAL 6)
-    message(STATUS "Project \"${PROJECT_NAME}\" compiled with Qt6 toolchain")
     set(QT_DIR_PRIV_SOURCES ${Qt6MultimediaQuick_PRIVATE_INCLUDE_DIRS})
-
-elseif(${QT_VERSION_MAJOR} EQUAL 5)
-    message(STATUS "Project \"${PROJECT_NAME}\" compiled with Qt5 toolchain")
-    set(QT_DIR_PRIV_SOURCES ${Qt5MultimediaQuick_PRIVATE_INCLUDE_DIRS})
-
 else()
-    message(FATAL_ERROR "Project ${PROJECT_NAME} only support Qt5 or Qt6 toolchains, found Qt${QT_VERSION_MAJOR} toolchain")
+    set(QT_DIR_PRIV_SOURCES ${Qt5MultimediaQuick_PRIVATE_INCLUDE_DIRS})
 endif()
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

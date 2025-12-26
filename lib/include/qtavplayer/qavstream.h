@@ -71,7 +71,7 @@ private:
     Q_DECLARE_PRIVATE(QAVStream)
 };
 
-bool operator==(const QAVStream &lhs, const QAVStream &rhs);
+QTAVPLAYER_EXPORT bool operator==(const QAVStream &lhs, const QAVStream &rhs);
 
 Q_DECLARE_METATYPE(QAVStream)
 
