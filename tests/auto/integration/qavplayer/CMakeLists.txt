@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 # Set project properties
-set(PROJECT_NAME "qtavplayer-widget-video-opengl")
+set(PROJECT_NAME "tests-qavplayer")
 set(PROJECT_VERSION_CPP_MIN 17)
 
 # Set project configuration
@@ -29,6 +29,7 @@ message(STATUS "Project \"${PROJECT_NAME}\" compiled with C++ standard ${CMAKE_C
 find_package(QT NAMES Qt6 Qt5)  # Load Qt CMake specific cfg (allow to have access to ${QT_VERSION_MAJOR} for example)
 set(PROJECT_QT_PACKAGES
     Core
+    Test
 )
 
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${PROJECT_QT_PACKAGES} REQUIRED)
@@ -37,10 +38,13 @@ list(TRANSFORM PROJECT_QT_PACKAGES PREPEND "Qt${QT_VERSION_MAJOR}::")
 ## Other library packages
 ### Example: find_package(nlohmann_json 3.11.3 REQUIRED)
 
+# Defines useful path variables for easier CMake configuration
+set(PROJECT_DIR_TESTS_EXTERNAL_RSC  "${CMAKE_CURRENT_SOURCE_DIR}/../testdata/")
+
 # Manage application files
 ## Set application compilation definitions
 set(PROJECT_DEFS_PRIV
-
+    QAVPLAYER_TESTS_DIR_EXTERNAL_RSC="${PROJECT_DIR_TESTS_EXTERNAL_RSC}"
 )
 
 set(PROJECT_DEFS_PUB
@@ -65,7 +69,7 @@ set(PROJECT_HEADERS
 )
 
 set(PROJECT_SOURCES
-    main.cpp
+    tst_qavplayer.cpp
 )
 
 set(PROJECT_UI_WIDGETS

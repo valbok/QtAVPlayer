@@ -5,26 +5,25 @@
  * Free Qt Media Player based on FFmpeg.                       *
  ***************************************************************/
 
-#include <QtAVPlayer/qavplayer.h>
-#include <QtAVPlayer/qavvideoframe.h>
-#include <QtAVPlayer/qavaudiooutput.h>
-#include <QtAVPlayer/qavmuxer.h>
-#include <QtAVPlayer/qaviodevice.h>
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#include <QAbstractVideoSurface>
-#include <private/qdeclarativevideooutput_p.h>
-#else
-#include <QVideoSink>
-#include <QtMultimediaQuick/private/qquickvideooutput_p.h>
-#endif
+#include "qtavplayer/qavaudiooutput.h"
+#include "qtavplayer/qaviodevice.h"
+#include "qtavplayer/qavmuxer.h"
+#include "qtavplayer/qavplayer.h"
 
-#include <QtQuick/QQuickView>
-#include <QtQuick/QQuickItem>
-#include <QtQml/QQmlEngine>
-#include <QGuiApplication>
-#include <QDebug>
 #include <QElapsedTimer>
 #include <QFile>
+#include <QGuiApplication>
+#include <QQmlEngine>
+#include <QQuickItem>
+#include <QQuickView>
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#   include <QAbstractVideoSurface>
+#   include <private/qdeclarativevideooutput_p.h>
+#else
+#   include <QVideoSink>
+#   include <QtMultimediaQuick/private/qquickvideooutput_p.h>
+#endif
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -62,7 +61,7 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     QQuickView viewer;
-    viewer.setSource(QUrl(QString::fromLatin1("qrc:///main.qml")));
+    viewer.setSource(QUrl(QString::fromLatin1("qrc:/qml/Main")));
     viewer.setResizeMode(QQuickView::SizeRootObjectToView);
     QObject::connect(viewer.engine(), SIGNAL(quit()), &viewer, SLOT(close()));
 
@@ -119,7 +118,7 @@ int main(int argc, char *argv[])
 #endif
 
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); }, Qt::DirectConnection);
-    QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QString::fromLatin1("http://archive.org/download/big-bunny-sample-video/SampleVideo.ia.mp4");
+    QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QString::fromLatin1("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
     QString filter = argc > 2 ? QString::fromUtf8(argv[2]) : QString();
     QString output = argc > 3 ? QString::fromUtf8(argv[3]) : QString();
 

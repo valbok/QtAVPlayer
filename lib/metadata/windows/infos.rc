@@ -1,0 +1,68 @@
+/**
+ * Documentations:
+ * - https://learn.microsoft.com/en-us/windows/win32/menurc/resources
+ * - https://learn.microsoft.com/en-us/windows/win32/menurc/versioninfo-resource
+ *
+ * Based on project template repository: https://github.com/legerch/projects-template
+ * Template file version: 2025-08-04 
+ */
+
+#include <windows.h>
+
+#define IS_LIBRARY  1
+
+/*****************************/
+/* Manage configuration      */
+/*****************************/
+
+#if defined(DEBUG)
+#   define FLAG_BUILD   VS_FF_DEBUG
+#else
+#   define FLAG_BUILD   0x0L
+#endif
+
+#if IS_LIBRARY
+#   define FILE_ID  VFT_DLL
+#   define FILE_EXT ".dll"
+#else
+#   define FILE_ID  VFT_APP
+#   define FILE_EXT ".exe"
+#endif
+
+/*****************************/
+/* Create metadatas          */
+/*****************************/
+
+#if !IS_LIBRARY
+    IDI_ICON1 ICON ".ico"
+#endif
+
+VS_VERSION_INFO VERSIONINFO
+    FILEVERSION     0,0,1,0
+    PRODUCTVERSION  0,0,1,0
+    FILEFLAGSMASK   0x3fL
+    FILEFLAGS       FLAG_BUILD
+    FILEOS          VOS_NT_WINDOWS32
+    FILETYPE        FILE_ID
+    FILESUBTYPE     0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName",        "Valbok"
+            VALUE "FileDescription",    "Use FFMpeg library with Qt framework."
+            VALUE "FileVersion",        "0.0.1"
+            VALUE "ProductName",        "QtAVPlayer"
+            VALUE "InternalName",       "qtavplayer"
+            VALUE "ProductVersion",     "0.0.1"
+            VALUE "OriginalFilename",   "qtavplayer" FILE_EXT
+            VALUE "LegalCopyright",     "Copyright (c) 2020-2025 Valbok (MIT License)"
+            VALUE "Comments",           "https://github.com/valbok/QtAVPlayer"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END

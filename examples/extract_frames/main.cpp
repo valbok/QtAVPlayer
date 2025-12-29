@@ -5,9 +5,8 @@
  * Free Qt Media Player based on FFmpeg.                 *
  *********************************************************/
 
-#include <QtAVPlayer/qavplayer.h>
-#include <QtAVPlayer/qavvideoframe.h>
-#include <QtAVPlayer/qavaudioframe.h>
+#include "qtavplayer/qavplayer.h"
+
 #include <QCoreApplication>
 #include <QDebug>
 
@@ -18,7 +17,7 @@ int main(int argc, char *argv[])
     QAVPlayer p;
     QObject::connect(&p, &QAVPlayer::audioFrame, [&](const QAVAudioFrame &frame) { qDebug() << "audio:" << frame.pts(); });
     QObject::connect(&p, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) { qDebug() << "video:" << frame.pts(); });
-    p.setSource(QLatin1String("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4"));
+    p.setSource(QLatin1String("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"));
     p.play();
 
     QObject::connect(&p, &QAVPlayer::stateChanged, [&](auto s) { qDebug() << "stateChanged" << s << p.mediaStatus(); });

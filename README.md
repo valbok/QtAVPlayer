@@ -13,7 +13,6 @@ Free and open-source Qt Media Player library based on FFmpeg.
   Note: Not all Qt's renders support copy-free rendering. Also QtMultimedia does not always provide public API to render the video frames. And, of course, for best performance both decoding and rendering should be accelerated.
   * Audio frames could be played by `QAVAudioOutput` which is a wrapper of QtMultimedia's [QAudioSink](https://doc-snapshots.qt.io/qt6-dev/qaudiosink.html)
 - Accurate seek, it starts playing the closest frame.
-- It is bundled directly into an app, using cmake or qmake.
 - Might be used for media analytics software like [qctools](https://github.com/bavc/qctools) or [dvrescue](https://github.com/mipops/dvrescue).
 - Implements and replaces a combination of FFmpeg and FFplay:
 
@@ -190,53 +189,46 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
    QT_AVPLAYER_NO_HWDEVICE can be used to force using software decoding. The video codec is negotiated automatically.
    
-  * `VA-API` and `VDPAU` for Linux: the frames are returned with OpenGL textures.
-  * `Video Toolbox` for macOS and iOS: the frames are returned with Metal Textures.
-  * `D3D11` for Windows: the frames are returned with D3D11Texture2D textures. 
-  * `MediaCodec` for Android: the frames are returned with OpenGL textures.
+  * `VA-API` and `VDPAU` for **Linux**: the frames are returned with _OpenGL_ textures.
+  * `Video Toolbox` for **macOS** and **iOS**: the frames are returned with _Metal_ Textures.
+  * `D3D11` for **Windows**: the frames are returned with _D3D11Texture2D_ textures. 
+  * `MediaCodec` for **Android**: the frames are returned with _OpenGL_ textures.
 
-Note: Not all ffmpeg decoders or filters support HW acceleration. In this case software decoders are used.
+> [!NOTE]
+> Not all ffmpeg decoders or filters support HW acceleration. In this case software decoders are used.
 
 11. QtMultimedia could be used to render video frames to QML or Widgets. See [examples](examples)
 12. Widget `QAVWidget_OpenGL` could be used to render to OpenGL. See [examples/widget_video_opengl](examples/widget_video_opengl)
-13. Qt 5.12 - **6**.x is supported
+13. Qt **5.12 - 6.x** is supported
 
 # How to build
+## CMake usage
 
-QtAVPlayer should be directly bundled into an app.
-Some defines should be provided to opt some features.
-* `QT_AVPLAYER_MULTIMEDIA` - enables support of `QtMultimedia` which requires `QtGUI`, `QtQuick` etc.
-* `QT_AVPLAYER_VA_X11` - enables support of `libva-x11` for HW acceleration. For linux only.
-* `QT_AVPLAYER_VA_DRM` - enables support of `libva-drm` for HW acceleration. For linux only.
-* `QT_AVPLAYER_VDPAU` - enables support of `libvdpau` for HW acceleration. For linux only.
-* `QT_AVPLAYER_WIDGET_OPENGL` - builds the widget based on opengl.
+_QtAvPlayer_ can be used as an embedded library in a subdirectory of your project (like a git submodule for example):
+1. In the **root** CMakeLists, add instructions:
+```cmake
+add_subdirectory(qtavplayer) # Or if library is put in a folder "dependencies": add_subdirectory(dependencies/qtavplayer)
+```
 
-## QMake
+2. In the **application/library** CMakeLists, add instructions:
+```cmake
+target_link_libraries(${PROJECT_NAME} PRIVATE qtavplayer)
+```
 
-Include [QtAVPlayer.pri](https://github.com/valbok/QtAVPlayer/blob/master/src/QtAVPlayer/QtAVPlayer.pri) in your pro file:
+## CMake options
 
-    DEFINES += "QT_AVPLAYER_MULTIMEDIA"
-    INCLUDEPATH += ../../src/
-    include(../../src/QtAVPlayer/QtAVPlayer.pri)
-
-FFmpeg on custom path:
-
-    $ qmake INCLUDEPATH+="/usr/local/Cellar/ffmpeg/6.0/include" LIBS="-L/usr/local/Cellar/ffmpeg/6.0/lib"
-
-## CMake
-
-Include [QtAVPlayer.cmake](https://github.com/valbok/QtAVPlayer/blob/master/src/QtAVPlayer/QtAVPlayer.cmake) in your project:
-
-    # Path to QtAVPlayer
-    include_directories(QtAVPlayer/src)
-    set(QT_AVPLAYER_DIR QtAVPlayer/src/QtAVPlayer)
-    include(QtAVPlayer/src/QtAVPlayer/QtAVPlayer.cmake)
-    add_executable(${PROJECT_NAME} ${QtAVPlayer_SOURCES})
-    target_link_libraries(${PROJECT_NAME} ${QtAVPlayer_LIBS})
-
-FFmpeg on custom path:
-
-    % cmake ../ -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_PREFIX_PATH=/opt/Qt/6.7.1/macos/lib/cmake -DCMAKE_LIBRARY_PATH=/opt/homebrew/Cellar/ffmpeg/7.0_1/lib
+This library provide some **CMake** build options:
+- Features:
+  - `QT_AVPLAYER_MULTIMEDIA` (default: `OFF`): enables support of `QtMultimedia` which will used Qt packages `Multimedia`.
+  - `QTAVPLAYER_WIDGET_OPENGL` (default: `OFF`): builds the widget based on OpenGL which will used Qt packages `OpenGLWidgets` on Qt6 and `QWidgets` on Qt5.
+- Hardware acceleration:
+  - `QTAVPLAYER_HW_SUPPORT_WINDOWS` (default: `ON`): enable HW acceleration for **Windows** platforms.
+  - `QTAVPLAYER_HW_SUPPORT_MACOS` (default: `ON`): enable HW acceleration for **MacOS** platforms.
+  - `QTAVPLAYER_HW_SUPPORT_LINUX_VA_DRM` (default: `OFF`): enable HW acceleration for **Linux** platforms using `libva-drm`. Under Linux Ubuntu, needed packages are `libva-dev`, `libegl1-mesa-dev` and `libgles2-mesa-dev`.
+  - `QTAVPLAYER_HW_SUPPORT_LINUX_VA_X11` (default: `OFF`): enable HW acceleration for **Linux** platforms using `libva-x11`. Under Linux Ubuntu, needed packages are `libva-dev`, `libva-x11-2` and `libx11-dev`.
+  - `QTAVPLAYER_HW_SUPPORT_LINUX_VDPAU` (default: `OFF`): enable HW acceleration for **Linux** platforms using `libvdpau`. Under Linux Ubuntu, needed packages are `libvdpau-dev`
+  - `QTAVPLAYER_HW_SUPPORT_ANDROID` (default: `ON`): enable HW acceleration for **Android** platforms.
+  - `QTAVPLAYER_HW_SUPPORT_IOS` (default: `ON`): enable HW acceleration for **iOS** platforms.
 
 ## Android:
 

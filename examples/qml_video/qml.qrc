@@ -1,6 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>main.qml</file>
-        <file alias="valbok">../../tests/auto/integration/testdata/20190821_075842.jpg</file>
-    </qresource>
-</RCC>

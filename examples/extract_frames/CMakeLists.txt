@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 # Set project properties
-set(PROJECT_NAME "qtavplayer-widget-video-opengl")
+set(PROJECT_NAME "qtavplayer-extract-frames")
 set(PROJECT_VERSION_CPP_MIN 17)
 
 # Set project configuration
