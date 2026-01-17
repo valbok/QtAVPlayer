@@ -160,6 +160,7 @@ QAVAudioOutput::QAVAudioOutput(QObject *parent)
     // QAVAudioOutputDevice::readData() should be called on audioThread
     d->device.reset(new QAVAudioOutputDevice);
     d->device->open(QIODevice::ReadOnly);
+    d->device->moveToThread(d->audioThread.get());
     d->audioThread->start();
 }
 
