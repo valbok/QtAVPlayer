@@ -82,6 +82,7 @@ public:
     double videoFrameRate() const;
 
     QMap<QString, QString> metadata() const;
+    QList<QVariantMap> chapters() const;
 
     QString bitstreamFilter() const;
     int applyBitstreamFilter(const QString &bsfs);
