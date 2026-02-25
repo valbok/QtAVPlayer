@@ -45,7 +45,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${QtAVPlayer_PUB
 set_target_properties(${PROJECT_NAME} PROPERTIES PRIVATE_HEADER "${QtAVPlayer_PRIVATE_HEADERS}")
 
 target_link_libraries(${PROJECT_NAME} ${LIBS})
-target_compile_definitions(${PROJECT_NAME} PRIVATE QT_BUILD_QTAVPLAYER_LIB)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     # Used when building this project locally
