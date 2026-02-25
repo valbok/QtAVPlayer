@@ -12,4 +12,18 @@
 #if defined(QT_AVPLAYER_VA_DRM)
 #include <QtGui/private/qtgui-config_p.h>
 #endif
+
+QT_BEGIN_NAMESPACE
+
+#ifndef QT_STATIC
+#    ifdef QT_BUILD_QTAVPLAYER_LIB
+#        define Q_AVPLAYER_EXPORT Q_DECL_EXPORT
+#    else
+#        define Q_AVPLAYER_EXPORT Q_DECL_IMPORT
+#    endif
+#else
+#    define Q_AVPLAYER_EXPORT
+#endif
+
+QT_END_NAMESPACE
 #endif

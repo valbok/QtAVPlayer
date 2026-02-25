@@ -28,7 +28,7 @@ struct AVFilterGraph;
 struct AVFilterInOut;
 struct AVFilterContext;
 class QAVInOutFilterPrivate;
-class QAVInOutFilter
+class Q_AVPLAYER_EXPORT QAVInOutFilter
 {
 public:
     QAVInOutFilter();

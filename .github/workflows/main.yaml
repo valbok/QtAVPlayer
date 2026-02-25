@@ -48,6 +48,19 @@ jobs:
           version: ${{ matrix.qt_version }}
           modules: ${{ matrix.qt_modules }}
 
+      - name: libQtAVPlayer
+        run: |
+          mkdir build
+          cd build
+          cmake ../src/QtAVPlayer -DCMAKE_INSTALL_PREFIX=../install -DQT_AVPLAYER_MULTIMEDIA=ON
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
+          make install
+          cd ../examples/qml_video
+          mkdir build
+          cd build
+          cmake ../ -DCMAKE_PREFIX_PATH="$PWD/../../../install/lib/cmake" -DQT_AVPLAYER_LIB=ON
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
+
       - name: QMake Test
         run: |
           export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
@@ -104,6 +117,21 @@ jobs:
           brew --prefix qt@5
           echo `brew --prefix qt@5`/bin >> $GITHUB_PATH
           echo "/usr/local/opt/llvm@9/bin" >> $GITHUB_PATH
+
+      - name: libQtAVPlayer
+        run: |
+          export FFMPEG=`brew --prefix ffmpeg`
+          ls -l $FFMPEG
+          mkdir build
+          cd build
+          cmake ../src/QtAVPlayer -DCMAKE_INSTALL_PREFIX=../install -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=$FFMPEG/include -DCMAKE_LIBRARY_PATH=$FFMPEG/lib
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
+          make install
+          cd ../examples/qml_video
+          mkdir build
+          cd build
+          cmake ../ -DCMAKE_PREFIX_PATH="$PWD/../../../install/lib/cmake" -DQT_AVPLAYER_LIB=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=$FFMPEG/include -DCMAKE_LIBRARY_PATH=$FFMPEG/lib
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
 
       - name: QMake Test
         run: |
@@ -234,6 +262,20 @@ jobs:
           qmake
           nmake
           release\tst_qavplayer.exe -maxwarnings 100000
+
+      - name: libQtAVPlayer
+        if: ${{ matrix.type == 'MSVC' }}
+        run: |
+          mkdir build
+          cd build
+          cmake ../src/QtAVPlayer -DCMAKE_INSTALL_PREFIX=../install -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib
+          cmake --build . -v
+          cmake --install .
+          cd ../examples/qml_video
+          mkdir build
+          cd build
+          cmake ../ -DCMAKE_PREFIX_PATH="D:\a\QtAVPlayer\install\lib\cmake" -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib
+          cmake --build . -v
 
       - name: QMake Test
         if: ${{ matrix.type == 'MINGW' && matrix.qt_version == '5.15.2' }}

@@ -16,7 +16,7 @@ QT_BEGIN_NAMESPACE
 
 struct AVPacket;
 class QAVPacketPrivate;
-class QAVPacket
+class Q_AVPLAYER_EXPORT QAVPacket
 {
 public:
     QAVPacket();

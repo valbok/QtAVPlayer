@@ -24,7 +24,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QAVAudioCodec : public QAVFrameCodec
+class Q_AVPLAYER_EXPORT QAVAudioCodec : public QAVFrameCodec
 {
 public:
     QAVAudioCodec(const AVCodec *codec = nullptr);

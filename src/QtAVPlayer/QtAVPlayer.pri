@@ -1,6 +1,7 @@
 QT += concurrent
 CONFIG += C++1z
 LIBS += -lavcodec -lavformat -lswscale -lavutil -lswresample -lswscale -lavfilter -lavdevice
+DEFINES += QT_BUILD_QTAVPLAYER_LIB
 
 PRIVATE_HEADERS += \
     $$PWD/qavcodec_p.h \

@@ -40,3 +40,4 @@ else()
 endif()
 
 target_link_libraries(${PROJECT_NAME} ${LIBS})
+target_compile_definitions(${PROJECT_NAME} PRIVATE QT_BUILD_QTAVPLAYER_LIB)

@@ -16,6 +16,8 @@ find_library(AVUTIL_LIBRARY REQUIRED NAMES avutil)
 find_library(SWRESAMPLE_LIBRARY REQUIRED NAMES swresample)
 find_library(SWSCALE_LIBRARY REQUIRED NAMES swscale)
 
+add_compile_definitions(QT_BUILD_QTAVPLAYER_LIB)
+
 set(QtAVPlayer_LIBS 
     ${AVDEVICE_LIBRARY}
     ${AVFILTER_LIBRARY}
@@ -249,7 +251,6 @@ if(QT_AVPLAYER_VDPAU)
         ${QtAVPlayer_PRIVATE_HEADERS}
         ${QT_AVPLAYER_DIR}/qavhwdevice_vdpau_p.h
     )
-
 
     set(QtAVPlayer_SOURCES
         ${QtAVPlayer_SOURCES}

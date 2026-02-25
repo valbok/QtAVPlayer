@@ -25,7 +25,7 @@
 QT_BEGIN_NAMESPACE
 
 class QAVHWDevice_VAAPI_X11_GLXPrivate;
-class QAVHWDevice_VAAPI_X11_GLX : public QAVHWDevice
+class Q_AVPLAYER_EXPORT QAVHWDevice_VAAPI_X11_GLX : public QAVHWDevice
 {
 public:
     QAVHWDevice_VAAPI_X11_GLX();

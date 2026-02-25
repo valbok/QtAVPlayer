@@ -19,7 +19,7 @@ struct AVStream;
 struct AVFormatContext;
 class QAVCodec;
 class QAVStreamPrivate;
-class QAVStream
+class Q_AVPLAYER_EXPORT QAVStream
 {
 public:
     QAVStream();
@@ -38,7 +38,7 @@ public:
 
     QSharedPointer<QAVCodec> codec() const;
 
-    class Progress
+    class Q_AVPLAYER_EXPORT Progress
     {
     public:
         Progress(double duration = 0.0, qint64 frames = 0, double fr = 0.0);
@@ -74,8 +74,8 @@ bool operator==(const QAVStream &lhs, const QAVStream &rhs);
 Q_DECLARE_METATYPE(QAVStream)
 
 #ifndef QT_NO_DEBUG_STREAM
-QDebug operator<<(QDebug, const QAVStream &);
-QDebug operator<<(QDebug, const QAVStream::Progress &);
+Q_AVPLAYER_EXPORT QDebug operator<<(QDebug, const QAVStream &);
+Q_AVPLAYER_EXPORT QDebug operator<<(QDebug, const QAVStream::Progress &);
 #endif
 
 QT_END_NAMESPACE

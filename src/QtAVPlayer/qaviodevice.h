@@ -17,7 +17,7 @@ QT_BEGIN_NAMESPACE
 
 struct AVIOContext;
 class QAVIODevicePrivate;
-class QAVIODevice : public QObject
+class Q_AVPLAYER_EXPORT QAVIODevice : public QObject
 {
 public:
     QAVIODevice(const QSharedPointer<QIODevice> &device, QObject *parent = nullptr);
