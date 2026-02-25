@@ -238,6 +238,28 @@ FFmpeg on custom path:
 
     % cmake ../ -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_PREFIX_PATH=/opt/Qt/6.7.1/macos/lib/cmake -DCMAKE_LIBRARY_PATH=/opt/homebrew/Cellar/ffmpeg/7.0_1/lib
 
+## libQtAVPlayer
+
+If a separate library is more convenient then including to your project directly , there is possibility to build the player as shared library:
+
+1. Build and install:
+```
+$ cmake ../src/QtAVPlayer -DCMAKE_PREFIX_PATH=/opt/Qt/6.8.2/gcc_64/lib/cmake/Qt6 -DCMAKE_INSTALL_PREFIX=/opt/QtAVPlayer/install -DCMAKE_LIBRARY_PATH="/opt/ffmpeg/install/lib;/opt/Qt/6.8.2/gcc_64/lib" -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=/opt/ffmpeg/install/include  -DQT_AVPLAYER_MULTIMEDIA=On -DQT_AVPLAYER_VDPAU=ON
+$ make -j32
+$ make install
+```
+
+2. In your `CMakeLists.txt` file:
+```
+find_package(QtAVPlayer REQUIRED)
+target_link_libraries(${PROJECT_NAME} QtAVPlayer)
+```
+
+3. Use `-DCMAKE_PREFIX_PATH` if needed to find the package:
+```
+$ cmake ../ -DCMAKE_PREFIX_PATH="/opt/QtAVPlayer/install/lib/cmake;/opt/Qt/6.8.2/gcc_64/lib/cmake/Qt6" -DCMAKE_LIBRARY_PATH="/opt/Qt/6.8.2/gcc_64/lib" 
+```
+
 ## Android:
 
 Some exports could be also used: vars that point to libraries in armeabi-v7a, arm64-v8a, x86 and x86_64 target archs.
