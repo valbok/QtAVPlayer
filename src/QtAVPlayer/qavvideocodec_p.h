@@ -25,7 +25,7 @@ QT_BEGIN_NAMESPACE
 
 class QAVVideoCodecPrivate;
 class QAVHWDevice;
-class QAVVideoCodec : public QAVFrameCodec
+class Q_AVPLAYER_EXPORT QAVVideoCodec : public QAVFrameCodec
 {
 public:
     QAVVideoCodec(const AVCodec *codec = nullptr);

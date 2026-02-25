@@ -21,7 +21,7 @@ QT_BEGIN_NAMESPACE
 struct AVFormatContext;
 class QAVIODevice;
 class QAVPlayerPrivate;
-class QAVPlayer : public QObject
+class Q_AVPLAYER_EXPORT QAVPlayer : public QObject
 {
     Q_OBJECT
     Q_ENUMS(State)
@@ -170,9 +170,9 @@ private:
 };
 
 #ifndef QT_NO_DEBUG_STREAM
-QDebug operator<<(QDebug, QAVPlayer::State);
-QDebug operator<<(QDebug, QAVPlayer::MediaStatus);
-QDebug operator<<(QDebug, QAVPlayer::Error);
+Q_AVPLAYER_EXPORT QDebug operator<<(QDebug, QAVPlayer::State);
+Q_AVPLAYER_EXPORT QDebug operator<<(QDebug, QAVPlayer::MediaStatus);
+Q_AVPLAYER_EXPORT QDebug operator<<(QDebug, QAVPlayer::Error);
 #endif
 
 Q_DECLARE_METATYPE(QAVPlayer::State)

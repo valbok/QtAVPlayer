@@ -25,7 +25,7 @@ QT_BEGIN_NAMESPACE
 
 class QAVFrame;
 class QAVVideoInputFilterPrivate;
-class QAVVideoInputFilter : public QAVInOutFilter
+class Q_AVPLAYER_EXPORT QAVVideoInputFilter : public QAVInOutFilter
 {
 public:
     QAVVideoInputFilter(const QAVFrame &frame);

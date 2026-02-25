@@ -26,7 +26,7 @@
 QT_BEGIN_NAMESPACE
 
 class QAVSubtitleCodecPrivate;
-class QAVSubtitleCodec : public QAVCodec
+class Q_AVPLAYER_EXPORT QAVSubtitleCodec : public QAVCodec
 {
 public:
     QAVSubtitleCodec(const AVCodec *codec = nullptr);

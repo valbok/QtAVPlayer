@@ -23,7 +23,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QAVHWDevice_VDPAU : public QAVHWDevice
+class Q_AVPLAYER_EXPORT QAVHWDevice_VDPAU : public QAVHWDevice
 {
 public:
     QAVHWDevice_VDPAU();

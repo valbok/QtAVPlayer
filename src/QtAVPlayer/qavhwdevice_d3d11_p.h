@@ -24,7 +24,7 @@
 QT_BEGIN_NAMESPACE
 
 struct AVCodecContext;
-class QAVHWDevice_D3D11 : public QAVHWDevice
+class Q_AVPLAYER_EXPORT QAVHWDevice_D3D11 : public QAVHWDevice
 {
 public:
     QAVHWDevice_D3D11() = default;

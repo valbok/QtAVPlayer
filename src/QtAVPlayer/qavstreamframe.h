@@ -15,7 +15,7 @@
 QT_BEGIN_NAMESPACE
 
 class QAVStreamFramePrivate;
-class QAVStreamFrame
+class Q_AVPLAYER_EXPORT QAVStreamFrame
 {
 public:
     QAVStreamFrame();

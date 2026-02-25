@@ -24,7 +24,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QAVVideoBuffer_GPU : public QAVVideoBuffer
+class Q_AVPLAYER_EXPORT QAVVideoBuffer_GPU : public QAVVideoBuffer
 {
 public:
     QAVVideoBuffer_GPU() = default;

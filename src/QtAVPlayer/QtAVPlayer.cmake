@@ -250,7 +250,6 @@ if(QT_AVPLAYER_VDPAU)
         ${QT_AVPLAYER_DIR}/qavhwdevice_vdpau_p.h
     )
 
-
     set(QtAVPlayer_SOURCES
         ${QtAVPlayer_SOURCES}
         ${QT_AVPLAYER_DIR}/qavhwdevice_vdpau.cpp

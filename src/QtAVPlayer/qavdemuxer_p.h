@@ -38,7 +38,7 @@ class QAVAudioCodec;
 class QAVIODevice;
 struct AVStream;
 struct AVFormatContext;
-class QAVDemuxer
+class Q_AVPLAYER_EXPORT QAVDemuxer
 {
 public:
     QAVDemuxer();

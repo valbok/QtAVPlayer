@@ -29,7 +29,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QAVFilters
+class Q_AVPLAYER_EXPORT QAVFilters
 {
 public:
     QAVFilters() = default;

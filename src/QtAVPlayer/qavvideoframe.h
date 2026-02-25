@@ -25,7 +25,7 @@ class QAVCodec;
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 class QRhi;
 #endif
-class QAVVideoFrame : public QAVFrame
+class Q_AVPLAYER_EXPORT QAVVideoFrame : public QAVFrame
 {
 public:
     enum HandleType

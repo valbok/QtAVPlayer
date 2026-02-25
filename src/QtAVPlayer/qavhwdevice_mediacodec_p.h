@@ -25,7 +25,7 @@
 QT_BEGIN_NAMESPACE
 
 class QAVHWDevice_MediaCodecPrivate;
-class QAVHWDevice_MediaCodec : public QAVHWDevice
+class Q_AVPLAYER_EXPORT QAVHWDevice_MediaCodec : public QAVHWDevice
 {
 public:
     QAVHWDevice_MediaCodec();
