@@ -1,3 +1,13 @@
+2026-02
+-------
+
+- #554 - Added support to build libQtAVPlayer for cases when shared lib is more convenient
+
+2025-10
+-------
+
+- #548 - Added rendering cropped frame for MediaCodec to avoid artifacts
+
 2025-10
 -------
 
