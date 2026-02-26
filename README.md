@@ -3,9 +3,9 @@
 
 Free and open-source Qt Media Player library based on FFmpeg.
 - Demuxes and decodes _video_/_audio_/_subtitle_ frames.
-- Muxes, encodes and saves the streams from different sources to one output file.
+- Muxes, encodes and saves the streams from _multiple_ sources to one output file.
 - [FFmpeg Bitstream Filters](https://ffmpeg.org/ffmpeg-bitstream-filters.html) and [FFmpeg Filters](https://ffmpeg.org/ffmpeg-filters.html) including `filter_complex`.
-- Multiple parallel filters for one input (one input frame produces multiple outputs).
+- Multiple parallel filters for one input (one input frame produces multiple output frames).
 - Decoding of all available streams at the same time.
 - Hardware acceleration.
 - It is up to an application to decide how to process the frames.
@@ -13,7 +13,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
   Note: Not all Qt's renders support copy-free rendering. Also QtMultimedia does not always provide public API to render the video frames. And, of course, for best performance both decoding and rendering should be accelerated.
   * Audio frames could be played by `QAVAudioOutput` which is a wrapper of QtMultimedia's [QAudioSink](https://doc-snapshots.qt.io/qt6-dev/qaudiosink.html)
 - Accurate seek, it starts playing the closest frame.
-- It is bundled directly into an app, using cmake or qmake.
+- It is bundled directly into an app, using CMake/QMake. But could be also used as separate library.
 - Might be used for media analytics software like [qctools](https://github.com/bavc/qctools) or [dvrescue](https://github.com/mipops/dvrescue).
 - Implements and replaces a combination of FFmpeg and FFplay:
 
@@ -21,7 +21,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
   but using QML or Qt Widgets:
 
-      ./qml_video :/valbok "if:you:like[cats];remove[this-sentence]"
+      ./examples/qml_video :/valbok "if:you:like[cats];remove[this-sentence]"
 
 # Features
 
@@ -165,7 +165,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
         // `QAVMuxerPackets` is used internally.
         player.setOutput("output.mkv");
 
-        // Multiple players could be used to mux to one files
+        // Multiple players could be used to mux to one file
         QAVPlayer p1;
         QAVPlayer p2;
         QAVMuxerFrames m;
@@ -188,17 +188,17 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
 10. HW accelerations:
 
-   QT_AVPLAYER_NO_HWDEVICE can be used to force using software decoding. The video codec is negotiated automatically.
+   `QT_AVPLAYER_NO_HWDEVICE` env var can be used to force using software decoding. The video codec is negotiated automatically.
    
-  * `VA-API` and `VDPAU` for Linux: the frames are returned with OpenGL textures.
-  * `Video Toolbox` for macOS and iOS: the frames are returned with Metal Textures.
-  * `D3D11` for Windows: the frames are returned with D3D11Texture2D textures. 
-  * `MediaCodec` for Android: the frames are returned with OpenGL textures.
+  * `VA-API` and `VDPAU` for Linux: the frames are returned with `OpenGL` textures.
+  * `Video Toolbox` for macOS and iOS: the frames are returned with `Metal` Textures.
+  * `D3D11` for Windows: the frames are returned with `D3D11Texture2D` textures. 
+  * `MediaCodec` for Android: the frames are returned with `OpenGL` textures.
 
 Note: Not all ffmpeg decoders or filters support HW acceleration. In this case software decoders are used.
 
 11. QtMultimedia could be used to render video frames to QML or Widgets. See [examples](examples)
-12. Widget `QAVWidget_OpenGL` could be used to render to OpenGL. See [examples/widget_video_opengl](examples/widget_video_opengl)
+12. Widget `QAVWidget_OpenGL` could be used to render to `OpenGL`. See [examples/widget_video_opengl](examples/widget_video_opengl)
 13. Qt 5.12 - **6**.x is supported
 
 # How to build
@@ -240,22 +240,22 @@ FFmpeg on custom path:
 
 ## libQtAVPlayer
 
-If a separate library is more convenient then including to your project directly , there is possibility to build the player as shared library:
+If a separate library is more convenient than directly including to your project, there is possibility to build the player as shared library:
 
-1. Build and install:
+1. Build and install the library:
 ```
 $ cmake ../src/QtAVPlayer -DCMAKE_PREFIX_PATH=/opt/Qt/6.8.2/gcc_64/lib/cmake/Qt6 -DCMAKE_INSTALL_PREFIX=/opt/QtAVPlayer/install -DCMAKE_LIBRARY_PATH="/opt/ffmpeg/install/lib;/opt/Qt/6.8.2/gcc_64/lib" -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=/opt/ffmpeg/install/include  -DQT_AVPLAYER_MULTIMEDIA=On -DQT_AVPLAYER_VDPAU=ON
 $ make -j32
 $ make install
 ```
 
-2. In your `CMakeLists.txt` file:
+2. Update your `CMakeLists.txt` file:
 ```
 find_package(QtAVPlayer REQUIRED)
 target_link_libraries(${PROJECT_NAME} QtAVPlayer)
 ```
 
-3. Use `-DCMAKE_PREFIX_PATH` if needed to find the package:
+3. Use `-DCMAKE_PREFIX_PATH` to find the package if needed:
 ```
 $ cmake ../ -DCMAKE_PREFIX_PATH="/opt/QtAVPlayer/install/lib/cmake;/opt/Qt/6.8.2/gcc_64/lib/cmake/Qt6" -DCMAKE_LIBRARY_PATH="/opt/Qt/6.8.2/gcc_64/lib" 
 ```
