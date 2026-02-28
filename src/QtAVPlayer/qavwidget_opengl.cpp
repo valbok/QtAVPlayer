@@ -96,6 +96,7 @@ class QAVWidget_OpenGLPrivate
 public:
     QAVWidget_OpenGLPrivate(QAVWidget_OpenGL *q)
         : q_ptr(q)
+        , m_aspectRatioMode(Qt::KeepAspectRatio)
     {
     }
 
@@ -115,6 +116,9 @@ public:
     GLuint textureIds[3];
     GLfloat planeWidth[3];
     QMatrix4x4 colorMatrix;
+
+    // Aspect ratio mode for video scaling
+    Qt::AspectRatioMode m_aspectRatioMode;
 
     void cleanupTextures();
     void bindTexture(int id, int w, int h, const uchar *bits, GLenum format);
@@ -200,6 +204,19 @@ QAVWidget_OpenGL::~QAVWidget_OpenGL()
     Q_D(QAVWidget_OpenGL);
     QMutexLocker lock(&d->mutex);
     d->cleanupTextures();
+}
+
+void QAVWidget_OpenGL::setAspectRatioMode(Qt::AspectRatioMode mode)
+{
+    Q_D(QAVWidget_OpenGL);
+    d->m_aspectRatioMode = mode;
+    update();
+}
+
+Qt::AspectRatioMode QAVWidget_OpenGL::aspectRatioMode() const
+{
+    Q_D(const QAVWidget_OpenGL);
+    return d->m_aspectRatioMode;
 }
 
 void QAVWidget_OpenGL::setVideoFrame(const QAVVideoFrame &frame)
@@ -422,7 +439,24 @@ void QAVWidget_OpenGL::paintGL()
         return;
     }
 
+    // Calculate the target rectangle for video (considering aspect ratio)
+    auto frameSize = d->currentFrame.size();
+    int width = this->width();
+    int height = this->height();
+
+    QRectF rect(0.0, 0.0, width, height);
+    QSizeF size = frameSize;
+    size.scale(rect.size(), d->m_aspectRatioMode);
+    QRectF target(0, 0, size.width(), size.height());
+    target.moveCenter(rect.center());
+
+    // Draw black letterboxing bars first (for areas outside the video)
+    // This ensures proper black bars when aspect ratio doesn't match
+    glDisable(GL_SCISSOR_TEST);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Restore the color used by the video renderer
     glColor3f(0.0, 0.0, 1.0);
 
     bool stencilTestEnabled = glIsEnabled(GL_STENCIL_TEST);
@@ -432,15 +466,6 @@ void QAVWidget_OpenGL::paintGL()
     if (scissorTestEnabled)
         glEnable(GL_SCISSOR_TEST);
 
-    auto frameSize = d->currentFrame.size();
-    int width = this->width();
-    int height = this->height();
-
-    QRectF rect(0.0, 0.0, width, height);
-    QSizeF size = frameSize;
-    size.scale(rect.size(), Qt::KeepAspectRatio);
-    QRectF target(0, 0, size.width(), size.height());
-    target.moveCenter(rect.center());
     QRectF source(0, 0, frameSize.width(), frameSize.height());
     QRectF viewport(0, 0, width, height);
 
@@ -539,6 +564,6 @@ void QAVWidget_OpenGL::paintGL()
 
 void QAVWidget_OpenGL::resizeGL(int width, int height)
 {
-    int side = qMin(width, height);
-    glViewport((width - side) / 2, (height - side) / 2, side, side);
+    // Use the entire widget for rendering, not just a square
+    glViewport(0, 0, width, height);
 }

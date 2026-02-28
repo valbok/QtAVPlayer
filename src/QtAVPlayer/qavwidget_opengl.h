@@ -25,6 +25,13 @@ public:
 
     void setVideoFrame(const QAVVideoFrame &frame);
 
+    // Set aspect ratio mode for video scaling
+    // Qt::IgnoreAspectRatio - Video fills the entire widget (stretch)
+    // Qt::KeepAspectRatio - Video maintains aspect ratio with letterboxing
+    // Qt::KeepAspectRatioByExpanding - Video fills the widget, may be cropped
+    void setAspectRatioMode(Qt::AspectRatioMode mode);
+    Qt::AspectRatioMode aspectRatioMode() const;
+
 private:
     void initializeGL() override;
     void paintGL() override;
