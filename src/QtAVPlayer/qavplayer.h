@@ -119,6 +119,8 @@ public:
 
     QAVStream::Progress progress(const QAVStream &stream) const;
 
+    QList<QVariantMap> chapters() const;
+
 public Q_SLOTS:
     void play();
     void pause();
