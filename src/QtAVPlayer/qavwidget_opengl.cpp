@@ -94,9 +94,9 @@ class QAVWidget_OpenGLPrivate
 {
     Q_DECLARE_PUBLIC(QAVWidget_OpenGL)
 public:
-    QAVWidget_OpenGLPrivate(QAVWidget_OpenGL *q)
-        : q_ptr(q)
-        , m_aspectRatioMode(Qt::KeepAspectRatio)
+    QAVWidget_OpenGLPrivate(QAVWidget_OpenGL *q) :
+        q_ptr(q),
+        m_aspectRatioMode(Qt::KeepAspectRatio)
     {
     }
 
