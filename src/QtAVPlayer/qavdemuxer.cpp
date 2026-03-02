@@ -835,6 +835,34 @@ QMap<QString, QString> QAVDemuxer::metadata() const
     return result;
 }
 
+QList<QVariantMap> QAVDemuxer::chapters() const
+{
+    Q_D(const QAVDemuxer);
+    QList<QVariantMap> result;
+    if (d->ctx == nullptr)
+        return result;
+
+    for (int i = 0; i < d->ctx->nb_chapters; i++) {
+        AVChapter *chapter = d->ctx->chapters[i];
+        QVariantMap ent;
+        ent["id"] = (uint)chapter->id;
+        ent["time_base"] = av_q2d(chapter->time_base);
+        ent["start"] = (qlonglong)chapter->start;
+        ent["start_time"] = chapter->start * av_q2d(chapter->time_base);
+        ent["end"] = (qlonglong)chapter->end;
+        ent["end_time"] = chapter->end * av_q2d(chapter->time_base);
+
+        AVDictionaryEntry *tag = nullptr;
+        QVariantMap metadata;
+        while ((tag = av_dict_get(chapter->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
+            metadata[QString::fromUtf8(tag->key)] = QString::fromUtf8(tag->value);
+
+        ent["metadata"] = metadata;
+        result.push_back(ent);
+    }
+    return result;
+}
+
 QString QAVDemuxer::bitstreamFilter() const
 {
     Q_D(const QAVDemuxer);
