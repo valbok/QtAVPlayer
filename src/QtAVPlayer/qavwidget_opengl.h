@@ -24,6 +24,9 @@ public:
     ~QAVWidget_OpenGL();
 
     void setVideoFrame(const QAVVideoFrame &frame);
+    void setAspectRatioMode(Qt::AspectRatioMode mode);
+    
+    Qt::AspectRatioMode aspectRatioMode() const;
 
 private:
     void initializeGL() override;
