@@ -37,6 +37,20 @@ static const char *vertexShaderProgram = R"(
     }
 )";
 
+static const char *vertexMonoShaderProgram = R"(
+    attribute highp vec4 vertexCoordArray;
+    attribute highp vec2 textureCoordArray;
+    uniform highp mat4 positionMatrix;
+    varying highp vec2 plane1TexCoord;
+    varying highp vec2 textureCoord;
+    void main(void)
+    {
+        plane1TexCoord = textureCoordArray;
+        gl_Position = positionMatrix * vertexCoordArray;
+        textureCoord = textureCoordArray;
+    }
+)";
+
 static const char *rgbShaderProgram = R"(
     uniform sampler2D tex1;
     varying highp vec2 textureCoord;
@@ -75,6 +89,20 @@ static const char *yuvPlanarShaderProgram = R"(
     }
 )";
 
+static const char *yuyvPlanarShaderProgram = R"(
+    uniform sampler2D tex1;
+    uniform sampler2D tex2;
+    uniform mediump mat4 colorMatrix;
+    varying highp vec2 plane1TexCoord;
+    void main(void)
+    {
+        mediump float Y = texture2D(tex1, plane1TexCoord).r;
+        mediump vec2 UV = texture2D(tex2, plane1TexCoord).ga;
+        mediump vec4 color = vec4(Y, UV.x, UV.y, 1.);
+        gl_FragColor = colorMatrix * color;
+    }
+)";
+
 static const char *nvPlanarShaderProgram = R"(
     uniform sampler2D tex1;
     uniform sampler2D tex2;
@@ -109,6 +137,7 @@ public:
     mutable QMutex mutex;
 
     QOpenGLShaderProgram program;
+    const char *shaderProgram = vertexShaderProgram;
     const char *fragmentProgram = nullptr;
 
     int textureCount = 0;
@@ -333,6 +362,31 @@ void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_NV12>()
     }
 }
 
+template<>
+void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_YUYV422>()
+{
+    Q_Q(QAVWidget_OpenGL);
+    colorMatrix = getColorMatrix(currentFrame);
+    shaderProgram = vertexMonoShaderProgram;
+    fragmentProgram = yuyvPlanarShaderProgram;
+    textureCount = 2;
+    if (currentFrame.handleType() == QAVVideoFrame::NoHandle) {
+        cleanupTextures();
+        q->glGenTextures(textureCount, textureIds);
+        texturesGenerated = true;
+        auto w = currentFrame.size().width();
+        auto h = currentFrame.size().height();
+        auto data = currentFrame.map();
+        planeWidth[0] = qreal(w);
+        planeWidth[1] = qreal(w) / 2;
+        planeWidth[2] = 0;
+        q->glActiveTexture(GL_TEXTURE1);
+        bindTexture(textureIds[1], planeWidth[1], h, data.data[0], GL_RGBA);
+        q->glActiveTexture(GL_TEXTURE0);
+        bindTexture(textureIds[0], planeWidth[0], h, data.data[0], GL_LUMINANCE_ALPHA);
+    }
+}
+
 #if defined(Q_OS_WIN)
 template<>
 void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_D3D11>()
@@ -373,6 +427,9 @@ bool QAVWidget_OpenGLPrivate::initTextureInfo()
         case AV_PIX_FMT_NV12:
             initTextureInfo<AV_PIX_FMT_NV12>();
             break;
+        case AV_PIX_FMT_YUYV422:
+            initTextureInfo<AV_PIX_FMT_YUYV422>();
+            break;
 #if defined(Q_OS_WIN)
         case AV_PIX_FMT_D3D11:
             initTextureInfo<AV_PIX_FMT_D3D11>();
@@ -393,7 +450,7 @@ bool QAVWidget_OpenGLPrivate::resetGL()
 
     Q_ASSERT(fragmentProgram);
     program.removeAllShaders();
-    if (!program.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderProgram)) {
+    if (!program.addShaderFromSourceCode(QOpenGLShader::Vertex, shaderProgram)) {
         qWarning() << "Vertex compile error:" << qPrintable(program.log());
         return false;
     }
