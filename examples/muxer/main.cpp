@@ -37,6 +37,8 @@ int main(int argc, char *argv[])
     if (argc < 2) {
         return showHelp(argv[0]);
     }
+    // Reencodes the content
+    QAVMuxerFrames m;
     std::vector<std::pair<QString, QString>> inputSources;
     std::vector<std::unique_ptr<QAVPlayer>> players;
     QString output = QLatin1String("output.mkv");
@@ -59,7 +61,6 @@ int main(int argc, char *argv[])
     if (inputSources.empty() || !format.isEmpty())
         return showHelp(argv[0]);
 
-    QAVMuxerFrames m;
     auto load = [&](QAVPlayer::MediaStatus status) {
         static size_t playersInited = 0;
         if (status == QAVPlayer::LoadedMedia && ++playersInited == players.size()) {
