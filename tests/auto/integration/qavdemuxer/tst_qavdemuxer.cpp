@@ -45,6 +45,7 @@ private slots:
     void muxerWriteFrames();
     void muxerWriteSubtitles();
     void muxerEnqueue();
+    void muxerEnqueueStreamIndex();
     void muxerEnqueueFramesFromMultiSources();
     void muxerEnqueueFramesFromDev();
     void muxerWritePacketsFromMultiSources();
@@ -559,6 +560,33 @@ void tst_QAVDemuxer::muxerEnqueue()
     m.unload();
     d.unload();
     QVERIFY(d.load("colors.mkv") >= 0);
+}
+
+void tst_QAVDemuxer::muxerEnqueueStreamIndex()
+{
+    QFileInfo file(testData("stream-index.mov"));
+    QAVDemuxer d;
+    QAVMuxerFrames m;
+
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
+    QVERIFY(m.load(d.availableStreams(), "output.mkv") < 0);
+    QVERIFY(m.load(d.availableVideoStreams() + d.currentAudioStreams(), "output.mkv") >= 0);
+
+    QAVPacket p;
+    while (d.read(p) >= 0) {
+        QList<QAVFrame> fs;
+        QAVDemuxer::decode(p, fs);
+        if (fs.size()) {
+            QVERIFY(fs.size() == 1);
+            auto &f = fs[0];
+            m.enqueue(f);
+        }
+    }
+    QTRY_VERIFY(m.size() == 0);
+    QVERIFY(m.flush() >= 0);
+    m.unload();
+    d.unload();
+    QVERIFY(d.load("output.mkv") >= 0);
 }
 
 void tst_QAVDemuxer::muxerEnqueueFramesFromMultiSources()

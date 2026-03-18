@@ -198,7 +198,11 @@ int QAVMuxer::initMuxer(Locker &locker)
     int ret = 0;
     for (int i = 0; i < d->inputStreams.size(); ++i) {
         auto &stream = d->inputStreams[i];
-        auto dec_ctx = stream.codec()->avctx();
+        auto codec = stream.codec();
+        if (!stream.codec()) {
+            return AVERROR(EINVAL);
+        }
+        auto dec_ctx = codec->avctx();
         auto out_stream = avformat_new_stream(d->ctx, NULL);
         if (!out_stream) {
             qWarning() << "Failed allocating output stream";
@@ -211,7 +215,7 @@ int QAVMuxer::initMuxer(Locker &locker)
             stream.codec()->codec()->name << ", codec_id" << dec_ctx->codec_id <<
             ", pix_fmt:" << dec_ctx->pix_fmt << (pix_fmt_desc ? pix_fmt_desc->name : "");
 
-        ret = initMuxer(stream, d->ctx->streams[i], locker);
+        ret = initMuxer(stream, i, d->ctx->streams[i], locker);
         if (ret < 0)
             return ret;
         d->outputStreams[stream.stream()] = i;
@@ -229,7 +233,7 @@ void QAVMuxerPackets::init(Locker &)
 {
 }
 
-int QAVMuxerPackets::initMuxer(const QAVStream &stream, AVStream *out_stream, Locker &)
+int QAVMuxerPackets::initMuxer(const QAVStream &stream, int, AVStream *out_stream, Locker &)
 {
     auto in_stream = stream.stream();
     int ret = avcodec_parameters_copy(out_stream->codecpar, in_stream->codecpar);
@@ -336,7 +340,7 @@ void QAVMuxerFrames::init(Locker &)
     d->workerThread->start();
 }
 
-int QAVMuxerFrames::initMuxer(const QAVStream &stream, AVStream *out_stream, Locker &)
+int QAVMuxerFrames::initMuxer(const QAVStream &stream, int index, AVStream *out_stream, Locker &)
 {
     Q_D(QAVMuxerFrames);
     auto in_stream = stream.stream();
@@ -377,7 +381,7 @@ int QAVMuxerFrames::initMuxer(const QAVStream &stream, AVStream *out_stream, Loc
                 return ret;
             }
             out_stream->time_base = enc_ctx->time_base;
-            d->streams.push_back({ stream.index(), d->ctx, codec });
+            d->streams.push_back({ index, d->ctx, codec });
             break;
         }
         case AVMEDIA_TYPE_AUDIO: {
@@ -405,7 +409,7 @@ int QAVMuxerFrames::initMuxer(const QAVStream &stream, AVStream *out_stream, Loc
                 return ret;
             }
             out_stream->time_base = enc_ctx->time_base;
-            d->streams.push_back({ stream.index(), d->ctx, codec });
+            d->streams.push_back({ index, d->ctx, codec });
             break;
         }
         case AVMEDIA_TYPE_SUBTITLE: {
@@ -433,7 +437,7 @@ int QAVMuxerFrames::initMuxer(const QAVStream &stream, AVStream *out_stream, Loc
                 return ret;
             }
             out_stream->time_base = in_stream->time_base;
-            d->streams.push_back({ stream.index(), d->ctx, codec });
+            d->streams.push_back({ index, d->ctx, codec });
             break;
         }
         default:
@@ -574,7 +578,7 @@ int QAVMuxerFrames::flushFrames(Locker &locker)
         bool isSub = d->streams[i].codec()->avctx()->codec_type == AVMEDIA_TYPE_SUBTITLE;
         if (isSub)
             continue;
-        int ret = write(QAVFrame(), i, locker);
+        int ret = write(QAVFrame(), d->streams[i].index(), locker);
         if (ret < 0 && ret != AVERROR_EOF) {
             qWarning() << d->filename << ": Could not flush:" << err2str(ret);
             return ret;
