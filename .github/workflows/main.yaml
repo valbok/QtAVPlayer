@@ -78,7 +78,7 @@ jobs:
           cd examples/qml_video
           qmake
           make CC=$CC CXX=$CXX
-          cd ../extract_frames
+          cd ../widget_video_opengl
           qmake
           make CC=$CC CXX=$CXX
           cd ../muxer
@@ -91,6 +91,9 @@ jobs:
           cmake . -DQT_AVPLAYER_MULTIMEDIA=ON
           make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
           cd ../widget_video
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
+          cd ../widget_video_opengl
           cmake . -DQT_AVPLAYER_MULTIMEDIA=ON
           make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
 
@@ -154,9 +157,6 @@ jobs:
         run: |
           export FFMPEG=`brew --prefix ffmpeg`
           cd examples/qml_video
-          qmake INCLUDEPATH+="$FFMPEG/include" LIBS+="-L$FFMPEG/lib"
-          make CC=$CC CXX=$CXX
-          cd ../extract_frames
           qmake INCLUDEPATH+="$FFMPEG/include" LIBS+="-L$FFMPEG/lib"
           make CC=$CC CXX=$CXX
           cd ../muxer
@@ -306,9 +306,6 @@ jobs:
           cd examples/qml_video
           qmake
           nmake
-          cd ../extract_frames
-          qmake
-          nmake
           cd ../muxer
           qmake
           nmake
@@ -327,9 +324,6 @@ jobs:
         if: ${{ matrix.type == 'MINGW' }}
         run: |
           cd examples/qml_video
-          qmake
-          mingw32-make
-          cd ../extract_frames
           qmake
           mingw32-make
           cd ../muxer
