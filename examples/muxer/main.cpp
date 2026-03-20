@@ -76,6 +76,10 @@ int main(int argc, char *argv[])
             for (auto &p: players)
                 p->play();
             qDebug() <<"Loaded" << playersInited << "players, press CTRL+C to exit";
+        } else {
+            if (status == QAVPlayer::EndOfMedia) {
+                qApp->quit();
+            }
         }
     };
 
