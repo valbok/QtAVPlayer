@@ -102,18 +102,6 @@ void QAVMuxerFramesPrivate::doWork()
     }
 }
 
-template<class T>
-static void normalizePts(AVStream *stream, T *f)
-{
-    // Normalize pts if it is based on the start time of the stream.
-    // F.e. these packets could be returned from the micro or video cam.
-    if (stream && f && stream->duration == AV_NOPTS_VALUE
-        && stream->start_time != AV_NOPTS_VALUE
-        && f->pts >= stream->start_time) {
-        f->pts -= stream->start_time;
-    }
-}
-
 QAVMuxer::QAVMuxer()
     : QAVMuxer(*new QAVMuxerPrivate(this))
 {
@@ -480,8 +468,6 @@ int QAVMuxerFrames::write(QAVFrame frame, int streamIndex, Locker &)
     auto &encStream = d->streams[streamIndex];
     auto enc_ctx = encStream.codec()->avctx();
     auto stream = encStream.stream();
-
-    normalizePts(frame.stream().stream(), frame.frame());
 
     if (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         // If the frame is in different format than the encoder

@@ -698,8 +698,19 @@ int QAVDemuxer::read(QAVPacket &pkt)
     {
         QMutexLocker locker(&d->mutex);
         d->eof = eof;
-        if ((ret >= 0 || eof) && pkt.packet()->stream_index < d->availableStreams.size())
-            pkt.setStream(d->availableStreams[pkt.packet()->stream_index]);
+        if ((ret >= 0 || eof) && pkt.packet()->stream_index < d->availableStreams.size()) {
+            auto stream = d->availableStreams[pkt.packet()->stream_index];
+            Q_ASSERT(stream.stream());
+            pkt.setStream(stream);
+            // Normalize pts if it is based on the start time of the stream.
+            // F.e. these packets could be returned from the micro or video.
+            if (stream.stream()->duration == AV_NOPTS_VALUE
+                && stream.stream()->start_time != AV_NOPTS_VALUE
+                && pkt.packet()->pts >= stream.stream()->start_time) {
+                pkt.packet()->pts -= stream.stream()->start_time;
+                pkt.packet()->dts -= stream.stream()->start_time;
+            }
+        }
         // Allow EOF to flush BSF (send NULL)
         if ((ret >= 0 || eof) && d->bsf_ctx) {
             int bsf_ret = av_bsf_send_packet(d->bsf_ctx, d->eof ? NULL : pkt.packet());
