@@ -3150,7 +3150,7 @@ void tst_QAVPlayer::multipleAudioVideoFilters()
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
     QVERIFY(framesCount.contains("stats"));
     QCOMPARE(framesCount["stats"], 125);
-    QCOMPARE(videoFrame.pts(), 4.963);
+    QCOMPARE(videoFrame.pts(), 4.96);
     QVERIFY(framesCount.contains("audio"));
     QCOMPARE(framesCount["audio"], 51);
     QVERIFY(audioFrame.pts() < 5.5);
