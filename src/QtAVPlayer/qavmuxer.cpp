@@ -95,6 +95,7 @@ void QAVMuxerFramesPrivate::doWork()
         if (!frame)
             continue;
         int index = outputStreamIndex(frame.stream(), locker);
+        // Ignore wrong frames
         if (index < 0)
             continue;
         q->write(frame, index, locker);
@@ -199,9 +200,8 @@ int QAVMuxer::initMuxer(Locker &locker)
     for (int i = 0; i < d->inputStreams.size(); ++i) {
         auto &stream = d->inputStreams[i];
         auto codec = stream.codec();
-        if (!stream.codec()) {
+        if (!stream.codec())
             return AVERROR(EINVAL);
-        }
         auto dec_ctx = codec->avctx();
         auto out_stream = avformat_new_stream(d->ctx, NULL);
         if (!out_stream) {
@@ -252,6 +252,8 @@ int QAVMuxerPackets::write(const QAVPacket &packet)
     if (!d->loaded || !packet.stream())
         return 0;
     int index = d->outputStreamIndex(packet.stream(), locker);
+    if (index < 0)
+        return AVERROR(EINVAL);
     return write(packet, index, locker);
 }
 
@@ -454,6 +456,8 @@ int QAVMuxerFrames::write(const QAVFrame &frame)
     if (!d->loaded)
         return 0;
     int index = d->outputStreamIndex(frame.stream(), locker);
+    if (index < 0)
+        return AVERROR(EINVAL);
     return write(frame, index, locker);
 }
 
@@ -464,14 +468,14 @@ int QAVMuxerFrames::write(const QAVSubtitleFrame &frame)
     if (!d->loaded)
         return 0;
     int index = d->outputStreamIndex(frame.stream(), locker);
+    if (index < 0)
+        return AVERROR(EINVAL);
     return write(frame, index, locker);
 }
 
 int QAVMuxerFrames::write(QAVFrame frame, int streamIndex, Locker &)
 {
     Q_D(QAVMuxerFrames);
-    if (streamIndex < 0)
-        return AVERROR_UNKNOWN;
     Q_ASSERT(streamIndex < d->streams.size());
     auto &encStream = d->streams[streamIndex];
     auto enc_ctx = encStream.codec()->avctx();
@@ -520,8 +524,6 @@ int QAVMuxerFrames::write(QAVFrame frame, int streamIndex, Locker &)
 int QAVMuxerFrames::write(QAVSubtitleFrame frame, int streamIndex, Locker &)
 {
     Q_D(QAVMuxerFrames);
-    if (streamIndex < 0)
-        return AVERROR_UNKNOWN;
     Q_ASSERT(streamIndex < d->streams.size());
     auto &encStream = d->streams[streamIndex];
     auto enc_ctx = encStream.codec()->avctx();
