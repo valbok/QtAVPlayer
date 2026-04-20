@@ -494,6 +494,7 @@ void tst_QAVDemuxer::muxerWriteFrames()
 
 void tst_QAVDemuxer::muxerWriteSubtitles()
 {
+    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QFileInfo file(testData("colors_subtitles.mkv"));
     QAVDemuxer d;
     QAVMuxerFrames m;
@@ -534,6 +535,7 @@ void tst_QAVDemuxer::muxerWriteSubtitles()
     d.unload();
     QVERIFY(d.load("colors.mkv") >= 0);
     QVERIFY(!d.availableSubtitleStreams().isEmpty());
+    qputenv("QT_AVPLAYER_NO_HWDEVICE", "");
 }
 
 void tst_QAVDemuxer::muxerEnqueue()
