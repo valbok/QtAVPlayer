@@ -1,3 +1,15 @@
+2026-03
+-------
+
+- #562 - Moved normalizing of packets pts to demuxer from muxer
+- #561 - Fixed to return EINVAL if a packet is not accepted by a muxer
+- #560 - Exited the example muxer if EOF
+- #559 - Fixed crash during muxing
+- #558 - Added widget_video_opengl to CI
+- #557 - Normalized pts of packets if these packets are based on start time, f.e. retrieved from video device
+- #556 - Introduced support of AV_PIX_FMT_YUYV422 in OpenGL widget
+- #555 - Added support for change aspect ratio mode - Kioro404 <angelo61br@gmail.com>
+
 2026-02
 -------
 
