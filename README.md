@@ -59,7 +59,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
 3. Easy getting video and audio frames:
 
        QObject::connect(&player, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) {
-           // QAVVideoFrame is comppatible with QVideoFrame
+           // QAVVideoFrame is compatible with QVideoFrame
            QVideoFrame videoFrame = frame;
            
            // QAVVideoFrame can be converted to various pixel formats
@@ -77,7 +77,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
        QAVAudioOutput audioOutput;
        QObject::connect(&player, &QAVPlayer::audioFrame, [&](const QAVAudioFrame &frame) { 
             // Access to the data
-            qDebug() << autioFrame.format() << autioFrame.data().size();
+            qDebug() << frame.format() << frame.data().size();
             audioOutput.play(frame);
        }, Qt::DirectConnection);
        
@@ -101,10 +101,10 @@ Free and open-source Qt Media Player library based on FFmpeg.
        QObject::connect(&player, &QAVPlayer::stepped, [&](qint64 pos) { qDebug() << "Made a step to pos" << pos; });
        QObject::connect(&player, &QAVPlayer::mediaStatusChanged, [&](QAVPlayer::MediaStatus status) { 
            switch (status) {
-               case QAVplayer::EndOfMedia:
+               case QAVPlayer::EndOfMedia:
                    qDebug() << "Finished to play, no frames in queue"; 
                    break;
-               case QAVplayer::NoMedia:
+               case QAVPlayer::NoMedia:
                    qDebug() << "Demuxer threads are finished";
                    break;
                default:
@@ -116,7 +116,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
        QObject::connect(&p, &QAVPlayer::seeked, &p, [&](qint64 pos) { seekPosition = pos; });
        QObject::connect(&player, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) { seekFrame = frame; });
-       player.seek(5000)
+       player.seek(5000);
        QTRY_COMPARE(seekPosition, 5000);
        QTRY_COMPARE(seekFrame.pts(), 5.0);
        

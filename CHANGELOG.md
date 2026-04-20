@@ -40,7 +40,7 @@
 2025-03
 -------
 
-- #524 - Intorduced `QAVMuxerPackets` and `QAVMuxerFrames` muxers.
+- #524 - Introduced `QAVMuxerPackets` and `QAVMuxerFrames` muxers.
          Fixed `QAVPlayer::setOutput` to use `QAVMuxerPackets`.
          Now possible to save the streams to output files without reencoding.
          But if needed, `QAVMuxerFrames` is used to encode frames retrieved after applied filters.
