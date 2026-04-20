@@ -97,6 +97,13 @@ jobs:
           cmake . -DQT_AVPLAYER_MULTIMEDIA=ON
           make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
 
+      - name: CMake Examples
+        if: ${{ matrix.qt_version == '6.8.2' }}
+        run: |
+          cd examples/qml_player
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
+
   macos:
     strategy:
       matrix:
@@ -317,6 +324,13 @@ jobs:
           cmake . -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib
           cmake --build . -v
           cd ../widget_video
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib
+          cmake --build . -v
+
+      - name: CMake Examples
+        if: ${{ matrix.type == 'MSVC' && matrix.qt_version == '6.8.2' }}
+        run: |
+          cd examples/qml_player
           cmake . -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib
           cmake --build . -v
 
