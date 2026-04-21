@@ -16,7 +16,7 @@ ApplicationWindow {
     // no binding ever receives null and throws a TypeError.
     readonly property var pc: playerController ?? ({
         hasMedia: false, playing: false, paused: false,
-        position: 0, duration: 0, volume: 1.0, errorString: ""
+        position: 0, duration: 0, volume: 1.0, errorString: "", subtitleTracks: []
     })
 
     readonly property color accentColor:  "#e8c84a"   // warm amber
@@ -26,6 +26,7 @@ ApplicationWindow {
     readonly property color textPrimary:  "#f0ede6"
     readonly property color textMuted:    "#666"
     readonly property int   radius:       6
+    property string selectedStreamIndex:  "-1"
 
     function formatTime(ms) {
         if (ms <= 0) return "0:00"
@@ -46,7 +47,7 @@ ApplicationWindow {
             "Audio files (*.mp3 *.aac *.flac *.ogg *.wav)",
             "All files (*)"
         ]
-        onAccepted: playerController.openFile(selectedFile)
+        onAccepted: { playerController.openFile(selectedFile); root.title = selectedFile }
     }
 
     Dialog {
@@ -124,6 +125,22 @@ ApplicationWindow {
     Connections {
         target: playerController
         function onErrorOccurred() { errorBar.show(playerController.errorString) }
+        function onSubtitleTracksChanged() {
+            menuModel.clear()
+            menuModel.append({"name": "Disable", "streamIndex": "-1"});
+            for (var i in playerController.subtitleTracks) {
+                menuModel.append({"name": playerController.subtitleTracks[i], "streamIndex": i});
+            }
+        }
+        function onSubtitleTrackChanged(idx) {
+            selectedStreamIndex = idx;
+        }
+        function onSubtitleTextChanged(text, ms) {
+            subtitle.text = text
+            subtitle.visible = true
+            subtitleTimer.interval = ms
+            subtitleTimer.restart()
+        }
     }
 
     DropArea {
@@ -145,15 +162,128 @@ ApplicationWindow {
 
             RowLayout {
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 12 }
-                spacing: 4
+                spacing: 2
 
                 MenuBarButton {
-                    text: "Open File"
-                    onClicked: fileDialog.open()
+                    id: fileMenuButton
+                    text: "File  ▾"
+                    highlighted: fileMenu.visible
+
+                    onClicked: fileMenu.visible ? fileMenu.close() : fileMenu.open()
+
+                    Menu {
+                        id: fileMenu
+                        // Open downward from the button
+                        y: fileMenuButton.height
+
+                        background: Rectangle {
+                            color: root.bgPanel
+                            border.color: root.accentColor
+                            border.width: 1
+                            radius: root.radius
+                            implicitWidth: 200
+                        }
+
+                        MenuItem {
+                            text: "Open File"
+                            onTriggered: fileDialog.open()
+                            contentItem: Text {
+                                leftPadding: 12
+                                text: parent.text
+                                color: parent.highlighted ? root.accentColor : root.textPrimary
+                                font.pixelSize: 13
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle {
+                                color: parent.highlighted ? Qt.rgba(1,1,1,0.06) : "transparent"
+                            }
+                        }
+                        MenuItem {
+                            text: "Open URL"
+                            onTriggered: { urlField.text = ""; urlDialog.open() }
+                            contentItem: Text {
+                                leftPadding: 12
+                                text: parent.text
+                                color: parent.highlighted ? root.accentColor : root.textPrimary
+                                font.pixelSize: 13
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle {
+                                color: parent.highlighted ? Qt.rgba(1,1,1,0.06) : "transparent"
+                            }
+                        }
+                        MenuSeparator {
+                            contentItem: Rectangle {
+                                implicitHeight: 1
+                                color: "#333"
+                            }
+                        }
+                        MenuItem {
+                            text: "Quit"
+                            onTriggered: Qt.quit()
+                            contentItem: Text {
+                                leftPadding: 12
+                                text: parent.text
+                                color: parent.highlighted ? root.accentColor : root.textPrimary
+                                font.pixelSize: 13
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle {
+                                color: parent.highlighted ? Qt.rgba(1,1,1,0.06) : "transparent"
+                            }
+                        }
+                    }
                 }
                 MenuBarButton {
-                    text: "Open URL"
-                    onClicked: { urlField.text = ""; urlField.focus = true; urlDialog.open() }
+                    id: subtitleMenuButton
+                    text: "Subtitle ▾"
+                    highlighted: subtitleMenu.visible
+                    enabled: pc.subtitleTracks.length > 0
+
+                    onClicked: subtitleMenu.visible ? subtitleMenu.close() : subtitleMenu.open()
+
+                    ListModel {
+                        id: menuModel
+                    }
+
+                    Menu {
+                        id: subtitleMenu
+                        // Open downward from the button
+                        y: subtitleMenuButton.height
+
+                        background: Rectangle {
+                            color: root.bgPanel
+                            border.color: root.accentColor
+                            border.width: 1
+                            radius: root.radius
+                            implicitWidth: 200
+                        }
+
+                        Instantiator {
+                            model: menuModel
+                            delegate: MenuItem {
+                                text: model.name
+                                contentItem: Text {
+                                    leftPadding: 12
+                                    text: parent.text
+                                    color: streamIndex == selectedStreamIndex ? root.accentColor
+                                         : parent.highlighted                 ? root.textPrimary
+                                         :                                      root.textMuted
+                                    font.pixelSize: 13
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                background: Rectangle {
+                                    color: parent.highlighted ? Qt.rgba(1,1,1,0.06) : "transparent"
+                                }
+                                onTriggered: {
+                                    pc.setSubtitleTrack(streamIndex)
+                                }
+                            }
+                            // Manually add/remove created objects to the Menu
+                            onObjectAdded: (index, object) => subtitleMenu.insertItem(index, object)
+                            onObjectRemoved: (index, object) => subtitleMenu.removeItem(object)
+                        }
+                    }
                 }
             }
         }
@@ -205,6 +335,36 @@ ApplicationWindow {
                                       ? playerController.pause()
                                       : playerController.play())
                                : fileDialog.open()
+            }
+            Text {
+                id: subtitle
+                anchors {
+                    bottom: parent.bottom
+                    horizontalCenter: parent.horizontalCenter
+                    bottomMargin: 18
+                    left: parent.left
+                    leftMargin: 32
+                    rightMargin: 32
+                }
+                text: ""
+                color: "white"
+                font.pixelSize: 22
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                style: Text.Outline
+                styleColor: "#000"
+                // Subtle semi-transparent backing for readability
+                Rectangle {
+                    anchors { fill: parent; margins: -4 }
+                    color: "#00000000"
+                    radius: 4
+                    z: -1
+                }
+            }
+            Timer {
+                id: subtitleTimer
+                interval: 4000
+                onTriggered: subtitle.visible = false
             }
         }
 
@@ -361,6 +521,8 @@ ApplicationWindow {
         onActivated: {
             if (root.visibility === Window.FullScreen)
                 root.showNormal()
+            else if (urlDialog.visible)
+                urlDialog.reject()
             else
                 Qt.quit()
         }
@@ -391,24 +553,39 @@ ApplicationWindow {
     }
 
     Shortcut {
+        sequence: "Down"
+        context: Qt.ApplicationShortcut
+        onActivated: playerController.volume = Math.max(0.0, playerController.volume - 0.1)
+    }
+
+    Shortcut {
+        sequence: "Up"
+        context: Qt.ApplicationShortcut
+        onActivated: playerController.volume = Math.min(1.0, playerController.volume + 0.1)
+    }
+
+    Shortcut {
         sequence: "Ctrl+O"
         context: Qt.ApplicationShortcut
         onActivated: fileDialog.open()
     }
 
     component MenuBarButton: AbstractButton {
+        property bool highlighted: false
         implicitHeight: 28
         leftPadding: 12; rightPadding: 12
 
         contentItem: Text {
             text: parent.text
-            color: parent.hovered ? root.accentColor : root.textPrimary
+            color: parent.enabled ? (parent.highlighted || parent.hovered ? root.accentColor : root.textPrimary) : root.textMuted
             font.pixelSize: 12
             verticalAlignment: Text.AlignVCenter
             Behavior on color { ColorAnimation { duration: 120 } }
         }
         background: Rectangle {
-            color: parent.hovered ? Qt.rgba(1,1,1,0.05) : "transparent"
+            color: parent.highlighted ? Qt.rgba(1,1,1,0.08)
+                 : parent.hovered    ? Qt.rgba(1,1,1,0.05)
+                 : "transparent"
             radius: root.radius
         }
     }
