@@ -44,6 +44,7 @@ private slots:
     void muxerWritePackets();
     void muxerWriteFrames();
     void muxerWriteSubtitles();
+    void muxerWriteSubtitlesText();
     void muxerEnqueue();
     void muxerEnqueueStreamIndex();
     void muxerEnqueueFramesFromMultiSources();
@@ -494,7 +495,6 @@ void tst_QAVDemuxer::muxerWriteFrames()
 
 void tst_QAVDemuxer::muxerWriteSubtitles()
 {
-    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QFileInfo file(testData("colors_subtitles.mkv"));
     QAVDemuxer d;
     QAVMuxerFrames m;
@@ -535,7 +535,39 @@ void tst_QAVDemuxer::muxerWriteSubtitles()
     d.unload();
     QVERIFY(d.load("colors.mkv") >= 0);
     QVERIFY(!d.availableSubtitleStreams().isEmpty());
-    qputenv("QT_AVPLAYER_NO_HWDEVICE", "");
+}
+
+void tst_QAVDemuxer::muxerWriteSubtitlesText()
+{
+    QFileInfo file(testData("colors_subtitles.mkv"));
+    QAVDemuxer d;
+    QAVMuxerSubtitleFrames m;
+
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
+    QVERIFY(!d.availableSubtitleStreams().isEmpty());
+    for (auto &s: d.availableSubtitleStreams()) {
+        QVERIFY(m.load(s) >= 0);
+        QAVPacket p;
+        while (d.read(p) >= 0) {
+            switch (p.stream().codec()->avctx()->codec_type) {
+            case AVMEDIA_TYPE_SUBTITLE: {
+                QList<QAVSubtitleFrame> fs;
+                QAVDemuxer::decode(p, fs);
+                if (fs.size()) {
+                    QVERIFY(fs.size() == 1);
+                    auto &f = fs[0];
+                    QString text;
+                    QVERIFY(m.parseText(f, text) >= 0);
+                    QVERIFY(!text.isEmpty());
+                }
+                break;
+            }
+            default:
+                break;
+            }
+        }
+        m.unload();
+    }
 }
 
 void tst_QAVDemuxer::muxerEnqueue()
