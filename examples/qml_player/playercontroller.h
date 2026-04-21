@@ -10,6 +10,7 @@
 #include <QObject>
 #include <QtAVPlayer/qavplayer.h>
 #include <QtAVPlayer/qavaudiooutput.h>
+#include <QtAVPlayer/qavmuxer.h>
 #include <QVideoSink>
 #include <QVideoFrame>
 #include <QString>
@@ -39,6 +40,8 @@ class PlayerController : public QObject
     Q_PROPERTY(bool hasMedia READ hasMedia NOTIFY hasMediaChanged)
     Q_PROPERTY(QString errorString READ errorString NOTIFY errorOccurred)
 
+    Q_PROPERTY(QStringList subtitleTracks READ subtitleTracks NOTIFY subtitleTracksChanged)
+
 public:
     explicit PlayerController(QObject *parent = nullptr);
 
@@ -50,6 +53,7 @@ public:
     qreal volume() const { return m_volume; }
     bool hasMedia() const { return m_hasMedia; }
     QString errorString() const { return m_errorString; }
+    QStringList subtitleTracks() const;
 
     void setVolume(qreal v);
 
@@ -64,6 +68,7 @@ public slots:
     void seek(qint64 ms);
     void stepForward();
     void stepBackward();
+    void setSubtitleTrack(int index);
 
 signals:
     void playingChanged();
@@ -73,14 +78,20 @@ signals:
     void volumeChanged();
     void hasMediaChanged();
     void errorOccurred();
+    void subtitleTracksChanged();
+    void subtitleTrackChanged(int index);
+    void subtitleTextChanged(const QString &text, int duration);
 
 private:
     void connectPlayerSignals();
     void setSource(const QString &source);
+    void notifyStreams();
+    void reset();
 
     QAVPlayer m_player;
     QAVAudioOutput m_audioOutput;
     QVideoSink *m_videoSink = nullptr;
+    QAVMuxerSubtitleFrames m_subtitleMuxer;
 
     bool m_playing = false;
     bool m_paused = false;

@@ -13,6 +13,15 @@
 #include <QTimer>
 #include <QFileInfo>
 
+static bool isStreamCurrent(int index, const QList<QAVStream> &streams)
+{
+    for (const auto &stream: streams) {
+        if (stream.index() == index)
+            return true;
+    }
+    return false;
+}
+
 PlayerController::PlayerController(QObject *parent)
     : QObject(parent)
 {
@@ -37,6 +46,12 @@ void PlayerController::connectPlayerSignals()
 
     QObject::connect(&m_player, &QAVPlayer::audioFrame, this, [this](const QAVAudioFrame &frame) {
         m_audioOutput.play(frame);
+    }, Qt::DirectConnection);
+
+    QObject::connect(&m_player, &QAVPlayer::subtitleFrame, this, [this](const QAVSubtitleFrame &frame) {
+        QString text;
+        if (m_subtitleMuxer.parseText(frame, text) >= 0)
+            emit subtitleTextChanged(text, frame.duration() * 1000);
     }, Qt::DirectConnection);
 
     QObject::connect(&m_player, &QAVPlayer::played, this, [this](qint64 pos) {
@@ -96,6 +111,7 @@ void PlayerController::connectPlayerSignals()
             m_hasMedia = true;
             emit durationChanged();
             emit hasMediaChanged();
+            notifyStreams();
             m_player.play();
         } else if (status == QAVPlayer::EndOfMedia) {
             m_playing = false;
@@ -103,12 +119,7 @@ void PlayerController::connectPlayerSignals()
             emit playingChanged();
             emit pausedChanged();
         } else if (status == QAVPlayer::NoMedia) {
-            m_hasMedia = false;
-            m_duration = 0;
-            m_position = 0;
-            emit hasMediaChanged();
-            emit durationChanged();
-            emit positionChanged();
+            reset();
         }
     });
 
@@ -172,12 +183,7 @@ void PlayerController::pause()
 void PlayerController::stop()
 {
     m_player.setSource({});
-    m_playing = false;
-    m_paused  = false;
-    m_position = 0;
-    emit playingChanged();
-    emit pausedChanged();
-    emit positionChanged();
+    reset();
 }
 
 void PlayerController::seek(qint64 ms)
@@ -193,4 +199,67 @@ void PlayerController::stepForward()
 void PlayerController::stepBackward()
 {
     m_player.stepBackward();
+}
+
+QStringList PlayerController::subtitleTracks() const
+{
+    QStringList ret;
+    auto streams = m_player.availableSubtitleStreams();
+    const auto lang = QString::fromLatin1("language");
+    for (int i = 0; i < streams.size(); ++i) {
+        auto &s = streams[i];
+        auto name = "Track " + QString::number(i);
+        auto md = s.metadata();
+        if (md.contains(lang))
+            name += " [" + md[lang] + "]";
+        ret.push_back(name);
+    }
+    return ret;
+}
+
+void PlayerController::setSubtitleTrack(int index)
+{
+    auto streams = m_player.availableSubtitleStreams();
+    for (int i = 0; i < streams.size(); ++i) {
+        auto &s = streams[i];
+        if (i == index) {
+            m_player.setSubtitleStream(s);
+            emit subtitleTrackChanged(index);
+            return;
+        }
+    }
+    m_player.setSubtitleStreams({});
+    emit subtitleTrackChanged(-1);
+}
+
+void PlayerController::notifyStreams()
+{
+    emit subtitleTracksChanged();
+    auto availableSubtitleStreams = m_player.availableSubtitleStreams();
+    auto currentSubtitleStreams = m_player.currentSubtitleStreams();
+    for (int i = 0; i < availableSubtitleStreams.size(); ++i) {
+        auto &s = availableSubtitleStreams[i];
+        if (isStreamCurrent(s.index(), currentSubtitleStreams)) {
+            m_subtitleMuxer.unload();
+            m_subtitleMuxer.load(s);
+            emit subtitleTrackChanged(i);
+            break;
+        }
+    }
+}
+
+void PlayerController::reset()
+{
+    m_hasMedia = false;
+    m_playing = false;
+    m_paused  = false;
+    m_position = 0;
+    m_duration = 0;
+    emit hasMediaChanged();
+    emit playingChanged();
+    emit pausedChanged();
+    emit positionChanged();
+    emit durationChanged();
+    emit subtitleTracksChanged();
+    emit subtitleTrackChanged(-1);
 }

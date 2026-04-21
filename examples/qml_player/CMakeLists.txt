@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(qml_video_player LANGUAGES CXX)
+project(qml_player LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTOMOC ON)
@@ -18,7 +18,7 @@ include_directories("${QTAVPLAYER_DIR}/src")
 set(QT_AVPLAYER_DIR "${QTAVPLAYER_DIR}/src/QtAVPlayer")
 include("${QTAVPLAYER_DIR}/src/QtAVPlayer/QtAVPlayer.cmake")
 
-qt_add_executable(qml_video_player
+qt_add_executable(qml_player
     main.cpp
     playercontroller.cpp
     playercontroller.h
@@ -27,9 +27,9 @@ qt_add_executable(qml_video_player
 )
 
 # Enable QtMultimedia integration (QVideoFrame support)
-target_compile_definitions(qml_video_player PRIVATE QT_AVPLAYER_MULTIMEDIA)
+target_compile_definitions(qml_player PRIVATE QT_AVPLAYER_MULTIMEDIA)
 
-target_link_libraries(qml_video_player PRIVATE
+target_link_libraries(qml_player PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Quick
@@ -39,7 +39,7 @@ target_link_libraries(qml_video_player PRIVATE
     ${QtAVPlayer_LIBS}
 )
 
-set_target_properties(qml_video_player PROPERTIES
+set_target_properties(qml_player PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE    TRUE
 )
