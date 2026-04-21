@@ -575,4 +575,98 @@ int QAVMuxerFrames::flushFrames(Locker &locker)
     return 0;
 }
 
+class QAVMuxerSubtitleFramesPrivate : public QObject
+{
+    Q_DECLARE_PUBLIC(QAVMuxerSubtitleFrames)
+public:
+    QAVMuxerSubtitleFramesPrivate(QAVMuxerSubtitleFrames *q)
+        : q_ptr(q)
+    {
+    }
+
+    QAVMuxerSubtitleFrames *q_ptr = nullptr;
+    QAVStream outputStream;
+    AVFormatContext *ctx = nullptr;
+};
+
+QAVMuxerSubtitleFrames::QAVMuxerSubtitleFrames()
+    : d_ptr(new QAVMuxerSubtitleFramesPrivate(this))
+{
+}
+
+QAVMuxerSubtitleFrames::~QAVMuxerSubtitleFrames()
+{
+    unload();
+}
+
+int QAVMuxerSubtitleFrames::load(const QAVStream &stream)
+{
+    Q_D(QAVMuxerSubtitleFrames);
+    auto encoder = avcodec_find_encoder(AV_CODEC_ID_SUBRIP);
+    if (!encoder) {
+        qWarning() << "Encoder not found";
+        return AVERROR_INVALIDDATA;
+    }
+
+    d_ptr->ctx = avformat_alloc_context();
+    auto in_stream = stream.stream();
+    auto dec_ctx = stream.codec()->avctx();
+    auto out_stream = avformat_new_stream(d->ctx, NULL);
+
+    QSharedPointer<QAVCodec> codec(new QAVSubtitleCodec(encoder));
+    auto enc_ctx = codec->avctx();
+    enc_ctx->time_base = AV_TIME_BASE_Q;
+    enc_ctx->height = dec_ctx->height;
+    enc_ctx->width = dec_ctx->width;
+    if (dec_ctx->subtitle_header) {
+        // ASS code assumes this buffer is null terminated so add extra byte.
+        enc_ctx->subtitle_header = (uint8_t*) av_mallocz(dec_ctx->subtitle_header_size + 1);
+        if (!enc_ctx->subtitle_header)
+            return {};
+        memcpy(enc_ctx->subtitle_header, dec_ctx->subtitle_header,
+               dec_ctx->subtitle_header_size);
+        enc_ctx->subtitle_header_size = dec_ctx->subtitle_header_size;
+    }
+    if (!codec->open(out_stream)) {
+        qWarning() << "Cannot open encoder: " << encoder->name;
+        return AVERROR_INVALIDDATA;
+    }
+    auto ret = avcodec_parameters_copy(out_stream->codecpar, in_stream->codecpar);
+    if (ret < 0) {
+        qWarning() << "Copying parameters for stream failed:" << err2str(ret);
+        return ret;
+    }
+    out_stream->time_base = in_stream->time_base;
+    d->outputStream = {0, d->ctx, codec};
+    return 0;
+}
+
+void QAVMuxerSubtitleFrames::unload()
+{
+    Q_D(QAVMuxerSubtitleFrames);
+    if (d->ctx)
+        avformat_free_context(d->ctx);
+    d->ctx = nullptr;
+    d->outputStream = {};
+}
+
+int QAVMuxerSubtitleFrames::parseText(const QAVSubtitleFrame &f, QString &out)
+{
+    Q_D(QAVMuxerSubtitleFrames);
+    if (!d->outputStream || !f.stream())
+        return 0;
+    QAVSubtitleFrame frame = f;
+    frame.setStream(d->outputStream);
+    int sent = frame.send();
+    if (sent < 0 && sent != AVERROR(EAGAIN))
+        return sent;
+    QAVPacket pkt;
+    pkt.setStream(d->outputStream);
+    int received = pkt.receive();
+    if (received < 0)
+        return received;
+    out = QString::fromUtf8(reinterpret_cast<const char*>(pkt.packet()->data));
+    return 0;
+}
+
 QT_END_NAMESPACE

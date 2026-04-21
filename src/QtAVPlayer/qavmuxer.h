@@ -109,6 +109,25 @@ private:
 
     Q_DECLARE_PRIVATE(QAVMuxerFrames)
 };
+
+class QAVMuxerSubtitleFramesPrivate;
+class QAVMuxerSubtitleFrames
+{
+public:
+    QAVMuxerSubtitleFrames();
+    ~QAVMuxerSubtitleFrames();
+
+    int load(const QAVStream &stream);
+    void unload();
+
+    int parseText(const QAVSubtitleFrame &frame, QString &out);
+
+private:
+    Q_DISABLE_COPY(QAVMuxerSubtitleFrames)
+    Q_DECLARE_PRIVATE(QAVMuxerSubtitleFrames)
+    std::unique_ptr<QAVMuxerSubtitleFramesPrivate> d_ptr;
+};
+
 QT_END_NAMESPACE
 
 #endif
