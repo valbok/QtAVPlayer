@@ -53,6 +53,7 @@ int QAVSubtitleCodec::write(const QAVStreamFrame &frame)
         return AVERROR(EINVAL);
     d->pkt.setStream(frame.stream());
     auto pkt = d->pkt.packet();
+    av_packet_unref(pkt);
     int ret = av_new_packet(pkt, d->subtitle_out_max_size);
     if (ret < 0)
         return AVERROR(ENOMEM);
