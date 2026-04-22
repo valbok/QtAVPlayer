@@ -14,6 +14,12 @@
 #include <QObject>
 #include <memory>
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#include <QAudioDeviceInfo>
+#else
+#include <QAudioDevice>
+#endif
+
 QT_BEGIN_NAMESPACE
 
 class QAVAudioOutputPrivate;
@@ -23,6 +29,13 @@ class Q_AVPLAYER_EXPORT QAVAudioOutput : public QObject
 public:
     QAVAudioOutput(QObject *parent = nullptr);
     ~QAVAudioOutput();
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    using AudioDevice = QAudioDeviceInfo;
+#else
+    using AudioDevice = QAudioDevice;
+#endif
+    void setAudioDevice(const AudioDevice &device);
 
     void setVolume(qreal v);
     qreal volume() const;

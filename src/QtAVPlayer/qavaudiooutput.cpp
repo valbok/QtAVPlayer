@@ -82,10 +82,8 @@ class QAVAudioOutputPrivate : public QObject
 public:
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     using AudioOutput = QAudioOutput;
-    using AudioDevice = QAudioDeviceInfo;
 #else
     using AudioOutput = QAudioSink;
-    using AudioDevice = QAudioDevice;
 #endif
 
     QAVAudioOutputPrivate(QAVAudioOutput *q): q_ptr(q) {}
@@ -100,23 +98,26 @@ public:
 
     std::unique_ptr<QAVAudioOutputDevice> device;
     std::unique_ptr<QThread> audioThread;
-    AudioDevice defaultAudioDevice;
+    QAVAudioOutput::AudioDevice audioDevice;
+    QString audioDeviceName;
     mutable QMutex mutex;
 
     void resetIfNeeded(const QAudioFormat &fmt, int bsize, qreal v)
     {
         QMutexLocker locker(&mutex);
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-        auto audioDevice = QAudioDeviceInfo::defaultOutputDevice();
+        if (audioDevice.isNull())
+            audioDevice = QAudioDeviceInfo::defaultOutputDevice();
         auto deviceName = audioDevice.deviceName();
 #else
-        auto audioDevice = QMediaDevices::defaultAudioOutput();
+        if (audioDevice.isNull())
+            audioDevice = QMediaDevices::defaultAudioOutput();
         auto deviceName = audioDevice.description();
 #endif
         if (!audioOutput
             || audioOutput->format() != fmt
             || audioOutput->state() == QAudio::StoppedState
-            || defaultAudioDevice != audioDevice)
+            || audioDeviceName != deviceName)
         {
             if (QThread::currentThread() != audioThread.get()) {
                 qWarning() << "QAVAudioOutput initialization must be on the audio thread";
@@ -138,7 +139,7 @@ public:
                 o->stop();
                 o->deleteLater();
             });
-            defaultAudioDevice = audioDevice;
+            audioDeviceName = deviceName;
             if (bsize > 0)
                 audioOutput->setBufferSize(bsize);
             audioOutput->setVolume(v);
@@ -170,6 +171,18 @@ QAVAudioOutput::~QAVAudioOutput()
     stop();
     d->audioThread->quit();
     d->audioThread->wait();
+}
+
+void QAVAudioOutput::setAudioDevice(const AudioDevice &device)
+{
+    Q_D(QAVAudioOutput);
+    QMutexLocker locker(&d->mutex);
+    d->audioDevice = device;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    d->audioDeviceName = device.deviceName();
+#else
+    d->audioDeviceName = device.description();
+#endif
 }
 
 void QAVAudioOutput::setVolume(qreal v)
