@@ -130,6 +130,18 @@ int main(int argc, char *argv[])
     QObject::connect(&p, &QAVPlayer::mediaStatusChanged, [&](auto status) {
         qDebug() << "mediaStatusChanged"<< status << p.state();
         if (status == QAVPlayer::LoadedMedia) {
+            auto chaps = p.chapters();
+            qDebug() << "Chapters:" << chaps.size();
+            for( const QVariantMap &ent : chaps ) {
+                qDebug().nospace() << "Chapter #" << ent["id"].toInt() << ":";
+                QVariantMap metadata = ent["metadata"].toMap();
+                QList<QString> metakeys = metadata.keys();
+                for( const QString &k : metakeys ) {
+                    qDebug().noquote().nospace() << "  " << k << ": \"" << metadata[k].toString() << "\"";
+                }
+                qDebug().nospace() << "  " << ent["start_time"].toDouble() << "s => " << ent["end_time"].toDouble() << "s";
+            }
+
             auto availableVideoStreams = p.availableVideoStreams();
             //p.setVideoStreams({});
             auto videoStreams = p.currentVideoStreams();
