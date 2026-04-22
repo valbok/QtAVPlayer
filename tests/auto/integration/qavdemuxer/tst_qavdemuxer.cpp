@@ -439,6 +439,9 @@ void tst_QAVDemuxer::videoCodecs()
     d.unload();
     d.setInputVideoCodec("unknown");
     QVERIFY(d.load(file.absoluteFilePath()) < 0);
+    d.unload();
+    d.setInputVideoCodec("software");
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
 }
 
 void tst_QAVDemuxer::inputOptions()

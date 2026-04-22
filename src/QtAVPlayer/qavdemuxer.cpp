@@ -184,13 +184,19 @@ void QAVDemuxer::abort(bool stop)
 
 static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, QAVVideoCodec &codec, AVDictionary **codecOpts)
 {
+    bool ignoreHW = qEnvironmentVariableIsSet("QT_AVPLAYER_NO_HWDEVICE");
     const AVCodec *videoCodec = nullptr;
     if (!inputVideoCodec.isEmpty()) {
-        qDebug() << "Loading: -vcodec" << inputVideoCodec;
-        videoCodec = avcodec_find_decoder_by_name(inputVideoCodec.toUtf8().constData());
-        if (!videoCodec) {
-            qWarning() << "Could not find decoder:" << inputVideoCodec;
-            return AVERROR(EINVAL);
+        if (inputVideoCodec == QLatin1String("software")) {
+            qDebug() << "Ignore hardware device context";
+            ignoreHW = true;
+        } else {
+            qDebug() << "Loading: -vcodec" << inputVideoCodec;
+            videoCodec = avcodec_find_decoder_by_name(inputVideoCodec.toUtf8().constData());
+            if (!videoCodec) {
+                qWarning() << "Could not find decoder:" << inputVideoCodec;
+                return AVERROR(EINVAL);
+            }
         }
     }
 
@@ -200,7 +206,6 @@ static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, Q
     QList<QSharedPointer<QAVHWDevice>> devices;
     QAVDictionaryHolder opts;
     Q_UNUSED(opts);
-    static const bool ignoreHW = qEnvironmentVariableIsSet("QT_AVPLAYER_NO_HWDEVICE");
 
 #if defined(QT_AVPLAYER_VA_X11) && QT_CONFIG(opengl)
     devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VAAPI_X11_GLX));

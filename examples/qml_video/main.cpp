@@ -193,8 +193,11 @@ int main(int argc, char *argv[])
     }
     p.setSource(file, qrc);
     p.setFilter(filter);
+    // Force software decoding
+    //p.setInputVideoCodec(QString::fromLatin1("software"));
     if (filter.isEmpty())
         p.setOutput(output);
+    // Disable syncing frames using their pts
     //p.setSynced(false);
 
     viewer.setMinimumSize(QSize(300, 360));

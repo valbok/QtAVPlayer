@@ -107,6 +107,12 @@ public:
     QString inputFormat() const;
     void setInputFormat(const QString &format);
 
+    /**
+     * Name of AVCodec to be used for video codec: `ffmpeg -vcodec h264`.
+     * It calls avcodec_find_decoder_by_name() internally.
+     * If `software` is passed, then it forces software decoding,
+     * the same as `QT_AVPLAYER_NO_HWDEVICE` env variable.
+     */
     QString inputVideoCodec() const;
     void setInputVideoCodec(const QString &codec);
     static QStringList supportedVideoCodecs();
