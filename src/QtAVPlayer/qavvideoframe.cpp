@@ -256,6 +256,9 @@ public:
     #endif // QT_VERSION < QT_VERSION_CHECK(6, 8, 2)
 #endif // #if QT_VERSION < QT_VERSION_CHECK(6, 7, 2)
     {
+        // Don't use video buffer if already mapped
+        if (m_mode != QVideoFrame::NotMapped)
+            return 0;
         if (m_textures.isNull())
             const_cast<PlanarVideoBuffer *>(this)->m_textures = m_frame.handle(m_rhi);
         if (m_textures.canConvert<QList<QVariant>>()) {
