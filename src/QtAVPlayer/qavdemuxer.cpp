@@ -188,7 +188,7 @@ static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, Q
     const AVCodec *videoCodec = nullptr;
     if (!inputVideoCodec.isEmpty()) {
         if (inputVideoCodec == QLatin1String("software")) {
-            qDebug() << "Ignore hardware device context";
+            qDebug() << "Video codec:" << inputVideoCodec <<", ignoring hardware device context";
             ignoreHW = true;
         } else {
             qDebug() << "Loading: -vcodec" << inputVideoCodec;
