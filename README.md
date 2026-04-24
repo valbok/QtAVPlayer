@@ -19,7 +19,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
       ffmpeg -i we-miss-gst-pipeline-in-qt6mm.mkv -filter_complex "qt,nev:er,wanted;[ffmpeg];what:happened" - | ffplay -
 
-  but using QML or Qt Widgets:
+  but using QML (or Qt Widgets):
 
       ./examples/qml_video :/valbok "if:you:like[cats];remove[this-sentence]"
 
@@ -68,6 +68,11 @@ Free and open-source Qt Media Player library based on FFmpeg.
            // Easy getting data from video frame
            auto mapped = videoFrame.map(); // downloads data if it is in GPU
            qDebug() << mapped.format << mapped.size;
+           // Since it is already mapped, it will not create any hanldes
+           // and will just upload available data to GPU memory during the rendering.
+           // If the frame is not mapped, it will create internal texture handle
+           // which will be used by the renderer.
+           videoSink->setVideoFrame(videoFrame);
            
            // The frame might contain OpenGL or MTL textures, for copy-free rendering
            qDebug() << frame.handleType() << frame.handle();
@@ -88,10 +93,14 @@ Free and open-source Qt Media Player library based on FFmpeg.
                 else
                     qDebug() << "ass:" << frame.subtitle()->rects[i]->ass;
            }
+           // The text could be parsed by QAVMuxerSubtitleFrames
+           QString text;
+           if (m_subtitleMuxer.parseText(frame, text) >= 0)
+               emit subtitleTextChanged(text, frame.duration() * 1000);
        }, Qt::DirectConnection);
        
 
-4. Each action is confirmed by a signal:
+5. Each action is confirmed by a signal:
 
        // All signals are added to a queue and guaranteed to be emitted in proper order.
        QObject::connect(&player, &QAVPlayer::played, [&](qint64 pos) { qDebug() << "Playing started from pos" << pos;  });
@@ -112,7 +121,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
               }
         });
     
-5. Accurate seek:
+6. Accurate seek:
 
        QObject::connect(&p, &QAVPlayer::seeked, &p, [&](qint64 pos) { seekPosition = pos; });
        QObject::connect(&player, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) { seekFrame = frame; });
@@ -122,7 +131,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
        
    If there is a frame with needed pts, it will be returned as first frame.
 
-6. FFmpeg filters:
+7. FFmpeg filters:
 
        player.setFilter("crop=iw/2:ih:0:0,split[left][tmp];[tmp]hflip[right];[left][right] hstack");
        // Render bundled subtitles
@@ -136,7 +145,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
             "[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]drawtext=text=%{pts\\\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[out3]"
        }); // Return frames from 3 filters with 5 outputs
 
-7. Step by step:
+8. Step by step:
 
        // Pausing will always emit one frame
        QObject::connect(&player, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) { receivedFrame = frame; });
@@ -150,7 +159,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
        // the same here but backward
        player.stepBackward();
 
-8. Multiple streams:
+9. Multiple streams:
 
        qDebug() << "Audio streams" << player.availableAudioStreams().size();
        qDebug() << "Current audio stream" << player.currentAudioStreams().first().index() << player.currentAudioStreams().first().metadata();
@@ -159,7 +168,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
        for (const auto &s : p.availableVideoStreams())
            qDebug() << s << p.progress(s);
 
-9. Muxing the streams:
+10. Muxing the streams:
 
         // Muxes all streams to the file without reencoding the packets.
         // `QAVMuxerPackets` is used internally.
@@ -186,16 +195,17 @@ Free and open-source Qt Media Player library based on FFmpeg.
         p1.play();
         p2.play();
 
-10. HW accelerations:
+11. HW accelerations:
 
    `QT_AVPLAYER_NO_HWDEVICE` env var can be used to force using software decoding. The video codec is negotiated automatically.
+   Also `player->setInputVideoCodec("software")` forces to use the software decoding.
    
   * `VA-API` and `VDPAU` for Linux: the frames are returned with `OpenGL` textures.
   * `Video Toolbox` for macOS and iOS: the frames are returned with `Metal` Textures.
   * `D3D11` for Windows: the frames are returned with `D3D11Texture2D` textures. 
   * `MediaCodec` for Android: the frames are returned with `OpenGL` textures.
 
-Note: Not all ffmpeg decoders or filters support HW acceleration. In this case software decoders are used.
+  Note: Not all ffmpeg decoders or filters support HW acceleration. In this case software decoders are used.
 
 11. QtMultimedia could be used to render video frames to QML or Widgets. See [examples](examples)
 12. Widget `QAVWidget_OpenGL` could be used to render to `OpenGL`. See [examples/widget_video_opengl](examples/widget_video_opengl)
