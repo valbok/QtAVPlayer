@@ -8,6 +8,7 @@
 #ifndef QAVPLAYER_H
 #define QAVPLAYER_H
 
+#include <QtAVPlayer/qavpacket.h>
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QtAVPlayer/qavaudioframe.h>
 #include <QtAVPlayer/qavsubtitleframe.h>
@@ -160,6 +161,7 @@ Q_SIGNALS:
     void inputOptionsChanged(const QMap<QString, QString> &opts);
     void videoCodecOptionsChanged(const QMap<QString, QString> &opts);
 
+    void packet(const QAVPacket &packet);
     void videoFrame(const QAVVideoFrame &frame);
     void audioFrame(const QAVAudioFrame &frame);
     void subtitleFrame(const QAVSubtitleFrame &frame);

@@ -627,6 +627,7 @@ void QAVPlayerPrivate::doDemux()
         QAVPacket packet;
         int ret = demuxer.read(packet);
         if (packet.stream()) {
+            Q_EMIT q_ptr->packet(packet);
             muxer.write(packet);
             endOfFile(false);
             // Empty packet points to EOF and it needs to flush codecs
