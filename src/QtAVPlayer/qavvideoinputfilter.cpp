@@ -32,6 +32,7 @@ public:
     AVRational sample_aspect_ratio{};
     AVRational time_base{};
     AVRational frame_rate{};
+    AVBufferRef *hw_frames_ctx = nullptr;
 };
 
 QAVVideoInputFilter::QAVVideoInputFilter()
@@ -51,6 +52,7 @@ QAVVideoInputFilter::QAVVideoInputFilter(const QAVFrame &frame)
     d->sample_aspect_ratio = frm->sample_aspect_ratio.num && frm->sample_aspect_ratio.den ? frm->sample_aspect_ratio : stream->codecpar->sample_aspect_ratio;
     d->time_base = stream->time_base;
     d->frame_rate = stream->avg_frame_rate;
+    d->hw_frames_ctx = frm->hw_frames_ctx;
 }
 
 QAVVideoInputFilter::QAVVideoInputFilter(const QAVVideoInputFilter &other)
@@ -78,26 +80,38 @@ int QAVVideoInputFilter::configure(AVFilterGraph *graph, AVFilterInOut *in)
 {
     QAVInOutFilter::configure(graph, in);
     Q_D(QAVVideoInputFilter);
-    AVBPrint args;
-    av_bprint_init(&args, 0, AV_BPRINT_SIZE_AUTOMATIC);
-    av_bprintf(&args,
-             "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:"
-             "pixel_aspect=%d/%d",
-             d->width, d->height, d->format,
-             d->time_base.num, d->time_base.den,
-             d->sample_aspect_ratio.num, qMax(d->sample_aspect_ratio.den, 1));
-    if (d->frame_rate.num && d->frame_rate.den)
-        av_bprintf(&args, ":frame_rate=%d/%d", d->frame_rate.num, d->frame_rate.den);
-
     static int index = 0;
     char name[255];
     snprintf(name, sizeof(name), "buffer_%d", index++);
+    d->ctx = avfilter_graph_alloc_filter(graph, avfilter_get_by_name("buffer"), name);
+    if (!d->ctx)
+        return AVERROR(ENOMEM);
 
-    int ret = avfilter_graph_create_filter(&d->ctx,
-                                           avfilter_get_by_name("buffer"),
-                                           name, args.str, nullptr, graph);
-    if (ret < 0)
+    AVBufferSrcParameters *par = av_buffersrc_parameters_alloc();
+    if (!par)
+        return AVERROR(ENOMEM);
+
+    par->format              = d->format;
+    par->time_base           = d->time_base;
+    par->frame_rate          = d->frame_rate;
+    par->width               = d->width;
+    par->height              = d->height;
+    par->sample_aspect_ratio = d->sample_aspect_ratio.den > 0 ?
+                               d->sample_aspect_ratio : AVRational{ 0, 1 };
+    par->hw_frames_ctx       = d->hw_frames_ctx;
+
+    auto ret = av_buffersrc_parameters_set(d->ctx, par);
+    av_freep(&par);
+    if (ret < 0) {
+        qWarning() << "av_buffersrc_parameters_set failed:" << ret;
         return ret;
+    }
+
+    ret = avfilter_init_dict(d->ctx, NULL);
+    if (ret < 0) {
+        qWarning() << "avfilter_init_dict failed:" << ret;
+        return ret;
+    }
 
     return avfilter_link(d->ctx, 0, in->filter_ctx, in->pad_idx);
 }
