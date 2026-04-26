@@ -16,7 +16,7 @@ ApplicationWindow {
     // no binding ever receives null and throws a TypeError.
     readonly property var pc: playerController ?? ({
         hasMedia: false, playing: false, paused: false,
-        position: 0, duration: 0, volume: 1.0, errorString: "", subtitleTracks: []
+        position: 0, duration: 0, volume: 1.0, errorString: "", subtitleTracks: [], audioTracks: [], videoTracks: []
     })
 
     readonly property color accentColor:  "#e8c84a"   // warm amber
@@ -26,7 +26,9 @@ ApplicationWindow {
     readonly property color textPrimary:  "#f0ede6"
     readonly property color textMuted:    "#666"
     readonly property int   radius:       6
-    property string selectedStreamIndex:  "-1"
+    property string selectedSubtitleStreamIndex:  "-1"
+    property string selectedAudioStreamIndex:     "-1"
+    property string selectedVideoStreamIndex:     "-1"
 
     function formatTime(ms) {
         if (ms <= 0) return "0:00"
@@ -126,20 +128,38 @@ ApplicationWindow {
         target: playerController
         function onErrorOccurred() { errorBar.show(playerController.errorString) }
         function onSubtitleTracksChanged() {
-            menuModel.clear()
-            menuModel.append({"name": "Disable", "streamIndex": "-1"});
+            subtitleMenuModel.clear()
+            subtitleMenuModel.append({"name": "Disable", "streamIndex": "-1"});
             for (var i in playerController.subtitleTracks) {
-                menuModel.append({"name": playerController.subtitleTracks[i], "streamIndex": i});
+                subtitleMenuModel.append({"name": playerController.subtitleTracks[i], "streamIndex": i});
             }
         }
         function onSubtitleTrackChanged(idx) {
-            selectedStreamIndex = idx;
+            selectedSubtitleStreamIndex = idx;
         }
         function onSubtitleTextChanged(text, ms) {
             subtitle.text = text
             subtitle.visible = true
             subtitleTimer.interval = ms
             subtitleTimer.restart()
+        }
+        function onAudioTracksChanged() {
+            audioMenuModel.clear()
+            for (var i in playerController.audioTracks) {
+                audioMenuModel.append({"name": playerController.audioTracks[i], "streamIndex": i});
+            }
+        }
+        function onAudioTrackChanged(idx) {
+            selectedAudioStreamIndex = idx;
+        }
+        function onVideoTracksChanged() {
+            videoMenuModel.clear()
+            for (var i in playerController.videoTracks) {
+                videoMenuModel.append({"name": playerController.videoTracks[i], "streamIndex": i});
+            }
+        }
+        function onVideoTrackChanged(idx) {
+            selectedVideoStreamIndex = idx;
         }
     }
 
@@ -239,11 +259,10 @@ ApplicationWindow {
                     text: "Subtitle ▾"
                     highlighted: subtitleMenu.visible
                     enabled: pc.subtitleTracks.length > 0
-
                     onClicked: subtitleMenu.visible ? subtitleMenu.close() : subtitleMenu.open()
 
                     ListModel {
-                        id: menuModel
+                        id: subtitleMenuModel
                     }
 
                     Menu {
@@ -260,15 +279,15 @@ ApplicationWindow {
                         }
 
                         Instantiator {
-                            model: menuModel
+                            model: subtitleMenuModel
                             delegate: MenuItem {
                                 text: model.name
                                 contentItem: Text {
                                     leftPadding: 12
                                     text: parent.text
-                                    color: streamIndex == selectedStreamIndex ? root.accentColor
-                                         : parent.highlighted                 ? root.textPrimary
-                                         :                                      root.textMuted
+                                    color: streamIndex == selectedSubtitleStreamIndex ? root.accentColor
+                                         : parent.highlighted                         ? root.textPrimary
+                                         :                                              root.textMuted
                                     font.pixelSize: 13
                                     verticalAlignment: Text.AlignVCenter
                                 }
@@ -282,6 +301,109 @@ ApplicationWindow {
                             // Manually add/remove created objects to the Menu
                             onObjectAdded: (index, object) => subtitleMenu.insertItem(index, object)
                             onObjectRemoved: (index, object) => subtitleMenu.removeItem(object)
+                        }
+                    }
+                }
+
+                MenuBarButton {
+                    id: audioMenuButton
+                    text: "Audio ▾"
+                    highlighted: audioMenu.visible
+                    enabled: pc.audioTracks.length > 0
+                    onClicked: audioMenu.visible ? audioMenu.close() : audioMenu.open()
+
+                    ListModel {
+                        id: audioMenuModel
+                    }
+
+                    Menu {
+                        id: audioMenu
+                        // Open downward from the button
+                        y: audioMenuButton.height
+
+                        background: Rectangle {
+                            color: root.bgPanel
+                            border.color: root.accentColor
+                            border.width: 1
+                            radius: root.radius
+                            implicitWidth: 200
+                        }
+
+                        Instantiator {
+                            model: audioMenuModel
+                            delegate: MenuItem {
+                                text: model.name
+                                contentItem: Text {
+                                    leftPadding: 12
+                                    text: parent.text
+                                    color: streamIndex == selectedAudioStreamIndex ? root.accentColor
+                                         : parent.highlighted                      ? root.textPrimary
+                                         :                                           root.textMuted
+                                    font.pixelSize: 13
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                background: Rectangle {
+                                    color: parent.highlighted ? Qt.rgba(1,1,1,0.06) : "transparent"
+                                }
+                                onTriggered: {
+                                    pc.setAudioTrack(streamIndex)
+                                }
+                            }
+                            // Manually add/remove created objects to the Menu
+                            onObjectAdded: (index, object) => audioMenu.insertItem(index, object)
+                            onObjectRemoved: (index, object) => audioMenu.removeItem(object)
+                        }
+                    }
+                }
+
+                MenuBarButton {
+                    id: videoMenuButton
+                    text: "Video ▾"
+                    highlighted: videoMenu.visible
+                    enabled: pc.videoTracks.length > 0
+                    onClicked: videoMenu.visible ? videoMenu.close() : videoMenu.open()
+
+                    ListModel {
+                        id: videoMenuModel
+                    }
+
+                    Menu {
+                        id: videoMenu
+                        // Open downward from the button
+                        y: videoMenuButton.height
+
+                        background: Rectangle {
+                            color: root.bgPanel
+                            border.color: root.accentColor
+                            border.width: 1
+                            radius: root.radius
+                            implicitWidth: 200
+                        }
+
+                        Instantiator {
+                            model: videoMenuModel
+                            delegate: MenuItem {
+                                text: model.name
+                                contentItem: Text {
+                                    id: video1
+                                    leftPadding: 12
+                                    text: parent.text
+                                    color: streamIndex == selectedVideoStreamIndex ? root.accentColor
+                                         : parent.highlighted                      ? root.textPrimary
+                                         :                                           root.textMuted
+                                    font.pixelSize: 13
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                background: Rectangle {
+                                    color: parent.highlighted ? Qt.rgba(1,1,1,0.06) : "transparent"
+                                }
+                                onTriggered: {
+                                    pc.setVideoTrack(streamIndex)
+                                }
+                            }
+                            // Manually add/remove created objects to the Menu
+                            onObjectAdded: (index, object) => videoMenu.insertItem(index, object)
+                            onObjectRemoved: (index, object) => videoMenu.removeItem(object)
                         }
                     }
                 }
@@ -318,7 +440,6 @@ ApplicationWindow {
                 anchors.fill: parent
                 visible: pc.hasMedia
 
-                // Expose the sink to C++ via objectName so main() can wire it
                 Component.onCompleted: {
                     playerController.setVideoSink(videoOutput.videoSink)
                 }
@@ -584,7 +705,7 @@ ApplicationWindow {
         }
         background: Rectangle {
             color: parent.highlighted ? Qt.rgba(1,1,1,0.08)
-                 : parent.hovered    ? Qt.rgba(1,1,1,0.05)
+                 : parent.hovered     ? Qt.rgba(1,1,1,0.05)
                  : "transparent"
             radius: root.radius
         }

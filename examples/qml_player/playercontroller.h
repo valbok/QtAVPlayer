@@ -41,6 +41,8 @@ class PlayerController : public QObject
     Q_PROPERTY(QString errorString READ errorString NOTIFY errorOccurred)
 
     Q_PROPERTY(QStringList subtitleTracks READ subtitleTracks NOTIFY subtitleTracksChanged)
+    Q_PROPERTY(QStringList audioTracks READ audioTracks NOTIFY audioTracksChanged)
+    Q_PROPERTY(QStringList videoTracks READ videoTracks NOTIFY videoTracksChanged)
 
 public:
     explicit PlayerController(QObject *parent = nullptr);
@@ -54,6 +56,8 @@ public:
     bool hasMedia() const { return m_hasMedia; }
     QString errorString() const { return m_errorString; }
     QStringList subtitleTracks() const;
+    QStringList audioTracks() const;
+    QStringList videoTracks() const;
 
     void setVolume(qreal v);
 
@@ -69,6 +73,8 @@ public slots:
     void stepForward();
     void stepBackward();
     void setSubtitleTrack(int index);
+    void setAudioTrack(int index);
+    void setVideoTrack(int index);
 
 signals:
     void playingChanged();
@@ -81,6 +87,10 @@ signals:
     void subtitleTracksChanged();
     void subtitleTrackChanged(int index);
     void subtitleTextChanged(const QString &text, int duration);
+    void audioTracksChanged();
+    void audioTrackChanged(int index);
+    void videoTracksChanged();
+    void videoTrackChanged(int index);
 
 private:
     void connectPlayerSignals();
