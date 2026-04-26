@@ -154,9 +154,10 @@ if(QT_AVPLAYER_MULTIMEDIA)
     set(QtAVPlayer_PUBLIC_HEADERS
         ${QtAVPlayer_PUBLIC_HEADERS}
         ${QT_AVPLAYER_DIR}/qavaudiooutput.h
-        ${QT_AVPLAYER_DIR}/qavaudiooutputdevice.h
     )
-
+    set(QtAVPlayer_PRIVATE_HEADERS
+        ${QT_AVPLAYER_DIR}/qavaudiooutputdevice_p.h
+    )
     set(QtAVPlayer_SOURCES
         ${QtAVPlayer_SOURCES}
         ${QT_AVPLAYER_DIR}/qavaudiooutput.cpp

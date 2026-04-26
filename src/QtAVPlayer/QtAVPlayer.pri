@@ -81,7 +81,8 @@ contains(DEFINES, QT_AVPLAYER_MULTIMEDIA) {
     QT += multimedia
     # Needed for QAbstractVideoBuffer
     equals(QT_MAJOR_VERSION, 6): QT += multimedia-private
-    HEADERS += $$PWD/qavaudiooutput.h $$PWD/qavaudiooutputdevice.h
+    PUBLIC_HEADERS += $$PWD/qavaudiooutput.h
+    PRIVATE_HEADERS += $$PWD/qavaudiooutputdevice_p.h
     SOURCES += $$PWD/qavaudiooutput.cpp $$PWD/qavaudiooutputdevice.cpp
 }
 
