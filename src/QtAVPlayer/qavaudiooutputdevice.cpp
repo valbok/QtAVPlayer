@@ -101,6 +101,8 @@ void QAVAudioOutputDevice::stop()
     {
         QMutexLocker locker(&d->mutex);
         d->quit = true;
+        d->frames.clear();
+        d->offset = 0;
     }
     d->cond.wakeAll();
 }
