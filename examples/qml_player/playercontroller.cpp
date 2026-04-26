@@ -26,7 +26,6 @@ PlayerController::PlayerController(QObject *parent)
     : QObject(parent)
 {
     connectPlayerSignals();
-    m_audioOutput.setVolume(m_volume);
 }
 
 void PlayerController::connectPlayerSignals()
@@ -57,35 +56,27 @@ void PlayerController::connectPlayerSignals()
     QObject::connect(&m_player, &QAVPlayer::played, this, [this](qint64 pos) {
         Q_UNUSED(pos)
         m_playing = true;
-        m_paused  = false;
         emit playingChanged();
-        emit pausedChanged();
     });
 
     QObject::connect(&m_player, &QAVPlayer::paused, this, [this](qint64 pos) {
         Q_UNUSED(pos)
         m_playing = false;
-        m_paused  = true;
         emit playingChanged();
-        emit pausedChanged();
     });
 
     QObject::connect(&m_player, &QAVPlayer::stopped, this, [this](qint64 pos) {
         Q_UNUSED(pos)
         m_playing = false;
-        m_paused  = false;
         m_position = 0;
         emit playingChanged();
-        emit pausedChanged();
         emit positionChanged();
     });
 
     QObject::connect(&m_player, &QAVPlayer::stepped, this, [this](qint64 pos) {
         if (m_playing) {
             m_playing = false;
-            m_paused  = false;
             emit playingChanged();
-            emit pausedChanged();
         }
         if (pos != m_position) {
             m_position = pos;
@@ -117,9 +108,7 @@ void PlayerController::connectPlayerSignals()
             m_player.play();
         } else if (status == QAVPlayer::EndOfMedia) {
             m_playing = false;
-            m_paused = false;
             emit playingChanged();
-            emit pausedChanged();
         } else if (status == QAVPlayer::NoMedia) {
             reset();
         }
@@ -155,6 +144,7 @@ void PlayerController::setVolume(qreal v)
 
 void PlayerController::setSource(const QString &source)
 {
+    m_player.setInputVideoCodec(m_videoCodec);
     m_player.setSource(source);
 }
 
@@ -276,56 +266,63 @@ void PlayerController::setVideoTrack(int index)
     }
 }
 
+static QPair<int, QAVStream> currentStream(const QList<QAVStream> &available, const QList<QAVStream> &current)
+{
+    for (int i = 0; i < available.size(); ++i) {
+        auto &s = available[i];
+        if (isStreamCurrent(s.index(), current)) {
+            return {i, s};
+        }
+    }
+    return {-1, {}};
+}
+
 void PlayerController::notifyStreams()
 {
     emit subtitleTracksChanged();
-    auto availableSubtitleStreams = m_player.availableSubtitleStreams();
-    auto currentSubtitleStreams = m_player.currentSubtitleStreams();
-    for (int i = 0; i < availableSubtitleStreams.size(); ++i) {
-        auto &s = availableSubtitleStreams[i];
-        if (isStreamCurrent(s.index(), currentSubtitleStreams)) {
-            m_subtitleMuxer.unload();
-            m_subtitleMuxer.load(s);
-            emit subtitleTrackChanged(i);
-            break;
-        }
+    auto i = currentStream(m_player.availableSubtitleStreams(), m_player.currentSubtitleStreams());
+    if (i.first >= 0) {
+        m_subtitleMuxer.unload();
+        m_subtitleMuxer.load(i.second);
+        emit subtitleTrackChanged(i.first);
     }
     emit audioTracksChanged();
-    auto availableAudioStreams = m_player.availableAudioStreams();
-    auto currentAudioStreams = m_player.currentAudioStreams();
-    for (int i = 0; i < availableAudioStreams.size(); ++i) {
-        auto &s = availableAudioStreams[i];
-        if (isStreamCurrent(s.index(), currentAudioStreams)) {
-            emit audioTrackChanged(i);
-            break;
-        }
-    }
+    i = currentStream(m_player.availableAudioStreams(), m_player.currentAudioStreams());
+    if (i.first >= 0)
+        emit audioTrackChanged(i.first);
     emit videoTracksChanged();
-    auto availableVideoStreams = m_player.availableVideoStreams();
-    auto currentVideoStreams = m_player.currentVideoStreams();
-    for (int i = 0; i < availableVideoStreams.size(); ++i) {
-        auto &s = availableVideoStreams[i];
-        if (isStreamCurrent(s.index(), availableVideoStreams)) {
-            emit videoTrackChanged(i);
-            break;
-        }
-    }
+    i = currentStream(m_player.availableVideoStreams(), m_player.currentVideoStreams());
+    if (i.first >= 0)
+        emit videoTrackChanged(i.first);
 }
 
 void PlayerController::reset()
 {
     m_hasMedia = false;
     m_playing = false;
-    m_paused  = false;
     m_position = 0;
     m_duration = 0;
     emit hasMediaChanged();
     emit playingChanged();
-    emit pausedChanged();
     emit positionChanged();
     emit durationChanged();
     emit subtitleTracksChanged();
     emit subtitleTrackChanged(-1);
     emit audioTracksChanged();
     emit videoTracksChanged();
+}
+
+void PlayerController::setVideoCodec(const QString &codec)
+{
+    m_videoCodec = codec;
+    m_player.setInputVideoCodec(codec);
+    // Since the codec is applied during the loading,
+    // it requires to reload the source.
+    auto source = m_player.source();
+    m_position = m_player.position();
+    m_audioOutput.setVolume(0);
+    m_player.setSource({});
+    m_player.setSource(source);
+    m_player.seek(m_position);
+    // Selection of tracks are now lost
 }

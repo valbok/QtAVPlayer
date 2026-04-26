@@ -33,10 +33,9 @@ class PlayerController : public QObject
     QML_ELEMENT
 
     Q_PROPERTY(bool playing READ isPlaying NOTIFY playingChanged)
-    Q_PROPERTY(bool paused READ isPaused NOTIFY pausedChanged)
     Q_PROPERTY(qint64 position READ position NOTIFY positionChanged)
     Q_PROPERTY(qint64 duration READ duration NOTIFY durationChanged)
-    Q_PROPERTY(qreal volume READ volume WRITE setVolume   NOTIFY volumeChanged)
+    Q_PROPERTY(qreal volume READ volume WRITE setVolume NOTIFY volumeChanged)
     Q_PROPERTY(bool hasMedia READ hasMedia NOTIFY hasMediaChanged)
     Q_PROPERTY(QString errorString READ errorString NOTIFY errorOccurred)
 
@@ -49,7 +48,6 @@ public:
 
     // Property accessors
     bool isPlaying() const { return m_playing; }
-    bool isPaused() const { return m_paused; }
     qint64 position() const { return m_position; }
     qint64 duration() const { return m_duration; }
     qreal volume() const { return m_volume; }
@@ -75,10 +73,10 @@ public slots:
     void setSubtitleTrack(int index);
     void setAudioTrack(int index);
     void setVideoTrack(int index);
+    void setVideoCodec(const QString &codec);
 
 signals:
     void playingChanged();
-    void pausedChanged();
     void positionChanged();
     void durationChanged();
     void volumeChanged();
@@ -104,10 +102,10 @@ private:
     QAVMuxerSubtitleFrames m_subtitleMuxer;
 
     bool m_playing = false;
-    bool m_paused = false;
     qint64 m_position = 0;
     qint64 m_duration = 0;
     qreal m_volume = 1.0;
     bool m_hasMedia = false;
     QString m_errorString;
+    QString m_videoCodec;
 };
