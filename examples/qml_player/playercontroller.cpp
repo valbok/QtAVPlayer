@@ -91,11 +91,13 @@ void PlayerController::connectPlayerSignals()
             m_position = pos;
             emit positionChanged();
         }
+        m_audioOutput.setVolume(m_volume);
     });
 
     QObject::connect(&m_player, &QAVPlayer::seeked, this, [this](qint64 pos) {
         m_position = pos;
         emit positionChanged();
+        m_audioOutput.setVolume(m_volume);
     });
 
     QObject::connect(&m_player, &QAVPlayer::errorOccurred, this, [this](QAVPlayer::Error, const QString &str) {
@@ -188,28 +190,34 @@ void PlayerController::stop()
 
 void PlayerController::seek(qint64 ms)
 {
+    m_audioOutput.setVolume(0);
     m_player.seek(ms);
 }
 
 void PlayerController::stepForward()
 {
+    m_audioOutput.setVolume(0);
     m_player.stepForward();
 }
 
 void PlayerController::stepBackward()
 {
+    m_audioOutput.setVolume(0);
     m_player.stepBackward();
 }
 
-QStringList PlayerController::subtitleTracks() const
+static QStringList tracks(const QList<QAVStream> &streams)
 {
     QStringList ret;
-    auto streams = m_player.availableSubtitleStreams();
     const auto lang = QString::fromLatin1("language");
+    const auto title = QString::fromLatin1("title");
     for (int i = 0; i < streams.size(); ++i) {
         auto &s = streams[i];
         auto name = "Track " + QString::number(i);
         auto md = s.metadata();
+        if (md.contains(title)) {
+            name = md[title];
+        }
         if (md.contains(lang))
             name += " [" + md[lang] + "]";
         ret.push_back(name);
@@ -217,19 +225,55 @@ QStringList PlayerController::subtitleTracks() const
     return ret;
 }
 
+QStringList PlayerController::subtitleTracks() const
+{
+    return tracks(m_player.availableSubtitleStreams());
+}
+
 void PlayerController::setSubtitleTrack(int index)
 {
     auto streams = m_player.availableSubtitleStreams();
-    for (int i = 0; i < streams.size(); ++i) {
-        auto &s = streams[i];
-        if (i == index) {
-            m_player.setSubtitleStream(s);
-            emit subtitleTrackChanged(index);
-            return;
-        }
+    if (index >= 0 && index < streams.size()) {
+        m_player.setSubtitleStream(streams[index]);
+        emit subtitleTrackChanged(index);
+        return;
     }
     m_player.setSubtitleStreams({});
     emit subtitleTrackChanged(-1);
+}
+
+QStringList PlayerController::audioTracks() const
+{
+    return tracks(m_player.availableAudioStreams());
+}
+
+void PlayerController::setAudioTrack(int index)
+{
+    auto streams = m_player.availableAudioStreams();
+    if (index >= 0 && index < streams.size()) {
+        m_player.setAudioStream(streams[index]);
+        emit audioTrackChanged(index);
+    }
+}
+
+QStringList PlayerController::videoTracks() const
+{
+    QList<QAVStream> streams;
+    for (const auto &s : m_player.availableVideoStreams()) {
+        // Ignore posters
+        if (s.framesCount())
+            streams.append(s);
+    }
+    return tracks(streams);
+}
+
+void PlayerController::setVideoTrack(int index)
+{
+    auto streams = m_player.availableVideoStreams();
+    if (index >= 0 && index < streams.size()) {
+        m_player.setVideoStream(streams[index]);
+        emit videoTrackChanged(index);
+    }
 }
 
 void PlayerController::notifyStreams()
@@ -243,6 +287,26 @@ void PlayerController::notifyStreams()
             m_subtitleMuxer.unload();
             m_subtitleMuxer.load(s);
             emit subtitleTrackChanged(i);
+            break;
+        }
+    }
+    emit audioTracksChanged();
+    auto availableAudioStreams = m_player.availableAudioStreams();
+    auto currentAudioStreams = m_player.currentAudioStreams();
+    for (int i = 0; i < availableAudioStreams.size(); ++i) {
+        auto &s = availableAudioStreams[i];
+        if (isStreamCurrent(s.index(), currentAudioStreams)) {
+            emit audioTrackChanged(i);
+            break;
+        }
+    }
+    emit videoTracksChanged();
+    auto availableVideoStreams = m_player.availableVideoStreams();
+    auto currentVideoStreams = m_player.currentVideoStreams();
+    for (int i = 0; i < availableVideoStreams.size(); ++i) {
+        auto &s = availableVideoStreams[i];
+        if (isStreamCurrent(s.index(), availableVideoStreams)) {
+            emit videoTrackChanged(i);
             break;
         }
     }
@@ -262,4 +326,6 @@ void PlayerController::reset()
     emit durationChanged();
     emit subtitleTracksChanged();
     emit subtitleTrackChanged(-1);
+    emit audioTracksChanged();
+    emit videoTracksChanged();
 }
