@@ -101,6 +101,7 @@ public:
     std::unique_ptr<QAVAudioOutputDevice> device;
     std::unique_ptr<QThread> audioThread;
     AudioDevice defaultAudioDevice;
+    QAudioFormat audioOutputFormat;
     mutable QMutex mutex;
 
     void resetIfNeeded(const QAudioFormat &fmt, int bsize, qreal v)
@@ -144,6 +145,10 @@ public:
             audioOutput->setVolume(v);
             // Start sending the audio frames from the queue to render
             device->start();
+            audioOutputFormat = fmt;
+            locker.unlock();
+            // Start the output without the lock to allow to add frames to the device.
+            // This could wait for frames available.
             audioOutput->start(device.get());
         }
     }
@@ -233,14 +238,21 @@ bool QAVAudioOutput::play(const QAVAudioFrame &frame)
 #endif
     if (QThread::currentThread() == d->audioThread.get()) {
         qCritical() << "QAVAudioOutput::play() must not be called on the audio thread";
-    } else {
-        quint64 bufferSize = d->bufferSize ? qMin(d->bufferSize, 96000) : 96000;
-        if (d->device->bytesInQueue() >= bufferSize) {
-            // Reset the output on QAVAudioOutput's thread
-            QMetaObject::invokeMethod(d, [fmt, d] {
-                d->resetIfNeeded(fmt, d->bufferSize, d->volume);
-            });
-        }
+        return false;
+    }
+    bool reset = false;
+    {
+        QMutexLocker locker(&d->mutex);
+        // Check if the format has been changed or not yet initialized
+        reset = d->audioOutputFormat != fmt;
+    }
+    if (reset) {
+        d->device->stop();
+        // Reset the output on QAVAudioOutput's thread
+        QMetaObject::invokeMethod(d, [fmt, d] {
+            d->resetIfNeeded(fmt, d->bufferSize, d->volume);
+        });
+        return false;
     }
     // Add frames on current thread
     d->device->play(frame);
