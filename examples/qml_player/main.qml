@@ -15,7 +15,7 @@ ApplicationWindow {
     // Accessing it through `pc` with a fallback object ensures
     // no binding ever receives null and throws a TypeError.
     readonly property var pc: playerController ?? ({
-        hasMedia: false, playing: false, paused: false,
+        hasMedia: false, playing: false,
         position: 0, duration: 0, volume: 1.0, errorString: "", subtitleTracks: [], audioTracks: [], videoTracks: []
     })
 
@@ -29,6 +29,7 @@ ApplicationWindow {
     property string selectedSubtitleStreamIndex:  "-1"
     property string selectedAudioStreamIndex:     "-1"
     property string selectedVideoStreamIndex:     "-1"
+    property bool softwareVideoCodec: false
 
     function formatTime(ms) {
         if (ms <= 0) return "0:00"
@@ -380,12 +381,37 @@ ApplicationWindow {
                             implicitWidth: 200
                         }
 
+                        MenuSeparator {
+                            contentItem: Rectangle {
+                                implicitHeight: 1
+                                color: "#333"
+                            }
+                        }
+
+                        MenuItem {
+                            contentItem: Text {
+                                leftPadding: 12
+                                text: "Software video codec"
+                                color: softwareVideoCodec ? root.accentColor
+                                     : parent.highlighted ? root.textPrimary
+                                     :                      root.textMuted
+                                font.pixelSize: 13
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle {
+                                color: parent.highlighted ? Qt.rgba(1,1,1,0.06) : "transparent"
+                            }
+                            onTriggered: {
+                                softwareVideoCodec = !softwareVideoCodec;
+                                pc.setVideoCodec(softwareVideoCodec ? "software" : "");
+                            }
+                        }
+
                         Instantiator {
                             model: videoMenuModel
                             delegate: MenuItem {
                                 text: model.name
                                 contentItem: Text {
-                                    id: video1
                                     leftPadding: 12
                                     text: parent.text
                                     color: streamIndex == selectedVideoStreamIndex ? root.accentColor
