@@ -57,7 +57,7 @@ public:
     }
 
     QAVVideoFrame *q_ptr = nullptr;
-    QScopedPointer<QAVVideoBuffer> buffer;
+    QSharedPointer<QAVVideoBuffer> buffer;
 };
 
 QAVVideoFrame::QAVVideoFrame()
@@ -98,7 +98,7 @@ QAVVideoFrame &QAVVideoFrame::operator=(const QAVVideoFrame &other)
 {
     Q_D(QAVVideoFrame);
     QAVFrame::operator=(other);
-    d->buffer.reset();
+    d->buffer = reinterpret_cast<QAVVideoFramePrivate *>(other.d_ptr.get())->buffer;
     return *this;
 }
 

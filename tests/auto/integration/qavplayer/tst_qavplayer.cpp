@@ -1,5 +1,5 @@
 /***************************************************************
- * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
  *                                                             *
  * This file is part of QtAVPlayer.                            *
  * Free Qt Media Player based on FFmpeg.                       *
@@ -1438,6 +1438,15 @@ void tst_QAVPlayer::map()
     QVERIFY(mapData.bytesPerLine[1] > 0);
     QVERIFY(mapData.data[0] != nullptr);
     QVERIFY(mapData.data[1] != nullptr);
+    auto f = frame;
+    QVERIFY(f.isMapped());
+    auto md = f.map();
+    QVERIFY(md.format == mapData.format);
+    QVERIFY(md.size == mapData.size);
+    QVERIFY(md.bytesPerLine[0] == mapData.bytesPerLine[0]);
+    QVERIFY(md.bytesPerLine[1] == mapData.bytesPerLine[1]);
+    QVERIFY(md.data[0] == mapData.data[0]);
+    QVERIFY(md.data[1] == mapData.data[1]);
 }
 
 void tst_QAVPlayer::stepForward()
