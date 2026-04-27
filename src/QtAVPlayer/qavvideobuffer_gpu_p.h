@@ -32,9 +32,11 @@ public:
     ~QAVVideoBuffer_GPU() = default;
 
     QAVVideoFrame::MapData map() override;
+    bool isMapped() const override;
 
 protected:
     QAVVideoBuffer_CPU m_cpu;
+    bool m_mapped = false;
 };
 
 QT_END_NAMESPACE

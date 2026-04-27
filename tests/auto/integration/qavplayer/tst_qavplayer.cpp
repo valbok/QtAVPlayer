@@ -1425,12 +1425,14 @@ void tst_QAVPlayer::map()
     p.setSource(file.absoluteFilePath());
 
     QAVVideoFrame frame;
+    QVERIFY(!frame.isMapped());
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame](const QAVVideoFrame &f) { frame = f; });
 
     p.play();
     QTRY_VERIFY(frame);
 
     auto mapData = frame.map();
+    QVERIFY(frame.isMapped());
     QVERIFY(mapData.size > 0);
     QVERIFY(mapData.bytesPerLine[0] > 0);
     QVERIFY(mapData.bytesPerLine[1] > 0);
@@ -2878,11 +2880,15 @@ void tst_QAVPlayer::mapTwice()
     QAVVideoFrame::MapData md3;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
         md1 = frame.map();
+        QVERIFY(frame.isMapped());
         md2 = frame.map();
+        QVERIFY(frame.isMapped());
     });
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
         md3 = frame.map();
+        QVERIFY(frame.isMapped());
         md3 = frame.map();
+        QVERIFY(frame.isMapped());
     }, Qt::DirectConnection);
 
     p.pause();

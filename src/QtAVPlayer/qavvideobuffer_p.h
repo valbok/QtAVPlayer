@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #ifndef QAVVIDEOBUFFER_P_H
 #define QAVVIDEOBUFFER_P_H
@@ -35,6 +35,8 @@ public:
     const QAVVideoFrame &frame() const { return m_frame; }
 
     virtual QAVVideoFrame::MapData map() = 0;
+    // Returns if the data is mapped to CPU memory
+    virtual bool isMapped() const = 0;
     virtual QAVVideoFrame::HandleType handleType() const { return QAVVideoFrame::NoHandle; }
     virtual QVariant handle(QRhi */*rhi*/ = nullptr) const { return {}; }
     // Returns the size of the frame from internal codec
