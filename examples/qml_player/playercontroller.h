@@ -15,6 +15,7 @@
 #include <QVideoFrame>
 #include <QString>
 #include <qqml.h>
+#include <QAtomicInt>
 
 /**
  * PlayerController
@@ -74,6 +75,7 @@ public slots:
     void setAudioTrack(int index);
     void setVideoTrack(int index);
     void setVideoCodec(const QString &codec);
+    void setCopyFreeRender(bool copyfree);
 
 signals:
     void playingChanged();
@@ -89,6 +91,7 @@ signals:
     void audioTrackChanged(int index);
     void videoTracksChanged();
     void videoTrackChanged(int index);
+    void hwDeviceChanged(bool hw);
 
 private:
     void connectPlayerSignals();
@@ -108,4 +111,5 @@ private:
     bool m_hasMedia = false;
     QString m_errorString;
     QString m_videoCodec;
+    QAtomicInt m_copyFreeRender{1};
 };

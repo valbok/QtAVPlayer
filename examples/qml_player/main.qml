@@ -26,10 +26,11 @@ ApplicationWindow {
     readonly property color textPrimary:  "#f0ede6"
     readonly property color textMuted:    "#666"
     readonly property int   radius:       6
-    property string selectedSubtitleStreamIndex:  "-1"
-    property string selectedAudioStreamIndex:     "-1"
-    property string selectedVideoStreamIndex:     "-1"
-    property bool softwareVideoCodec: false
+    property string selectedSubtitleStreamIndex: "-1"
+    property string selectedAudioStreamIndex:    "-1"
+    property string selectedVideoStreamIndex:    "-1"
+    property bool softwareVideoCodec:            false
+    property bool copyFreeRender:                true
 
     function formatTime(ms) {
         if (ms <= 0) return "0:00"
@@ -161,6 +162,11 @@ ApplicationWindow {
         }
         function onVideoTrackChanged(idx) {
             selectedVideoStreamIndex = idx;
+        }
+        function onHwDeviceChanged(hw) {
+            softwareVideoCodec = !hw;
+            copyFreeMenu.enabled = !softwareVideoCodec;
+            softwareVideoCodecMenu.enabled = hw
         }
     }
 
@@ -389,12 +395,17 @@ ApplicationWindow {
                         }
 
                         MenuItem {
+                            id: softwareVideoCodecMenu
                             contentItem: Text {
                                 leftPadding: 12
                                 text: "Software video codec"
-                                color: softwareVideoCodec ? root.accentColor
-                                     : parent.highlighted ? root.textPrimary
-                                     :                      root.textMuted
+                                color: parent.enabled
+                                        ? softwareVideoCodec
+                                            ? root.accentColor
+                                                : parent.highlighted
+                                                    ? root.textPrimary
+                                                    : root.textMuted
+                                            : root.textMuted
                                 font.pixelSize: 13
                                 verticalAlignment: Text.AlignVCenter
                             }
@@ -404,6 +415,31 @@ ApplicationWindow {
                             onTriggered: {
                                 softwareVideoCodec = !softwareVideoCodec;
                                 pc.setVideoCodec(softwareVideoCodec ? "software" : "");
+                                copyFreeMenu.enabled = !softwareVideoCodec;
+                            }
+                        }
+
+                        MenuItem {
+                            id: copyFreeMenu
+                            contentItem: Text {
+                                leftPadding: 12
+                                text: "Copy-free render"
+                                color: parent.enabled
+                                        ? copyFreeRender
+                                            ? root.accentColor
+                                            : parent.highlighted
+                                                ? root.textPrimary
+                                                : root.textMuted
+                                        : root.textMuted
+                                font.pixelSize: 13
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle {
+                                color: parent.highlighted ? Qt.rgba(1,1,1,0.06) : "transparent"
+                            }
+                            onTriggered: {
+                                copyFreeRender = !copyFreeRender;
+                                pc.setCopyFreeRender(copyFreeRender);
                             }
                         }
 
