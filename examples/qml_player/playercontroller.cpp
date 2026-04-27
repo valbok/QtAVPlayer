@@ -9,9 +9,14 @@
 
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QtAVPlayer/qavaudioframe.h>
+#include <QtAVPlayer/qavcodec_p.h>
 #include <QUrl>
 #include <QTimer>
 #include <QFileInfo>
+
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
 
 static bool isStreamCurrent(int index, const QList<QAVStream> &streams)
 {
@@ -36,8 +41,11 @@ void PlayerController::connectPlayerSignals()
     QObject::connect(&m_player, &QAVPlayer::videoFrame,
                      this, [this](const QAVVideoFrame &frame) {
         if (m_videoSink) {
-            // QAVVideoFrame is implicitly convertible to QVideoFrame.
-            // When HW acceleration is active this is copy-free.
+            // If the non-copy-free render is requested
+            // map the frame before converting to QVideoFrame.
+            // This will force rendering mapped data instead of texture handles.
+            if (!m_copyFreeRender)
+                frame.map();
             QVideoFrame qframe = frame;
             m_videoSink->setVideoFrame(qframe);
         }
@@ -291,9 +299,15 @@ void PlayerController::notifyStreams()
     if (i.first >= 0)
         emit audioTrackChanged(i.first);
     emit videoTracksChanged();
-    i = currentStream(m_player.availableVideoStreams(), m_player.currentVideoStreams());
-    if (i.first >= 0)
+    auto videoStreams = m_player.currentVideoStreams();
+    i = currentStream(m_player.availableVideoStreams(), videoStreams);
+    if (i.first >= 0) {
         emit videoTrackChanged(i.first);
+        if (m_videoCodec != "software") {
+            auto avctx = videoStreams[0].codec()->avctx();
+            emit hwDeviceChanged(avctx && avctx->hw_device_ctx);
+        }
+    }
 }
 
 void PlayerController::reset()
@@ -325,4 +339,9 @@ void PlayerController::setVideoCodec(const QString &codec)
     m_player.setSource(source);
     m_player.seek(m_position);
     // Selection of tracks are now lost
+}
+
+void PlayerController::setCopyFreeRender(bool copyfree)
+{
+    m_copyFreeRender = copyfree;
 }

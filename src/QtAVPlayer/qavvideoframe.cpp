@@ -263,7 +263,7 @@ public:
 #endif // #if QT_VERSION < QT_VERSION_CHECK(6, 7, 2)
     {
         // Don't use video buffer if already mapped
-        if (m_mode != QVideoFrame::NotMapped)
+        if (m_frame.isMapped())
             return 0;
         if (m_textures.isNull())
             const_cast<PlanarVideoBuffer *>(this)->m_textures = m_frame.handle(m_rhi);
@@ -467,6 +467,12 @@ QAVVideoFrame::operator QVideoFrame() const
 #else
             format = QVideoFrameFormat::Format_RGBA8888;
 #endif
+            // If a frame based on one opengl texture is aleady mapped
+            // then forcing to render the mapped data instead.
+            // This will not use any backend texture handles.
+            // See also PlanarVideoBuffer::textureHandle().
+            if (result.isMapped())
+                format = VideoFrame::Format_NV12;
             break;
         case AV_PIX_FMT_D3D11:
         case AV_PIX_FMT_VIDEOTOOLBOX:
