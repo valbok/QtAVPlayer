@@ -101,8 +101,6 @@ void QAVAudioOutputDevice::stop()
     {
         QMutexLocker locker(&d->mutex);
         d->quit = true;
-        d->frames.clear();
-        d->offset = 0;
     }
     d->cond.wakeAll();
 }
@@ -112,6 +110,17 @@ quint64 QAVAudioOutputDevice::bytesInQueue() const
     Q_D(const QAVAudioOutputDevice);
     QMutexLocker locker(&d->mutex);
     return d->bytes;
+}
+
+void QAVAudioOutputDevice::clear()
+{
+    Q_D(QAVAudioOutputDevice);
+    {
+        QMutexLocker locker(&d->mutex);
+        d->frames.clear();
+        d->offset = 0;
+    }
+    d->cond.wakeAll();
 }
 
 QT_END_NAMESPACE

@@ -48,6 +48,8 @@ public:
     // Don't send the audio data from readData()
     void stop();
     quint64 bytesInQueue() const;
+    // Clears all submitted frames
+    void clear();
 
 protected:
     std::unique_ptr<QAVAudioOutputDevicePrivate> d_ptr;
