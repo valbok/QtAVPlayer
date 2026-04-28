@@ -23,6 +23,7 @@
 
 QT_BEGIN_NAMESPACE
 
+class QAVHWDevice_VDPAUPrivate;
 class Q_AVPLAYER_EXPORT QAVHWDevice_VDPAU : public QAVHWDevice
 {
 public:
@@ -34,6 +35,7 @@ public:
     QAVVideoBuffer *videoBuffer(const QAVVideoFrame &frame) const override;
 
 private:
+    std::unique_ptr<QAVHWDevice_VDPAUPrivate> d_ptr;
     Q_DISABLE_COPY(QAVHWDevice_VDPAU)
 };
 
