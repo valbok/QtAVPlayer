@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #include "qavstream.h"
 #include "qavdemuxer_p.h"
@@ -181,6 +181,19 @@ double QAVStream::frameRate() const
         return 0.0;
     AVRational fr = av_guess_frame_rate(d->ctx, s, nullptr);
     return fr.num && fr.den ? av_q2d({fr.den, fr.num}) : 0.0;
+}
+
+QAVStream::Info QAVStream::info() const
+{
+    Info ret;
+    auto md = metadata();
+    auto it = md.find(QString::fromLatin1("title"));
+    if (it != md.end())
+        ret.title = *it;
+    it = md.find(QString::fromLatin1("language"));
+    if (it != md.end())
+        ret.language = *it;
+    return ret;
 }
 
 QAVStream::Progress::Progress(double duration, qint64 frames, double fr)

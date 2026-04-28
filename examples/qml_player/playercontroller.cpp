@@ -207,18 +207,12 @@ void PlayerController::stepBackward()
 static QStringList tracks(const QList<QAVStream> &streams)
 {
     QStringList ret;
-    const auto lang = QString::fromLatin1("language");
-    const auto title = QString::fromLatin1("title");
     for (int i = 0; i < streams.size(); ++i) {
         auto &s = streams[i];
-        auto name = "Track " + QString::number(i);
-        auto md = s.metadata();
-        if (md.contains(title)) {
-            name = md[title];
-        }
-        if (md.contains(lang))
-            name += " [" + md[lang] + "]";
-        ret.push_back(name);
+        auto info = s.info();
+        if (info.title.isEmpty())
+            info.title = QLatin1String("Track %1").arg(QString::number(i + 1));
+        ret.push_back(info.title + (!info.language.isEmpty() ? QLatin1String(" [%1]").arg(info.language) : QLatin1String()));
     }
     return ret;
 }
