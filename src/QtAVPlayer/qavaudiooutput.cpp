@@ -247,7 +247,7 @@ bool QAVAudioOutput::play(const QAVAudioFrame &frame)
         reset = d->audioOutputFormat != fmt;
     }
     if (reset) {
-        d->device->stop();
+        d->device->clear();
         // Reset the output on QAVAudioOutput's thread
         QMetaObject::invokeMethod(d, [fmt, d] {
             d->resetIfNeeded(fmt, d->bufferSize, d->volume);
