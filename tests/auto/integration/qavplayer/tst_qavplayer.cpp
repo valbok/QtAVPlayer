@@ -307,7 +307,7 @@ void tst_QAVPlayer::playAudioOutput()
 
     QTRY_VERIFY(p.position() != 0);
     QTRY_VERIFY(frame);
-    QCOMPARE(frame.format().sampleFormat(), QAVAudioFormat::Int32);
+    QCOMPARE(frame.format().sampleFormat(), QAVAudioFormat::Int16);
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
     QTRY_COMPARE(p.state(), QAVPlayer::StoppedState);

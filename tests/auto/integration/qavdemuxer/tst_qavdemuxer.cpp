@@ -161,7 +161,7 @@ void tst_QAVDemuxer::loadAudio()
         QVERIFY(af.stream().codec()->codec() != nullptr);
 
         auto format = af.format();
-        QCOMPARE(format.sampleFormat(), QAVAudioFormat::Int32);
+        QCOMPARE(format.sampleFormat(), QAVAudioFormat::Int16);
         auto data = af.data();
         QVERIFY(!data.isEmpty());
 
@@ -363,7 +363,7 @@ void tst_QAVDemuxer::qrcIO()
         QVERIFY(af.stream().codec()->codec() != nullptr);
 
         auto format = af.format();
-        QCOMPARE(format.sampleFormat(), QAVAudioFormat::Int32);
+        QCOMPARE(format.sampleFormat(), QAVAudioFormat::Int16);
         auto data = af.data();
         QVERIFY(!data.isEmpty());
 
