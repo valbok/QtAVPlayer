@@ -228,8 +228,10 @@ QAudioFormat::ChannelConfig QAVAudioOutput::channelConfig() const
 bool QAVAudioOutput::play(const QAVAudioFrame &frame)
 {
     Q_D(QAVAudioOutput);
-    if (!frame)
+    if (!frame) {
+        d->device->flush();
         return false;
+    }
     auto fmt = format(frame.format());
     if (!fmt.isValid())
         return false;
