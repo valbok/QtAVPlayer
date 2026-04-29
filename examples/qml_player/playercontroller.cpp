@@ -65,6 +65,7 @@ void PlayerController::connectPlayerSignals()
         Q_UNUSED(pos)
         m_playing = true;
         emit playingChanged();
+        m_audioOutput.setVolume(m_volume);
     });
 
     QObject::connect(&m_player, &QAVPlayer::paused, this, [this](qint64 pos) {
@@ -117,6 +118,8 @@ void PlayerController::connectPlayerSignals()
         } else if (status == QAVPlayer::EndOfMedia) {
             m_playing = false;
             emit playingChanged();
+            // Flush audio buffer
+            m_audioOutput.play({});
         } else if (status == QAVPlayer::NoMedia) {
             reset();
         }
@@ -177,6 +180,7 @@ void PlayerController::play()
 
 void PlayerController::pause()
 {
+    m_audioOutput.setVolume(0);
     m_player.pause();
 }
 
