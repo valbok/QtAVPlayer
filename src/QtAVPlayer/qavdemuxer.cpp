@@ -182,13 +182,16 @@ void QAVDemuxer::abort(bool stop)
     d->abortRequest = stop;
 }
 
-static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, QAVVideoCodec &codec, AVDictionary **codecOpts)
+static int setup_video_codec(const QString &inputVideoCodec, const QAVStream &stream, QAVVideoCodec &codec, AVDictionary **codecOpts)
 {
     bool ignoreHW = qEnvironmentVariableIsSet("QT_AVPLAYER_NO_HWDEVICE");
     const AVCodec *videoCodec = nullptr;
+    auto streamInfo = stream.info();
+    if (streamInfo.title.isEmpty())
+        streamInfo.title = QLatin1String("Stream %1").arg(QString::number(stream.index()));
     if (!inputVideoCodec.isEmpty()) {
         if (inputVideoCodec == QLatin1String("software")) {
-            qDebug() << "Video codec:" << inputVideoCodec <<", ignoring hardware device context";
+            qDebug() << "[" << streamInfo.title << "] Ignoring hardware device context";
             ignoreHW = true;
         } else {
             qDebug() << "Loading: -vcodec" << inputVideoCodec;
@@ -235,10 +238,9 @@ static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, Q
         AVBufferRef *hw_device_ctx = nullptr;
         for (auto &device : devices) {
             auto deviceName = av_hwdevice_get_type_name(device->type());
-            qDebug() << "Creating hardware device context:" << deviceName;
             if (av_hwdevice_ctx_create(&hw_device_ctx, device->type(), nullptr, opts.dict, 0)
                 >= 0) {
-                qDebug() << "Using hardware device context:" << deviceName;
+                qDebug() << "[" << streamInfo.title << "] Using" << deviceName << "hardware device context";
                 codec.avctx()->hw_device_ctx = hw_device_ctx;
                 codec.avctx()->pix_fmt = device->format();
                 codec.setDevice(device);
@@ -249,7 +251,7 @@ static int setup_video_codec(const QString &inputVideoCodec, AVStream *stream, Q
     }
 
     // Open codec after hwdevices
-    if (!codec.open(stream, codecOpts)) {
+    if (!codec.open(stream.stream(), codecOpts)) {
         qWarning() << "Could not open video codec for stream";
         return AVERROR(EINVAL);
     }
@@ -469,7 +471,7 @@ int QAVDemuxer::resetCodecs()
 
                 QSharedPointer<QAVCodec> codec(new QAVVideoCodec);
                 d->availableStreams.push_back({ int(i), d->ctx, codec });
-                ret = setup_video_codec(d->inputVideoCodec, d->ctx->streams[i], *static_cast<QAVVideoCodec *>(codec.data()), &opts.dict);
+                ret = setup_video_codec(d->inputVideoCodec, d->availableStreams.last(), *static_cast<QAVVideoCodec *>(codec.data()), &opts.dict);
             } break;
             case AVMEDIA_TYPE_AUDIO:
                 d->availableStreams.push_back({ int(i), d->ctx, QSharedPointer<QAVCodec>(new QAVAudioCodec) });
