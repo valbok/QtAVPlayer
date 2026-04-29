@@ -55,6 +55,7 @@ set(QtAVPlayer_PRIVATE_HEADERS
     ${QT_AVPLAYER_DIR}/qavvideooutputfilter_p.h
     ${QT_AVPLAYER_DIR}/qavaudiooutputfilter_p.h
     ${QT_AVPLAYER_DIR}/qavfilters_p.h
+    ${QT_AVPLAYER_DIR}/qavaudioconverter_p.h
 )
 
 set(QtAVPlayer_PUBLIC_HEADERS
@@ -69,7 +70,6 @@ set(QtAVPlayer_PUBLIC_HEADERS
     ${QT_AVPLAYER_DIR}/qtavplayerglobal.h
     ${QT_AVPLAYER_DIR}/qavstream.h
     ${QT_AVPLAYER_DIR}/qavplayer.h
-    ${QT_AVPLAYER_DIR}/qavaudioconverter.h
     ${QT_AVPLAYER_DIR}/qavmuxer.h
 )
 

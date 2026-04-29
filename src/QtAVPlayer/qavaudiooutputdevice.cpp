@@ -6,7 +6,7 @@
  ***************************************************************/
 
 #include "qavaudiooutputdevice_p.h"
-#include "qavaudioconverter.h"
+#include "qavaudioconverter_p.h"
 #include <QDebug>
 #include <QMutex>
 #include <QWaitCondition>
