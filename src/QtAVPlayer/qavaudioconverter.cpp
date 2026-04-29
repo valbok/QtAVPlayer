@@ -1,15 +1,17 @@
-/*********************************************************
- * Copyright (C) 2024, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #include "qavaudioconverter.h"
+#include "qavcodec_p.h"
 #include <QDebug>
 
 extern "C" {
-#include "libswresample/swresample.h"
+#include <libswresample/swresample.h>
+#include <libavcodec/avcodec.h>
 }
 
 QT_BEGIN_NAMESPACE
@@ -86,6 +88,12 @@ QByteArray QAVAudioConverter::data(const QAVAudioFrame &audioFrame)
     AVChannelLayout channelLayout = frame->ch_layout;
     bool needsConvert = frame->format != outFormat || av_channel_layout_compare(&channelLayout, &outChannelLayout) || frame->sample_rate != outSampleRate;
 #endif
+
+    // Convert int24 bit frames even if format is AV_SAMPLE_FMT_S32
+    auto codec = audioFrame.stream().codec();
+    if (codec && codec->codec() && codec->codec()->id == AV_CODEC_ID_PCM_S24BE) {
+        needsConvert = true;
+    }
 
     if (needsConvert) {
         bool needsCtxChange = outFormat != d->outFormat || outSampleRate != d->outSampleRate ||
