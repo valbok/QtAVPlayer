@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2024, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #include "qavaudiooutputdevice_p.h"
 #include "qavaudioconverter.h"
@@ -20,7 +20,7 @@ public:
     QList<QByteArray> frames;
     qint64 offset = 0;
     quint64 bytes = 0;
-    QAVAudioConverter conv;
+    std::unique_ptr<QAVAudioConverter> conv;
     mutable QMutex mutex;
     QWaitCondition cond;
     bool quit = false;
@@ -66,7 +66,7 @@ qint64 QAVAudioOutputDevice::readData(char *data, qint64 len)
             d->frames.removeFirst();
         }
     }
-    if (d->quit) {
+    if (d->quit || bytesWritten == 0) {
         memset(data, 0, static_cast<size_t>(len));
         bytesWritten = len;
     }
@@ -78,7 +78,9 @@ void QAVAudioOutputDevice::play(const QAVAudioFrame &frame)
     Q_D(QAVAudioOutputDevice);
     {
         QMutexLocker locker(&d->mutex);
-        auto data = d->conv.data(frame);
+        if (!d->conv)
+            return;
+        auto data = d->conv->data(frame);
         d->bytes += data.size();
         d->frames.push_back(std::move(data));
     }
@@ -91,6 +93,7 @@ void QAVAudioOutputDevice::start()
     {
         QMutexLocker locker(&d->mutex);
         d->quit = false;
+        d->conv = std::make_unique<QAVAudioConverter>();
     }
     d->cond.wakeAll();
 }
@@ -119,6 +122,8 @@ void QAVAudioOutputDevice::clear()
         QMutexLocker locker(&d->mutex);
         d->frames.clear();
         d->offset = 0;
+        d->bytes = 0;
+        d->conv.reset();
     }
     d->cond.wakeAll();
 }
