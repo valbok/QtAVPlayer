@@ -30,6 +30,7 @@ PRIVATE_HEADERS += \
     $$PWD/qavvideooutputfilter_p.h \
     $$PWD/qavaudiooutputfilter_p.h \
     $$PWD/qavfilters_p.h
+    $$PWD/qavaudioconverter_p.h \
 
 PUBLIC_HEADERS += \
     $$PWD/qaviodevice.h \
@@ -43,7 +44,6 @@ PUBLIC_HEADERS += \
     $$PWD/qtavplayerglobal.h \
     $$PWD/qavstream.h \
     $$PWD/qavplayer.h \
-    $$PWD/qavaudioconverter.h \
     $$PWD/qavmuxer.h \
 
 SOURCES += \

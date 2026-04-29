@@ -6,7 +6,7 @@
  ***************************************************************/
 
 #include "qavaudioframe.h"
-#include "qavaudioconverter.h"
+#include "qavaudioconverter_p.h"
 #include "qavframe_p.h"
 #include "qavaudiocodec_p.h"
 #include <QDebug>
