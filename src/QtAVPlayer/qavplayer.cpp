@@ -748,6 +748,7 @@ void QAVPlayerPrivate::doPlayStep(
 
     // 2. Filter decoded frame
     QList<QAVFrame> filteredFrames;
+    bool nextFrame = false;
     if (decodedFrame)
         ret = filters.write(queue.mediaType(), decodedFrame);
     if (ret >= 0 || ret == AVERROR(EAGAIN))
@@ -761,8 +762,7 @@ void QAVPlayerPrivate::doPlayStep(
         }
         applyFilters(true, decodedFrame);
     } else {
-        // The frame is already filtered, decode next one
-        queue.popFrame();
+        nextFrame = true;
     }
 
     // 3. Sync filtered frames
@@ -792,6 +792,13 @@ void QAVPlayerPrivate::doPlayStep(
 
     if (master)
         step(flushEvents);
+
+    // The frame is already filtered, decode next one
+    // While the queue contains any frames, EndOfMedia is not sent.
+    // If the queue is empty, we should ensure that the last frame is already sent
+    // before sending EndOfMedia.
+    if (nextFrame)
+        queue.popFrame();
 }
 
 void QAVPlayerPrivate::doPlayVideo()
