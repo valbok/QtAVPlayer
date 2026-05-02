@@ -29,8 +29,9 @@ PRIVATE_HEADERS += \
     $$PWD/qavaudioinputfilter_p.h \ 
     $$PWD/qavvideooutputfilter_p.h \
     $$PWD/qavaudiooutputfilter_p.h \
-    $$PWD/qavfilters_p.h
+    $$PWD/qavfilters_p.h \
     $$PWD/qavaudioconverter_p.h \
+    $$PWD/qavformatcontext_p.h \
 
 PUBLIC_HEADERS += \
     $$PWD/qaviodevice.h \
@@ -76,6 +77,7 @@ SOURCES += \
     $$PWD/qavstream.cpp \
     $$PWD/qavfilters.cpp \
     $$PWD/qavaudioconverter.cpp \
+    $$PWD/qavformatcontext.cpp \
 
 contains(DEFINES, QT_AVPLAYER_MULTIMEDIA) {
     QT += multimedia

@@ -56,6 +56,7 @@ set(QtAVPlayer_PRIVATE_HEADERS
     ${QT_AVPLAYER_DIR}/qavaudiooutputfilter_p.h
     ${QT_AVPLAYER_DIR}/qavfilters_p.h
     ${QT_AVPLAYER_DIR}/qavaudioconverter_p.h
+    ${QT_AVPLAYER_DIR}/qavformatcontext_p.h
 )
 
 set(QtAVPlayer_PUBLIC_HEADERS
@@ -103,6 +104,7 @@ set(QtAVPlayer_SOURCES
     ${QT_AVPLAYER_DIR}/qavstream.cpp
     ${QT_AVPLAYER_DIR}/qavfilters.cpp
     ${QT_AVPLAYER_DIR}/qavaudioconverter.cpp
+    ${QT_AVPLAYER_DIR}/qavformatcontext.cpp
 )
 
 if(WIN32)

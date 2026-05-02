@@ -10,6 +10,7 @@
 #include "qavaudiocodec_p.h"
 #include "qavsubtitlecodec_p.h"
 #include "qavvideoframe.h"
+#include "qavformatcontext_p.h"
 
 #include <QObject>
 #include <QThread>
@@ -48,7 +49,7 @@ public:
     // Allows to mux frames or packets from different sources.
     QMap<AVStream *, int> outputStreams;
     QString filename;
-    AVFormatContext *ctx = nullptr;
+    QSharedPointer<QAVFormatContext> ctx;
     bool loaded = false;
     mutable QMutex mutex;
 };
@@ -127,9 +128,8 @@ void QAVMuxer::reset(Locker &locker)
 {
     Q_D(QAVMuxer);
     close(locker);
-    if (d->ctx && !(d->ctx->oformat->flags & AVFMT_NOFILE))
-        avio_closep(&d->ctx->pb);
-    avformat_free_context(d->ctx);
+    if (d->ctx && d->ctx->ctx() && !(d->ctx->ctx()->oformat->flags & AVFMT_NOFILE))
+        avio_closep(&d->ctx->ctx()->pb);
     d->ctx = nullptr;
     d->inputStreams.clear();
     d->outputStreams.clear();
@@ -139,9 +139,9 @@ void QAVMuxer::reset(Locker &locker)
 void QAVMuxer::close(Locker &locker)
 {
     Q_D(QAVMuxer);
-    if (d->ctx && d->loaded) {
+    if (d->ctx && d->ctx->ctx() && d->loaded) {
         flushFrames(locker);
-        av_write_trailer(d->ctx);
+        av_write_trailer(d->ctx->ctx());
     }
     d->loaded = false;
 }
@@ -151,19 +151,17 @@ int QAVMuxer::load(const QList<QAVStream> &streams, const QString &filename)
     Q_D(QAVMuxer);
     QMutexLocker locker(&d->mutex);
     reset(locker);
-    int ret = avformat_alloc_output_context2(&d->ctx, nullptr, nullptr, filename.toUtf8().constData());
-    if (ret < 0) {
-        qWarning() << filename << ": Could not create output context:" << err2str(ret);
-        return ret;
-    }
+    d->ctx = QAVFormatContext::alloc(filename);
+    if (!d->ctx)
+        return AVERROR(EINVAL);
     d->inputStreams = streams;
     d->filename = filename;
-    ret = initMuxer(locker);
+    int ret = initMuxer(locker);
     if (ret < 0)
         return ret;
 
-    if (!(d->ctx->oformat->flags & AVFMT_NOFILE)) {
-        ret = avio_open(&d->ctx->pb, filename.toUtf8().constData(), AVIO_FLAG_WRITE);
+    if (!(d->ctx->ctx()->oformat->flags & AVFMT_NOFILE)) {
+        ret = avio_open(&d->ctx->ctx()->pb, filename.toUtf8().constData(), AVIO_FLAG_WRITE);
         if (ret < 0) {
             qWarning() << "Could not open output file:" << filename << ":"<< err2str(ret);
             return ret;
@@ -171,7 +169,7 @@ int QAVMuxer::load(const QList<QAVStream> &streams, const QString &filename)
     }
 
     // Init muxer, write output file header
-    ret = avformat_write_header(d->ctx, nullptr);
+    ret = avformat_write_header(d->ctx->ctx(), nullptr);
     if (ret < 0) {
         qWarning() << filename << ": Failed avformat_write_header:" << err2str(ret);
         return ret;
@@ -191,7 +189,7 @@ int QAVMuxer::initMuxer(Locker &locker)
         if (!stream.codec())
             return AVERROR(EINVAL);
         auto dec_ctx = codec->avctx();
-        auto out_stream = avformat_new_stream(d->ctx, NULL);
+        auto out_stream = avformat_new_stream(d->ctx->ctx(), NULL);
         if (!out_stream) {
             qWarning() << "Failed allocating output stream";
             return AVERROR_UNKNOWN;
@@ -203,12 +201,12 @@ int QAVMuxer::initMuxer(Locker &locker)
             stream.codec()->codec()->name << ", codec_id" << dec_ctx->codec_id <<
             ", pix_fmt:" << dec_ctx->pix_fmt << (pix_fmt_desc ? pix_fmt_desc->name : "");
 
-        ret = initMuxer(stream, i, d->ctx->streams[i], locker);
+        ret = initMuxer(stream, i, d->ctx->ctx()->streams[i], locker);
         if (ret < 0)
             return ret;
         d->outputStreams[stream.stream()] = i;
     }
-    av_dump_format(d->ctx, 0, d->filename.toUtf8().constData(), 1);
+    av_dump_format(d->ctx->ctx(), 0, d->filename.toUtf8().constData(), 1);
     return 0;
 }
 
@@ -252,14 +250,14 @@ int QAVMuxerPackets::write(QAVPacket packet, int streamIndex, Locker &)
     AVPacket *enc_pkt = nullptr;
     if (stream) {
         auto in_stream = stream.stream();
-        Q_ASSERT(streamIndex < static_cast<int>(d->ctx->nb_streams));
-        auto out_stream = d->ctx->streams[streamIndex];
+        Q_ASSERT(streamIndex < static_cast<int>(d->ctx->ctx()->nb_streams));
+        auto out_stream = d->ctx->ctx()->streams[streamIndex];
         enc_pkt = packet.packet();
         enc_pkt->stream_index = streamIndex;
         av_packet_rescale_ts(enc_pkt, in_stream->time_base, out_stream->time_base);
         enc_pkt->pos = -1;
     }
-    return av_interleaved_write_frame(d->ctx, enc_pkt);
+    return av_interleaved_write_frame(d->ctx->ctx(), enc_pkt);
 }
 
 int QAVMuxer::flush()
@@ -274,9 +272,9 @@ int QAVMuxer::flush()
 int QAVMuxerPackets::flushFrames(Locker &locker)
 {
     Q_D(QAVMuxer);
-    for (unsigned i = 0; i < d->ctx->nb_streams; ++i) {
+    for (unsigned i = 0; i < d->ctx->ctx()->nb_streams; ++i) {
         // no flushing for subtitles
-        bool isSub = d->ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE;
+        bool isSub = d->ctx->ctx()->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE;
         if (isSub)
             continue;
         int ret = write(QAVPacket(), i, locker);
@@ -359,7 +357,7 @@ int QAVMuxerFrames::initMuxer(const QAVStream &stream, int index, AVStream *out_
             enc_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
             enc_ctx->pix_fmt = dec_ctx->pix_fmt;
             enc_ctx->time_base = in_stream->time_base;
-            if (d->ctx->oformat->flags & AVFMT_GLOBALHEADER)
+            if (d->ctx->ctx()->oformat->flags & AVFMT_GLOBALHEADER)
                 enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
             if (!codec->open(out_stream)) {
                 qWarning() << stream.index() << ": Cannot open encoder:" << encoder->name;
@@ -387,7 +385,7 @@ int QAVMuxerFrames::initMuxer(const QAVStream &stream, int index, AVStream *out_
 #endif
             enc_ctx->sample_fmt = dec_ctx->sample_fmt;
             enc_ctx->time_base = in_stream->time_base;
-            if (d->ctx->oformat->flags & AVFMT_GLOBALHEADER)
+            if (d->ctx->ctx()->oformat->flags & AVFMT_GLOBALHEADER)
                 enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
             if (!codec->open(out_stream)) {
                 qWarning() << stream.index() << ": Cannot open encoder:" << encoder->name;
@@ -501,7 +499,7 @@ int QAVMuxerFrames::write(QAVFrame frame, int streamIndex, Locker &)
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 0, 0)
             enc_pkt->time_base = stream->time_base;
 #endif
-            wrote = av_interleaved_write_frame(d->ctx, enc_pkt);
+            wrote = av_interleaved_write_frame(d->ctx->ctx(), enc_pkt);
         }
     } while (sent == AVERROR(EAGAIN));
     return 0;
@@ -531,7 +529,7 @@ int QAVMuxerFrames::write(QAVSubtitleFrame frame, int streamIndex, Locker &)
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 0, 0)
     enc_pkt->time_base = stream->time_base;
 #endif
-    int wrote = av_interleaved_write_frame(d->ctx, enc_pkt);
+    int wrote = av_interleaved_write_frame(d->ctx->ctx(), enc_pkt);
     return wrote;
 }
 
@@ -586,7 +584,7 @@ public:
 
     QAVMuxerSubtitleFrames *q_ptr = nullptr;
     QAVStream outputStream;
-    AVFormatContext *ctx = nullptr;
+    QSharedPointer<QAVFormatContext> ctx;
 };
 
 QAVMuxerSubtitleFrames::QAVMuxerSubtitleFrames()
@@ -608,10 +606,10 @@ int QAVMuxerSubtitleFrames::load(const QAVStream &stream)
         return AVERROR_INVALIDDATA;
     }
 
-    d_ptr->ctx = avformat_alloc_context();
+    d_ptr->ctx = QAVFormatContext::alloc();
     auto in_stream = stream.stream();
     auto dec_ctx = stream.codec()->avctx();
-    auto out_stream = avformat_new_stream(d->ctx, NULL);
+    auto out_stream = avformat_new_stream(d->ctx->ctx(), NULL);
 
     QSharedPointer<QAVCodec> codec(new QAVSubtitleCodec(encoder));
     auto enc_ctx = codec->avctx();
@@ -644,8 +642,6 @@ int QAVMuxerSubtitleFrames::load(const QAVStream &stream)
 void QAVMuxerSubtitleFrames::unload()
 {
     Q_D(QAVMuxerSubtitleFrames);
-    if (d->ctx)
-        avformat_free_context(d->ctx);
     d->ctx = nullptr;
     d->outputStream = {};
 }

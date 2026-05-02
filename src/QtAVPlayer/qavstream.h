@@ -18,12 +18,13 @@ QT_BEGIN_NAMESPACE
 struct AVStream;
 struct AVFormatContext;
 class QAVCodec;
+class QAVFormatContext;
 class QAVStreamPrivate;
 class Q_AVPLAYER_EXPORT QAVStream
 {
 public:
     QAVStream();
-    QAVStream(int index, AVFormatContext *ctx = nullptr, const QSharedPointer<QAVCodec> &codec = {});
+    QAVStream(int index, const QSharedPointer<QAVFormatContext> &ctx = {}, const QSharedPointer<QAVCodec> &codec = {});
     QAVStream(const QAVStream &other);
     ~QAVStream();
     QAVStream &operator=(const QAVStream &other);
