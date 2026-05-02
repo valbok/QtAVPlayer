@@ -77,9 +77,7 @@ void PlayerController::connectPlayerSignals()
     QObject::connect(&m_player, &QAVPlayer::stopped, this, [this](qint64 pos) {
         Q_UNUSED(pos)
         m_playing = false;
-        m_position = 0;
         emit playingChanged();
-        emit positionChanged();
     });
 
     QObject::connect(&m_player, &QAVPlayer::stepped, this, [this](qint64 pos) {
@@ -301,7 +299,7 @@ void PlayerController::notifyStreams()
     i = currentStream(m_player.availableVideoStreams(), videoStreams);
     if (i.first >= 0) {
         emit videoTrackChanged(i.first);
-        if (m_videoCodec != "software") {
+        if (m_videoCodec != QLatin1String("software")) {
             auto avctx = videoStreams[0].codec()->avctx();
             emit hwDeviceChanged(avctx && avctx->hw_device_ctx);
         }
