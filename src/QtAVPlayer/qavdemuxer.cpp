@@ -468,6 +468,8 @@ int QAVDemuxer::resetCodecs()
                 for (const auto & key: d->videoCodecOptions.keys())
                     av_dict_set(&opts.dict, key.toUtf8().constData(), d->videoCodecOptions[key].toUtf8().constData(), 0);
 
+                av_dict_set(&opts.dict, "threads", "auto", 0);
+                av_dict_set(&opts.dict, "flags", "+copy_opaque", AV_DICT_MULTIKEY);
                 QSharedPointer<QAVCodec> codec(new QAVVideoCodec);
                 d->availableStreams.push_back({ int(i), d->ctx, codec });
                 ret = setup_video_codec(d->inputVideoCodec, d->availableStreams.last(), *static_cast<QAVVideoCodec *>(codec.data()), &opts.dict);
