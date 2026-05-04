@@ -1,5 +1,5 @@
 /***************************************************************
- * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
  *                                                             *
  * This file is part of QtAVPlayer.                            *
  * Free Qt Media Player based on FFmpeg.                       *
@@ -108,6 +108,7 @@ private slots:
     void outputFile();
     void muxerFilters();
     void muxerMultiSourceFrames();
+    void framesAfterPlayerDestroyed();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -307,7 +308,7 @@ void tst_QAVPlayer::playAudioOutput()
 
     QTRY_VERIFY(p.position() != 0);
     QTRY_VERIFY(frame);
-    QCOMPARE(frame.format().sampleFormat(), QAVAudioFormat::Int32);
+    QCOMPARE(frame.format().sampleFormat(), QAVAudioFormat::Int16);
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
     QTRY_COMPARE(p.state(), QAVPlayer::StoppedState);
@@ -1425,17 +1426,28 @@ void tst_QAVPlayer::map()
     p.setSource(file.absoluteFilePath());
 
     QAVVideoFrame frame;
+    QVERIFY(!frame.isMapped());
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame](const QAVVideoFrame &f) { frame = f; });
 
     p.play();
     QTRY_VERIFY(frame);
 
     auto mapData = frame.map();
+    QVERIFY(frame.isMapped());
     QVERIFY(mapData.size > 0);
     QVERIFY(mapData.bytesPerLine[0] > 0);
     QVERIFY(mapData.bytesPerLine[1] > 0);
     QVERIFY(mapData.data[0] != nullptr);
     QVERIFY(mapData.data[1] != nullptr);
+    auto f = frame;
+    QVERIFY(f.isMapped());
+    auto md = f.map();
+    QVERIFY(md.format == mapData.format);
+    QVERIFY(md.size == mapData.size);
+    QVERIFY(md.bytesPerLine[0] == mapData.bytesPerLine[0]);
+    QVERIFY(md.bytesPerLine[1] == mapData.bytesPerLine[1]);
+    QVERIFY(md.data[0] == mapData.data[0]);
+    QVERIFY(md.data[1] == mapData.data[1]);
 }
 
 void tst_QAVPlayer::stepForward()
@@ -2878,11 +2890,15 @@ void tst_QAVPlayer::mapTwice()
     QAVVideoFrame::MapData md3;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
         md1 = frame.map();
+        QVERIFY(frame.isMapped());
         md2 = frame.map();
+        QVERIFY(frame.isMapped());
     });
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
         md3 = frame.map();
+        QVERIFY(frame.isMapped());
         md3 = frame.map();
+        QVERIFY(frame.isMapped());
     }, Qt::DirectConnection);
 
     p.pause();
@@ -3150,7 +3166,7 @@ void tst_QAVPlayer::multipleAudioVideoFilters()
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
     QVERIFY(framesCount.contains("stats"));
     QCOMPARE(framesCount["stats"], 125);
-    QCOMPARE(videoFrame.pts(), 4.963);
+    QCOMPARE(videoFrame.pts(), 4.96);
     QVERIFY(framesCount.contains("audio"));
     QCOMPARE(framesCount["audio"], 51);
     QVERIFY(audioFrame.pts() < 5.5);
@@ -3538,6 +3554,36 @@ void tst_QAVPlayer::muxerMultiSourceFrames()
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia);
     QVERIFY(!p.availableStreams().isEmpty());
     QCOMPARE(p.availableStreams().size(), 4);
+}
+
+void tst_QAVPlayer::framesAfterPlayerDestroyed()
+{
+    QFileInfo file(testData("small.mp4"));
+    auto p = std::make_unique<QAVPlayer>();
+
+    QAVVideoFrame videoFrame;
+    QObject::connect(p.get(), &QAVPlayer::videoFrame, p.get(), [&](const QAVVideoFrame &f) { videoFrame = f; });
+
+    p->setSource(file.absoluteFilePath());
+    p->pause();
+    QCOMPARE(p->state(), QAVPlayer::PausedState);
+    QTRY_COMPARE(p->mediaStatus(), QAVPlayer::LoadedMedia);
+    QTRY_VERIFY(videoFrame);
+    QVERIFY(videoFrame.pts() >= 0);
+    p->setSource({});
+    QTRY_COMPARE(p->mediaStatus(), QAVPlayer::NoMedia);
+    QVERIFY(videoFrame.pts() >= 0);
+
+    p = nullptr;
+    QVERIFY(videoFrame.pts() >= 0);
+
+    p = std::make_unique<QAVPlayer>();
+    QObject::connect(p.get(), &QAVPlayer::videoFrame, p.get(), [&](const QAVVideoFrame &f) { videoFrame = f; });
+    p->setSource(file.absoluteFilePath());
+    p->play();
+    QTRY_COMPARE(p->mediaStatus(), QAVPlayer::LoadedMedia);
+    // Destroy the player but the frame could be still active
+    p = nullptr;
 }
 
 QTEST_MAIN(tst_QAVPlayer)

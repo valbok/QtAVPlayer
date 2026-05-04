@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #ifndef QAVSTREAM_H
 #define QAVSTREAM_H
@@ -18,12 +18,13 @@ QT_BEGIN_NAMESPACE
 struct AVStream;
 struct AVFormatContext;
 class QAVCodec;
+class QAVFormatContext;
 class QAVStreamPrivate;
 class Q_AVPLAYER_EXPORT QAVStream
 {
 public:
     QAVStream();
-    QAVStream(int index, AVFormatContext *ctx = nullptr, const QSharedPointer<QAVCodec> &codec = {});
+    QAVStream(int index, const QSharedPointer<QAVFormatContext> &ctx = {}, const QSharedPointer<QAVCodec> &codec = {});
     QAVStream(const QAVStream &other);
     ~QAVStream();
     QAVStream &operator=(const QAVStream &other);
@@ -35,6 +36,11 @@ public:
     int64_t framesCount() const;
     double frameRate() const;
     QMap<QString, QString> metadata() const;
+    struct Info {
+        QString title;
+        QString language;
+    };
+    Info info() const;
 
     QSharedPointer<QAVCodec> codec() const;
 

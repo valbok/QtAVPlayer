@@ -1,12 +1,12 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #include "qavstream.h"
-#include "qavdemuxer_p.h"
+#include "qavformatcontext_p.h"
 #include "qavcodec_p.h"
 #include <QDebug>
 #include <cmath>
@@ -28,7 +28,7 @@ public:
 
     QAVStream *q_ptr = nullptr;
     int index = -1;
-    AVFormatContext *ctx = nullptr;
+    QSharedPointer<QAVFormatContext> ctx;
     QSharedPointer<QAVCodec> codec;
     QMap<QString, QString> metadata;
 };
@@ -38,7 +38,7 @@ QAVStream::QAVStream()
 {
 }
 
-QAVStream::QAVStream(int index, AVFormatContext *ctx, const QSharedPointer<QAVCodec> &codec)
+QAVStream::QAVStream(int index, const QSharedPointer<QAVFormatContext> &ctx, const QSharedPointer<QAVCodec> &codec)
     : QAVStream()
 {
     d_ptr->index = index;
@@ -67,13 +67,13 @@ QAVStream &QAVStream::operator=(const QAVStream &other)
 QAVStream::operator bool() const
 {
     Q_D(const QAVStream);
-    return d->ctx != nullptr && d->codec && d->index >= 0;
+    return d->ctx && d->ctx->ctx() && d->codec && d->index >= 0;
 }
 
 AVStream *QAVStream::stream() const
 {
     Q_D(const QAVStream);
-    return d->index >= 0 && d->index < static_cast<int>(d->ctx->nb_streams) ? d->ctx->streams[d->index] : nullptr;
+    return d->index >= 0 && d->index < static_cast<int>(d->ctx->ctx()->nb_streams) ? d->ctx->ctx()->streams[d->index] : nullptr;
 }
 
 int QAVStream::index() const
@@ -143,8 +143,8 @@ double QAVStream::duration() const
     double ret = 0.0;
     if (s->duration != AV_NOPTS_VALUE)
         ret = s->duration * av_q2d(s->time_base);
-    if (!ret && d->ctx->duration != AV_NOPTS_VALUE)
-        ret = d->ctx->duration / AV_TIME_BASE;
+    if (!ret && d->ctx->ctx()->duration != AV_NOPTS_VALUE)
+        ret = d->ctx->ctx()->duration / AV_TIME_BASE;
     return ret;
 }
 
@@ -179,8 +179,21 @@ double QAVStream::frameRate() const
     auto s = stream();
     if (s == nullptr)
         return 0.0;
-    AVRational fr = av_guess_frame_rate(d->ctx, s, nullptr);
+    AVRational fr = av_guess_frame_rate(d->ctx->ctx(), s, nullptr);
     return fr.num && fr.den ? av_q2d({fr.den, fr.num}) : 0.0;
+}
+
+QAVStream::Info QAVStream::info() const
+{
+    Info ret;
+    auto md = metadata();
+    auto it = md.find(QString::fromLatin1("title"));
+    if (it != md.end())
+        ret.title = *it;
+    it = md.find(QString::fromLatin1("language"));
+    if (it != md.end())
+        ret.language = *it;
+    return ret;
 }
 
 QAVStream::Progress::Progress(double duration, qint64 frames, double fr)

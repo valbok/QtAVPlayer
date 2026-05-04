@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #ifndef QAVVIDEOBUFFER_CPU_P_H
 #define QAVVIDEOBUFFER_CPU_P_H
@@ -31,6 +31,7 @@ public:
     explicit QAVVideoBuffer_CPU(const QAVVideoFrame &frame) : QAVVideoBuffer(frame) { }
 
     QAVVideoFrame::MapData map() override;
+    bool isMapped() const override;
 };
 
 QT_END_NAMESPACE

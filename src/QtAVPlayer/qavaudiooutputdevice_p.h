@@ -1,12 +1,23 @@
-/*********************************************************
- * Copyright (C) 2024, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #ifndef QAVAUDIOOUTPUTDEVICE_H
 #define QAVAUDIOOUTPUTDEVICE_H
+
+//
+//  W A R N I N G
+//  -------------
+//
+// This file is not part of the Qt API. It exists purely as an
+// implementation detail. This header file may change from version to
+// version without notice, or even be removed.
+//
+// We mean it.
+//
 
 #include <QtAVPlayer/qavaudioframe.h>
 #include <QtAVPlayer/qtavplayerglobal.h>
@@ -37,6 +48,10 @@ public:
     // Don't send the audio data from readData()
     void stop();
     quint64 bytesInQueue() const;
+    // Clears all submitted frames
+    void clear();
+    // Returns empty buffer data from readData()
+    void flush();
 
 protected:
     std::unique_ptr<QAVAudioOutputDevicePrivate> d_ptr;

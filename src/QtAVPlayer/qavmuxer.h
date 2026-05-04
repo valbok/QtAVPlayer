@@ -46,7 +46,7 @@ protected:
 
     virtual void init(Locker &) = 0;
     int initMuxer(Locker &);
-    virtual int initMuxer(const QAVStream &stream, AVStream *out_stream, Locker &) = 0;
+    virtual int initMuxer(const QAVStream &stream, int index, AVStream *out_stream, Locker &) = 0;
     virtual int flushFrames(Locker &) = 0;
     virtual void reset(Locker &);
     void close(Locker &);
@@ -70,7 +70,7 @@ public:
 
 private:
     void init(Locker &) override;
-    int initMuxer(const QAVStream &stream, AVStream *out_stream, Locker &) override;
+    int initMuxer(const QAVStream &stream, int index, AVStream *out_stream, Locker &) override;
     int flushFrames(Locker &) override;
     // Need to make a copy of packet
     int write(QAVPacket packet, int streamIndex, Locker &);
@@ -98,7 +98,7 @@ public:
 
 private:
     void init(Locker &) override;
-    int initMuxer(const QAVStream &stream, AVStream *out_stream, Locker &) override;
+    int initMuxer(const QAVStream &stream, int index, AVStream *out_stream, Locker &) override;
     // Need to make a copy of frame
     // streamIndex is needed to flush empty frame
     int write(QAVFrame frame, int streamIndex, Locker &);
@@ -109,6 +109,25 @@ private:
 
     Q_DECLARE_PRIVATE(QAVMuxerFrames)
 };
+
+class QAVMuxerSubtitleFramesPrivate;
+class QAVMuxerSubtitleFrames
+{
+public:
+    QAVMuxerSubtitleFrames();
+    ~QAVMuxerSubtitleFrames();
+
+    int load(const QAVStream &stream);
+    void unload();
+
+    int parseText(const QAVSubtitleFrame &frame, QString &out);
+
+private:
+    Q_DISABLE_COPY(QAVMuxerSubtitleFrames)
+    Q_DECLARE_PRIVATE(QAVMuxerSubtitleFrames)
+    std::unique_ptr<QAVMuxerSubtitleFramesPrivate> d_ptr;
+};
+
 QT_END_NAMESPACE
 
 #endif

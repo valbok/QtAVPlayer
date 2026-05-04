@@ -29,7 +29,9 @@ PRIVATE_HEADERS += \
     $$PWD/qavaudioinputfilter_p.h \ 
     $$PWD/qavvideooutputfilter_p.h \
     $$PWD/qavaudiooutputfilter_p.h \
-    $$PWD/qavfilters_p.h
+    $$PWD/qavfilters_p.h \
+    $$PWD/qavaudioconverter_p.h \
+    $$PWD/qavformatcontext_p.h \
 
 PUBLIC_HEADERS += \
     $$PWD/qaviodevice.h \
@@ -43,7 +45,6 @@ PUBLIC_HEADERS += \
     $$PWD/qtavplayerglobal.h \
     $$PWD/qavstream.h \
     $$PWD/qavplayer.h \
-    $$PWD/qavaudioconverter.h \
     $$PWD/qavmuxer.h \
 
 SOURCES += \
@@ -76,12 +77,14 @@ SOURCES += \
     $$PWD/qavstream.cpp \
     $$PWD/qavfilters.cpp \
     $$PWD/qavaudioconverter.cpp \
+    $$PWD/qavformatcontext.cpp \
 
 contains(DEFINES, QT_AVPLAYER_MULTIMEDIA) {
     QT += multimedia
     # Needed for QAbstractVideoBuffer
     equals(QT_MAJOR_VERSION, 6): QT += multimedia-private
-    HEADERS += $$PWD/qavaudiooutput.h $$PWD/qavaudiooutputdevice.h
+    PUBLIC_HEADERS += $$PWD/qavaudiooutput.h
+    PRIVATE_HEADERS += $$PWD/qavaudiooutputdevice_p.h
     SOURCES += $$PWD/qavaudiooutput.cpp $$PWD/qavaudiooutputdevice.cpp
 }
 

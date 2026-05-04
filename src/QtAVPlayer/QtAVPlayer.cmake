@@ -55,6 +55,8 @@ set(QtAVPlayer_PRIVATE_HEADERS
     ${QT_AVPLAYER_DIR}/qavvideooutputfilter_p.h
     ${QT_AVPLAYER_DIR}/qavaudiooutputfilter_p.h
     ${QT_AVPLAYER_DIR}/qavfilters_p.h
+    ${QT_AVPLAYER_DIR}/qavaudioconverter_p.h
+    ${QT_AVPLAYER_DIR}/qavformatcontext_p.h
 )
 
 set(QtAVPlayer_PUBLIC_HEADERS
@@ -69,7 +71,6 @@ set(QtAVPlayer_PUBLIC_HEADERS
     ${QT_AVPLAYER_DIR}/qtavplayerglobal.h
     ${QT_AVPLAYER_DIR}/qavstream.h
     ${QT_AVPLAYER_DIR}/qavplayer.h
-    ${QT_AVPLAYER_DIR}/qavaudioconverter.h
     ${QT_AVPLAYER_DIR}/qavmuxer.h
 )
 
@@ -103,6 +104,7 @@ set(QtAVPlayer_SOURCES
     ${QT_AVPLAYER_DIR}/qavstream.cpp
     ${QT_AVPLAYER_DIR}/qavfilters.cpp
     ${QT_AVPLAYER_DIR}/qavaudioconverter.cpp
+    ${QT_AVPLAYER_DIR}/qavformatcontext.cpp
 )
 
 if(WIN32)
@@ -154,9 +156,10 @@ if(QT_AVPLAYER_MULTIMEDIA)
     set(QtAVPlayer_PUBLIC_HEADERS
         ${QtAVPlayer_PUBLIC_HEADERS}
         ${QT_AVPLAYER_DIR}/qavaudiooutput.h
-        ${QT_AVPLAYER_DIR}/qavaudiooutputdevice.h
     )
-
+    set(QtAVPlayer_PRIVATE_HEADERS
+        ${QT_AVPLAYER_DIR}/qavaudiooutputdevice_p.h
+    )
     set(QtAVPlayer_SOURCES
         ${QtAVPlayer_SOURCES}
         ${QT_AVPLAYER_DIR}/qavaudiooutput.cpp

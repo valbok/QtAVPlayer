@@ -5,8 +5,8 @@
  * Free Qt Media Player based on FFmpeg.                       *
  ***************************************************************/
 
-#ifndef QAVVIDEOBUFFER_GPU_P_H
-#define QAVVIDEOBUFFER_GPU_P_H
+#ifndef QAVFORMATCONTEXT_P_H
+#define QAVFORMATCONTEXT_P_H
 
 //
 //  W A R N I N G
@@ -19,24 +19,23 @@
 // We mean it.
 //
 
-#include "qavvideobuffer_p.h"
-#include "qavvideobuffer_cpu_p.h"
+#include <QtAVPlayer/qtavplayerglobal.h>
+#include <QSharedPointer>
 
 QT_BEGIN_NAMESPACE
 
-class Q_AVPLAYER_EXPORT QAVVideoBuffer_GPU : public QAVVideoBuffer
+struct AVFormatContext;
+class Q_AVPLAYER_EXPORT QAVFormatContext
 {
 public:
-    QAVVideoBuffer_GPU() = default;
-    explicit QAVVideoBuffer_GPU(const QAVVideoFrame &frame) : QAVVideoBuffer(frame) { }
-    ~QAVVideoBuffer_GPU() = default;
+    ~QAVFormatContext();
+    AVFormatContext *&ctx();
 
-    QAVVideoFrame::MapData map() override;
-    bool isMapped() const override;
+    static QSharedPointer<QAVFormatContext> alloc(const QString &filename = {});
 
-protected:
-    QAVVideoBuffer_CPU m_cpu;
-    bool m_mapped = false;
+private:
+    QAVFormatContext() = default;
+    AVFormatContext *m_ctx = nullptr;
 };
 
 QT_END_NAMESPACE

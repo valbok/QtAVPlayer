@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #include "qavvideoframe.h"
 #include "qavvideobuffer_cpu_p.h"
@@ -57,7 +57,7 @@ public:
     }
 
     QAVVideoFrame *q_ptr = nullptr;
-    QScopedPointer<QAVVideoBuffer> buffer;
+    QSharedPointer<QAVVideoBuffer> buffer;
 };
 
 QAVVideoFrame::QAVVideoFrame()
@@ -98,7 +98,7 @@ QAVVideoFrame &QAVVideoFrame::operator=(const QAVVideoFrame &other)
 {
     Q_D(QAVVideoFrame);
     QAVFrame::operator=(other);
-    d->buffer.reset();
+    d->buffer = reinterpret_cast<QAVVideoFramePrivate *>(other.d_ptr.get())->buffer;
     return *this;
 }
 
@@ -112,6 +112,12 @@ QAVVideoFrame::MapData QAVVideoFrame::map() const
 {
     Q_D(const QAVVideoFrame);
     return d->videoBuffer().map();
+}
+
+bool QAVVideoFrame::isMapped() const
+{
+    Q_D(const QAVVideoFrame);
+    return d->videoBuffer().isMapped();
 }
 
 QAVVideoFrame::HandleType QAVVideoFrame::handleType() const
@@ -256,6 +262,9 @@ public:
     #endif // QT_VERSION < QT_VERSION_CHECK(6, 8, 2)
 #endif // #if QT_VERSION < QT_VERSION_CHECK(6, 7, 2)
     {
+        // Don't use video buffer if already mapped
+        if (m_frame.isMapped())
+            return 0;
         if (m_textures.isNull())
             const_cast<PlanarVideoBuffer *>(this)->m_textures = m_frame.handle(m_rhi);
         if (m_textures.canConvert<QList<QVariant>>()) {
@@ -458,6 +467,12 @@ QAVVideoFrame::operator QVideoFrame() const
 #else
             format = QVideoFrameFormat::Format_RGBA8888;
 #endif
+            // If a frame based on one opengl texture is aleady mapped
+            // then forcing to render the mapped data instead.
+            // This will not use any backend texture handles.
+            // See also PlanarVideoBuffer::textureHandle().
+            if (result.isMapped())
+                format = VideoFrame::Format_NV12;
             break;
         case AV_PIX_FMT_D3D11:
         case AV_PIX_FMT_VIDEOTOOLBOX:

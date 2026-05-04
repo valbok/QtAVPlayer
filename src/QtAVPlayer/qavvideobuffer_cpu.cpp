@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #include "qavvideobuffer_cpu_p.h"
 
@@ -31,8 +31,12 @@ QAVVideoFrame::MapData QAVVideoBuffer_CPU::map()
         mapData.bytesPerLine[i] = frame->linesize[i];
         mapData.data[i] = static_cast<uchar *>(frame->data[i]);
     }
-
     return mapData;
+}
+
+bool QAVVideoBuffer_CPU::isMapped() const
+{
+    return m_frame.frame()->format != AV_PIX_FMT_NONE;
 }
 
 QT_END_NAMESPACE
