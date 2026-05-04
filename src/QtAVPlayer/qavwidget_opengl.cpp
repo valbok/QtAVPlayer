@@ -148,6 +148,8 @@ public:
 
     // Aspect ratio mode for video scaling
     Qt::AspectRatioMode m_aspectRatioMode;
+    QRectF m_videoGeometry;
+    bool m_useVideoGeometry = false;
 
     void cleanupTextures();
     void bindTexture(int id, int w, int h, const uchar *bits, GLenum format);
@@ -246,6 +248,21 @@ Qt::AspectRatioMode QAVWidget_OpenGL::aspectRatioMode() const
 {
     Q_D(const QAVWidget_OpenGL);
     return d->m_aspectRatioMode;
+}
+
+void QAVWidget_OpenGL::setVideoGeometry(const QRectF &geometry)
+{
+    Q_D(QAVWidget_OpenGL);
+    d->m_videoGeometry = geometry;
+    d->m_useVideoGeometry = true;
+    update();
+}
+
+void QAVWidget_OpenGL::clearVideoGeometry()
+{
+    Q_D(QAVWidget_OpenGL);
+    d->m_useVideoGeometry = false;
+    update();
 }
 
 void QAVWidget_OpenGL::setVideoFrame(const QAVVideoFrame &frame)
@@ -505,7 +522,11 @@ void QAVWidget_OpenGL::paintGL()
     QSizeF size = frameSize;
     size.scale(rect.size(), d->m_aspectRatioMode);
     QRectF target(0, 0, size.width(), size.height());
-    target.moveCenter(rect.center());
+    if (d->m_useVideoGeometry) {
+        target = d->m_videoGeometry;
+    } else {
+        target.moveCenter(rect.center());
+    }
 
     // Draw black letterboxing bars first (for areas outside the video)
     // This ensures proper black bars when aspect ratio doesn't match
