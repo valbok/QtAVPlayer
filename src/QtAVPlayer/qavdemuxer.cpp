@@ -67,7 +67,13 @@ struct QAVDictionaryHolder
 
     QAVDictionaryHolder() = default;
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 13, 0)
     Q_DISABLE_COPY_MOVE(QAVDictionaryHolder)
+#else
+    Q_DISABLE_COPY(QAVDictionaryHolder)
+    QAVDictionaryHolder(QAVDictionaryHolder &&) Q_DECL_EQ_DELETE;
+    QAVDictionaryHolder &operator=(QAVDictionaryHolder &&) Q_DECL_EQ_DELETE;
+#endif
 
     ~QAVDictionaryHolder()
     {
