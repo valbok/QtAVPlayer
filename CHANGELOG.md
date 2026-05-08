@@ -1,3 +1,37 @@
+2026-05
+-------
+
+- #572 - Added fix for compatible with Qt5.13 and below versions Q_DISABLE_COPY_MOVE - 郭汉盛 <guohs01@bwoil.com>
+- #602 - Fixed qml player example to handle updated position
+- #601 - Introduced shared QAVFormatContext between frames
+
+2026-04
+-------
+
+- #600 - Fixed QAVPlayer to send the last frame before EndOfMedia
+- #596 - Fixed QAVAudioOutput to flush buffer on EOF
+- #594 - Made QAVAudioConverter private
+- #593 - Fixed QAVAudioOutput to handle AV_CODEC_ID_PCM_S24BE frames
+- #570 - Fixed QAVAudioOutput to restart audio-device on format change
+- #591 - Added title to QAVStream
+- #590 - Fixed QAVAudioOutput to clear audio queue when changing audio format
+- #588 - Fixed vdpau to re-use vdpau mixer on next frame
+- #587 - Added copy-free render to qml player example
+- #585 - Fixed QAVVideoFrame to share internal video buffer on copy
+- #584 - Added isMapped to QAVVideoFrame
+- #583 - Added software video codec to qml player example
+- #581 - Added audio and video tracks to qml player example
+- #578 - Recreated audio output if format has changed in QAVAudioOutput
+- #576 - Made QAVAudioOutputDevice private
+- #573 - Added hw_frames_ctx to video input filters.
+- #571 - Added a fix to avoid using texture handle from QVideoFrame if it is already mapped
+- #569 - Fixed memory leak in QAVSubtitleCodec::write
+- #567 - Introduced 'software' video codec hardcoded value to avoid hwdevice context
+- #566 - Introduced subtitles into qml player example
+- #565 - Introduced parsing of text from subtitles by QAVMuxerSubtitleFrames
+- #563 - Introduced qml_player example with controls
+- #564 - Fixed frame_size was not respected for a non-last frame on muxing
+
 2026-03
 -------
 
