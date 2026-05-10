@@ -117,6 +117,10 @@ contains(DEFINES, QT_AVPLAYER_VDPAU) {
     SOURCES += $$PWD/qavhwdevice_vdpau.cpp
 }
 
+contains(DEFINES, QT_AVPLAYER_LIBASS) {
+    LIBS += -lass
+}
+
 macos|darwin {
     PRIVATE_HEADERS += $$PWD/qavhwdevice_videotoolbox_p.h
     SOURCES += $$PWD/qavhwdevice_videotoolbox.mm

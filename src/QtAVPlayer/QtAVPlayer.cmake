@@ -7,6 +7,7 @@ option(QT_AVPLAYER_VA_X11 "Enable libva-x11" OFF)
 option(QT_AVPLAYER_VA_DRM "Enable libva-drm" OFF)
 option(QT_AVPLAYER_VDPAU "Enable vdpau" OFF)
 option(QT_AVPLAYER_WIDGET_OPENGL "Enable widget opengl" OFF)
+option(QT_AVPLAYER_LIBASS "Enable libass" OFF)
 
 find_library(AVDEVICE_LIBRARY REQUIRED NAMES avdevice)
 find_library(AVCODEC_LIBRARY REQUIRED NAMES avcodec)
@@ -272,4 +273,14 @@ if(QT_AVPLAYER_WIDGET_OPENGL)
         ${QtAVPlayer_SOURCES}
         ${QT_AVPLAYER_DIR}/qavwidget_opengl.cpp
     )
+endif()
+
+if(QT_AVPLAYER_LIBASS)
+    message(STATUS "QT_AVPLAYER_LIBASS is defined")
+    find_library(LIBASS_LIBRARY REQUIRED NAMES ass)
+    set(QtAVPlayer_LIBS
+        ${QtAVPlayer_LIBS}
+        ${LIBASS_LIBRARY}
+    )
+    add_definitions(-DQT_AVPLAYER_LIBASS)
 endif()

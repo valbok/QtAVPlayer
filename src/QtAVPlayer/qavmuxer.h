@@ -13,6 +13,9 @@
 #include <QtAVPlayer/qavsubtitleframe.h>
 #include <QMutexLocker>
 #include <memory>
+#if defined(QT_AVPLAYER_LIBASS)
+#include <QImage>
+#endif
 
 QT_BEGIN_NAMESPACE
 
@@ -127,6 +130,26 @@ private:
     Q_DECLARE_PRIVATE(QAVMuxerSubtitleFrames)
     std::unique_ptr<QAVMuxerSubtitleFramesPrivate> d_ptr;
 };
+
+#if defined(QT_AVPLAYER_LIBASS)
+class QAVASSRendererPrivate;
+class QAVASSRenderer
+{
+public:
+    QAVASSRenderer();
+    ~QAVASSRenderer();
+
+    int load(const QAVStream &stream);
+    void unload();
+
+    QImage toImage(const QAVSubtitleFrame &frame, int width, int height);
+
+private:
+    Q_DISABLE_COPY(QAVASSRenderer)
+    Q_DECLARE_PRIVATE(QAVASSRenderer)
+    std::unique_ptr<QAVASSRendererPrivate> d_ptr;
+};
+#endif  // #if defined(QT_AVPLAYER_LIBASS)
 
 QT_END_NAMESPACE
 
