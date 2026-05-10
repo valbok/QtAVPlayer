@@ -40,7 +40,8 @@ jobs:
                                   libswresample-dev \
                                   libswscale-dev \
                                   libva-x11-2 \
-                                  libva-drm2
+                                  libva-drm2 \
+                                  libass-dev
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
@@ -65,9 +66,9 @@ jobs:
         run: |
           export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
           cd tests/auto/integration/qavdemuxer
-          qmake
+          qmake DEFINES+="QT_AVPLAYER_LIBASS"
           make CC=$CC CXX=$CXX
-          ./tst_qavdemuxer
+          ./tst_qavdemuxer -platform offscreen
           cd ../qavplayer
           qmake
           make CC=$CC CXX=$CXX
@@ -101,7 +102,7 @@ jobs:
         if: ${{ matrix.qt_version == '6.8.2' }}
         run: |
           cd examples/qml_player
-          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON -DQT_AVPLAYER_LIBASS=ON
           make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
 
   macos:
