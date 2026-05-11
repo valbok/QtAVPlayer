@@ -97,7 +97,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
            QString text;
            if (m_subtitleMuxer.parseText(frame, text) >= 0)
                emit subtitleTextChanged(text, frame.duration() * 1000);
-           // The subtitltes could be blended out to video output by QAVASSRenderer
+           // The subtitles could be blended out to video output by QAVASSRenderer
            auto img = m_subtitleRenderer.toImage(frame, videoOutputSize.width(), videoOutputSize.height());
            if (!img.isNull())
                emit subtitleImageChanged(img, frame.duration() * 1000);
@@ -139,7 +139,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
 
        player.setFilter("crop=iw/2:ih:0:0,split[left][tmp];[tmp]hflip[right];[left][right] hstack");
        // Render bundled subtitles
-       player.setFilter("subtitles=file.mkv");
+       player.setFilter("subtitles=file.mkv"); // Requires not using hw_device_ctx, since it is software based filter
        // Render subtitles from srt file
        player.setFilter("subtitles=file.srt");
        // Multiple filters
@@ -224,6 +224,7 @@ Some defines should be provided to opt some features.
 * `QT_AVPLAYER_VA_DRM` - enables support of `libva-drm` for HW acceleration. For linux only.
 * `QT_AVPLAYER_VDPAU` - enables support of `libvdpau` for HW acceleration. For linux only.
 * `QT_AVPLAYER_WIDGET_OPENGL` - builds the widget based on opengl.
+* `QT_AVPLAYER_LIBASS` - enables support of `libass` and `QAVASSRenderer`.
 
 ## QMake
 
