@@ -97,6 +97,10 @@ Free and open-source Qt Media Player library based on FFmpeg.
            QString text;
            if (m_subtitleMuxer.parseText(frame, text) >= 0)
                emit subtitleTextChanged(text, frame.duration() * 1000);
+           // The subtitltes could be blended out to video output by QAVASSRenderer
+           auto img = m_subtitleRenderer.toImage(frame, videoOutputSize.width(), videoOutputSize.height());
+           if (!img.isNull())
+               emit subtitleImageChanged(img, frame.duration() * 1000);
        }, Qt::DirectConnection);
        
 
