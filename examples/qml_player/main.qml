@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtMultimedia
+import Subtitles 1.0
 
 ApplicationWindow {
     id: root
@@ -26,6 +27,7 @@ ApplicationWindow {
     readonly property color textPrimary:  "#f0ede6"
     readonly property color textMuted:    "#666"
     readonly property int   radius:       6
+    property bool textedSubtitles:               false
     property string selectedSubtitleStreamIndex: "-1"
     property string selectedAudioStreamIndex:    "-1"
     property string selectedVideoStreamIndex:    "-1"
@@ -140,10 +142,23 @@ ApplicationWindow {
             selectedSubtitleStreamIndex = idx;
         }
         function onSubtitleTextChanged(text, ms) {
-            subtitle.text = text
-            subtitle.visible = true
-            subtitleTimer.interval = ms
-            subtitleTimer.restart()
+            if (!textedSubtitles) {
+                subtitle.visible = false;
+                return;
+            }
+            subtitle.text = text;
+            subtitle.visible = true;
+            subtitleTimer.interval = ms;
+            subtitleTimer.restart();
+        }
+        function onSubtitleImageChanged(img, ms) {
+            if (textedSubtitles) {
+                subtitleImage.visible = false;
+                return;
+            }
+            subtitleImage.visible = true;
+            subtitleImageTimer.interval = ms;
+            subtitleImageTimer.restart();
         }
         function onAudioTracksChanged() {
             audioMenuModel.clear()
@@ -167,6 +182,12 @@ ApplicationWindow {
             softwareVideoCodec = !hw;
             copyFreeMenu.enabled = !softwareVideoCodec;
             softwareVideoCodecMenu.enabled = hw
+        }
+        function onAssRendererChanged(enabled) {
+            if (!enabled) {
+                textedSubtitlesMenu.enabled = false;
+                textedSubtitles = true;
+            }
         }
     }
 
@@ -284,6 +305,37 @@ ApplicationWindow {
                             radius: root.radius
                             implicitWidth: 200
                         }
+
+                        MenuSeparator {
+                            contentItem: Rectangle {
+                                implicitHeight: 1
+                                color: "#333"
+                            }
+                        }
+
+                        MenuItem {
+                            id: textedSubtitlesMenu
+                            contentItem: Text {
+                                leftPadding: 12
+                                text: "Texted subtitles"
+                                color: parent.enabled
+                                        ? textedSubtitles
+                                            ? root.accentColor
+                                                : parent.highlighted
+                                                    ? root.textPrimary
+                                                    : root.textMuted
+                                            : root.textMuted
+                                font.pixelSize: 13
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle {
+                                color: parent.highlighted ? Qt.rgba(1,1,1,0.06) : "transparent"
+                            }
+                            onTriggered: {
+                                textedSubtitles = !textedSubtitles;
+                            }
+                        }
+
 
                         Instantiator {
                             model: subtitleMenuModel
@@ -505,6 +557,18 @@ ApplicationWindow {
                 Component.onCompleted: {
                     playerController.setVideoSink(videoOutput.videoSink)
                 }
+
+                SubtitleItem {
+                    id: subtitleImage
+                    objectName: "subtitleImage"
+                    anchors.fill: parent
+                }
+                Timer {
+                    id: subtitleImageTimer
+                    interval: 4000
+                    onTriggered: subtitleImage.visible = false
+                }
+
             }
 
             // Double-click to toggle fullscreen

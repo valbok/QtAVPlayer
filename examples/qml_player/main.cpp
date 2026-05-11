@@ -17,6 +17,11 @@ int main(int argc, char *argv[])
     app.setApplicationName("QtAVPlayer QML Demo");
     app.setApplicationVersion("1.0");
 
+    qmlRegisterType<SubtitleItem>(
+        "Subtitles",
+        1,
+        0,
+        "SubtitleItem");
     QQmlApplicationEngine engine;
 
     // Register PlayerController so QML can instantiate it or we expose it via context
@@ -34,5 +39,8 @@ int main(int argc, char *argv[])
     );
 
     engine.load(url);
+    auto rootObject = engine.rootObjects().first();
+    auto subtitleItem = rootObject->findChild<SubtitleItem *>(QString::fromLatin1("subtitleImage"));
+    controller.setSubtitleItem(subtitleItem);
     return app.exec();
 }

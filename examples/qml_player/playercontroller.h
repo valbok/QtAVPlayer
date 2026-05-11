@@ -16,6 +16,24 @@
 #include <QString>
 #include <qqml.h>
 #include <QAtomicInt>
+#include <QQuickItem>
+
+class SubtitleItem : public QQuickItem
+{
+    Q_OBJECT
+public:
+    explicit SubtitleItem(QQuickItem *parent = nullptr);
+
+public slots:
+    void setImage(const QImage &img);
+
+protected:
+    QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *) override;
+
+private:
+    QImage m_image;
+    QMutex m_mutex;
+};
 
 /**
  * PlayerController
@@ -57,6 +75,7 @@ public:
     QStringList subtitleTracks() const;
     QStringList audioTracks() const;
     QStringList videoTracks() const;
+    void setSubtitleItem(SubtitleItem *item);
 
     void setVolume(qreal v);
 
@@ -87,11 +106,13 @@ signals:
     void subtitleTracksChanged();
     void subtitleTrackChanged(int index);
     void subtitleTextChanged(const QString &text, int duration);
+    void subtitleImageChanged(const QImage &img, int duration);
     void audioTracksChanged();
     void audioTrackChanged(int index);
     void videoTracksChanged();
     void videoTrackChanged(int index);
     void hwDeviceChanged(bool hw);
+    void assRendererChanged(bool enabled);
 
 private:
     void connectPlayerSignals();
@@ -103,7 +124,9 @@ private:
     QAVAudioOutput m_audioOutput;
     QVideoSink *m_videoSink = nullptr;
     QAVMuxerSubtitleFrames m_subtitleMuxer;
-
+#if defined(QT_AVPLAYER_LIBASS)
+    QAVASSRenderer m_subtitleRenderer;
+#endif
     bool m_playing = false;
     qint64 m_position = 0;
     qint64 m_duration = 0;

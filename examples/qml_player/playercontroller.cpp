@@ -13,6 +13,7 @@
 #include <QUrl>
 #include <QTimer>
 #include <QFileInfo>
+#include <QSGSimpleTextureNode>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -25,6 +26,46 @@ static bool isStreamCurrent(int index, const QList<QAVStream> &streams)
             return true;
     }
     return false;
+}
+
+SubtitleItem::SubtitleItem(QQuickItem *parent)
+    : QQuickItem(parent)
+{
+    setFlag(ItemHasContents, true);
+    QImage ret(640, 480, QImage::Format_RGBA8888);
+    ret.fill(Qt::transparent);
+    m_image = ret;
+}
+
+void SubtitleItem::setImage(const QImage &img)
+{
+    QMutexLocker locker(&m_mutex);
+    m_image = img;
+    update();
+}
+
+QSGNode *SubtitleItem::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
+{
+    auto *node =
+        static_cast<QSGSimpleTextureNode *>(oldNode);
+
+    if (!node)
+        node = new QSGSimpleTextureNode();
+
+    m_mutex.lock();
+    if (m_image.isNull()) {
+        m_mutex.unlock();
+        return node;
+    }
+
+    QSGTexture *texture =
+        window()->createTextureFromImage(m_image);
+
+    m_mutex.unlock();
+    node->setTexture(texture);
+    node->setRect(boundingRect());
+    node->setFiltering(QSGTexture::Linear);
+    return node;
 }
 
 PlayerController::PlayerController(QObject *parent)
@@ -59,6 +100,20 @@ void PlayerController::connectPlayerSignals()
         QString text;
         if (m_subtitleMuxer.parseText(frame, text) >= 0)
             emit subtitleTextChanged(text, frame.duration() * 1000);
+
+        auto size = m_videoSink->videoSize();
+        if (size.isEmpty()) {
+            auto streams = m_player.currentVideoStreams();
+            if (!streams.isEmpty()) {
+                auto avctx = streams[0].codec()->avctx();
+                size = {avctx->width, avctx->height};
+            }
+        }
+#if defined(QT_AVPLAYER_LIBASS)
+        auto img = m_subtitleRenderer.toImage(frame, size.width(), size.height());
+        if (!img.isNull())
+            emit subtitleImageChanged(img, frame.duration() * 1000);
+#endif
     }, Qt::DirectConnection);
 
     QObject::connect(&m_player, &QAVPlayer::played, this, [this](qint64 pos) {
@@ -136,6 +191,13 @@ void PlayerController::connectPlayerSignals()
     posTimer->start();
 }
 
+void PlayerController::setSubtitleItem(SubtitleItem *item)
+{
+    connect(this, &PlayerController::subtitleImageChanged, item, [item=item](const QImage &img) {
+        item->setImage(img);
+    });
+}
+
 void PlayerController::setVideoSink(QVideoSink *sink)
 {
     m_videoSink = sink;
@@ -192,6 +254,9 @@ void PlayerController::seek(qint64 ms)
 {
     m_audioOutput.setVolume(0);
     m_player.seek(ms);
+#if defined(QT_AVPLAYER_LIBASS)
+    m_subtitleRenderer.flush();
+#endif
 }
 
 void PlayerController::stepForward()
@@ -289,6 +354,13 @@ void PlayerController::notifyStreams()
         m_subtitleMuxer.unload();
         m_subtitleMuxer.load(i.second);
         emit subtitleTrackChanged(i.first);
+#if defined(QT_AVPLAYER_LIBASS)
+        m_subtitleRenderer.unload();
+        m_subtitleRenderer.load(i.second);
+        emit assRendererChanged(true);
+#else
+        emit assRendererChanged(false);
+#endif
     }
     emit audioTracksChanged();
     i = currentStream(m_player.availableAudioStreams(), m_player.currentAudioStreams());
