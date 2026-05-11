@@ -682,6 +682,7 @@ public:
     ASS_Library *library = nullptr;
     ASS_Renderer *renderer = nullptr;
     ASS_Track *track = nullptr;
+    QImage image;
 };
 
 QAVASSRenderer::QAVASSRenderer()
@@ -697,6 +698,7 @@ QAVASSRenderer::~QAVASSRenderer()
 int QAVASSRenderer::load(const QAVStream &stream)
 {
     Q_D(QAVASSRenderer);
+    unload();
     d->library = ass_library_init();
     if (!d->library) {
         qWarning() << "Could not initialize libass";
@@ -707,7 +709,6 @@ int QAVASSRenderer::load(const QAVStream &stream)
         qWarning() << "Could not initialize libass renderer";
         return AVERROR(EINVAL);
     }
-
     ass_set_fonts(d->renderer, NULL, NULL, 1, NULL, 1);
     d->track = ass_new_track(d->library);
     if (!d->track) {
@@ -751,10 +752,11 @@ QImage QAVASSRenderer::toImage(const QAVSubtitleFrame &frame, int width, int hei
         ass_process_chunk(d->track, ass_line, strlen(ass_line), start_time, duration);
     }
     int detect_change = 0;
-    ASS_Image *image = ass_render_frame(d->renderer, d->track,
-                                        start_time, &detect_change);
-    QImage ret(width, height, QImage::Format_RGBA8888_Premultiplied);
-    ret.fill(Qt::transparent);
+    ASS_Image *image = ass_render_frame(d->renderer, d->track, start_time, &detect_change);
+    if (detect_change == 0)
+        return d->image;
+    d->image = {width, height, QImage::Format_RGBA8888_Premultiplied};
+    d->image.fill(Qt::transparent);
 
     for (ASS_Image *i = image; i; i = i->next) {
         int r = (i->color >> 24) & 0xFF;
@@ -771,18 +773,27 @@ QImage QAVASSRenderer::toImage(const QAVSubtitleFrame &frame, int width, int hei
                 if (dst_x < 0 || dst_y < 0 || dst_x >= width || dst_y >= height)
                     continue;
 
-                QColor dst = ret.pixelColor(dst_x, dst_y);
+                QColor dst = d->image.pixelColor(dst_x, dst_y);
                 float alpha = (src_alpha / 255.0f) * (a / 255.0f);
                 int out_r = r * alpha + dst.red() * (1 - alpha);
                 int out_g = g * alpha + dst.green() * (1 - alpha);
                 int out_b = b * alpha + dst.blue() * (1 - alpha);
-                ret.setPixelColor(dst_x, dst_y, QColor(out_r, out_g, out_b, 255));
+                d->image.setPixelColor(dst_x, dst_y, QColor(out_r, out_g, out_b, 255));
             }
         }
     }
 
-    return ret;
+    return d->image;
 }
+
+void QAVASSRenderer::flush()
+{
+    Q_D(QAVASSRenderer);
+    if (d->track)
+        ass_flush_events(d->track);
+    d->image = {};
+}
+
 #endif  // #if defined(QT_AVPLAYER_LIBASS)
 
 QT_END_NAMESPACE
