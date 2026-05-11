@@ -143,6 +143,8 @@ public:
     void unload();
 
     QImage toImage(const QAVSubtitleFrame &frame, int width, int height);
+    // Flushes the buffer on seek to handle pts change
+    void flush();
 
 private:
     Q_DISABLE_COPY(QAVASSRenderer)
