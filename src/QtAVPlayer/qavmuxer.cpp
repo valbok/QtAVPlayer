@@ -741,6 +741,8 @@ void QAVASSRenderer::unload()
 QImage QAVASSRenderer::toImage(const QAVSubtitleFrame &frame, int width, int height)
 {
     Q_D(QAVASSRenderer);
+    if (!d->renderer)
+        return d->image;
     auto sub = frame.subtitle();
     const int64_t start_time = av_rescale_q(sub->pts, AV_TIME_BASE_Q, av_make_q(1, 1000));
     const int64_t duration = sub->end_display_time;
