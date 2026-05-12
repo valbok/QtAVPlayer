@@ -87,6 +87,14 @@ const AVCodec *QAVCodec::codec() const
     return d_func()->codec;
 }
 
+QSize QAVCodec::size() const
+{
+    Q_D(const QAVCodec);
+    if (!d->avctx)
+        return {};
+    return {d->avctx->width, d->avctx->height};
+}
+
 void QAVCodec::flushBuffers()
 {
      Q_D(QAVCodec);

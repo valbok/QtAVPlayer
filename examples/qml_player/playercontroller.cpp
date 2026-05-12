@@ -104,10 +104,8 @@ void PlayerController::connectPlayerSignals()
         auto size = m_videoSink->videoSize();
         if (size.isEmpty()) {
             auto streams = m_player.currentVideoStreams();
-            if (!streams.isEmpty()) {
-                auto avctx = streams[0].codec()->avctx();
-                size = {avctx->width, avctx->height};
-            }
+            if (!streams.isEmpty())
+                size = streams[0].codec()->size();
         }
 #if defined(QT_AVPLAYER_LIBASS)
         auto img = m_subtitleRenderer.toImage(frame, size.width(), size.height());

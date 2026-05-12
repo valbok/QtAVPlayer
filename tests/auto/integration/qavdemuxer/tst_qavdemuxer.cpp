@@ -1,5 +1,5 @@
 /***************************************************************
- * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
  *                                                             *
  * This file is part of QtAVPlayer.                            *
  * Free Qt Media Player based on FFmpeg.                       *
@@ -587,8 +587,8 @@ void tst_QAVDemuxer::assRenderer()
     QVERIFY(!d.availableSubtitleStreams().isEmpty());
     auto streams = d.currentVideoStreams();
     QVERIFY(!streams.isEmpty());
-    auto avctx = streams[0].codec()->avctx();
-    QSize size(avctx->width, avctx->height);
+    QSize size = streams[0].codec()->size();
+    QVERIFY(!size.isNull());
     for (auto &s: d.availableSubtitleStreams()) {
         QVERIFY(m.load(s) >= 0);
         QAVPacket p;
