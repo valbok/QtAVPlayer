@@ -42,7 +42,7 @@ public:
     bool atEnd() const override { return false; }
 
     // Enqueues the audio frame to be sent from readData()
-    void play(const QAVAudioFrame &frame);
+    void play(const QAVAudioFrame &frame, const QAVAudioFormat &outputFormat);
     // Start sending the audio data from readData()
     void start();
     // Don't send the audio data from readData()
