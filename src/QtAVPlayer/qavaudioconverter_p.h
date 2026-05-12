@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2024, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #ifndef QAVFAUDIOCONVERTER_H
 #define QAVFAUDIOCONVERTER_H
@@ -30,7 +30,8 @@ public:
     QAVAudioConverter();
     ~QAVAudioConverter();
 
-    QByteArray data(const QAVAudioFrame &frame);
+    // Converts audio data to outputFormat if the frame is in different format
+    QByteArray data(const QAVAudioFrame &frame, const QAVAudioFormat &outputFormat);
 
 private:
     Q_DISABLE_COPY(QAVAudioConverter)

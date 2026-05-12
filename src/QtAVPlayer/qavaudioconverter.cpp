@@ -43,25 +43,24 @@ QAVAudioConverter::~QAVAudioConverter()
     av_freep(&d->audioBuf);
 }
 
-QByteArray QAVAudioConverter::data(const QAVAudioFrame &audioFrame)
+QByteArray QAVAudioConverter::data(const QAVAudioFrame &audioFrame, const QAVAudioFormat &outputFormat)
 {
     Q_D(QAVAudioConverter);
     const auto frame = audioFrame.frame();
-    if (!frame)
+    if (!frame || !outputFormat)
         return {};
 
     QByteArray audioData;
-    const auto fmt = audioFrame.format();
     AVSampleFormat outFormat = AV_SAMPLE_FMT_NONE;
 #if LIBAVUTIL_VERSION_INT <= AV_VERSION_INT(57, 23, 0)
-    int64_t outChannelLayout = av_get_default_channel_layout(fmt.channelCount());
+    int64_t outChannelLayout = av_get_default_channel_layout(outputFormat.channelCount());
 #else
     AVChannelLayout outChannelLayout;
-    av_channel_layout_default(&outChannelLayout, fmt.channelCount());
+    av_channel_layout_default(&outChannelLayout, outputFormat.channelCount());
 #endif
-    int outSampleRate = fmt.sampleRate();
+    int outSampleRate = outputFormat.sampleRate();
 
-    switch (fmt.sampleFormat()) {
+    switch (outputFormat.sampleFormat()) {
     case QAVAudioFormat::UInt8:
         outFormat = AV_SAMPLE_FMT_U8;
         break;
@@ -75,7 +74,7 @@ QByteArray QAVAudioConverter::data(const QAVAudioFrame &audioFrame)
         outFormat = AV_SAMPLE_FMT_FLT;
         break;
     default:
-        qWarning() << "Could not negotiate output format:" << fmt.sampleFormat();
+        qWarning() << "Could not negotiate output format:" << outputFormat.sampleFormat();
         return {};
     }
 
@@ -129,7 +128,7 @@ QByteArray QAVAudioConverter::data(const QAVAudioFrame &audioFrame)
     if (d->swr_ctx) {
         const uint8_t **in = (const uint8_t **)frame->extended_data;
         int outCount = (int64_t)frame->nb_samples * outSampleRate / frame->sample_rate + 256;
-        int outSize = av_samples_get_buffer_size(nullptr, fmt.channelCount(), outCount, outFormat, 0);
+        int outSize = av_samples_get_buffer_size(nullptr, outputFormat.channelCount(), outCount, outFormat, 0);
 
         av_freep(&d->audioBuf);
         uint8_t **out = &d->audioBuf;
@@ -142,7 +141,7 @@ QByteArray QAVAudioConverter::data(const QAVAudioFrame &audioFrame)
             return {};
         }
 
-        int size = samples * fmt.channelCount() * av_get_bytes_per_sample(outFormat);
+        int size = samples * outputFormat.channelCount() * av_get_bytes_per_sample(outFormat);
         // Make deep copy
         audioData = QByteArray((const char *)d->audioBuf, size);
     } else {

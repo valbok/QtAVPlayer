@@ -97,7 +97,7 @@ QByteArray QAVAudioFrame::data() const
     auto d = const_cast<QAVAudioFramePrivate *>(reinterpret_cast<QAVAudioFramePrivate *>(d_ptr.get()));
     if (d->data.isEmpty()) {
         d->outAudioFormat = format();
-        d->data = QAVAudioConverter().data(*this);
+        d->data = QAVAudioConverter().data(*this, format());
     }
     return d->data;
 }

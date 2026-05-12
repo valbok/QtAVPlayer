@@ -74,14 +74,14 @@ qint64 QAVAudioOutputDevice::readData(char *data, qint64 len)
     return bytesWritten;
 }
 
-void QAVAudioOutputDevice::play(const QAVAudioFrame &frame)
+void QAVAudioOutputDevice::play(const QAVAudioFrame &frame, const QAVAudioFormat &outputFormat)
 {
     Q_D(QAVAudioOutputDevice);
     {
         QMutexLocker locker(&d->mutex);
         if (!d->conv)
             return;
-        auto data = d->conv->data(frame);
+        auto data = d->conv->data(frame, outputFormat);
         d->bytes += data.size();
         d->frames.push_back(std::move(data));
     }
