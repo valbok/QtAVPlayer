@@ -22,6 +22,7 @@
 #include "qavpacket.h"
 #include "qavframe.h"
 #include <QtAVPlayer/qtavplayerglobal.h>
+#include <QSize>
 #include <memory>
 
 extern "C" {
@@ -43,6 +44,7 @@ public:
     AVCodecContext *avctx() const;
     void setCodec(const AVCodec *c);
     const AVCodec *codec() const;
+    QSize size() const;
 
     void flushBuffers();
 
