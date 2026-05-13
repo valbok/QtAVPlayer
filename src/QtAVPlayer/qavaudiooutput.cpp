@@ -288,10 +288,8 @@ QAudioFormat::ChannelConfig QAVAudioOutput::channelConfig() const
 bool QAVAudioOutput::play(const QAVAudioFrame &frame)
 {
     Q_D(QAVAudioOutput);
-    if (!frame) {
-        d->device->flush();
+    if (!frame)
         return false;
-    }
     if (QThread::currentThread() == d->audioThread.get()) {
         qCritical() << "QAVAudioOutput::play() must not be called on the audio thread";
         return false;
@@ -304,12 +302,8 @@ bool QAVAudioOutput::play(const QAVAudioFrame &frame)
         QMutexLocker locker(&d->mutex);
         // Check if the format has been changed or not yet initialized
         if (d->frameInputFormat != frameFormat) {
-            if (d->resetPending) {
-                // Unblock the thread waiting for new frames.
-                // TODO: Should not be needed after first clear().
-                d->device->clear();
+            if (d->resetPending)
                 return false;
-            }
             d->frameInputFormat = {};
             d->resetPending = true;
             reset = true;
@@ -318,7 +312,7 @@ bool QAVAudioOutput::play(const QAVAudioFrame &frame)
         }
     }
     if (reset) {
-        d->device->clear();
+        d->device->stop();
         // Reset the output on QAVAudioOutput's thread
         QMetaObject::invokeMethod(d, [frameFormat, d] {
             d->resetIfNeeded(frameFormat, d->bufferSize, d->volume);
