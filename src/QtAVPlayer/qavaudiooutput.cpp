@@ -140,11 +140,12 @@ public:
     std::unique_ptr<QAVAudioOutputDevice> device;
     std::unique_ptr<QThread> audioThread;
     AudioDevice defaultAudioDevice;
-    // Format of AudioOutputDevice
+    // Format of AudioDevice
     QAudioFormat audioOutputFormat;
-    // Format of input frames
+    // Format of input frames receiving from the player
     QAVAudioFormat frameInputFormat;
-    // Format of data to convert to feed AudioDevice
+    // Output format of data that will be sent to AudioDevice
+    // it should match audioOutputFormat.
     QAVAudioFormat frameOutputFormat;
     // Indicates the reset is scheduled
     bool resetPending = false;
@@ -304,6 +305,8 @@ bool QAVAudioOutput::play(const QAVAudioFrame &frame)
         // Check if the format has been changed or not yet initialized
         if (d->frameInputFormat != frameFormat) {
             if (d->resetPending) {
+                // Unblock the thread waiting for new frames.
+                // TODO: Should not be needed after first clear().
                 d->device->clear();
                 return false;
             }

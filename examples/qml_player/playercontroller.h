@@ -120,7 +120,6 @@ private:
     void notifyStreams();
     void reset();
 
-    QAVPlayer m_player;
     QAVAudioOutput m_audioOutput;
     QVideoSink *m_videoSink = nullptr;
     QAVMuxerSubtitleFrames m_subtitleMuxer;
@@ -135,4 +134,6 @@ private:
     QString m_errorString;
     QString m_videoCodec;
     QAtomicInt m_copyFreeRender{1};
+    // Keep the last to be destroyed first
+    QAVPlayer m_player;
 };
