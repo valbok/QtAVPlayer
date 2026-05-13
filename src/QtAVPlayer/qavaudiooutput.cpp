@@ -207,9 +207,16 @@ public:
             frameOutputFormat = format(fmt);
             resetPending = false;
             locker.unlock();
-            // Start the output without the lock to allow to add frames to the device.
-            // This could wait for frames available.
+            waitUntilSecondsInQueue(0.5, 1000);
             audioOutput->start(device.get());
+        }
+    }
+
+    void waitUntilSecondsInQueue(double secondsInQueue, quint64 timeout_ms)
+    {
+        while (device->secondsInQueue() < secondsInQueue && timeout_ms > 0) {
+            QThread::msleep(10);
+            timeout_ms -= 10;
         }
     }
 };
@@ -328,6 +335,34 @@ void QAVAudioOutput::stop()
 {
     Q_D(QAVAudioOutput);
     d->device->stop();
+}
+
+void QAVAudioOutput::clearQueue()
+{
+    Q_D(QAVAudioOutput);
+    d->device->clear();
+}
+
+void QAVAudioOutput::suspend()
+{
+    Q_D(QAVAudioOutput);
+    QMetaObject::invokeMethod(d, [d] {
+        QMutexLocker locker(&d->mutex);
+        if (d->audioOutput)
+            d->audioOutput->suspend();
+    });
+}
+
+void QAVAudioOutput::resume()
+{
+    Q_D(QAVAudioOutput);
+    QMetaObject::invokeMethod(d, [d] {
+        d->waitUntilSecondsInQueue(0.1, 1000);
+        QMutexLocker locker(&d->mutex);
+        if (d->audioOutput) {
+            d->audioOutput->resume();
+        }
+    });
 }
 
 QT_END_NAMESPACE

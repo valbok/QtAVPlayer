@@ -9,7 +9,6 @@
 #include "qavaudioconverter_p.h"
 #include <QDebug>
 #include <QMutex>
-#include <QWaitCondition>
 #include <QThread>
 #include <QAtomicInt>
 
@@ -22,6 +21,7 @@ public:
     qint64 offset = 0;
     quint64 bytes = 0;
     std::unique_ptr<QAVAudioConverter> conv;
+    QAVAudioFormat outputFormat;
     mutable QMutex mutex;
     QAtomicInt quit = false;
 };
@@ -68,6 +68,7 @@ qint64 QAVAudioOutputDevice::readData(char *data, qint64 len)
         // Silence for entire buffer
         memset(data - bytesWritten, 0, static_cast<size_t>(len + bytesWritten));
         bytesWritten = len + bytesWritten;
+
     }
     return d->quit ? 0 : bytesWritten;
 }
@@ -81,6 +82,7 @@ void QAVAudioOutputDevice::play(const QAVAudioFrame &frame, const QAVAudioFormat
     auto data = d->conv->data(frame, outputFormat);
     d->bytes += data.size();
     d->frames.push_back(std::move(data));
+    d->outputFormat = outputFormat;
 }
 
 void QAVAudioOutputDevice::start()
@@ -96,10 +98,19 @@ void QAVAudioOutputDevice::stop()
     Q_D(QAVAudioOutputDevice);
     QMutexLocker locker(&d->mutex);
     d->quit = true;
+    d->conv.reset();
     d->frames.clear();
     d->offset = 0;
     d->bytes = 0;
-    d->conv.reset();
+}
+
+void QAVAudioOutputDevice::clear()
+{
+    Q_D(QAVAudioOutputDevice);
+    QMutexLocker locker(&d->mutex);
+    d->frames.clear();
+    d->offset = 0;
+    d->bytes = 0;
 }
 
 quint64 QAVAudioOutputDevice::bytesInQueue() const
@@ -107,6 +118,13 @@ quint64 QAVAudioOutputDevice::bytesInQueue() const
     Q_D(const QAVAudioOutputDevice);
     QMutexLocker locker(&d->mutex);
     return d->bytes;
+}
+
+double QAVAudioOutputDevice::secondsInQueue() const
+{
+    Q_D(const QAVAudioOutputDevice);
+    QMutexLocker locker(&d->mutex);
+    return QAVAudioConverter::seconds(d->outputFormat, d->bytes);
 }
 
 QT_END_NAMESPACE

@@ -33,6 +33,8 @@ public:
     // Converts audio data to outputFormat if the frame is in different format
     QByteArray data(const QAVAudioFrame &frame, const QAVAudioFormat &outputFormat);
 
+    static double seconds(const QAVAudioFormat &outputFormat, quint64 bytes);
+
 private:
     Q_DISABLE_COPY(QAVAudioConverter)
     Q_DECLARE_PRIVATE(QAVAudioConverter)

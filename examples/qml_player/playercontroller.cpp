@@ -119,6 +119,7 @@ void PlayerController::connectPlayerSignals()
         m_playing = true;
         emit playingChanged();
         m_audioOutput.setVolume(m_volume);
+        m_audioOutput.resume();
     });
 
     QObject::connect(&m_player, &QAVPlayer::paused, this, [this](qint64 pos) {
@@ -143,12 +144,15 @@ void PlayerController::connectPlayerSignals()
             emit positionChanged();
         }
         m_audioOutput.setVolume(m_volume);
+        m_audioOutput.resume();
     });
 
     QObject::connect(&m_player, &QAVPlayer::seeked, this, [this](qint64 pos) {
         m_position = pos;
         emit positionChanged();
         m_audioOutput.setVolume(m_volume);
+        if (m_playing)
+            m_audioOutput.resume();
     });
 
     QObject::connect(&m_player, &QAVPlayer::errorOccurred, this, [this](QAVPlayer::Error, const QString &str) {
@@ -240,6 +244,7 @@ void PlayerController::pause()
 {
     m_audioOutput.setVolume(0);
     m_player.pause();
+    m_audioOutput.suspend();
 }
 
 void PlayerController::stop()
@@ -251,6 +256,8 @@ void PlayerController::stop()
 void PlayerController::seek(qint64 ms)
 {
     m_audioOutput.setVolume(0);
+    m_audioOutput.clearQueue();
+    m_audioOutput.suspend();
     m_player.seek(ms);
 #if defined(QT_AVPLAYER_LIBASS)
     m_subtitleRenderer.flush();
@@ -261,12 +268,14 @@ void PlayerController::stepForward()
 {
     m_audioOutput.setVolume(0);
     m_player.stepForward();
+    m_audioOutput.suspend();
 }
 
 void PlayerController::stepBackward()
 {
     m_audioOutput.setVolume(0);
     m_player.stepBackward();
+    m_audioOutput.suspend();
 }
 
 static QStringList tracks(const QList<QAVStream> &streams)

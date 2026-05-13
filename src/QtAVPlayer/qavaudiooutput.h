@@ -34,6 +34,9 @@ public:
 #endif
 
     bool play(const QAVAudioFrame &frame);
+    void clearQueue();
+    void suspend();
+    void resume();
 
 public Q_SLOTS:
     // No audio should be rendered if stopped even if play() is called
