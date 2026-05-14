@@ -49,6 +49,8 @@ public:
     void stop();
     // Clears queue of submitted frames
     void clear();
+    // Returns empty buffer data from readData()
+    void flush();
     quint64 bytesInQueue() const;
 
 protected:

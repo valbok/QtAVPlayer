@@ -22,6 +22,7 @@ public:
     qint64 offset = 0;
     quint64 bytes = 0;
     std::unique_ptr<QAVAudioConverter> conv;
+    bool flush = false;
     mutable QMutex mutex;
     QWaitCondition cond;
     QAtomicInt quit = false;
@@ -44,13 +45,12 @@ qint64 QAVAudioOutputDevice::readData(char *data, qint64 len)
     if (!len)
         return 0;
     qint64 bytesWritten = 0;
-    bool flush = false;
+    QMutexLocker locker(&d->mutex);
     while (len && !d->quit) {
-        QMutexLocker locker(&d->mutex);
         if (d->frames.isEmpty()) {
             d->cond.wait(&d->mutex);
-            if (d->quit || d->frames.isEmpty()) {
-                flush = true;
+            if (d->quit || d->flush || d->frames.isEmpty()) {
+                d->flush = true;
                 break;
             }
         }
@@ -68,10 +68,11 @@ qint64 QAVAudioOutputDevice::readData(char *data, qint64 len)
             d->frames.removeFirst();
         }
     }
-    if (d->quit || flush) {
+    if (d->quit || d->flush) {
         // Silence for entire buffer
         memset(data - bytesWritten, 0, static_cast<size_t>(len + bytesWritten));
         bytesWritten = len + bytesWritten;
+        d->flush = false;
     }
     return d->quit ? 0 : bytesWritten;
 }
@@ -123,6 +124,16 @@ void QAVAudioOutputDevice::clear()
         d->frames.clear();
         d->offset = 0;
         d->bytes = 0;
+    }
+    d->cond.wakeAll();
+}
+
+void QAVAudioOutputDevice::flush()
+{
+    Q_D(QAVAudioOutputDevice);
+    {
+        QMutexLocker locker(&d->mutex);
+        d->flush = true;
     }
     d->cond.wakeAll();
 }

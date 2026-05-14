@@ -288,8 +288,10 @@ QAudioFormat::ChannelConfig QAVAudioOutput::channelConfig() const
 bool QAVAudioOutput::play(const QAVAudioFrame &frame)
 {
     Q_D(QAVAudioOutput);
-    if (!frame)
+    if (!frame) {
+        d->device->flush();
         return false;
+    }
     if (QThread::currentThread() == d->audioThread.get()) {
         qCritical() << "QAVAudioOutput::play() must not be called on the audio thread";
         return false;
