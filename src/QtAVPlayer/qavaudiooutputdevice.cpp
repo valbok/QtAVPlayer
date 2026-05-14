@@ -11,7 +11,6 @@
 #include <QMutex>
 #include <QWaitCondition>
 #include <QThread>
-#include <QAtomicInt>
 
 QT_BEGIN_NAMESPACE
 
