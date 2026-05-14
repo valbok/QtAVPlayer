@@ -47,7 +47,9 @@ qint64 QAVAudioOutputDevice::readData(char *data, qint64 len)
     qint64 bytesWritten = 0;
     while (len && !d->quit) {
         if (d->frames.isEmpty()) {
+#if defined(Q_OS_WIN)
             d->cond.wait(&d->mutex);
+#endif
             if (d->quit || d->flush || d->frames.isEmpty()) {
                 d->flush = true;
                 break;
