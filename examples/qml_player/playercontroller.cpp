@@ -259,6 +259,7 @@ void PlayerController::stop()
 void PlayerController::seek(qint64 ms)
 {
     m_audioOutput.setVolume(0);
+    m_audioOutput.clearQueue();
     m_audioOutput.play({});
     m_player.seek(ms);
 #if defined(QT_AVPLAYER_LIBASS)
