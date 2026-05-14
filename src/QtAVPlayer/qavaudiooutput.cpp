@@ -207,16 +207,7 @@ public:
             frameOutputFormat = format(fmt);
             resetPending = false;
             locker.unlock();
-            waitUntilSecondsInQueue(0.5, 1000);
             audioOutput->start(device.get());
-        }
-    }
-
-    void waitUntilSecondsInQueue(double secondsInQueue, quint64 timeout_ms)
-    {
-        while (device->secondsInQueue() < secondsInQueue && timeout_ms > 0) {
-            QThread::msleep(10);
-            timeout_ms -= 10;
         }
     }
 };
@@ -357,11 +348,9 @@ void QAVAudioOutput::resume()
 {
     Q_D(QAVAudioOutput);
     QMetaObject::invokeMethod(d, [d] {
-        d->waitUntilSecondsInQueue(0.1, 1000);
         QMutexLocker locker(&d->mutex);
-        if (d->audioOutput) {
+        if (d->audioOutput)
             d->audioOutput->resume();
-        }
     });
 }
 

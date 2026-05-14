@@ -160,30 +160,4 @@ QByteArray QAVAudioConverter::data(const QAVAudioFrame &audioFrame, const QAVAud
     return audioData;
 }
 
-double QAVAudioConverter::seconds(const QAVAudioFormat &outputFormat, quint64 bytes)
-{
-    if (!outputFormat || !bytes)
-        return 0;
-    int sampleRate = outputFormat.sampleRate();
-    int channelCount = outputFormat.channelCount();
-    int bytesInSample = 4;
-    switch (outputFormat.sampleFormat()) {
-    case QAVAudioFormat::UInt8:
-        bytesInSample = 1;
-        break;
-    case QAVAudioFormat::Int16:
-        bytesInSample = 2;
-        break;
-    case QAVAudioFormat::Int32:
-    case QAVAudioFormat::Float:
-        bytesInSample = 4;
-        break;
-    default:
-        qWarning() << "Could not negotiate output format:" << outputFormat.sampleFormat();
-        return {};
-    }
-    double bytesPerSecond = sampleRate * channelCount * bytesInSample;
-    return bytes / bytesPerSecond;
-}
-
 QT_END_NAMESPACE

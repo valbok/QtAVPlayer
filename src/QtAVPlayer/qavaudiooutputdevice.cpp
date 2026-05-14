@@ -68,7 +68,6 @@ qint64 QAVAudioOutputDevice::readData(char *data, qint64 len)
         // Silence for entire buffer
         memset(data - bytesWritten, 0, static_cast<size_t>(len + bytesWritten));
         bytesWritten = len + bytesWritten;
-
     }
     return d->quit ? 0 : bytesWritten;
 }
@@ -118,13 +117,6 @@ quint64 QAVAudioOutputDevice::bytesInQueue() const
     Q_D(const QAVAudioOutputDevice);
     QMutexLocker locker(&d->mutex);
     return d->bytes;
-}
-
-double QAVAudioOutputDevice::secondsInQueue() const
-{
-    Q_D(const QAVAudioOutputDevice);
-    QMutexLocker locker(&d->mutex);
-    return QAVAudioConverter::seconds(d->outputFormat, d->bytes);
 }
 
 QT_END_NAMESPACE
