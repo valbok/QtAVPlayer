@@ -22,7 +22,6 @@ public:
     qint64 offset = 0;
     quint64 bytes = 0;
     std::unique_ptr<QAVAudioConverter> conv;
-    QAVAudioFormat outputFormat;
     mutable QMutex mutex;
     QWaitCondition cond;
     QAtomicInt quit = false;
@@ -89,8 +88,6 @@ void QAVAudioOutputDevice::play(const QAVAudioFrame &frame, const QAVAudioFormat
         auto data = d->conv->data(frame, outputFormat);
         d->bytes += data.size();
         d->frames.push_back(std::move(data));
-        // TODO: Move to ctor
-        d->outputFormat = outputFormat;
     }
     d->cond.wakeAll();
 }
