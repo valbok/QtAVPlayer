@@ -9,6 +9,7 @@
 #include "qavaudioconverter_p.h"
 #include <QDebug>
 #include <QMutex>
+#include <QWaitCondition>
 #include <QThread>
 #include <QAtomicInt>
 
@@ -23,6 +24,7 @@ public:
     std::unique_ptr<QAVAudioConverter> conv;
     QAVAudioFormat outputFormat;
     mutable QMutex mutex;
+    QWaitCondition cond;
     QAtomicInt quit = false;
 };
 
@@ -47,8 +49,13 @@ qint64 QAVAudioOutputDevice::readData(char *data, qint64 len)
     while (len && !d->quit) {
         QMutexLocker locker(&d->mutex);
         if (d->frames.isEmpty()) {
-            flush = true;
-            break;
+#if defined(Q_OS_WIN)
+            d->cond.wait(&d->mutex);
+#endif
+            if (d->quit || d->frames.isEmpty()) {
+                flush = true;
+                break;
+            }
         }
         auto &sampleData = d->frames.front();
         const int toWrite = qMin(sampleData.size() - d->offset, len);
@@ -75,41 +82,54 @@ qint64 QAVAudioOutputDevice::readData(char *data, qint64 len)
 void QAVAudioOutputDevice::play(const QAVAudioFrame &frame, const QAVAudioFormat &outputFormat)
 {
     Q_D(QAVAudioOutputDevice);
-    QMutexLocker locker(&d->mutex);
-    if (!d->conv)
-        return;
-    auto data = d->conv->data(frame, outputFormat);
-    d->bytes += data.size();
-    d->frames.push_back(std::move(data));
-    d->outputFormat = outputFormat;
+    {
+        QMutexLocker locker(&d->mutex);
+        if (!d->conv || d->quit)
+            return;
+        auto data = d->conv->data(frame, outputFormat);
+        d->bytes += data.size();
+        d->frames.push_back(std::move(data));
+        // TODO: Move to ctor
+        d->outputFormat = outputFormat;
+    }
+    d->cond.wakeAll();
 }
 
 void QAVAudioOutputDevice::start()
 {
     Q_D(QAVAudioOutputDevice);
-    QMutexLocker locker(&d->mutex);
-    d->quit = false;
-    d->conv = std::make_unique<QAVAudioConverter>();
+    {
+        QMutexLocker locker(&d->mutex);
+        d->quit = false;
+        d->conv = std::make_unique<QAVAudioConverter>();
+    }
+    d->cond.wakeAll();
 }
 
 void QAVAudioOutputDevice::stop()
 {
     Q_D(QAVAudioOutputDevice);
-    QMutexLocker locker(&d->mutex);
-    d->quit = true;
-    d->conv.reset();
-    d->frames.clear();
-    d->offset = 0;
-    d->bytes = 0;
+    {
+        QMutexLocker locker(&d->mutex);
+        d->quit = true;
+        d->conv.reset();
+        d->frames.clear();
+        d->offset = 0;
+        d->bytes = 0;
+    }
+    d->cond.wakeAll();
 }
 
 void QAVAudioOutputDevice::clear()
 {
     Q_D(QAVAudioOutputDevice);
-    QMutexLocker locker(&d->mutex);
-    d->frames.clear();
-    d->offset = 0;
-    d->bytes = 0;
+    {
+        QMutexLocker locker(&d->mutex);
+        d->frames.clear();
+        d->offset = 0;
+        d->bytes = 0;
+    }
+    d->cond.wakeAll();
 }
 
 quint64 QAVAudioOutputDevice::bytesInQueue() const

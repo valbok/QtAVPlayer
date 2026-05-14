@@ -207,6 +207,8 @@ public:
             frameOutputFormat = format(fmt);
             resetPending = false;
             locker.unlock();
+            // Start the output without the lock to allow to add frames to the device.
+            // This could wait for frames available.
             audioOutput->start(device.get());
         }
     }
@@ -337,20 +339,24 @@ void QAVAudioOutput::clearQueue()
 void QAVAudioOutput::suspend()
 {
     Q_D(QAVAudioOutput);
-    QMetaObject::invokeMethod(d, [d] {
-        QMutexLocker locker(&d->mutex);
-        if (d->audioOutput)
-            d->audioOutput->suspend();
+    QMutexLocker locker(&d->mutex);
+    // Invoke on audio thread
+    QMetaObject::invokeMethod(d, [audioOutput=d->audioOutput] {
+        if (audioOutput && audioOutput->state() != QAudio::SuspendedState) {
+            audioOutput->suspend();
+        }
     });
 }
 
 void QAVAudioOutput::resume()
 {
     Q_D(QAVAudioOutput);
-    QMetaObject::invokeMethod(d, [d] {
-        QMutexLocker locker(&d->mutex);
-        if (d->audioOutput)
-            d->audioOutput->resume();
+    QMutexLocker locker(&d->mutex);
+    // Invoke on audio thread
+    QMetaObject::invokeMethod(d, [audioOutput=d->audioOutput] {
+        if (audioOutput && audioOutput->state() == QAudio::SuspendedState) {
+            audioOutput->resume();
+        }
     });
 }
 

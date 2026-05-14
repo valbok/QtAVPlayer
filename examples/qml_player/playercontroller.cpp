@@ -72,6 +72,9 @@ PlayerController::PlayerController(QObject *parent)
     : QObject(parent)
 {
     connectPlayerSignals();
+#if defined(Q_OS_WIN)
+    m_audioOutput.setBufferSize(96000);
+#endif
 }
 
 void PlayerController::connectPlayerSignals()
@@ -173,8 +176,6 @@ void PlayerController::connectPlayerSignals()
         } else if (status == QAVPlayer::EndOfMedia) {
             m_playing = false;
             emit playingChanged();
-            // Flush audio buffer
-            m_audioOutput.play({});
         } else if (status == QAVPlayer::NoMedia) {
             reset();
         }
