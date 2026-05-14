@@ -176,6 +176,7 @@ void PlayerController::connectPlayerSignals()
         } else if (status == QAVPlayer::EndOfMedia) {
             m_playing = false;
             emit playingChanged();
+            // Flush audio buffer
             m_audioOutput.play({});
         } else if (status == QAVPlayer::NoMedia) {
             reset();

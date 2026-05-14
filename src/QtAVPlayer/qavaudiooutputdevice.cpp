@@ -22,10 +22,10 @@ public:
     qint64 offset = 0;
     quint64 bytes = 0;
     std::unique_ptr<QAVAudioConverter> conv;
-    bool flush = false;
     mutable QMutex mutex;
     QWaitCondition cond;
-    QAtomicInt quit = false;
+    bool quit = false;
+    bool flush = false;
 };
 
 QAVAudioOutputDevice::QAVAudioOutputDevice(QObject *parent)
@@ -44,8 +44,8 @@ qint64 QAVAudioOutputDevice::readData(char *data, qint64 len)
     Q_D(QAVAudioOutputDevice);
     if (!len)
         return 0;
-    qint64 bytesWritten = 0;
     QMutexLocker locker(&d->mutex);
+    qint64 bytesWritten = 0;
     while (len && !d->quit) {
         if (d->frames.isEmpty()) {
             d->cond.wait(&d->mutex);
