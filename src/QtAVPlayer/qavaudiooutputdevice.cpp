@@ -47,31 +47,35 @@ qint64 QAVAudioOutputDevice::readData(char *data, qint64 len)
     qint64 bytesWritten = 0;
     while (len && !d->quit) {
         if (d->frames.isEmpty()) {
+#if defined(Q_OS_WIN)
             d->cond.wait(&d->mutex);
-            if (d->quit || d->flush || d->frames.isEmpty())
+#endif
+            if (d->quit || d->flush || d->frames.isEmpty()) {
+                d->flush = true;
                 break;
+            }
         }
-
         auto &sampleData = d->frames.front();
         const int toWrite = qMin(sampleData.size() - d->offset, len);
-        memcpy(data, sampleData.constData() + d->offset, toWrite);
+        auto src = sampleData.constData() + d->offset;
+        memcpy(data, src, toWrite);
         bytesWritten += toWrite;
         data += toWrite;
         len -= toWrite;
         d->offset += toWrite;
-
         if (d->offset >= sampleData.size()) {
             d->offset = 0;
             d->bytes -= sampleData.size();
             d->frames.removeFirst();
         }
     }
-    if (d->quit || d->flush || bytesWritten == 0) {
+    if (d->quit || d->flush) {
+        // Silence for entire buffer
         memset(data - bytesWritten, 0, static_cast<size_t>(len + bytesWritten));
         bytesWritten = len + bytesWritten;
         d->flush = false;
     }
-    return bytesWritten;
+    return d->quit ? 0 : bytesWritten;
 }
 
 void QAVAudioOutputDevice::play(const QAVAudioFrame &frame, const QAVAudioFormat &outputFormat)
@@ -79,7 +83,7 @@ void QAVAudioOutputDevice::play(const QAVAudioFrame &frame, const QAVAudioFormat
     Q_D(QAVAudioOutputDevice);
     {
         QMutexLocker locker(&d->mutex);
-        if (!d->conv)
+        if (!d->conv || d->quit)
             return;
         auto data = d->conv->data(frame, outputFormat);
         d->bytes += data.size();
@@ -105,15 +109,12 @@ void QAVAudioOutputDevice::stop()
     {
         QMutexLocker locker(&d->mutex);
         d->quit = true;
+        d->conv.reset();
+        d->frames.clear();
+        d->offset = 0;
+        d->bytes = 0;
     }
     d->cond.wakeAll();
-}
-
-quint64 QAVAudioOutputDevice::bytesInQueue() const
-{
-    Q_D(const QAVAudioOutputDevice);
-    QMutexLocker locker(&d->mutex);
-    return d->bytes;
 }
 
 void QAVAudioOutputDevice::clear()
@@ -124,7 +125,6 @@ void QAVAudioOutputDevice::clear()
         d->frames.clear();
         d->offset = 0;
         d->bytes = 0;
-        d->conv.reset();
     }
     d->cond.wakeAll();
 }
@@ -137,6 +137,13 @@ void QAVAudioOutputDevice::flush()
         d->flush = true;
     }
     d->cond.wakeAll();
+}
+
+quint64 QAVAudioOutputDevice::bytesInQueue() const
+{
+    Q_D(const QAVAudioOutputDevice);
+    QMutexLocker locker(&d->mutex);
+    return d->bytes;
 }
 
 QT_END_NAMESPACE

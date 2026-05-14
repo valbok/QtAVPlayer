@@ -304,12 +304,8 @@ bool QAVAudioOutput::play(const QAVAudioFrame &frame)
         QMutexLocker locker(&d->mutex);
         // Check if the format has been changed or not yet initialized
         if (d->frameInputFormat != frameFormat) {
-            if (d->resetPending) {
-                // Unblock the thread waiting for new frames.
-                // TODO: Should not be needed after first clear().
-                d->device->clear();
+            if (d->resetPending)
                 return false;
-            }
             d->frameInputFormat = {};
             d->resetPending = true;
             reset = true;
@@ -318,7 +314,7 @@ bool QAVAudioOutput::play(const QAVAudioFrame &frame)
         }
     }
     if (reset) {
-        d->device->clear();
+        d->device->stop();
         // Reset the output on QAVAudioOutput's thread
         QMetaObject::invokeMethod(d, [frameFormat, d] {
             d->resetIfNeeded(frameFormat, d->bufferSize, d->volume);
@@ -334,6 +330,36 @@ void QAVAudioOutput::stop()
 {
     Q_D(QAVAudioOutput);
     d->device->stop();
+}
+
+void QAVAudioOutput::clearQueue()
+{
+    Q_D(QAVAudioOutput);
+    d->device->clear();
+}
+
+void QAVAudioOutput::suspend()
+{
+    Q_D(QAVAudioOutput);
+    QMutexLocker locker(&d->mutex);
+    // Invoke on audio thread
+    QMetaObject::invokeMethod(d, [audioOutput=d->audioOutput] {
+        if (audioOutput && audioOutput->state() != QAudio::SuspendedState) {
+            audioOutput->suspend();
+        }
+    });
+}
+
+void QAVAudioOutput::resume()
+{
+    Q_D(QAVAudioOutput);
+    QMutexLocker locker(&d->mutex);
+    // Invoke on audio thread
+    QMetaObject::invokeMethod(d, [audioOutput=d->audioOutput] {
+        if (audioOutput && audioOutput->state() == QAudio::SuspendedState) {
+            audioOutput->resume();
+        }
+    });
 }
 
 QT_END_NAMESPACE
