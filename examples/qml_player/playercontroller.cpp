@@ -122,7 +122,6 @@ void PlayerController::connectPlayerSignals()
         m_playing = true;
         emit playingChanged();
         m_audioOutput.setVolume(m_volume);
-        m_audioOutput.resume();
     });
 
     QObject::connect(&m_player, &QAVPlayer::paused, this, [this](qint64 pos) {
@@ -147,15 +146,12 @@ void PlayerController::connectPlayerSignals()
             emit positionChanged();
         }
         m_audioOutput.setVolume(m_volume);
-        m_audioOutput.resume();
     });
 
     QObject::connect(&m_player, &QAVPlayer::seeked, this, [this](qint64 pos) {
         m_position = pos;
         emit positionChanged();
         m_audioOutput.setVolume(m_volume);
-        if (m_playing)
-            m_audioOutput.resume();
     });
 
     QObject::connect(&m_player, &QAVPlayer::errorOccurred, this, [this](QAVPlayer::Error, const QString &str) {
@@ -240,6 +236,8 @@ void PlayerController::openUrl(const QString &url)
 
 void PlayerController::play()
 {
+    if (!m_playing)
+        m_audioOutput.resume();
     m_player.play();
 }
 
@@ -402,6 +400,8 @@ void PlayerController::reset()
     emit subtitleTrackChanged(-1);
     emit audioTracksChanged();
     emit videoTracksChanged();
+    m_audioOutput.clearQueue();
+    m_audioOutput.play({});
 }
 
 void PlayerController::setVideoCodec(const QString &codec)
