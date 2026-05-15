@@ -333,6 +333,12 @@ void QAVAudioOutput::stop()
 {
     Q_D(QAVAudioOutput);
     d->device->stop();
+    QMutexLocker locker(&d->mutex);
+    if (d->audioOutput) {
+        QMetaObject::invokeMethod(d, [audioOutput=d->audioOutput] {
+            audioOutput->reset();
+        });
+    }
 }
 
 void QAVAudioOutput::clearQueue()
@@ -346,11 +352,13 @@ void QAVAudioOutput::suspend()
     Q_D(QAVAudioOutput);
     QMutexLocker locker(&d->mutex);
     // Invoke on audio thread
-    QMetaObject::invokeMethod(d, [audioOutput=d->audioOutput] {
-        if (audioOutput && audioOutput->state() != QAudio::SuspendedState) {
-            audioOutput->suspend();
-        }
-    });
+    if (d->audioOutput) {
+        QMetaObject::invokeMethod(d, [audioOutput=d->audioOutput] {
+            if (audioOutput->state() != QAudio::SuspendedState) {
+                audioOutput->suspend();
+            }
+        });
+    }
 }
 
 void QAVAudioOutput::resume()
@@ -358,11 +366,13 @@ void QAVAudioOutput::resume()
     Q_D(QAVAudioOutput);
     QMutexLocker locker(&d->mutex);
     // Invoke on audio thread
-    QMetaObject::invokeMethod(d, [audioOutput=d->audioOutput] {
-        if (audioOutput && audioOutput->state() == QAudio::SuspendedState) {
-            audioOutput->resume();
-        }
-    });
+    if (d->audioOutput) {
+        QMetaObject::invokeMethod(d, [audioOutput=d->audioOutput] {
+            if (audioOutput->state() == QAudio::SuspendedState) {
+                audioOutput->resume();
+            }
+        });
+    }
 }
 
 QT_END_NAMESPACE
