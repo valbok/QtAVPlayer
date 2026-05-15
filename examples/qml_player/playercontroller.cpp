@@ -145,7 +145,8 @@ void PlayerController::connectPlayerSignals()
     });
 
     QObject::connect(&m_player, &QAVPlayer::seeked, this, [this](qint64 pos) {
-        Q_UNUSED(pos)
+        m_position = pos;
+        emit positionChanged();
         m_audioOutput.setVolume(m_volume);
         m_posTimer.start();
     });
@@ -176,7 +177,7 @@ void PlayerController::connectPlayerSignals()
     });
 
     // QAVPlayer does not emit a continuous position signal; we poll via a timer.
-    m_posTimer.setInterval(1000);
+    m_posTimer.setInterval(200);
     QObject::connect(&m_posTimer, &QTimer::timeout, this, [this] {
         qint64 pos = m_player.position();
         if (pos != m_position) {
