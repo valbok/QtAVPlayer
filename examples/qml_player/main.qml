@@ -636,10 +636,14 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     from: 0
                     to: Math.max(1, pc.duration)
-                    value: pc.position
                     enabled: pc.hasMedia
                     accentColor: root.accentColor
-
+                    Binding {
+                        target: seekBar
+                        property: "value"
+                        value: pc.position
+                        when: !seekBar.pressed // Binding is disabled while dragging/clicking
+                    }
                     onMoved: pc.seek(value)
                 }
 
