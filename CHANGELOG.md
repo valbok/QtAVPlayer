@@ -1,7 +1,18 @@
 2026-05
 -------
 
-- #572 - Added fix for compatible with Qt5.13 and below versions Q_DISABLE_COPY_MOVE - 郭汉盛 <guohs01@bwoil.com>
+- #621 - Fixed seek slider in QML Player example to avoid double seek
+- #620 - Fixed position in QML Player example to avoid jumping
+- #619 - Fixed QAVAudioOutput to resume the audio sink before stopping
+- #616 - Added helper function to return number of seconds based on audio format and num of bytes
+- #613 - Introduced QAVAudioOutput::suspend() and QAVAudioOutput::resume()
+- #612 - Fixed QML Player example to destroy the player first
+- #611 - Fixed QAVAudioOutput to use preferred format when frame's format is not supported by audio device
+- #609 - Added QAVCodec::size(), video dimensions
+- #608 - Added QAVASSRenderer to QML Player example
+- #607 - Added QAVASSRenderer::flush on seek
+- #606 - Introduced QAVASSRenderer with -DQT_AVPLAYER_LIBASS=ON
+- #605 - Added fix for compatible with Qt5.13 and below versions Q_DISABLE_COPY_MOVE - 郭汉盛 <guohs01@bwoil.com>
 - #602 - Fixed qml player example to handle updated position
 - #601 - Introduced shared QAVFormatContext between frames
 
