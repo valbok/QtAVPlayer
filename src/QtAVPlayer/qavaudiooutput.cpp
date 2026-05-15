@@ -176,6 +176,8 @@ public:
                 return;
             }
             if (audioOutput) {
+                if (audioOutput->state() == QAudio::SuspendedState)
+                    audioOutput->resume();
                 audioOutput->stop();
                 audioOutput->deleteLater();
                 audioOutput = nullptr;
