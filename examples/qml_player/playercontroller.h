@@ -17,6 +17,7 @@
 #include <qqml.h>
 #include <QAtomicInt>
 #include <QQuickItem>
+#include <QTimer>
 
 class SubtitleItem : public QQuickItem
 {
@@ -136,4 +137,5 @@ private:
     QAtomicInt m_copyFreeRender{1};
     // Keep the last to be destroyed first
     QAVPlayer m_player;
+    QTimer m_posTimer;
 };
