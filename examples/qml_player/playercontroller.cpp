@@ -11,7 +11,6 @@
 #include <QtAVPlayer/qavaudioframe.h>
 #include <QtAVPlayer/qavcodec_p.h>
 #include <QUrl>
-#include <QTimer>
 #include <QFileInfo>
 #include <QSGSimpleTextureNode>
 
@@ -137,21 +136,18 @@ void PlayerController::connectPlayerSignals()
     });
 
     QObject::connect(&m_player, &QAVPlayer::stepped, this, [this](qint64 pos) {
+        Q_UNUSED(pos)
         if (m_playing) {
             m_playing = false;
             emit playingChanged();
-        }
-        if (pos != m_position) {
-            m_position = pos;
-            emit positionChanged();
         }
         m_audioOutput.setVolume(m_volume);
     });
 
     QObject::connect(&m_player, &QAVPlayer::seeked, this, [this](qint64 pos) {
-        m_position = pos;
-        emit positionChanged();
+        Q_UNUSED(pos)
         m_audioOutput.setVolume(m_volume);
+        m_posTimer.start();
     });
 
     QObject::connect(&m_player, &QAVPlayer::errorOccurred, this, [this](QAVPlayer::Error, const QString &str) {
@@ -180,16 +176,15 @@ void PlayerController::connectPlayerSignals()
     });
 
     // QAVPlayer does not emit a continuous position signal; we poll via a timer.
-    auto *posTimer = new QTimer(this);
-    posTimer->setInterval(1000);
-    QObject::connect(posTimer, &QTimer::timeout, this, [this]() {
+    m_posTimer.setInterval(1000);
+    QObject::connect(&m_posTimer, &QTimer::timeout, this, [this] {
         qint64 pos = m_player.position();
         if (pos != m_position) {
             m_position = pos;
             emit positionChanged();
         }
     });
-    posTimer->start();
+    m_posTimer.start();
 }
 
 void PlayerController::setSubtitleItem(SubtitleItem *item)
@@ -256,6 +251,9 @@ void PlayerController::stop()
 
 void PlayerController::seek(qint64 ms)
 {
+    if (ms == m_position)
+        return;
+    m_posTimer.stop();
     m_audioOutput.setVolume(0);
     m_audioOutput.clearQueue();
     m_audioOutput.play({});
