@@ -149,7 +149,6 @@ public:
     // Aspect ratio mode for video scaling
     Qt::AspectRatioMode m_aspectRatioMode;
     QRectF m_videoGeometry;
-    bool m_useVideoGeometry = false;
 
     void cleanupTextures();
     void bindTexture(int id, int w, int h, const uchar *bits, GLenum format);
@@ -254,14 +253,7 @@ void QAVWidget_OpenGL::setVideoGeometry(const QRectF &geometry)
 {
     Q_D(QAVWidget_OpenGL);
     d->m_videoGeometry = geometry;
-    d->m_useVideoGeometry = true;
-    update();
-}
-
-void QAVWidget_OpenGL::clearVideoGeometry()
-{
-    Q_D(QAVWidget_OpenGL);
-    d->m_useVideoGeometry = false;
+    
     update();
 }
 
@@ -522,7 +514,7 @@ void QAVWidget_OpenGL::paintGL()
     QSizeF size = frameSize;
     size.scale(rect.size(), d->m_aspectRatioMode);
     QRectF target(0, 0, size.width(), size.height());
-    if (d->m_useVideoGeometry) {
+    if (!d->m_videoGeometry::isNull) {
         target = d->m_videoGeometry;
     } else {
         target.moveCenter(rect.center());
