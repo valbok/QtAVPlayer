@@ -28,8 +28,7 @@ public:
     void setVideoFrame(const QAVVideoFrame &frame);
     void setAspectRatioMode(Qt::AspectRatioMode mode);
     void setVideoGeometry(const QRectF &geometry);
-    void clearVideoGeometry();
-    
+
     Qt::AspectRatioMode aspectRatioMode() const;
 
 private:
