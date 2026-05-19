@@ -514,7 +514,7 @@ void QAVWidget_OpenGL::paintGL()
     QSizeF size = frameSize;
     size.scale(rect.size(), d->m_aspectRatioMode);
     QRectF target(0, 0, size.width(), size.height());
-    if (!d->m_videoGeometry::isNull) {
+    if (!d->m_videoGeometry.isNull()) {
         target = d->m_videoGeometry;
     } else {
         target.moveCenter(rect.center());
