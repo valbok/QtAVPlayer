@@ -124,7 +124,7 @@ class QAVWidget_OpenGLPrivate
 public:
     QAVWidget_OpenGLPrivate(QAVWidget_OpenGL *q) :
         q_ptr(q),
-        m_aspectRatioMode(Qt::KeepAspectRatio)
+        aspectRatioMode(Qt::KeepAspectRatio)
     {
     }
 
@@ -147,8 +147,8 @@ public:
     QMatrix4x4 colorMatrix;
 
     // Aspect ratio mode for video scaling
-    Qt::AspectRatioMode m_aspectRatioMode;
-    QRectF m_videoGeometry;
+    Qt::AspectRatioMode aspectRatioMode;
+    QRectF videoGeometry;
 
     void cleanupTextures();
     void bindTexture(int id, int w, int h, const uchar *bits, GLenum format);
@@ -239,20 +239,20 @@ QAVWidget_OpenGL::~QAVWidget_OpenGL()
 void QAVWidget_OpenGL::setAspectRatioMode(Qt::AspectRatioMode mode)
 {
     Q_D(QAVWidget_OpenGL);
-    d->m_aspectRatioMode = mode;
+    d->aspectRatioMode = mode;
     update();
 }
 
 Qt::AspectRatioMode QAVWidget_OpenGL::aspectRatioMode() const
 {
     Q_D(const QAVWidget_OpenGL);
-    return d->m_aspectRatioMode;
+    return d->aspectRatioMode;
 }
 
 void QAVWidget_OpenGL::setVideoGeometry(const QRectF &geometry)
 {
     Q_D(QAVWidget_OpenGL);
-    d->m_videoGeometry = geometry;
+    d->videoGeometry = geometry;
     
     update();
 }
@@ -512,10 +512,10 @@ void QAVWidget_OpenGL::paintGL()
 
     QRectF rect(0.0, 0.0, width, height);
     QSizeF size = frameSize;
-    size.scale(rect.size(), d->m_aspectRatioMode);
+    size.scale(rect.size(), d->aspectRatioMode);
     QRectF target(0, 0, size.width(), size.height());
-    if (!d->m_videoGeometry.isNull()) {
-        target = d->m_videoGeometry;
+    if (!d->videoGeometry.isNull()) {
+        target = d->videoGeometry;
     } else {
         target.moveCenter(rect.center());
     }
