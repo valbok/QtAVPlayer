@@ -470,14 +470,10 @@ int QAVMuxerFrames::write(QAVFrame frame, int streamIndex, Locker &)
     auto enc_ctx = encStream.codec()->avctx();
     auto stream = encStream.stream();
 
-    if (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
-        // If the frame is in different format than the encoder
-        // TODO: avoid converting
-        if (frame && frame.frame()->format != enc_ctx->pix_fmt) {
-            QAVVideoFrame videoFrame = frame;
-            frame = videoFrame.convertTo(enc_ctx->pix_fmt);
-        }
-        frame.frame()->pict_type = AV_PICTURE_TYPE_NONE;
+    if (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO && frame && frame.frame()->format != enc_ctx->pix_fmt) {
+        qWarning() << av_pix_fmt_desc_get(AVPixelFormat(frame.frame()->format))->name
+                   << "differs to encoder:" << av_pix_fmt_desc_get(enc_ctx->pix_fmt)->name;
+        return AVERROR_INVALIDDATA;
     }
 
     // Set encoder stream to frame to send to
