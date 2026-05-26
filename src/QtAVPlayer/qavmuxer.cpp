@@ -76,7 +76,7 @@ public:
     {
     }
 
-    QList<QAVStream> encStreams;
+    QMap<int, QAVStream> encStreams;
     std::unique_ptr<QThread> workerThread;
     QList<QAVFrame> frames;
     QWaitCondition cond;
@@ -372,7 +372,7 @@ int QAVMuxerFrames::initMuxer(const QAVStream &stream, int index, AVStream *out_
                 return ret;
             }
             out_stream->time_base = enc_ctx->time_base;
-            d->encStreams.push_back({ index, d->ctx, codec });
+            d->encStreams[index] = { index, d->ctx, codec };
             break;
         }
         case AVMEDIA_TYPE_AUDIO: {
@@ -400,7 +400,7 @@ int QAVMuxerFrames::initMuxer(const QAVStream &stream, int index, AVStream *out_
                 return ret;
             }
             out_stream->time_base = enc_ctx->time_base;
-            d->encStreams.push_back({ index, d->ctx, codec });
+            d->encStreams[index] = { index, d->ctx, codec };
             break;
         }
         case AVMEDIA_TYPE_SUBTITLE: {
@@ -428,7 +428,7 @@ int QAVMuxerFrames::initMuxer(const QAVStream &stream, int index, AVStream *out_
                 return ret;
             }
             out_stream->time_base = in_stream->time_base;
-            d->encStreams.push_back({ index, d->ctx, codec });
+            d->encStreams[index] = { index, d->ctx, codec };
             break;
         }
         default:
@@ -465,7 +465,6 @@ int QAVMuxerFrames::write(const QAVSubtitleFrame &frame)
 int QAVMuxerFrames::write(QAVFrame frame, int streamIndex, Locker &)
 {
     Q_D(QAVMuxerFrames);
-    Q_ASSERT(streamIndex < d->encStreams.size());
     auto &encStream = d->encStreams[streamIndex];
     auto enc_ctx = encStream.codec()->avctx();
     auto stream = encStream.stream();
@@ -507,7 +506,6 @@ int QAVMuxerFrames::write(QAVFrame frame, int streamIndex, Locker &)
 int QAVMuxerFrames::write(QAVSubtitleFrame frame, int streamIndex, Locker &)
 {
     Q_D(QAVMuxerFrames);
-    Q_ASSERT(streamIndex < d->encStreams.size());
     auto &encStream = d->encStreams[streamIndex];
     auto enc_ctx = encStream.codec()->avctx();
     auto stream = encStream.stream();
@@ -558,12 +556,12 @@ void QAVMuxerFrames::reset(Locker &locker)
 int QAVMuxerFrames::flushFrames(Locker &locker)
 {
     Q_D(QAVMuxerFrames);
-    for (int i = 0; i < d->encStreams.size(); ++i) {
+    for (auto &s : d->encStreams) {
         // no flushing for subtitles
-        bool isSub = d->encStreams[i].codec()->avctx()->codec_type == AVMEDIA_TYPE_SUBTITLE;
+        bool isSub = s.codec()->avctx()->codec_type == AVMEDIA_TYPE_SUBTITLE;
         if (isSub)
             continue;
-        int ret = write(QAVFrame(), d->encStreams[i].index(), locker);
+        int ret = write(QAVFrame(), s.index(), locker);
         if (ret < 0 && ret != AVERROR_EOF) {
             qWarning() << d->filename << ": Could not flush:" << err2str(ret);
             return ret;
