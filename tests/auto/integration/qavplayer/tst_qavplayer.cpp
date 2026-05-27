@@ -1403,6 +1403,8 @@ void tst_QAVPlayer::convert()
     QAVVideoFrame converted = videoFrame.convertTo(to);
     QVERIFY(converted);
     QCOMPARE(converted.format(), to);
+    QCOMPARE(converted.pts(), videoFrame.pts());
+    QCOMPARE(converted.size(), videoFrame.size());
 }
 
 void tst_QAVPlayer::map_data()

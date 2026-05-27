@@ -179,6 +179,7 @@ QAVVideoFrame QAVVideoFrame::convertTo(AVPixelFormat fmt) const
     result.d_ptr->stream = d_ptr->stream;
     sws_scale(ctx, mapData.data, mapData.bytesPerLine, 0, result.size().height(), result.frame()->data, result.frame()->linesize);
     sws_freeContext(ctx);
+    reinterpret_cast<QAVFramePrivate *>(result.d_ptr.get())->frame->pts = reinterpret_cast<QAVFramePrivate *>(d_ptr.get())->frame->pts;
 
     return result;
 }
