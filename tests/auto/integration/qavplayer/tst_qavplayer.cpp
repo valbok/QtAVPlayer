@@ -3507,18 +3507,23 @@ void tst_QAVPlayer::outputFile()
 
 void tst_QAVPlayer::muxerFilters()
 {
-    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QAVPlayer p;
     QAVMuxerFrames m;
     p.setSynced(false);
+    p.setInputVideoCodec("software");
     p.setSource(QFileInfo(testData("small.mp4")).absoluteFilePath());
     p.setFilter("curves=vintage");
 
-    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { m.enqueue(f); }, Qt::DirectConnection);
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { m.enqueue(f); }, Qt::DirectConnection);
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) {
+        QVERIFY(m.write(f) < 0);
+        auto frame = f.convertTo(AV_PIX_FMT_YUV420P);
+        QVERIFY(m.write(frame) == 0);
+    }, Qt::DirectConnection);
     QObject::connect(&p, &QAVPlayer::mediaStatusChanged, &p, [&](auto status) {
         if (status == QAVPlayer::LoadedMedia) {
-            QVERIFY(m.load(p.availableStreams(), "output.mkv") == 0);
+            auto streams = p.availableVideoStreams();
+            QCOMPARE(streams.size(), 1);
+            QVERIFY(m.load(streams, "output.mkv") == 0);
             p.play();
         }
     });
