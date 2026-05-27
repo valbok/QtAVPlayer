@@ -199,15 +199,15 @@ int QAVMuxer::initStreams(const QList<QAVStream> &streams, Locker &locker)
     for (int i = 0; i < streams.size(); ++i) {
         auto &stream = streams[i];
         auto codec = stream.codec();
-        if (!stream.codec())
+        if (!codec)
             return AVERROR(EINVAL);
-        auto dec_ctx = codec->avctx();
         auto out_stream = avformat_new_stream(d->ctx->ctx(), NULL);
         if (!out_stream) {
             qWarning() << "Failed allocating output stream";
             return AVERROR_UNKNOWN;
         }
 
+        auto dec_ctx = codec->avctx();
         const auto pix_fmt_desc = av_pix_fmt_desc_get(dec_ctx->pix_fmt);
         qDebug() << "[" << d->filename << "][" << stream.index() << "][" <<
             av_get_media_type_string(dec_ctx->codec_type) << "]: Using" <<
