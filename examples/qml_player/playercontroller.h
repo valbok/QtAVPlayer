@@ -10,7 +10,7 @@
 #include <QObject>
 #include <QtAVPlayer/qavplayer.h>
 #include <QtAVPlayer/qavaudiooutput.h>
-#include <QtAVPlayer/qavmuxer.h>
+#include <QtAVPlayer/qavmuxersubtitleframes.h>
 #if defined(QT_AVPLAYER_LIBASS)
 #include <QtAVPlayer/qavassrenderer.h>
 #endif
@@ -21,6 +21,7 @@
 #include <QAtomicInt>
 #include <QQuickItem>
 #include <QTimer>
+#include <QMutex>
 
 class SubtitleItem : public QQuickItem
 {

@@ -8,7 +8,7 @@
 #include <QtAVPlayer/qavplayer.h>
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QtAVPlayer/qavaudioframe.h>
-#include <QtAVPlayer/qavmuxer.h>
+#include <QtAVPlayer/qavmuxerframes.h>
 
 #include <QCoreApplication>
 #include <QDebug>

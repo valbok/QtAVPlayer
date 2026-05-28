@@ -11,7 +11,7 @@
 #include <QtAVPlayer/qavplayer.h>
 #include <QtAVPlayer/qavvideoframe.h>
 #include <QtAVPlayer/qavaudiooutput.h>
-#include <QtAVPlayer/qavmuxer.h>
+#include <QtAVPlayer/qavmuxerframes.h>
 #include <QtAVPlayer/qaviodevice.h>
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QAbstractVideoSurface>

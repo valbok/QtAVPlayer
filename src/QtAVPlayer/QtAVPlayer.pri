@@ -12,6 +12,7 @@ PRIVATE_HEADERS += \
     $$PWD/qavsubtitlecodec_p.h \
     $$PWD/qavhwdevice_p.h \
     $$PWD/qavdemuxer_p.h \
+    $$PWD/qavmuxer_p_p.h \
     $$PWD/qavstreamframe_p.h \
     $$PWD/qavframe_p.h \
     $$PWD/qavpacketqueue_p.h \
@@ -46,6 +47,9 @@ PUBLIC_HEADERS += \
     $$PWD/qavstream.h \
     $$PWD/qavplayer.h \
     $$PWD/qavmuxer.h \
+    $$PWD/qavmuxerpackets.h \
+    $$PWD/qavmuxerframes.h \
+    $$PWD/qavmuxersubtitleframes.h \
 
 SOURCES += \
     $$PWD/qavplayer.cpp \
@@ -56,6 +60,9 @@ SOURCES += \
     $$PWD/qavsubtitlecodec.cpp \
     $$PWD/qavdemuxer.cpp \
     $$PWD/qavmuxer.cpp \
+    $$PWD/qavmuxerpackets.cpp \
+    $$PWD/qavmuxerframes.cpp \
+    $$PWD/qavmuxersubtitleframes.cpp \
     $$PWD/qavpacket.cpp \
     $$PWD/qavframe.cpp \
     $$PWD/qavstreamframe.cpp \

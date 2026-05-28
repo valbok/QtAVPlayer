@@ -6,7 +6,9 @@
  ***************************************************************/
 
 #include "qavdemuxer_p.h"
-#include "qavmuxer.h"
+#include "qavmuxerpackets.h"
+#include "qavmuxerframes.h"
+#include "qavmuxersubtitleframes.h"
 #include "qavaudioframe.h"
 #include "qavvideoframe.h"
 #include "qaviodevice.h"
