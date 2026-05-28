@@ -750,9 +750,9 @@ void QAVPlayerPrivate::doPlayStep(
     QList<QAVFrame> filteredFrames;
     bool nextFrame = false;
     if (decodedFrame)
-        ret = filters.write(queue.mediaType(), decodedFrame);
+        ret = filters.write(decodedFrame);
     if (ret >= 0 || ret == AVERROR(EAGAIN))
-        ret = filters.read(queue.mediaType(), decodedFrame, filteredFrames);
+        ret = filters.read(decodedFrame, filteredFrames);
     if (ret < 0 && ret != AVERROR(EAGAIN)) {
         // Try filters again
         filteredFrames.clear();

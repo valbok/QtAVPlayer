@@ -38,11 +38,8 @@ public:
         const QAVFrame &frame,
         const QAVStream &videoStream,
         const QAVStream &audioStream);
-    int write(
-        AVMediaType mediaType,
-        const QAVFrame &decodedFrame);
+    int write(const QAVFrame &decodedFrame);
     int read(
-        AVMediaType mediaType,
         const QAVFrame &decodedFrame,
         QList<QAVFrame> &filteredFrames);
     QList<QString> filterDescs() const;

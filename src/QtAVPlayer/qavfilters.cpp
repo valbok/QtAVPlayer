@@ -115,11 +115,12 @@ static int writeFrame(
     return ret;
 }
 
-int QAVFilters::write(
-    AVMediaType mediaType,
-    const QAVFrame &decodedFrame)
+int QAVFilters::write(const QAVFrame &decodedFrame)
 {
     QMutexLocker locker(&m_mutex);
+    if (m_filterGraphs.empty() || !decodedFrame)
+        return 0;
+    auto mediaType = decodedFrame.stream().stream()->codecpar->codec_type;
     switch (mediaType) {
     case AVMEDIA_TYPE_VIDEO:
         return writeFrame(decodedFrame, m_videoFilters);
@@ -133,17 +134,10 @@ int QAVFilters::write(
 }
 
 static int readFrames(
-    const QAVFrame &decodedFrame,
     const std::vector<std::unique_ptr<QAVFilter>> &filters,
     QList<QAVFrame> &filteredFrames)
 {
     QAVFrame frame;
-    if (filters.empty()) {
-        if (decodedFrame)
-            filteredFrames.append(decodedFrame);
-        return 0;
-    }
-
     // Read all frames from all filters at once
     for (size_t i = 0; i < filters.size(); ++i) {
         do {
@@ -156,16 +150,21 @@ static int readFrames(
 }
 
 int QAVFilters::read(
-    AVMediaType mediaType,
     const QAVFrame &decodedFrame,
     QList<QAVFrame> &filteredFrames)
 {
     QMutexLocker locker(&m_mutex);
+    if (m_filterGraphs.empty() || !decodedFrame) {
+        if (decodedFrame)
+            filteredFrames.append(decodedFrame);
+        return 0;
+    }
+    auto mediaType = decodedFrame.stream().stream()->codecpar->codec_type;
     switch (mediaType) {
     case AVMEDIA_TYPE_VIDEO:
-        return readFrames(decodedFrame, m_videoFilters, filteredFrames);
+        return readFrames(m_videoFilters, filteredFrames);
     case AVMEDIA_TYPE_AUDIO:
-        return readFrames(decodedFrame, m_audioFilters, filteredFrames);
+        return readFrames(m_audioFilters, filteredFrames);
     default:
         qWarning() << "Unsupported codec type:" << mediaType;
         break;
