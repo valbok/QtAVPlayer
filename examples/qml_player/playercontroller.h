@@ -11,6 +11,9 @@
 #include <QtAVPlayer/qavplayer.h>
 #include <QtAVPlayer/qavaudiooutput.h>
 #include <QtAVPlayer/qavmuxer.h>
+#if defined(QT_AVPLAYER_LIBASS)
+#include <QtAVPlayer/qavassrenderer.h>
+#endif
 #include <QVideoSink>
 #include <QVideoFrame>
 #include <QString>
