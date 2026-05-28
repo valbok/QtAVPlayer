@@ -134,28 +134,6 @@ private:
     std::unique_ptr<QAVMuxerSubtitleFramesPrivate> d_ptr;
 };
 
-#if defined(QT_AVPLAYER_LIBASS)
-class QAVASSRendererPrivate;
-class QAVASSRenderer
-{
-public:
-    QAVASSRenderer();
-    ~QAVASSRenderer();
-
-    int load(const QAVStream &stream);
-    void unload();
-
-    QImage toImage(const QAVSubtitleFrame &frame, int width, int height);
-    // Flushes the buffer on seek to handle pts change
-    void flush();
-
-private:
-    Q_DISABLE_COPY(QAVASSRenderer)
-    Q_DECLARE_PRIVATE(QAVASSRenderer)
-    std::unique_ptr<QAVASSRendererPrivate> d_ptr;
-};
-#endif  // #if defined(QT_AVPLAYER_LIBASS)
-
 QT_END_NAMESPACE
 
 #endif

@@ -88,6 +88,11 @@ contains(DEFINES, QT_AVPLAYER_MULTIMEDIA) {
     SOURCES += $$PWD/qavaudiooutput.cpp $$PWD/qavaudiooutputdevice.cpp
 }
 
+contains(DEFINES, QT_AVPLAYER_LIBASS) {
+    PUBLIC_HEADERS += $$PWD/qavassrenderer.h
+    SOURCES += $$PWD/qavassrenderer.cpp
+}
+
 contains(DEFINES, QT_AVPLAYER_WIDGET_OPENGL):qtConfig(opengl) {
     QT += opengl
     equals(QT_MAJOR_VERSION, 6): QT += openglwidgets

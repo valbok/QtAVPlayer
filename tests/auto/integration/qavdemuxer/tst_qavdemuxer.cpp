@@ -12,6 +12,9 @@
 #include "qaviodevice.h"
 #include "qavvideocodec_p.h"
 #include "qavaudiocodec_p.h"
+#if defined(QT_AVPLAYER_LIBASS)
+#include "qavassrenderer.h"
+#endif
 
 #include <QDebug>
 #include <QtTest/QtTest>

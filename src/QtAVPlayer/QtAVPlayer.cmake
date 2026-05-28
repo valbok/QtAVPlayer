@@ -278,6 +278,14 @@ endif()
 if(QT_AVPLAYER_LIBASS)
     message(STATUS "QT_AVPLAYER_LIBASS is defined")
     find_library(LIBASS_LIBRARY REQUIRED NAMES ass)
+    set(QtAVPlayer_PUBLIC_HEADERS
+        ${QtAVPlayer_PUBLIC_HEADERS}
+        ${QT_AVPLAYER_DIR}/qavassrenderer.h
+    )
+    set(QtAVPlayer_SOURCES
+        ${QtAVPlayer_SOURCES}
+        ${QT_AVPLAYER_DIR}/qavassrenderer.cpp
+    )
     set(QtAVPlayer_LIBS
         ${QtAVPlayer_LIBS}
         ${LIBASS_LIBRARY}
