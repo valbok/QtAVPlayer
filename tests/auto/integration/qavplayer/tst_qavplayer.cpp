@@ -6,7 +6,7 @@
  ***************************************************************/
 
 #include "qavplayer.h"
-#include "qavmuxer.h"
+#include "qavmuxerframes.h"
 #include "qavaudiooutput.h"
 #include "qaviodevice.h"
 

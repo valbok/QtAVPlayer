@@ -7,7 +7,7 @@
 
 #include "qavplayer.h"
 #include "qavdemuxer_p.h"
-#include "qavmuxer.h"
+#include "qavmuxerpackets.h"
 #include "qaviodevice.h"
 #include "qavvideocodec_p.h"
 #include "qavaudiocodec_p.h"
