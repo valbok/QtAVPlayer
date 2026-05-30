@@ -59,6 +59,7 @@ set(QtAVPlayer_PRIVATE_HEADERS
     ${QT_AVPLAYER_DIR}/qavfilters_p.h
     ${QT_AVPLAYER_DIR}/qavaudioconverter_p.h
     ${QT_AVPLAYER_DIR}/qavformatcontext_p.h
+    ${QT_AVPLAYER_DIR}/qavhwdevice_cuda_p.h.h
 )
 
 set(QtAVPlayer_PUBLIC_HEADERS
@@ -113,6 +114,7 @@ set(QtAVPlayer_SOURCES
     ${QT_AVPLAYER_DIR}/qavfilters.cpp
     ${QT_AVPLAYER_DIR}/qavaudioconverter.cpp
     ${QT_AVPLAYER_DIR}/qavformatcontext.cpp
+    ${QT_AVPLAYER_DIR}/qavhwdevice_cuda.cpp
 )
 
 if(WIN32)

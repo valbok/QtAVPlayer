@@ -475,6 +475,7 @@ QAVVideoFrame::operator QVideoFrame() const
             if (result.isMapped())
                 format = VideoFrame::Format_NV12;
             break;
+        case AV_PIX_FMT_CUDA:
         case AV_PIX_FMT_D3D11:
         case AV_PIX_FMT_VIDEOTOOLBOX:
         case AV_PIX_FMT_NV12:
