@@ -46,6 +46,7 @@ extern "C" {
 #include <QSharedPointer>
 #include <QMutexLocker>
 #include <atomic>
+#include <cstring>
 #include <QDebug>
 
 extern "C" {
