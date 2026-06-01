@@ -242,7 +242,9 @@ static int setup_video_codec(const QString &inputVideoCodec, const QAVStream &st
     auto vm = QtAndroidPrivate::javaVM();
     av_jni_set_java_vm(vm, NULL);
 #endif
+#if defined(QT_AVPLAYER_CUDA)
     devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_CUDA));
+#endif
 
     if (!ignoreHW) {
         AVBufferRef *hw_device_ctx = nullptr;
