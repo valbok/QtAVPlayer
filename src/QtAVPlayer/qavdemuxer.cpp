@@ -48,6 +48,7 @@ extern "C" {
 #include <QSharedPointer>
 #include <QMutexLocker>
 #include <atomic>
+#include <cstring>
 #include <QDebug>
 
 extern "C" {
@@ -131,6 +132,12 @@ static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
     static int print_prefix = 1;
 
     av_log_format_line(ptr, level, fmt, vl, line, sizeof(line), &print_prefix);
+
+    /* Remove trailing newline */
+    size_t len = std::strlen(line);
+    if (len > 0 && line[len - 1] == '\n') {
+        line[len - 1] = '\0';
+    }
 
     /* Adapt it to Qt log format */
     switch(level)
