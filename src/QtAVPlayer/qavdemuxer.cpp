@@ -42,6 +42,8 @@ extern "C" {
 }
 #endif
 
+#include "qavhwdevice_cuda_p.h"
+
 #include <QDir>
 #include <QSharedPointer>
 #include <QMutexLocker>
@@ -240,6 +242,7 @@ static int setup_video_codec(const QString &inputVideoCodec, const QAVStream &st
     auto vm = QtAndroidPrivate::javaVM();
     av_jni_set_java_vm(vm, NULL);
 #endif
+    devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_CUDA));
 
     if (!ignoreHW) {
         AVBufferRef *hw_device_ctx = nullptr;
