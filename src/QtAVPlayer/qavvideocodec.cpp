@@ -1,5 +1,5 @@
 /***************************************************************
- * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
  *                                                             *
  * This file is part of QtAVPlayer.                            *
  * Free Qt Media Player based on FFmpeg.                       *
@@ -55,21 +55,25 @@ static bool isSoftwarePixelFormat(AVPixelFormat from)
     }
 }
 
-static AVPixelFormat negotiate_pixel_format(AVCodecContext *c, const AVPixelFormat *f)
+QList<AVHWDeviceType> QAVVideoCodec::supportedHWDevices(const AVCodec *c)
 {
-    auto d = reinterpret_cast<QAVVideoCodecPrivate *>(c->opaque);
-
     QList<AVHWDeviceType> supported;
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(58, 0, 0)
     for (int i = 0;; ++i) {
-        const AVCodecHWConfig *config = avcodec_get_hw_config(c->codec, i);
+        const AVCodecHWConfig *config = avcodec_get_hw_config(c, i);
         if (!config)
             break;
-
         if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX)
             supported.append(config->device_type);
     }
+#endif
+    return supported;
+}
 
+static AVPixelFormat negotiate_pixel_format(AVCodecContext *c, const AVPixelFormat *f)
+{
+    auto d = reinterpret_cast<QAVVideoCodecPrivate *>(c->opaque);
+    auto supported = QAVVideoCodec::supportedHWDevices(c->codec);
     if (!supported.isEmpty()) {
         qDebug() << c->codec->name << ": supported hardware device contexts:";
         for (auto a: supported)
@@ -77,7 +81,6 @@ static AVPixelFormat negotiate_pixel_format(AVCodecContext *c, const AVPixelForm
     } else {
         qWarning() << "None of the hardware accelerations are supported";
     }
-#endif
 
     QList<AVPixelFormat> softwareFormats;
     QList<AVPixelFormat> hardwareFormats;

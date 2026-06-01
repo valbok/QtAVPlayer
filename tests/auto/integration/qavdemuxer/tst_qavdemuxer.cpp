@@ -451,6 +451,13 @@ void tst_QAVDemuxer::videoCodecs()
     d.unload();
     d.setInputVideoCodec("software");
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
+#if defined(QT_AVPLAYER_CUDA)
+    if (codecs.contains("h264_cuvid")) {
+        d.unload();
+        d.setInputVideoCodec("h264_cuvid");
+        QVERIFY(d.load(file.absoluteFilePath()) >= 0);
+    }
+#endif
 }
 
 void tst_QAVDemuxer::inputOptions()
