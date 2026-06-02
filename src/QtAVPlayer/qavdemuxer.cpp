@@ -222,43 +222,60 @@ static int setup_video_codec(const QString &inputVideoCodec, const QAVStream &st
     if (videoCodec)
         codec.setCodec(videoCodec);
 
-    QList<QSharedPointer<QAVHWDevice>> devices;
+    // Implemented HW devices
+    QMap<AVHWDeviceType, QSharedPointer<QAVHWDevice>> devices;
+    // Ordered supported devices
+    QList<AVHWDeviceType> preferredDevices;
     QAVDictionaryHolder opts;
     Q_UNUSED(opts);
 
 #if defined(QT_AVPLAYER_VA_X11) && QT_CONFIG(opengl)
-    devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VAAPI_X11_GLX));
+    devices[AV_HWDEVICE_TYPE_VAAPI].reset(new QAVHWDevice_VAAPI_X11_GLX);
+    preferredDevices.push_back(AV_HWDEVICE_TYPE_VAAPI);
     av_dict_set(&opts.dict, "connection_type", "x11", 0);
 #endif
 #if defined(QT_AVPLAYER_VDPAU)
-    devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VDPAU));
+    devices[AV_HWDEVICE_TYPE_VDPAU].reset(new QAVHWDevice_VDPAU);
+    preferredDevices.push_back(AV_HWDEVICE_TYPE_VDPAU);
 #endif
 #if defined(QT_AVPLAYER_VA_DRM) && QT_CONFIG(egl)
-    devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VAAPI_DRM_EGL));
+    devices[AV_HWDEVICE_TYPE_VAAPI].reset(new QAVHWDevice_VAAPI_DRM_EGL);
+    preferredDevices.push_back(AV_HWDEVICE_TYPE_VAAPI);
 #endif
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
-    devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_VideoToolbox));
+    devices[AV_HWDEVICE_TYPE_VIDEOTOOLBOX].reset(new QAVHWDevice_VideoToolbox);
+    preferredDevices.push_back(AV_HWDEVICE_TYPE_VIDEOTOOLBOX);
 #endif
 #if defined(Q_OS_WIN)
-    devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_D3D11));
+    devices[AV_HWDEVICE_TYPE_D3D11VA].reset(new QAVHWDevice_D3D11);
+    preferredDevices.push_back(AV_HWDEVICE_TYPE_D3D11VA);
 #endif
 #if defined(Q_OS_ANDROID)
-    devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_MediaCodec));
+    devices[AV_HWDEVICE_TYPE_MEDIACODEC].reset(new QAVHWDevice_MediaCodec);
+    preferredDevices.push_back(AV_HWDEVICE_TYPE_MEDIACODEC);
     if (!ignoreHW && !codec.codec())
         codec.setCodec(avcodec_find_decoder_by_name("h264_mediacodec"));
     auto vm = QtAndroidPrivate::javaVM();
     av_jni_set_java_vm(vm, NULL);
 #endif
 #if defined(QT_AVPLAYER_CUDA)
-    devices.append(QSharedPointer<QAVHWDevice>(new QAVHWDevice_CUDA));
+    devices[AV_HWDEVICE_TYPE_CUDA].reset(new QAVHWDevice_CUDA);
+    preferredDevices.push_back(AV_HWDEVICE_TYPE_CUDA);
 #endif
 
     if (!ignoreHW) {
+        if (videoCodec) {
+            // Negotiate the devices from the video codec
+            preferredDevices = QAVVideoCodec::supportedHWDevices(videoCodec);
+        }
         AVBufferRef *hw_device_ctx = nullptr;
-        for (auto &device : devices) {
+        for (auto &supported : preferredDevices) {
+            auto it = devices.find(supported);
+            if (it == devices.end())
+                continue;
+            auto device = *it;
             auto deviceName = av_hwdevice_get_type_name(device->type());
-            if (av_hwdevice_ctx_create(&hw_device_ctx, device->type(), nullptr, opts.dict, 0)
-                >= 0) {
+            if (av_hwdevice_ctx_create(&hw_device_ctx, device->type(), nullptr, opts.dict, 0) >= 0) {
                 qDebug() << "[" << streamInfo.title << "] Using" << deviceName << "hardware device context";
                 codec.avctx()->hw_device_ctx = hw_device_ctx;
                 codec.avctx()->pix_fmt = device->format();
