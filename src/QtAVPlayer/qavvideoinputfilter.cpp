@@ -52,7 +52,8 @@ QAVVideoInputFilter::QAVVideoInputFilter(const QAVFrame &frame)
         auto codec = frame.stream().codec();
         auto avctx = codec ? codec->avctx() : nullptr;
         if (avctx && avctx->hw_frames_ctx) {
-            frm->format = avctx->pix_fmt; // hw accel pixel format like cuda
+            auto frames_ctx = (AVHWFramesContext*)(avctx->hw_frames_ctx->data);
+            frm->format = frames_ctx->format; // hw accel pixel format like cuda
             frm->hw_frames_ctx = av_buffer_ref(avctx->hw_frames_ctx);
         }
     }
