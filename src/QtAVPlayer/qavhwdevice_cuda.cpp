@@ -7,12 +7,30 @@
 
 #include "qavhwdevice_cuda_p.h"
 #include "qavvideobuffer_gpu_p.h"
+#include <QDebug>
 
 extern "C" {
 #include <libavutil/pixdesc.h>
+#include <libavcodec/avcodec.h>
 }
 
 QT_BEGIN_NAMESPACE
+
+void QAVHWDevice_CUDA::init(AVCodecContext *avctx)
+{
+    AVBufferRef *frames_ref = av_hwframe_ctx_alloc(avctx->hw_device_ctx);
+    AVHWFramesContext *frames_ctx = (AVHWFramesContext*)(frames_ref->data);
+    frames_ctx->format    = AV_PIX_FMT_CUDA;
+    frames_ctx->sw_format = AV_PIX_FMT_NV12;
+    frames_ctx->width     = avctx->width;
+    frames_ctx->height    = avctx->height;
+    int ret = av_hwframe_ctx_init(frames_ref);
+    if (ret < 0) {
+        qWarning() << "Failed to initialize HW frames context:" << ret;
+        av_buffer_unref(&frames_ref);
+    }
+    avctx->hw_frames_ctx = frames_ref;
+}
 
 AVPixelFormat QAVHWDevice_CUDA::format() const
 {

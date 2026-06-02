@@ -33,7 +33,6 @@
 QT_BEGIN_NAMESPACE
 
 class QAVFilterGraphPrivate;
-class QAVDemuxer;
 class Q_AVPLAYER_EXPORT QAVFilterGraph
 {
 public:

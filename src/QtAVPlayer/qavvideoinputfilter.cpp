@@ -1,20 +1,21 @@
-/*********************************************************
- * Copyright (C) 2021, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #include "qavframe.h"
 #include "qavvideoinputfilter_p.h"
 #include "qavinoutfilter_p_p.h"
-#include "qavdemuxer_p.h"
+#include "qavcodec_p.h"
 #include <QDebug>
 
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavfilter/buffersrc.h>
 #include <libavutil/bprint.h>
+#include <libavcodec/avcodec.h>
 }
 
 QT_BEGIN_NAMESPACE
@@ -44,9 +45,18 @@ QAVVideoInputFilter::QAVVideoInputFilter(const QAVFrame &frame)
     : QAVVideoInputFilter()
 {
     Q_D(QAVVideoInputFilter);
-    const auto & frm = frame.frame();
-    const auto & stream = frame.stream().stream();
-    d->format =  frm->format != AV_PIX_FMT_NONE ? AVPixelFormat(frm->format) : AVPixelFormat(stream->codecpar->format);
+    const auto &frm = frame.frame();
+    const auto &stream = frame.stream().stream();
+    // Use codec's hw frame ctx
+    if (!frm->hw_frames_ctx) {
+        auto codec = frame.stream().codec();
+        auto avctx = codec ? codec->avctx() : nullptr;
+        if (avctx && avctx->hw_frames_ctx) {
+            frm->format = avctx->pix_fmt; // hw accel pixel format like cuda
+            frm->hw_frames_ctx = av_buffer_ref(avctx->hw_frames_ctx);
+        }
+    }
+    d->format = frm->format != AV_PIX_FMT_NONE ? AVPixelFormat(frm->format) : AVPixelFormat(stream->codecpar->format);
     d->width = frm->width ? frm->width : stream->codecpar->width;
     d->height = frm->height ? frm->height : stream->codecpar->height;
     d->sample_aspect_ratio = frm->sample_aspect_ratio.num && frm->sample_aspect_ratio.den ? frm->sample_aspect_ratio : stream->codecpar->sample_aspect_ratio;
