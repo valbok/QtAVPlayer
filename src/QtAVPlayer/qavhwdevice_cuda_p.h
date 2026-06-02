@@ -30,6 +30,7 @@ public:
     QAVHWDevice_CUDA() = default;
     ~QAVHWDevice_CUDA() = default;
 
+    void init(AVCodecContext *avctx) override;
     AVPixelFormat format() const override;
     AVHWDeviceType type() const override;
     QAVVideoBuffer *videoBuffer(const QAVVideoFrame &frame) const override;

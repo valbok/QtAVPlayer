@@ -109,6 +109,7 @@ private slots:
     void muxerFilters();
     void muxerMultiSourceFrames();
     void framesAfterPlayerDestroyed();
+    void scaleHW();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -3591,6 +3592,24 @@ void tst_QAVPlayer::framesAfterPlayerDestroyed()
     QTRY_COMPARE(p->mediaStatus(), QAVPlayer::LoadedMedia);
     // Destroy the player but the frame could be still active
     p = nullptr;
+}
+
+void tst_QAVPlayer::scaleHW()
+{
+#if defined(QT_AVPLAYER_CUDA)
+    QAVPlayer p;
+    p.setSynced(false);
+    p.setInputVideoCodec("h264_cuvid");
+    p.setSource(QFileInfo(testData("small.mp4")).absoluteFilePath());
+    p.setFilter("scale_cuda=1920:1080");
+
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) {
+        QCOMPARE(f.size(), QSize(1920, 1080));
+    }, Qt::DirectConnection);
+
+    p.play();
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
+#endif
 }
 
 QTEST_MAIN(tst_QAVPlayer)
