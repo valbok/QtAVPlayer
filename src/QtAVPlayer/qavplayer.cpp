@@ -517,12 +517,11 @@ bool QAVPlayerPrivate::applyFilters(const QAVFrame &frame)
         frame,
         !videoStreams.isEmpty() ? videoStreams.first() : QAVStream(),
         !audioStreams.isEmpty() ? audioStreams.first() : QAVStream());
-    // Don't repeat on error
-    resetFilters = false;
     if (ret < 0) {
         setError(QAVPlayer::FilterError, QLatin1String("Could not create filters: ") + err_str(ret));
         return false;
     }
+    resetFilters = false;
     videoQueue.clearFrames();
     audioQueue.clearFrames();
     if (currentError() == QAVPlayer::FilterError)
