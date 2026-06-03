@@ -474,6 +474,7 @@ void tst_QAVDemuxer::muxerWritePackets()
     QAVDemuxer d;
     QAVMuxerPackets m;
 
+    d.setInputVideoCodec("software");
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(m.load(d.availableStreams(), "colors.mkv") >= 0);
 
@@ -493,6 +494,7 @@ void tst_QAVDemuxer::muxerWriteFrames()
     QAVDemuxer d;
     QAVMuxerFrames m;
 
+    d.setInputVideoCodec("software");
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(m.load(d.availableStreams(), "colors.mkv") >= 0);
 
@@ -518,6 +520,7 @@ void tst_QAVDemuxer::muxerWriteSubtitles()
     QAVDemuxer d;
     QAVMuxerFrames m;
 
+    d.setInputVideoCodec("software");
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(m.load(d.availableStreams(), "colors.mkv") >= 0);
 
@@ -562,6 +565,7 @@ void tst_QAVDemuxer::muxerWriteSubtitlesText()
     QAVDemuxer d;
     QAVMuxerSubtitleFrames m;
 
+    d.setInputVideoCodec("software");
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(!d.availableSubtitleStreams().isEmpty());
     for (auto &s: d.availableSubtitleStreams()) {
@@ -596,6 +600,7 @@ void tst_QAVDemuxer::assRenderer()
     QAVDemuxer d;
     QAVASSRenderer m;
 
+    d.setInputVideoCodec("software");
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(!d.availableSubtitleStreams().isEmpty());
     auto streams = d.currentVideoStreams();
@@ -633,6 +638,7 @@ void tst_QAVDemuxer::muxerEnqueue()
     QAVDemuxer d;
     QAVMuxerFrames m;
 
+    d.setInputVideoCodec("software");
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(m.load(d.availableStreams(), "colors.mkv") >= 0);
 
@@ -659,6 +665,7 @@ void tst_QAVDemuxer::muxerEnqueueStreamIndex()
     QAVDemuxer d;
     QAVMuxerFrames m;
 
+    d.setInputVideoCodec("software");
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(m.load(d.availableStreams(), "output.mkv") < 0);
     QVERIFY(m.load(d.availableVideoStreams() + d.currentAudioStreams(), "output.mkv") >= 0);
@@ -688,7 +695,9 @@ void tst_QAVDemuxer::muxerEnqueueFramesFromMultiSources()
     QAVDemuxer d2;
     QAVMuxerFrames m;
 
+    d1.setInputVideoCodec("software");
     QVERIFY(d1.load(file1.absoluteFilePath()) >= 0);
+    d2.setInputVideoCodec("software");
     QVERIFY(d2.load(file2.absoluteFilePath()) >= 0);
     auto streams = d1.availableStreams() + d2.availableStreams();
     QVERIFY(m.load(streams, "colors.mkv") >= 0);
@@ -736,8 +745,10 @@ void tst_QAVDemuxer::muxerEnqueueFramesFromDev()
         return;
 
     d1.setInputFormat(QLatin1String("v4l2"));
+    d1.setInputVideoCodec("software");
     QVERIFY(d1.load(QLatin1String("/dev/video0")) >= 0);
     QFileInfo file2(testData("small.mp4"));
+    d2.setInputVideoCodec("software");
     QVERIFY(d2.load(file2.absoluteFilePath()) >= 0);
     auto streams = d1.availableStreams() + d2.availableStreams();
     QVERIFY(m.load(streams, "output.mkv") >= 0);
@@ -782,7 +793,9 @@ void tst_QAVDemuxer::muxerWritePacketsFromMultiSources()
     QAVDemuxer d2;
     QAVMuxerPackets m;
 
+    d1.setInputVideoCodec("software");
     QVERIFY(d1.load(file1.absoluteFilePath()) >= 0);
+    d2.setInputVideoCodec("software");
     QVERIFY(d2.load(file2.absoluteFilePath()) >= 0);
     auto streams = d1.availableStreams() + d2.availableStreams();
     QVERIFY(m.load(streams, "colors.mkv") >= 0);
@@ -837,6 +850,7 @@ void tst_QAVDemuxer::muxerFramesCodecInfo()
     QFileInfo file(testData("colors.mp4"));
     QAVDemuxer d;
 
+    d.setInputVideoCodec("software");
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(!d.availableVideoStreams().isEmpty());
     QSize size(128, 96);
