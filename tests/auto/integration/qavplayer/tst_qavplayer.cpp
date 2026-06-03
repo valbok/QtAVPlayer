@@ -2362,7 +2362,6 @@ void tst_QAVPlayer::changeSourceFilter()
 
     QFileInfo file1(testData("small.mp4"));
     p.setInputVideoCodec("software");
-    p.setSource(file1.absoluteFilePath());
     QSignalSpy spy(&p, &QAVPlayer::filtersChanged);
     QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
     QAVVideoFrame frame;
@@ -2370,6 +2369,7 @@ void tst_QAVPlayer::changeSourceFilter()
 
     const QString desc = "scale=iw/2:-1";
     p.setFilter(desc);
+    p.setSource(file1.absoluteFilePath());
     p.play();
     QTRY_VERIFY(frame);
     QCOMPARE(frame.size(), QSize(560 / 2, 320 / 2));
@@ -2448,7 +2448,6 @@ void tst_QAVPlayer::filter()
     QAVPlayer p;
 
     QFileInfo file(testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv"));
-    p.setSource(file.absoluteFilePath());
 
     QSignalSpy spyVideoFilterChanged(&p, &QAVPlayer::filtersChanged);
     QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
@@ -2456,6 +2455,7 @@ void tst_QAVPlayer::filter()
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; });
 
     p.setFilter(filter);
+    p.setSource(file.absoluteFilePath());
     p.pause();
     QTRY_VERIFY_WITH_TIMEOUT(frame, 10000);
     QTRY_COMPARE(spyVideoFilterChanged.count(), 1);
@@ -2917,8 +2917,8 @@ void tst_QAVPlayer::changeFormat()
 {
     QAVPlayer p;
     QFileInfo file(testData("1.dv"));
-    p.setSource(file.absoluteFilePath());
     p.setFilter("[0:v]split=2[in1][in2];[in1]boxblur[out1];[in2]negate[out2]");
+    p.setSource(file.absoluteFilePath());
     QAVVideoFrame videoFrame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
         videoFrame = frame;
@@ -3145,6 +3145,7 @@ void tst_QAVPlayer::multipleAudioVideoFilters()
     QAVPlayer p;
     QFileInfo file(testData("test_5beeps.mkv"));
     p.setInputVideoCodec("software");
+    p.setFilters(filters);
     p.setSource(file.absoluteFilePath());
     QList<QString> filters = {
         "signalstats=stat=tout+vrep+brng [stats]",
@@ -3165,7 +3166,6 @@ void tst_QAVPlayer::multipleAudioVideoFilters()
     }, Qt::DirectConnection);
 
     p.setSynced(false);
-    p.setFilters(filters);
     p.play();
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
     QVERIFY(framesCount.contains("stats"));
@@ -3214,8 +3214,8 @@ void tst_QAVPlayer::flushFilters()
     QAVPlayer p;
     QFileInfo file(testData("BAVC1010958_DV000107.dv"));
     p.setInputVideoCodec("software");
-    p.setSource(file.absoluteFilePath());
     p.setFilter("scale,format=rgb32,crop=1:ih:iw/2:0,tile=layout=512x1,setsar=1/1 [panel_0]");
+    p.setSource(file.absoluteFilePath());
     int framesCount = 0;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &) {
         ++framesCount;
@@ -3513,8 +3513,8 @@ void tst_QAVPlayer::muxerFilters()
     QAVMuxerFrames m;
     p.setSynced(false);
     p.setInputVideoCodec("software");
-    p.setSource(QFileInfo(testData("small.mp4")).absoluteFilePath());
     p.setFilter("curves=vintage");
+    p.setSource(QFileInfo(testData("small.mp4")).absoluteFilePath());
 
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) {
         QVERIFY(m.write(f) < 0);
