@@ -1341,7 +1341,7 @@ void QAVPlayer::setBitstreamFilter(const QString &desc)
     int ret = d->demuxer.applyBitstreamFilter(desc);
     Q_EMIT bitstreamFilterChanged(desc);
     if (ret < 0)
-        d->setError(QAVPlayer::FilterError, QLatin1String("Could not parse bitstream filter desc: ") + err_str(ret));
+        d->setError(QAVPlayer::BitstreamFilterError, QLatin1String("Could not parse bitstream filter desc: ") + err_str(ret));
 }
 
 QString QAVPlayer::bitstreamFilter() const
@@ -1531,6 +1531,8 @@ QDebug operator<<(QDebug dbg, QAVPlayer::Error err)
             return dbg << "ResourceError";
         case QAVPlayer::FilterError:
             return dbg << "FilterError";
+        case QAVPlayer::BitstreamFilterError:
+            return dbg << "BitstreamFilterError";
         default:
             return dbg << QString(QLatin1String("UserType(%1)" )).arg(int(err)).toLatin1().constData();
     }

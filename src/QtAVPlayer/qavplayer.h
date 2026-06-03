@@ -48,7 +48,8 @@ public:
     {
         NoError,
         ResourceError,
-        FilterError
+        FilterError,
+        BitstreamFilterError
     };
 
     QAVPlayer(QObject *parent = nullptr);
