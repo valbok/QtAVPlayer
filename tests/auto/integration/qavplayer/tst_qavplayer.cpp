@@ -2361,6 +2361,7 @@ void tst_QAVPlayer::changeSourceFilter()
     QAVPlayer p;
 
     QFileInfo file1(testData("small.mp4"));
+    p.setInputVideoCodec("software");
     p.setSource(file1.absoluteFilePath());
     QSignalSpy spy(&p, &QAVPlayer::filtersChanged);
     QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
@@ -3596,20 +3597,31 @@ void tst_QAVPlayer::framesAfterPlayerDestroyed()
 
 void tst_QAVPlayer::scaleHW()
 {
-#if defined(QT_AVPLAYER_CUDA)
     QAVPlayer p;
     p.setSynced(false);
+    QSize size;
+#if defined(QT_AVPLAYER_CUDA)
     p.setInputVideoCodec("h264_cuvid");
-    p.setSource(QFileInfo(testData("small.mp4")).absoluteFilePath());
     p.setFilter("scale_cuda=1920:1080");
-
+    size = {1920, 1080};
+#endif
+#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
+    p.setFilter("scale_vt=1920:1080");
+    size = {1920, 1080};
+#endif
+#if defined(Q_OS_WIN) && 0
+    p.setFilter("scale_d3d11=1920:1080");
+    size = {1920, 1080};
+#endif
+    if (size.isEmpty())
+        return;
+    p.setSource(QFileInfo(testData("small.mp4")).absoluteFilePath());
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) {
-        QCOMPARE(f.size(), QSize(1920, 1080));
+        QCOMPARE(f.size(), size);
     }, Qt::DirectConnection);
 
     p.play();
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
-#endif
 }
 
 QTEST_MAIN(tst_QAVPlayer)
