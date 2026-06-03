@@ -359,6 +359,9 @@ void QAVPlayerPrivate::terminate()
 void QAVPlayerPrivate::step(bool hasFrame)
 {
     QMutexLocker locker(&stateMutex);
+    // Don't proceed frame if there is an error or pending filters
+    if (error == QAVPlayer::FilterError || resetFilters)
+        hasFrame = false;
     while (!pendingMediaStatuses.isEmpty()) {
         auto status = pendingMediaStatuses.first();
         locker.unlock();
@@ -495,7 +498,6 @@ void QAVPlayerPrivate::applyFilters()
     // Re-apply filters on error
     if (currentError() == QAVPlayer::FilterError)
         resetFilters = true;
-    applyFilters({});
 }
 
 bool QAVPlayerPrivate::applyFilters(const QAVFrame &frame)
@@ -1304,8 +1306,6 @@ void QAVPlayer::setFilter(const QString &desc)
     }
 
     Q_EMIT filtersChanged({desc});
-    if (mediaStatus() != QAVPlayer::NoMedia)
-        d->applyFilters();
 }
 
 void QAVPlayer::setFilters(const QList<QString> &filters)
@@ -1319,8 +1319,6 @@ void QAVPlayer::setFilters(const QList<QString> &filters)
     }
 
     Q_EMIT filtersChanged(filters);
-    if (mediaStatus() != QAVPlayer::NoMedia)
-        d->applyFilters();
 }
 
 QList<QString> QAVPlayer::filters() const

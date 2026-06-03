@@ -2272,7 +2272,7 @@ void tst_QAVPlayer::configureFilter()
     p.stop();
     p.setFilter("wrong");
     QCOMPARE(p.filters(), {"wrong"});
-    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+    QTRY_COMPARE(spyErrorOccurred.count(), 0);
 
     spyErrorOccurred.clear();
 
@@ -2304,13 +2304,13 @@ void tst_QAVPlayer::configureFilter()
     p.setFilter("wrong");
     QCOMPARE(p.filters(), {"wrong"});
     QTRY_COMPARE(spy.count(), 1);
-    QTRY_COMPARE(spyErrorOccurred.count(), 1);
-    QCOMPARE(p.state(), QAVPlayer::StoppedState);
+    QTRY_COMPARE(spyErrorOccurred.count(), 0);
+    QCOMPARE(p.state(), QAVPlayer::PausedState);
 
     spyErrorOccurred.clear();
 
     p.pause();
-    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+    QTRY_COMPARE(spyErrorOccurred.count(), 0);
 
     spyErrorOccurred.clear();
 
@@ -2323,12 +2323,12 @@ void tst_QAVPlayer::configureFilter()
     p.setFilter("wrong2");
     QCOMPARE(p.filters(), {"wrong2"});
     QTRY_COMPARE(spy.count(), 1);
-    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+    QTRY_COMPARE(spyErrorOccurred.count(), 0);
 
     spyErrorOccurred.clear();
 
     p.stop();
-    QCOMPARE(spyErrorOccurred.count(), 1);
+    QCOMPARE(spyErrorOccurred.count(), 0);
 
     spyErrorOccurred.clear();
 
