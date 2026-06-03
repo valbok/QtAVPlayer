@@ -496,14 +496,19 @@ void QAVPlayerPrivate::wait(bool v)
 void QAVPlayerPrivate::applyFilters()
 {
     // Re-apply filters on error
-    if (currentError() == QAVPlayer::FilterError)
+    QMutexLocker locker(&stateMutex);
+    if (error == QAVPlayer::FilterError) {
         resetFilters = true;
+        error = QAVPlayer::NoError;
+    }
 }
 
 bool QAVPlayerPrivate::applyFilters(const QAVFrame &frame)
 {
     if (!resetFilters)
         return true;
+    if (currentError() == QAVPlayer::FilterError)
+        return false;
     QStringList descs;
     {
         QMutexLocker locker(&stateMutex);
