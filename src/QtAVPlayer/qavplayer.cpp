@@ -507,11 +507,11 @@ bool QAVPlayerPrivate::applyFilters(const QAVFrame &frame)
 {
     if (!resetFilters)
         return true;
-    if (currentError() == QAVPlayer::FilterError)
-        return false;
     QStringList descs;
     {
         QMutexLocker locker(&stateMutex);
+        if (error == QAVPlayer::FilterError)
+            return false;
         descs = filterDescs;
     }
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << filters.filterDescs() << "->" << descs;
