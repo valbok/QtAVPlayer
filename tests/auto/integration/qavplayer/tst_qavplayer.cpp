@@ -2218,10 +2218,10 @@ void tst_QAVPlayer::lastFrame()
 
 void tst_QAVPlayer::configureFilter()
 {
-    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QAVPlayer p;
 
     QFileInfo file(testData("small.mp4"));
+    p.setInputVideoCodec("software");
     p.setSource(file.absoluteFilePath());
     QSignalSpy spy(&p, &QAVPlayer::filtersChanged);
     QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
@@ -2931,9 +2931,9 @@ void tst_QAVPlayer::changeFormat()
 
 void tst_QAVPlayer::filterName()
 {
-    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QAVPlayer p;
     QFileInfo file(testData("small.mp4"));
+    p.setInputVideoCodec("software");
     p.setSource(file.absoluteFilePath());
     p.setFilter("scale=iw/2:-1");
     QSet<QString> set;
@@ -2973,9 +2973,9 @@ void tst_QAVPlayer::filterName()
 
 void tst_QAVPlayer::filterNameStep()
 {
-    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QAVPlayer p;
     QFileInfo file(testData("small.mp4"));
+    p.setInputVideoCodec("software");
     p.setSource(file.absoluteFilePath());
     p.setFilter("[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]scale=iw/2:-1[out3]");
     QSet<QString> set;
@@ -3040,9 +3040,9 @@ void tst_QAVPlayer::filterNameStep()
 
 void tst_QAVPlayer::audioVideoFilter()
 {
-    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QAVPlayer p;
     QFileInfo file(testData("test.mkv"));
+    p.setInputVideoCodec("software");
     p.setSource(file.absoluteFilePath());
     p.setFilter("ahistogram=dmode=separate:rheight=0:s=360x1:r=32,transpose=2,tile=layout=512x1,format=rgb24 [panel_4]");
 
@@ -3062,9 +3062,9 @@ void tst_QAVPlayer::audioVideoFilter()
 
 void tst_QAVPlayer::audioFilterVideoFrames()
 {
-    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QAVPlayer p;
     QFileInfo file(testData("test.mkv"));
+    p.setInputVideoCodec("software");
     p.setSource(file.absoluteFilePath());
     p.setFilter("aformat=sample_fmts=flt|fltp,astats=metadata=1:reset=1:length=0.4,aphasemeter=video=0,ebur128=metadata=1,aformat=sample_fmts=flt|fltp");
 
@@ -3087,9 +3087,9 @@ void tst_QAVPlayer::audioFilterVideoFrames()
 
 void tst_QAVPlayer::multipleFilters()
 {
-    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QAVPlayer p;
     QFileInfo file(testData("test.mkv"));
+    p.setInputVideoCodec("software");
     p.setSource(file.absoluteFilePath());
     QList<QString> filters = {
         "signalstats=stat=tout+vrep+brng [stats]",
@@ -3142,9 +3142,9 @@ void tst_QAVPlayer::multipleFilters()
 
 void tst_QAVPlayer::multipleAudioVideoFilters()
 {
-    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QAVPlayer p;
     QFileInfo file(testData("test_5beeps.mkv"));
+    p.setInputVideoCodec("software");
     p.setSource(file.absoluteFilePath());
     QList<QString> filters = {
         "signalstats=stat=tout+vrep+brng [stats]",
@@ -3211,9 +3211,9 @@ void tst_QAVPlayer::inputVideoCodec()
 
 void tst_QAVPlayer::flushFilters()
 {
-    qputenv("QT_AVPLAYER_NO_HWDEVICE", "1");
     QAVPlayer p;
     QFileInfo file(testData("BAVC1010958_DV000107.dv"));
+    p.setInputVideoCodec("software");
     p.setSource(file.absoluteFilePath());
     p.setFilter("scale,format=rgb32,crop=1:ih:iw/2:0,tile=layout=512x1,setsar=1/1 [panel_0]");
     int framesCount = 0;
