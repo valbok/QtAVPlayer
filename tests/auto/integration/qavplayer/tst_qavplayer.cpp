@@ -3418,9 +3418,9 @@ void tst_QAVPlayer::multiFilterInputs()
     QAVFrame frame;
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; }, Qt::DirectConnection);
 
+    p.setFilter(filter);
     p.setSource(file.absoluteFilePath());
     p.setSynced(false);
-    p.setFilter(filter);
     p.play();
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
