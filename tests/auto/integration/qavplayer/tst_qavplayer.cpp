@@ -3145,12 +3145,12 @@ void tst_QAVPlayer::multipleAudioVideoFilters()
     QAVPlayer p;
     QFileInfo file(testData("test_5beeps.mkv"));
     p.setInputVideoCodec("software");
-    p.setFilters(filters);
-    p.setSource(file.absoluteFilePath());
     QList<QString> filters = {
         "signalstats=stat=tout+vrep+brng [stats]",
         "aformat=sample_fmts=flt|fltp,astats=metadata=1:reset=1:length=0.4,aphasemeter=video=0,ebur128=metadata=1,aformat=sample_fmts=flt|fltp [audio]",
     };
+    p.setFilters(filters);
+    p.setSource(file.absoluteFilePath());
 
     QMap<QString, int> framesCount;
     QAVVideoFrame videoFrame;
