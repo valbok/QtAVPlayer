@@ -1142,9 +1142,9 @@ void QAVPlayer::play()
         }
         d->setPendingMediaStatus(PlayingMedia);
     }
-    d->wait(false);
     if (mediaStatus() != QAVPlayer::NoMedia)
         d->applyFilters();
+    d->wait(false);
 }
 
 void QAVPlayer::pause()
@@ -1160,12 +1160,12 @@ void QAVPlayer::pause()
             seek(0);
         }
         d->setPendingMediaStatus(PausingMedia);
+        if (mediaStatus() != QAVPlayer::NoMedia)
+            d->applyFilters();
         d->wait(false);
     } else {
         d->wait(true);
     }
-    if (mediaStatus() != QAVPlayer::NoMedia)
-        d->applyFilters();
 }
 
 void QAVPlayer::stop()
@@ -1177,12 +1177,12 @@ void QAVPlayer::stop()
     qCDebug(lcAVPlayer) << __FUNCTION__;
     if (d->setState(QAVPlayer::StoppedState)) {
         d->setPendingMediaStatus(StoppingMedia);
+        if (mediaStatus() != QAVPlayer::NoMedia)
+            d->applyFilters();
         d->wait(false);
     } else {
         d->wait(true);
     }
-    if (mediaStatus() != QAVPlayer::NoMedia)
-        d->applyFilters();
 }
 
 void QAVPlayer::stepForward()
@@ -1198,9 +1198,9 @@ void QAVPlayer::stepForward()
         seek(0);
     }
     d->setPendingMediaStatus(SteppingMedia);
-    d->wait(false);
     if (mediaStatus() != QAVPlayer::NoMedia)
         d->applyFilters();
+    d->wait(false);
 }
 
 void QAVPlayer::stepBackward()
@@ -1214,9 +1214,9 @@ void QAVPlayer::stepBackward()
     const qint64 pos = d->pts() > 0 ? (d->pts() - videoFrameRate()) * 1000 : duration();
     seek(pos);
     d->setPendingMediaStatus(SteppingMedia);
-    d->wait(false);
     if (mediaStatus() != QAVPlayer::NoMedia)
         d->applyFilters();
+    d->wait(false);
 }
 
 bool QAVPlayer::isSeekable() const
@@ -1238,9 +1238,9 @@ void QAVPlayer::seek(qint64 pos)
     }
 
     d->setPendingMediaStatus(SeekingMedia);
-    d->wait(false);
     if (mediaStatus() != QAVPlayer::NoMedia)
         d->applyFilters();
+    d->wait(false);
 }
 
 qint64 QAVPlayer::duration() const
