@@ -72,7 +72,7 @@ public:
     void setPts(double v);
     double pts() const;
     void applyFilters();
-    void applyFilters(bool reset, const QAVFrame &frame);
+    bool applyFilters(const QAVFrame &frame);
     void resetMuxer();
 
     void terminate();
@@ -157,10 +157,13 @@ public:
     mutable QMutex waitMutex;
     QWaitCondition waitCond;
     bool eof = false;
-    std::atomic_bool startDemuxing {false};
+    std::atomic_bool startDemuxing{false};
 
     QList<QString> filterDescs;
     QAVFilters filters;
+    // If set, means it requires to recreate filters using current filterDescs.
+    // It is done on doPlay threads.
+    std::atomic_bool resetFilters{false};
 };
 
 static QString err_str(int err)
@@ -356,6 +359,9 @@ void QAVPlayerPrivate::terminate()
 void QAVPlayerPrivate::step(bool hasFrame)
 {
     QMutexLocker locker(&stateMutex);
+    // Don't proceed frame if there is an error or pending filters
+    if (error == QAVPlayer::FilterError || resetFilters)
+        hasFrame = false;
     while (!pendingMediaStatuses.isEmpty()) {
         auto status = pendingMediaStatuses.first();
         locker.unlock();
@@ -489,29 +495,42 @@ void QAVPlayerPrivate::wait(bool v)
 
 void QAVPlayerPrivate::applyFilters()
 {
-    applyFilters(false, {});
+    // Re-apply filters on error
+    QMutexLocker locker(&stateMutex);
+    if (error == QAVPlayer::FilterError) {
+        resetFilters = true;
+        error = QAVPlayer::NoError;
+    }
 }
 
-void QAVPlayerPrivate::applyFilters(bool reset, const QAVFrame &frame)
+bool QAVPlayerPrivate::applyFilters(const QAVFrame &frame)
 {
-    if ((filterDescs == filters.filterDescs()) && !reset)
-        return;
-    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << filters.filterDescs() << "->" << filterDescs << "reset:" << reset;
+    if (!resetFilters)
+        return true;
+    QStringList descs;
+    {
+        QMutexLocker locker(&stateMutex);
+        // Don't continue frames on error
+        if (error == QAVPlayer::FilterError)
+            return false;
+        descs = filterDescs;
+    }
+    qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << filters.filterDescs() << "->" << descs;
     const auto videoStreams = demuxer.currentVideoStreams();
     const auto audioStreams = demuxer.currentAudioStreams();
     int ret = filters.createFilters(
-        filterDescs,
+        descs,
         frame,
         !videoStreams.isEmpty() ? videoStreams.first() : QAVStream(),
         !audioStreams.isEmpty() ? audioStreams.first() : QAVStream());
     if (ret < 0) {
         setError(QAVPlayer::FilterError, QLatin1String("Could not create filters: ") + err_str(ret));
-        return;
+        return false;
     }
-    videoQueue.clearFrames();
-    audioQueue.clearFrames();
-    if (error == QAVPlayer::FilterError)
+    resetFilters = false;
+    if (currentError() == QAVPlayer::FilterError)
         setMediaStatus(QAVPlayer::LoadedMedia);
+    return true;
 }
 
 void QAVPlayerPrivate::resetMuxer()
@@ -543,7 +562,10 @@ void QAVPlayerPrivate::doLoad()
         return;
     }
 
-    applyFilters(true, {});
+    // Since some video filters require hw_frames_ctx available,
+    // the parsing of the filters here would fail in case when get_format might be not called yet.
+    // This schedules the parsing after the packets are already decoded.
+    resetFilters = true;
     resetMuxer();
     dispatch([this]() -> void {
         qCDebug(lcAVPlayer) << "[" << url << "]: Loaded, seekable:" << demuxer.seekable() << ", duration:" << demuxer.duration();
@@ -613,7 +635,8 @@ void QAVPlayerPrivate::doDemux()
                     qCDebug(lcAVPlayer) << "Flush codec buffers";
                     demuxer.flushCodecBuffers();
                     qCDebug(lcAVPlayer) << "Reset filters";
-                    applyFilters(true, {});
+                    resetFilters = true;
+                    applyFilters({});
                     qCDebug(lcAVPlayer) << "Start reading packets from" << pos * 1000;
                 } else {
                     qWarning() << "Could not seek:" << ret << ":" << err_str(ret);
@@ -749,8 +772,21 @@ void QAVPlayerPrivate::doPlayStep(
     // 2. Filter decoded frame
     QList<QAVFrame> filteredFrames;
     bool nextFrame = false;
-    if (decodedFrame)
+    if (decodedFrame) {
+        // Create filters if not yet created.
+        // Filters should be applied after all codecs are negotiated
+        // and all hw devices are initialized.
+        // Filters should be applied after get_format() callback is called in the video codecs.
+        if (master) {
+            if (!applyFilters(decodedFrame))
+                return;
+        } else {
+            // Don't proceed frames if filters are pending
+            if (resetFilters)
+                return;
+        }
         ret = filters.write(queue.mediaType(), decodedFrame);
+    }
     if (ret >= 0 || ret == AVERROR(EAGAIN))
         ret = filters.read(queue.mediaType(), decodedFrame, filteredFrames);
     if (ret < 0 && ret != AVERROR(EAGAIN)) {
@@ -760,8 +796,10 @@ void QAVPlayerPrivate::doPlayStep(
             setError(QAVPlayer::FilterError, err_str(ret));
             return;
         }
-        applyFilters(true, decodedFrame);
+        resetFilters = true;
+        applyFilters(decodedFrame);
     } else {
+        // There EAGAIN means try next one
         nextFrame = true;
     }
 
@@ -1104,9 +1142,9 @@ void QAVPlayer::play()
         }
         d->setPendingMediaStatus(PlayingMedia);
     }
-    d->wait(false);
     if (mediaStatus() != QAVPlayer::NoMedia)
         d->applyFilters();
+    d->wait(false);
 }
 
 void QAVPlayer::pause()
@@ -1122,12 +1160,12 @@ void QAVPlayer::pause()
             seek(0);
         }
         d->setPendingMediaStatus(PausingMedia);
+        if (mediaStatus() != QAVPlayer::NoMedia)
+            d->applyFilters();
         d->wait(false);
     } else {
         d->wait(true);
     }
-    if (mediaStatus() != QAVPlayer::NoMedia)
-        d->applyFilters();
 }
 
 void QAVPlayer::stop()
@@ -1139,12 +1177,12 @@ void QAVPlayer::stop()
     qCDebug(lcAVPlayer) << __FUNCTION__;
     if (d->setState(QAVPlayer::StoppedState)) {
         d->setPendingMediaStatus(StoppingMedia);
+        if (mediaStatus() != QAVPlayer::NoMedia)
+            d->applyFilters();
         d->wait(false);
     } else {
         d->wait(true);
     }
-    if (mediaStatus() != QAVPlayer::NoMedia)
-        d->applyFilters();
 }
 
 void QAVPlayer::stepForward()
@@ -1160,9 +1198,9 @@ void QAVPlayer::stepForward()
         seek(0);
     }
     d->setPendingMediaStatus(SteppingMedia);
-    d->wait(false);
     if (mediaStatus() != QAVPlayer::NoMedia)
         d->applyFilters();
+    d->wait(false);
 }
 
 void QAVPlayer::stepBackward()
@@ -1176,9 +1214,9 @@ void QAVPlayer::stepBackward()
     const qint64 pos = d->pts() > 0 ? (d->pts() - videoFrameRate()) * 1000 : duration();
     seek(pos);
     d->setPendingMediaStatus(SteppingMedia);
-    d->wait(false);
     if (mediaStatus() != QAVPlayer::NoMedia)
         d->applyFilters();
+    d->wait(false);
 }
 
 bool QAVPlayer::isSeekable() const
@@ -1200,9 +1238,9 @@ void QAVPlayer::seek(qint64 pos)
     }
 
     d->setPendingMediaStatus(SeekingMedia);
-    d->wait(false);
     if (mediaStatus() != QAVPlayer::NoMedia)
         d->applyFilters();
+    d->wait(false);
 }
 
 qint64 QAVPlayer::duration() const
@@ -1267,11 +1305,10 @@ void QAVPlayer::setFilter(const QString &desc)
             d->filterDescs.clear();
         else
             d->filterDescs = {desc};
+        d->resetFilters = true;
     }
 
     Q_EMIT filtersChanged({desc});
-    if (mediaStatus() != QAVPlayer::NoMedia)
-        d->applyFilters();
 }
 
 void QAVPlayer::setFilters(const QList<QString> &filters)
@@ -1281,11 +1318,10 @@ void QAVPlayer::setFilters(const QList<QString> &filters)
         QMutexLocker locker(&d->stateMutex);
         qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << d->filterDescs << "->" << filters;
         d->filterDescs = filters;
+        d->resetFilters = true;
     }
 
     Q_EMIT filtersChanged(filters);
-    if (mediaStatus() != QAVPlayer::NoMedia)
-        d->applyFilters();
 }
 
 QList<QString> QAVPlayer::filters() const
@@ -1306,7 +1342,7 @@ void QAVPlayer::setBitstreamFilter(const QString &desc)
     int ret = d->demuxer.applyBitstreamFilter(desc);
     Q_EMIT bitstreamFilterChanged(desc);
     if (ret < 0)
-        d->setError(QAVPlayer::FilterError, QLatin1String("Could not parse bitstream filter desc: ") + err_str(ret));
+        d->setError(QAVPlayer::BitstreamFilterError, QLatin1String("Could not parse bitstream filter desc: ") + err_str(ret));
 }
 
 QString QAVPlayer::bitstreamFilter() const
@@ -1496,6 +1532,8 @@ QDebug operator<<(QDebug dbg, QAVPlayer::Error err)
             return dbg << "ResourceError";
         case QAVPlayer::FilterError:
             return dbg << "FilterError";
+        case QAVPlayer::BitstreamFilterError:
+            return dbg << "BitstreamFilterError";
         default:
             return dbg << QString(QLatin1String("UserType(%1)" )).arg(int(err)).toLatin1().constData();
     }
