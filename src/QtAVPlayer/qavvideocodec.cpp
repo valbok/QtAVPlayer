@@ -35,6 +35,9 @@ static bool isSoftwarePixelFormat(AVPixelFormat from)
     case AV_PIX_FMT_VIDEOTOOLBOX:
     case AV_PIX_FMT_D3D11:
     case AV_PIX_FMT_D3D11VA_VLD:
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(58, 32, 100)
+    case AV_PIX_FMT_D3D12:
+#endif
 #if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(56, 0, 0)
     case AV_PIX_FMT_OPENCL:
 #endif
