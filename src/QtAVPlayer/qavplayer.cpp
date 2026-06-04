@@ -510,6 +510,7 @@ bool QAVPlayerPrivate::applyFilters(const QAVFrame &frame)
     QStringList descs;
     {
         QMutexLocker locker(&stateMutex);
+        // Don't continue frames on error
         if (error == QAVPlayer::FilterError)
             return false;
         descs = filterDescs;
@@ -527,8 +528,6 @@ bool QAVPlayerPrivate::applyFilters(const QAVFrame &frame)
         return false;
     }
     resetFilters = false;
-    videoQueue.clearFrames();
-    audioQueue.clearFrames();
     if (currentError() == QAVPlayer::FilterError)
         setMediaStatus(QAVPlayer::LoadedMedia);
     return true;
