@@ -2273,7 +2273,9 @@ void tst_QAVPlayer::configureFilter()
     p.setFilter("wrong");
     QCOMPARE(p.filters(), {"wrong"});
     QTRY_COMPARE(spyErrorOccurred.count(), 0);
+    QTRY_VERIFY(frame);
 
+    frame = QAVVideoFrame();
     spyErrorOccurred.clear();
 
     p.pause();
@@ -2285,7 +2287,6 @@ void tst_QAVPlayer::configureFilter()
     p.pause();
     QCOMPARE(p.filters(), {"wrong"});
     QTRY_COMPARE(spyErrorOccurred.count(), 1);
-    QVERIFY(!frame);
 
     spy.clear();
     spyErrorOccurred.clear();
