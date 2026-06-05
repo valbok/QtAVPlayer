@@ -34,6 +34,7 @@ public:
     {
     }
 
+    QString outputVideoCodec;
     QMap<int, QAVStream> encStreams;
     std::unique_ptr<QThread> workerThread;
     QList<QAVFrame> frames;
@@ -78,6 +79,20 @@ QAVMuxerFrames::~QAVMuxerFrames()
     reset(locker);
 }
 
+void QAVMuxerFrames::setOutputVideoCodec(const QString &name)
+{
+    Q_D(QAVMuxerFrames);
+    QMutexLocker locker(&d->mutex);
+    d->outputVideoCodec = name;
+}
+
+QString QAVMuxerFrames::outputVideoCodec() const
+{
+    Q_D(const QAVMuxerFrames);
+    QMutexLocker locker(&d->mutex);
+    return d->outputVideoCodec;
+}
+
 void QAVMuxerFrames::enqueue(const QAVFrame &frame)
 {
     Q_D(QAVMuxerFrames);
@@ -111,11 +126,26 @@ int QAVMuxerFrames::initStream(const QAVStream &stream, int index, AVStream *out
     Q_D(QAVMuxerFrames);
     auto in_stream = stream.stream();
     auto dec_ctx = stream.codec()->avctx();
-    // Transcoding to same codec
-    auto encoder = avcodec_find_encoder(dec_ctx->codec_id);
-    if (!encoder) {
-        qWarning() << "Encoder not found:" << stream.codec()->codec()->name;
-        return AVERROR_INVALIDDATA;
+    const AVCodec *encoder = nullptr;
+    switch (in_stream->codecpar->codec_type) {
+    case AVMEDIA_TYPE_VIDEO:
+        if (!d->outputVideoCodec.isEmpty()) {
+            qDebug() << "Loading: -vcodec" << d->outputVideoCodec;
+            encoder = avcodec_find_encoder_by_name(d->outputVideoCodec.toUtf8().constData());
+            if (!encoder) {
+                qWarning() << "Encoder not found:" << d->outputVideoCodec;
+                return AVERROR(EINVAL);
+            }
+            break;
+        }
+        [[fallthrough]];
+    default:
+        // Transcoding to same codec
+        encoder = avcodec_find_encoder(dec_ctx->codec_id);
+        if (!encoder) {
+            qWarning() << "Encoder not found:" << dec_ctx->codec_id;
+            return AVERROR(EINVAL);
+        }
     }
 
     AVCodecContext *enc_ctx = nullptr;
@@ -123,17 +153,20 @@ int QAVMuxerFrames::initStream(const QAVStream &stream, int index, AVStream *out
     int ret = 0;
     switch (dec_ctx->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
-        // pix_fmt might be not supported by the encoder, f.e. vdpau
-        // so falling back to software pixel format
-        if (dec_ctx->sw_pix_fmt != AV_PIX_FMT_NONE)
-            dec_ctx->pix_fmt = dec_ctx->sw_pix_fmt;
         codec.reset(new QAVVideoCodec(encoder));
         enc_ctx = codec->avctx();
         enc_ctx->height = dec_ctx->height;
         enc_ctx->width = dec_ctx->width;
         enc_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
-        enc_ctx->pix_fmt = dec_ctx->pix_fmt;
+        // pix_fmt might be not supported by the encoder, f.e. vdpau
+        // so falling back to software pixel format
+        if (d->outputVideoCodec.isEmpty() && dec_ctx->sw_pix_fmt != AV_PIX_FMT_NONE)
+            enc_ctx->pix_fmt = dec_ctx->sw_pix_fmt;
+        else
+            enc_ctx->pix_fmt = dec_ctx->pix_fmt;
         enc_ctx->time_base = in_stream->time_base;
+        if (!d->outputVideoCodec.isEmpty() && dec_ctx->hw_frames_ctx)
+            enc_ctx->hw_frames_ctx = av_buffer_ref(dec_ctx->hw_frames_ctx);
         if (d->ctx->ctx()->oformat->flags & AVFMT_GLOBALHEADER)
             enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
         if (!codec->open(out_stream)) {

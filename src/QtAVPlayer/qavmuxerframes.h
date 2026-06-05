@@ -22,6 +22,14 @@ public:
     QAVMuxerFrames();
     ~QAVMuxerFrames() override;
     
+    /**
+     * Sets desired output codec. E.g h264_nvenc for h264_cuvid decoder.
+     * Uses avcodec_find_encoder_by_name() internally.
+     * Should be called before load().
+     */
+    void setOutputVideoCodec(const QString &name);
+    QString outputVideoCodec() const;
+
     // Adds the frame to the queue
     void enqueue(const QAVFrame &frame);
 
