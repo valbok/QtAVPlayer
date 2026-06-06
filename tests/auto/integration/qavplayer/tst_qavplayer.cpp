@@ -3541,11 +3541,11 @@ void tst_QAVPlayer::muxerMultiSourceFrames()
     QAVPlayer p2;
     QAVMuxerFrames m;
     p1.setSynced(false);
+    p1.setInputVideoCodec("software");
     p1.setSource(QFileInfo(testData("small.mp4")).absoluteFilePath());
     p2.setSynced(false);
-    p2.setSource(QFileInfo(testData("av_sample.mkv")).absoluteFilePath());
-    p1.setInputVideoCodec("software");
     p2.setInputVideoCodec("software");
+    p2.setSource(QFileInfo(testData("av_sample.mkv")).absoluteFilePath());
 
     QObject::connect(&p1, &QAVPlayer::videoFrame, &p1, [&](const QAVVideoFrame &f) { m.enqueue(f); }, Qt::DirectConnection);
     QObject::connect(&p1, &QAVPlayer::audioFrame, &p1, [&](const QAVAudioFrame &f) { m.enqueue(f); }, Qt::DirectConnection);
