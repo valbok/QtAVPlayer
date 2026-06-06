@@ -1,6 +1,28 @@
+2026-06
+-------
+
+- #650 - Fixed tests to set codec before source
+- #649 - Introduced QAVMuxerFrames::outputVideoCodec
+- #647 - Added AV_PIX_FMT_D3D12 to isSoftwarePixelFormat
+- #641 - Fixed player to apply filters after hw_frames_ctx is negotiated
+- #643 - Fixed muxer tests to use software codec
+- #638 - Introduced hw devices for filters
+- #636 - Negotiated hw device context based on provided codec in demuxer
+- #637 - Removed double \n in ffmpeg logs - Fedar <fedorkrivitskiy@gmail.com>
+- #637 - Introduced QT_AVPLAYER_CUDA define
+- #634 - Introduced hwaccel cuda support
+
 2026-05
 -------
 
+- #631 - Moved muxers to separate files
+- #630 - Moved ass renderer to separate file
+- #629 - Fixed test to use filtered frames in Muxer
+- #628 - Fixed missed pts after videoFrame.convertTo()
+- #627 - Added test to change encoder frame size in muxer
+- #625 - Refactored muxer
+- #624 - Removed implicit conversion in muxer
+- #604 - Added offset functions for change video position - Kioro404 <angelo995.2001@gmail.com>
 - #621 - Fixed seek slider in QML Player example to avoid double seek
 - #620 - Fixed position in QML Player example to avoid jumping
 - #619 - Fixed QAVAudioOutput to resume the audio sink before stopping
@@ -60,7 +82,7 @@
 
 - #554 - Added support to build libQtAVPlayer for cases when shared lib is more convenient
 
-2025-10
+2025-11
 -------
 
 - #548 - Added rendering cropped frame for MediaCodec to avoid artifacts
