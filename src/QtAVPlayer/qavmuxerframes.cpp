@@ -49,8 +49,10 @@ void QAVMuxerFramesPrivate::doWork()
     Q_Q(QAVMuxerFrames);
     QMutexLocker locker(&mutex);
     while (!quit) {
-        if (frames.isEmpty()) {
+        if (!loaded || frames.isEmpty()) {
             cond.wait(&mutex);
+            if (!loaded)
+                continue;
             if (quit || frames.isEmpty())
                 break;
         }
@@ -98,8 +100,6 @@ void QAVMuxerFrames::enqueue(const QAVFrame &frame)
     Q_D(QAVMuxerFrames);
     {
         QMutexLocker locker(&d->mutex);
-        if (!d->loaded)
-            return;
         d->frames.push_back(frame);
     }
     d->cond.wakeAll();
@@ -247,7 +247,7 @@ int QAVMuxerFrames::write(const QAVFrame &frame)
     Q_D(QAVMuxerFrames);
     QMutexLocker locker(&d->mutex);
     if (!d->loaded)
-        return 0;
+        return AVERROR(EINVAL);
     int index = d->outputStreamIndex(frame.stream(), locker);
     if (index < 0)
         return AVERROR(EINVAL);
@@ -259,7 +259,7 @@ int QAVMuxerFrames::write(const QAVSubtitleFrame &frame)
     Q_D(QAVMuxerFrames);
     QMutexLocker locker(&d->mutex);
     if (!d->loaded)
-        return 0;
+        return AVERROR(EINVAL);
     int index = d->outputStreamIndex(frame.stream(), locker);
     if (index < 0)
         return AVERROR(EINVAL);
