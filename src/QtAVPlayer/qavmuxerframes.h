@@ -21,7 +21,7 @@ class QAVMuxerFrames : public QAVMuxer
 public:
     QAVMuxerFrames();
     ~QAVMuxerFrames() override;
-    
+
     /**
      * Sets desired output codec. E.g h264_nvenc for h264_cuvid decoder.
      * Uses avcodec_find_encoder_by_name() internally.
