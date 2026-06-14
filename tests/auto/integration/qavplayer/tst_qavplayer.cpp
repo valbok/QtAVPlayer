@@ -9,6 +9,7 @@
 #include "qavmuxerframes.h"
 #include "qavaudiooutput.h"
 #include "qaviodevice.h"
+#include "qavcodec_p.h"
 
 #include <QDebug>
 #include <QtTest/QtTest>
@@ -110,6 +111,7 @@ private slots:
     void muxerMultiSourceFrames();
     void framesAfterPlayerDestroyed();
     void scaleHW();
+    void muxerScaleHW();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -3625,6 +3627,57 @@ void tst_QAVPlayer::scaleHW()
 
     p.play();
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
+}
+
+void tst_QAVPlayer::muxerScaleHW()
+{
+    QAVMuxerFrames m;
+    QAVPlayer p;
+    p.setSynced(false);
+    QSize size;
+#if defined(QT_AVPLAYER_CUDA)
+    p.setInputVideoCodec("h264_cuvid");
+    p.setFilter("scale_cuda=1920:1080");
+    size = {1920, 1080};
+    m.setOutputVideoCodec("h264_nvenc");
+#endif
+    if (size.isEmpty())
+        return;
+    p.setSource(QFileInfo(testData("small.mp4")).absoluteFilePath());
+
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) {
+        QCOMPARE(f.size(), size);
+        m.enqueue(f);
+    }, Qt::DirectConnection);
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) {
+        m.enqueue(f);
+    }, Qt::DirectConnection);
+
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia);
+    auto videoStreams = p.availableVideoStreams();
+    QCOMPARE(videoStreams.size(), 1);
+    auto c = videoStreams[0].codec();
+    QVERIFY(c);
+    QCOMPARE(c->size(), QSize(560, 320));
+    c->avctx()->width = size.width();
+    c->avctx()->height = size.height();
+    QVERIFY(m.load(p.availableStreams(), "output.mkv") >= 0);
+
+    p.play();
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
+    m.unload();
+
+    QAVPlayer p2;
+    QAVVideoFrame vf;
+    QObject::connect(&p2, &QAVPlayer::videoFrame, &p2, [&](const QAVVideoFrame &f) {
+        vf = f;
+    });
+
+    p2.setSource("output.mkv");
+    QTRY_VERIFY(p2.mediaStatus() == QAVPlayer::LoadedMedia);
+    p2.pause();
+    QTRY_VERIFY(vf);
+    QCOMPARE(vf.size(), size);
 }
 
 QTEST_MAIN(tst_QAVPlayer)
