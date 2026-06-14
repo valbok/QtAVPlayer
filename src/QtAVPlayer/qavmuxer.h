@@ -46,6 +46,7 @@ protected:
 
     int allocFormatContext(const QString &filename, Locker &);
     int initStreams(const QList<QAVStream> &streams, Locker &);
+    int newOutputStream(const QAVStream &stream, Locker &);
     int writeHeader(Locker &);
 
     virtual void init(Locker &) = 0;
