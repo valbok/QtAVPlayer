@@ -3635,11 +3635,12 @@ void tst_QAVPlayer::muxerScaleHW()
     QAVPlayer p;
     p.setSynced(false);
     QSize size;
+    QString codec;
 #if defined(QT_AVPLAYER_CUDA)
     p.setInputVideoCodec("h264_cuvid");
-    p.setFilter("scale_cuda=1920:1080");
-    size = {1920, 1080};
-    m.setOutputVideoCodec("h264_nvenc");
+    p.setFilter("scale_cuda=160:120");
+    size = {160, 120};
+    codec = "h264_nvenc";
 #endif
     if (size.isEmpty())
         return;
@@ -3659,9 +3660,16 @@ void tst_QAVPlayer::muxerScaleHW()
     auto c = videoStreams[0].codec();
     QVERIFY(c);
     QCOMPARE(c->size(), QSize(560, 320));
-    c->avctx()->width = size.width();
-    c->avctx()->height = size.height();
-    QVERIFY(m.load(p.availableStreams(), "output.mkv") >= 0);
+    QList<QAVMuxerFrames::EncoderStream> encoderStreams;
+    for (auto &s : videoStreams) {
+        QAVMuxerFrames::EncoderStream stream(s);
+        stream.size = size;
+        stream.codec = codec;
+        encoderStreams.push_back(stream);
+    }
+    for (auto &s : p.availableAudioStreams())
+        encoderStreams.push_back(s);
+    QVERIFY(m.load(encoderStreams, "output.mkv") >= 0);
 
     p.play();
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);

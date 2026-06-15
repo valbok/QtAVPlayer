@@ -98,6 +98,7 @@ int QAVMuxer::allocFormatContext(const QString &filename, Locker &)
 int QAVMuxer::writeHeader(Locker &)
 {
     Q_D(QAVMuxer);
+    av_dump_format(d->ctx->ctx(), 0, d->filename.toUtf8().constData(), 1);
     // Init muxer, write output file header
     int ret = avformat_write_header(d->ctx->ctx(), nullptr);
     if (ret < 0) {
@@ -108,37 +109,7 @@ int QAVMuxer::writeHeader(Locker &)
     return 0;
 }
 
-int QAVMuxer::load(const QList<QAVStream> &streams, const QString &filename)
-{
-    Q_D(QAVMuxer);
-    QMutexLocker locker(&d->mutex);
-    reset(locker);
-    int ret = allocFormatContext(filename, locker);
-    if (ret < 0)
-        return ret;
-    ret = initStreams(streams, locker);
-    if (ret < 0)
-        return ret;
-
-    init(locker);
-    return writeHeader(locker);
-}
-
-int QAVMuxer::initStreams(const QList<QAVStream> &streams, Locker &locker)
-{
-    Q_D(QAVMuxer);
-    int ret = 0;
-    for (int i = 0; i < streams.size(); ++i) {
-        auto &stream = streams[i];
-        ret = newOutputStream(stream, locker);
-        if (ret < 0)
-            return ret;
-    }
-    av_dump_format(d->ctx->ctx(), 0, d->filename.toUtf8().constData(), 1);
-    return 0;
-}
-
-int QAVMuxer::newOutputStream(const QAVStream &stream, Locker &locker)
+int QAVMuxer::newOutputStream(const QAVStream &stream, Locker &)
 {
     Q_D(QAVMuxer);
     auto codec = stream.codec();
@@ -156,9 +127,8 @@ int QAVMuxer::newOutputStream(const QAVStream &stream, Locker &locker)
         stream.codec()->codec()->name << ", codec_id" << dec_ctx->codec_id <<
         ", pix_fmt:" << dec_ctx->pix_fmt << (pix_fmt_desc ? pix_fmt_desc->name : "");
     auto i = d->ctx->ctx()->nb_streams - 1;
-    int ret = initStream(stream, i, d->ctx->ctx()->streams[i], locker);
     d->outputStreams[stream.stream()] = i;
-    return ret;
+    return 0;
 }
 
 int QAVMuxer::flush()

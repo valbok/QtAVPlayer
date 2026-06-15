@@ -31,9 +31,6 @@ public:
 
     virtual ~QAVMuxer();
 
-    // Loads the encoder based on parsed streams, format is negotiated from filename
-    int load(const QList<QAVStream> &streams, const QString &filename);
-
     // Stops and unloads the encoder
     void unload();
 
@@ -45,12 +42,9 @@ protected:
     QAVMuxer(QAVMuxerPrivate &d);
 
     int allocFormatContext(const QString &filename, Locker &);
-    int initStreams(const QList<QAVStream> &streams, Locker &);
     int newOutputStream(const QAVStream &stream, Locker &);
     int writeHeader(Locker &);
 
-    virtual void init(Locker &) = 0;
-    virtual int initStream(const QAVStream &stream, int index, AVStream *out_stream, Locker &) = 0;
     virtual int flushFrames(Locker &) = 0;
     virtual void reset(Locker &);
     void close(Locker &);
