@@ -30,6 +30,15 @@ public:
         EncoderStream(const QAVStream &stream);
         const QAVStream &stream() const;
 
+        /**
+         * Sets desired output codec. E.g h264_nvenc for h264_cuvid decoder.
+         * Uses avcodec_find_encoder_by_name() internally.
+         */
+        void setCodec(const QString &name);
+
+        // Returns codec name
+        const QString &codec() const;
+
         // Sets the size of the frames
         void setSize(const QSize &size);
 
@@ -38,6 +47,7 @@ public:
 
     private:
         QAVStream m_stream;
+        QString m_codec;
         QSize m_size;
     };
 
@@ -55,14 +65,6 @@ public:
      * If params are not set, the stream's codec AVCodecContext is used instead.
      */
     int load(const QList<EncoderStream> &streams, const QString &filename);
-
-    /**
-     * Sets desired output codec. E.g h264_nvenc for h264_cuvid decoder.
-     * Uses avcodec_find_encoder_by_name() internally.
-     * Should be called before load().
-     */
-    void setOutputVideoCodec(const QString &name);
-    QString outputVideoCodec() const;
 
     // Adds the frame to the queue
     void enqueue(const QAVFrame &frame);

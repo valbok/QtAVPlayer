@@ -929,11 +929,11 @@ void tst_QAVDemuxer::muxerFramesScaleHW()
     QAVMuxerFrames m;
     // Using software codec
     QVERIFY(m.load(encoderStreams, "small.mkv") >= 0);
-    m.setOutputVideoCodec("notfound");
+
+    encoderStreams[0].setCodec("notfound");
     QVERIFY(m.load(encoderStreams, "small.mkv") < 0);
 
-    m.setOutputVideoCodec("h264_nvenc");
-    QCOMPARE(m.outputVideoCodec(), "h264_nvenc");
+    encoderStreams[0].setCodec("h264_nvenc");
     QVERIFY(m.load(encoderStreams, "small.mkv") >= 0);
 
     QAVPacket p;
