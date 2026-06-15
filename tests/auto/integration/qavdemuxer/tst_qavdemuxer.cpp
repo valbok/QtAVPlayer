@@ -865,8 +865,7 @@ void tst_QAVDemuxer::muxerFramesEncoderStreams()
         QVERIFY(s.codec());
         QCOMPARE(s.codec()->size(), QSize(160, 120));
         QAVMuxerFrames::EncoderStream stream(s);
-        stream.setSize(size);
-        QCOMPARE(stream.size(), size);
+        stream.size = size;
         encoderStreams.push_back(stream);
     }
     for (auto &s : d.availableAudioStreams()) {
@@ -920,7 +919,7 @@ void tst_QAVDemuxer::muxerFramesScaleHW()
         QCOMPARE(s.codec()->size(), QSize(560, 320));
         // It does not rescale, sets output size only
         QAVMuxerFrames::EncoderStream stream(s);
-        stream.setSize(size);
+        stream.size = size;
         encoderStreams.push_back(stream);
     }
     for (auto &s : d.availableAudioStreams())
@@ -930,10 +929,10 @@ void tst_QAVDemuxer::muxerFramesScaleHW()
     // Using software codec
     QVERIFY(m.load(encoderStreams, "small.mkv") >= 0);
 
-    encoderStreams[0].setCodec("notfound");
+    encoderStreams[0].codec = "notfound";
     QVERIFY(m.load(encoderStreams, "small.mkv") < 0);
 
-    encoderStreams[0].setCodec("h264_nvenc");
+    encoderStreams[0].codec = "h264_nvenc";
     QVERIFY(m.load(encoderStreams, "small.mkv") >= 0);
 
     QAVPacket p;

@@ -24,31 +24,21 @@ public:
      * Defines properties for encoder.
      * Used to initialize AVCodecContext.
      */
-    class EncoderStream
+    struct EncoderStream
     {
-    public:
-        EncoderStream(const QAVStream &stream);
-        const QAVStream &stream() const;
+        EncoderStream(const QAVStream &stream) : stream(stream) {}
+
+        // Underlying stream with codec
+        QAVStream stream;
 
         /**
          * Sets desired output codec. E.g h264_nvenc for h264_cuvid decoder.
          * Uses avcodec_find_encoder_by_name() internally.
          */
-        void setCodec(const QString &name);
+        QString codec;
 
-        // Returns codec name
-        const QString &codec() const;
-
-        // Sets the size of the frames
-        void setSize(const QSize &size);
-
-        // Returns the size of the frames
-        const QSize &size() const;
-
-    private:
-        QAVStream m_stream;
-        QString m_codec;
-        QSize m_size;
+        // Sets the size of the input frames
+        QSize size;
     };
 
     QAVMuxerFrames();

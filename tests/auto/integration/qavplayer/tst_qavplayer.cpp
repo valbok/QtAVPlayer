@@ -3635,11 +3635,12 @@ void tst_QAVPlayer::muxerScaleHW()
     QAVPlayer p;
     p.setSynced(false);
     QSize size;
+    QString codec;
 #if defined(QT_AVPLAYER_CUDA)
     p.setInputVideoCodec("h264_cuvid");
     p.setFilter("scale_cuda=160:120");
     size = {160, 120};
-    m.setOutputVideoCodec("h264_nvenc");
+    codec = "h264_nvenc";
 #endif
     if (size.isEmpty())
         return;
@@ -3662,7 +3663,8 @@ void tst_QAVPlayer::muxerScaleHW()
     QList<QAVMuxerFrames::EncoderStream> encoderStreams;
     for (auto &s : videoStreams) {
         QAVMuxerFrames::EncoderStream stream(s);
-        stream.setSize(size);
+        stream.size = size;
+        stream.codec = codec;
         encoderStreams.push_back(stream);
     }
     for (auto &s : p.availableAudioStreams())

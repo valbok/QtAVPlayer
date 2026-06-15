@@ -66,36 +66,6 @@ void QAVMuxerFramesPrivate::doWork()
     }
 }
 
-QAVMuxerFrames::EncoderStream::EncoderStream(const QAVStream &stream)
-    : m_stream(stream)
-{
-}
-
-const QAVStream &QAVMuxerFrames::EncoderStream::stream() const
-{
-    return m_stream;
-}
-
-void QAVMuxerFrames::EncoderStream::setCodec(const QString &codec)
-{
-    m_codec = codec;
-}
-
-const QString &QAVMuxerFrames::EncoderStream::codec() const
-{
-    return m_codec;
-}
-
-void QAVMuxerFrames::EncoderStream::setSize(const QSize &size)
-{
-    m_size = size;
-}
-
-const QSize &QAVMuxerFrames::EncoderStream::size() const
-{
-    return m_size;
-}
-
 QAVMuxerFrames::QAVMuxerFrames()
     : QAVMuxer(*new QAVMuxerFramesPrivate(this))
 {
@@ -153,7 +123,7 @@ int QAVMuxerFrames::initStreams(const QList<EncoderStream> &streams, Locker &loc
     int ret = 0;
     for (int i = 0; i < streams.size(); ++i) {
         auto &stream = streams[i];
-        ret = newOutputStream(stream.stream(), locker);
+        ret = newOutputStream(stream.stream, locker);
         if (ret < 0)
             return ret;
         ret = initStream(stream, i, d->ctx->ctx()->streams[i], locker);
@@ -175,15 +145,15 @@ void QAVMuxerFrames::init(Locker &)
 int QAVMuxerFrames::initStream(const EncoderStream &encoderStream, int index, AVStream *out_stream, Locker &)
 {
     Q_D(QAVMuxerFrames);
-    const auto &stream = encoderStream.stream();
+    const auto &stream = encoderStream.stream;
     auto in_stream = stream.stream();
     auto dec_ctx = stream.codec()->avctx();
     const AVCodec *encoder = nullptr;
-    if (!encoderStream.codec().isEmpty()) {
-        qDebug() << "Loading encoder:" << encoderStream.codec();
-        encoder = avcodec_find_encoder_by_name(encoderStream.codec().toUtf8().constData());
+    if (!encoderStream.codec.isEmpty()) {
+        qDebug() << "Loading encoder:" << encoderStream.codec;
+        encoder = avcodec_find_encoder_by_name(encoderStream.codec.toUtf8().constData());
         if (!encoder) {
-            qWarning() << "Encoder not found:" << encoderStream.codec();
+            qWarning() << "Encoder not found:" << encoderStream.codec;
             return AVERROR(EINVAL);
         }
     } else {
@@ -202,9 +172,9 @@ int QAVMuxerFrames::initStream(const EncoderStream &encoderStream, int index, AV
     case AVMEDIA_TYPE_VIDEO:
         codec.reset(new QAVVideoCodec(encoder));
         enc_ctx = codec->avctx();
-        if (!encoderStream.size().isEmpty()) {
-            enc_ctx->height = encoderStream.size().height();
-            enc_ctx->width = encoderStream.size().width();
+        if (!encoderStream.size.isEmpty()) {
+            enc_ctx->height = encoderStream.size.height();
+            enc_ctx->width = encoderStream.size.width();
         } else {
             enc_ctx->height = dec_ctx->height;
             enc_ctx->width = dec_ctx->width;
@@ -212,12 +182,12 @@ int QAVMuxerFrames::initStream(const EncoderStream &encoderStream, int index, AV
         enc_ctx->sample_aspect_ratio = dec_ctx->sample_aspect_ratio;
         // pix_fmt might be not supported by the encoder, f.e. vdpau
         // so falling back to software pixel format
-        if (encoderStream.codec().isEmpty() && dec_ctx->sw_pix_fmt != AV_PIX_FMT_NONE)
+        if (encoderStream.codec.isEmpty() && dec_ctx->sw_pix_fmt != AV_PIX_FMT_NONE)
             enc_ctx->pix_fmt = dec_ctx->sw_pix_fmt;
         else
             enc_ctx->pix_fmt = dec_ctx->pix_fmt;
         enc_ctx->time_base = in_stream->time_base;
-        if (!encoderStream.codec().isEmpty() && dec_ctx->hw_frames_ctx)
+        if (!encoderStream.codec.isEmpty() && dec_ctx->hw_frames_ctx)
             enc_ctx->hw_frames_ctx = av_buffer_ref(dec_ctx->hw_frames_ctx);
         if (d->ctx->ctx()->oformat->flags & AVFMT_GLOBALHEADER)
             enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
