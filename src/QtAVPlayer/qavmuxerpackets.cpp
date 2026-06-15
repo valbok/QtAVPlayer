@@ -21,8 +21,34 @@ QAVMuxerPackets::~QAVMuxerPackets()
     unload();
 }
 
-void QAVMuxerPackets::init(Locker &)
+int QAVMuxerPackets::load(const QList<QAVStream> &streams, const QString &filename)
 {
+    Q_D(QAVMuxer);
+    QMutexLocker locker(&d->mutex);
+    reset(locker);
+    int ret = allocFormatContext(filename, locker);
+    if (ret < 0)
+        return ret;
+    ret = initStreams(streams, locker);
+    if (ret < 0)
+        return ret;
+    return writeHeader(locker);
+}
+
+int QAVMuxerPackets::initStreams(const QList<QAVStream> &streams, Locker &locker)
+{
+    Q_D(QAVMuxer);
+    int ret = 0;
+    for (int i = 0; i < streams.size(); ++i) {
+        auto &stream = streams[i];
+        ret = newOutputStream(stream, locker);
+        if (ret < 0)
+            return ret;
+        ret = initStream(stream, i, d->ctx->ctx()->streams[i], locker);
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
 }
 
 int QAVMuxerPackets::initStream(const QAVStream &stream, int, AVStream *out_stream, Locker &)
@@ -42,7 +68,7 @@ int QAVMuxerPackets::write(const QAVPacket &packet)
     Q_D(QAVMuxer);
     QMutexLocker locker(&d->mutex);
     if (!d->loaded || !packet.stream())
-        return 0;
+        return AVERROR(EINVAL);
     int index = d->outputStreamIndex(packet.stream(), locker);
     if (index < 0)
         return AVERROR(EINVAL);

@@ -60,7 +60,7 @@ private slots:
     void muxerEnqueueFramesFromDev();
     void muxerWritePacketsFromMultiSources();
     void muxerWritePacketsFromDev();
-    void muxerFramesCodecInfo();
+    void muxerFramesEncoderStreams();
     void muxerFramesScaleHW();
 };
 
@@ -851,7 +851,7 @@ void tst_QAVDemuxer::muxerWritePacketsFromDev()
     // ffmpeg -f rawvideo -pix_fmt yuyv422 -s:v 640x480 -r 25 -i output.yuv -c:v libx264 output.mp4
 }
 
-void tst_QAVDemuxer::muxerFramesCodecInfo()
+void tst_QAVDemuxer::muxerFramesEncoderStreams()
 {
     QFileInfo file(testData("colors.mp4"));
     QAVDemuxer d;
@@ -860,23 +860,23 @@ void tst_QAVDemuxer::muxerFramesCodecInfo()
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
     QVERIFY(!d.availableVideoStreams().isEmpty());
     QSize size(128, 96);
+    QList<QAVMuxerFrames::EncoderStream> encoderStreams;
     for (auto &s : d.availableVideoStreams()) {
         QVERIFY(s.codec());
         QCOMPARE(s.codec()->size(), QSize(160, 120));
-        s.codec()->avctx()->width = size.width();
-        s.codec()->avctx()->height = size.height();
-        QVERIFY(s.codec()->size() == size);
-    }
-    for (auto &s : d.availableVideoStreams()) {
-        QCOMPARE(s.codec()->size(), size);
+        QAVMuxerFrames::EncoderStream stream(s);
+        stream.setSize(size);
+        QCOMPARE(stream.size(), size);
+        encoderStreams.push_back(stream);
     }
     for (auto &s : d.availableAudioStreams()) {
         QVERIFY(s.codec());
         QVERIFY(s.codec()->size().isEmpty());
+        encoderStreams.push_back(s);
     }
 
     QAVMuxerFrames m;
-    QVERIFY(m.load(d.availableStreams(), "colors.mkv") >= 0);
+    QVERIFY(m.load(encoderStreams, "colors.mkv") >= 0);
 
     QAVPacket p;
     while (d.read(p) >= 0) {
@@ -914,24 +914,27 @@ void tst_QAVDemuxer::muxerFramesScaleHW()
     QCOMPARE(codec->avctx()->pix_fmt, AV_PIX_FMT_CUDA);
     QVERIFY(!d.availableVideoStreams().isEmpty());
     QSize size(128, 96);
+    QList<QAVMuxerFrames::EncoderStream> encoderStreams;
     for (auto &s : d.availableVideoStreams()) {
         QVERIFY(s.codec());
         QCOMPARE(s.codec()->size(), QSize(560, 320));
         // It does not rescale, sets output size only
-        s.codec()->avctx()->width = size.width();
-        s.codec()->avctx()->height = size.height();
-        QVERIFY(s.codec()->size() == size);
+        QAVMuxerFrames::EncoderStream stream(s);
+        stream.setSize(size);
+        encoderStreams.push_back(stream);
     }
+    for (auto &s : d.availableAudioStreams())
+        encoderStreams.push_back(s);
 
     QAVMuxerFrames m;
     // Using software codec
-    QVERIFY(m.load(d.availableStreams(), "small.mkv") >= 0);
+    QVERIFY(m.load(encoderStreams, "small.mkv") >= 0);
     m.setOutputVideoCodec("notfound");
-    QVERIFY(m.load(d.availableStreams(), "small.mkv") < 0);
+    QVERIFY(m.load(encoderStreams, "small.mkv") < 0);
 
     m.setOutputVideoCodec("h264_nvenc");
     QCOMPARE(m.outputVideoCodec(), "h264_nvenc");
-    QVERIFY(m.load(d.availableStreams(), "small.mkv") >= 0);
+    QVERIFY(m.load(encoderStreams, "small.mkv") >= 0);
 
     QAVPacket p;
     while (d.read(p) >= 0) {
