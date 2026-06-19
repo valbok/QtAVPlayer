@@ -220,6 +220,7 @@ Free and open-source Qt Media Player library based on FFmpeg.
 QtAVPlayer should be directly bundled into an app.
 Some defines should be provided to opt some features.
 * `QT_AVPLAYER_MULTIMEDIA` - enables support of `QtMultimedia` which requires `QtGUI`, `QtQuick` etc.
+* `QT_AVPLAYER_CUDA` - enables support of `cuda`.
 * `QT_AVPLAYER_VA_X11` - enables support of `libva-x11` for HW acceleration. For linux only.
 * `QT_AVPLAYER_VA_DRM` - enables support of `libva-drm` for HW acceleration. For linux only.
 * `QT_AVPLAYER_VDPAU` - enables support of `libvdpau` for HW acceleration. For linux only.
