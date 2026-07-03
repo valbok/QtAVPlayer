@@ -421,7 +421,7 @@ private:
     QVideoFrameFormat m_videoFormat;
     QVideoFrame::MapMode m_mode = QVideoFrame::NotMapped;
     QVariant m_textures;
-#if QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
+#if QT_VERSION < QT_VERSION_CHECK(6, 4, 0) || QT_VERSION > QT_VERSION_CHECK(6, 10, 0)
     QRhi *m_rhi = nullptr;
 #endif
 };

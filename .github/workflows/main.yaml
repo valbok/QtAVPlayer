@@ -11,12 +11,12 @@ jobs:
     strategy:
       matrix:
         compiler: ['gcc-9']
-        qt_version: ["5.15.2", "6.8.2"]
+        qt_version: ["5.15.2", "6.11.1"]
         include:
           - compiler: gcc-9
             packages: gcc-9 g++-9
             env: { 'CC': 'gcc-9', 'CXX': 'g++-9' }
-          - qt_version: "6.8.2"
+          - qt_version: "6.11.1"
             qt_modules: "qtmultimedia"
             qt_packages: "libxkbcommon-dev libgstreamer-plugins-base1.0-0 libgstreamer-gl1.0-0"
 
@@ -99,7 +99,7 @@ jobs:
           make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
 
       - name: CMake Examples
-        if: ${{ matrix.qt_version == '6.8.2' }}
+        if: ${{ matrix.qt_version == '6.11.1' }}
         run: |
           cd examples/qml_player
           cmake . -DQT_AVPLAYER_MULTIMEDIA=ON -DQT_AVPLAYER_LIBASS=ON
@@ -240,10 +240,14 @@ jobs:
         shell: cmd
         run: |
           cd ..
-          xidel https://github.com/BtbN/FFmpeg-Builds/releases -e "//a[contains(@href, '-gpl-shared.zip')]/@href[1]" --silent > ffmpeg.url
-          xidel https://github.com/BtbN/FFmpeg-Builds/releases -e "(//a[contains(@href, '-gpl-shared.zip')])[1]/substring(., 0, string-length(.) - 3)" --silent > ffmpeg.name
+          xidel https://github.com/BtbN/FFmpeg-Builds/releases -e "//include-fragment[contains(@src, '/expanded_assets/autobuild')]/@src[1]" --silent > ffmpeg-expand.url
+          set /P FFMPEG_RELEASES=< ffmpeg-expand.url
+          xidel %FFMPEG_RELEASES% -e "//a[contains(@href, '-gpl-shared.zip')]/@href[1]" --silent > ffmpeg.url
+          xidel %FFMPEG_RELEASES% -e "(//a[contains(@href, '-gpl-shared.zip')])[1]/substring(., 0, string-length(.) - 3)" --silent > ffmpeg.name
           set /P FFMPEG_URL=< ffmpeg.url
           set /P FFMPEG_NAME=< ffmpeg.name
+          type ffmpeg.url
+          type ffmpeg.name
           wget https://github.com%FFMPEG_URL%
           unzip %FFMPEG_NAME%.zip
           ren %FFMPEG_NAME% ffmpeg
