@@ -244,8 +244,8 @@ jobs:
           xidel https://github.com/BtbN/FFmpeg-Builds/releases -e "(//a[contains(@href, '-gpl-shared.zip')])[1]/substring(., 0, string-length(.) - 3)" --silent > ffmpeg.name
           set /P FFMPEG_URL=< ffmpeg.url
           set /P FFMPEG_NAME=< ffmpeg.name
-          echo %FFMPEG_URL%
-          echo %FFMPEG_NAME%
+          type ffmpeg.url
+          type ffmpeg.name
           wget https://github.com%FFMPEG_URL%
           unzip %FFMPEG_NAME%.zip
           ren %FFMPEG_NAME% ffmpeg
