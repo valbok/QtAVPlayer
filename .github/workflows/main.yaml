@@ -184,10 +184,10 @@ jobs:
   windows:
     strategy:
       matrix:
-        qt_version: ["5.15.2", "6.11.1"]
+        qt_version: ["5.15.2", "6.8.2"]
         type: ["MSVC", "MINGW"]
         include:
-          - qt_version: "6.11.1"
+          - qt_version: "6.8.2"
             qt_modules: "qtmultimedia"
 
     runs-on: windows-latest
@@ -213,7 +213,7 @@ jobs:
           version: ${{ matrix.qt_version }}
 
       - name: Install Qt
-        if: ${{ matrix.type == 'MINGW' && matrix.qt_version == '6.11.1' }}
+        if: ${{ matrix.type == 'MINGW' && matrix.qt_version == '6.8.2' }}
         uses: jurplel/install-qt-action@v3
         with:
           arch: win64_mingw
@@ -228,7 +228,7 @@ jobs:
           modules: ${{ matrix.qt_modules }}
 
       - name: Install Qt
-        if: ${{ matrix.type == 'MSVC' && matrix.qt_version == '6.11.1' }}
+        if: ${{ matrix.type == 'MSVC' && matrix.qt_version == '6.8.2' }}
         uses: jurplel/install-qt-action@v4
         with:
           target: 'desktop'
@@ -329,7 +329,7 @@ jobs:
           cmake --build . -v
 
       - name: CMake Examples
-        if: ${{ matrix.type == 'MSVC' && matrix.qt_version == '6.11.1' }}
+        if: ${{ matrix.type == 'MSVC' && matrix.qt_version == '6.8.2' }}
         run: |
           cd examples/qml_player
           cmake . -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib
