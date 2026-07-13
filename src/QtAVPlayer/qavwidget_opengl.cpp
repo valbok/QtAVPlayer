@@ -240,7 +240,7 @@ void QAVWidget_OpenGL::setAspectRatioMode(Qt::AspectRatioMode mode)
 {
     Q_D(QAVWidget_OpenGL);
     d->aspectRatioMode = mode;
-    update();
+    QMetaObject::invokeMethod(this, "update");
 }
 
 Qt::AspectRatioMode QAVWidget_OpenGL::aspectRatioMode() const
@@ -253,8 +253,7 @@ void QAVWidget_OpenGL::setVideoGeometry(const QRectF &geometry)
 {
     Q_D(QAVWidget_OpenGL);
     d->videoGeometry = geometry;
-    
-    update();
+    QMetaObject::invokeMethod(this, "update");
 }
 
 void QAVWidget_OpenGL::setVideoFrame(const QAVVideoFrame &frame)
@@ -264,7 +263,7 @@ void QAVWidget_OpenGL::setVideoFrame(const QAVVideoFrame &frame)
         QMutexLocker lock(&d->mutex);
         d->currentFrame = frame;
     }
-    update();
+    QMetaObject::invokeMethod(this, "update");
 }
 
 void QAVWidget_OpenGLPrivate::bindTexture(int id, int w, int h, const uchar *bits, GLenum format)
@@ -400,7 +399,6 @@ void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_YUYV422>()
 template<>
 void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_D3D11>()
 {
-    Q_ASSERT(currentFrame.handleType() == QAVVideoFrame::D3D11Texture2DHandle);
     initTextureInfo<AV_PIX_FMT_NV12>();
 
     QAVHWDevice_D3D11_GL device;
