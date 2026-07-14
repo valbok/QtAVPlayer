@@ -10,6 +10,7 @@
 #include <QOpenGLShaderProgram>
 #include <QMutexLocker>
 #include <qmath.h>
+#include <QThread>
 #include <QDebug>
 
 #if defined(Q_OS_WIN)
@@ -140,6 +141,7 @@ public:
     const char *shaderProgram = vertexShaderProgram;
     const char *fragmentProgram = nullptr;
 
+    bool textureInfoInited = false;
     int textureCount = 0;
     bool texturesGenerated = false;
     GLuint textureIds[3];
@@ -154,6 +156,7 @@ public:
     void bindTexture(int id, int w, int h, const uchar *bits, GLenum format);
 
     bool resetGL();
+    void update();
 
     template<AVPixelFormat fmt>
     void initTextureInfo();
@@ -240,7 +243,7 @@ void QAVWidget_OpenGL::setAspectRatioMode(Qt::AspectRatioMode mode)
 {
     Q_D(QAVWidget_OpenGL);
     d->aspectRatioMode = mode;
-    QMetaObject::invokeMethod(this, "update");
+    d->update();
 }
 
 Qt::AspectRatioMode QAVWidget_OpenGL::aspectRatioMode() const
@@ -253,7 +256,7 @@ void QAVWidget_OpenGL::setVideoGeometry(const QRectF &geometry)
 {
     Q_D(QAVWidget_OpenGL);
     d->videoGeometry = geometry;
-    QMetaObject::invokeMethod(this, "update");
+    d->update();
 }
 
 void QAVWidget_OpenGL::setVideoFrame(const QAVVideoFrame &frame)
@@ -262,8 +265,9 @@ void QAVWidget_OpenGL::setVideoFrame(const QAVVideoFrame &frame)
     {
         QMutexLocker lock(&d->mutex);
         d->currentFrame = frame;
+        d->textureInfoInited = false;
     }
-    QMetaObject::invokeMethod(this, "update");
+    d->update();
 }
 
 void QAVWidget_OpenGLPrivate::bindTexture(int id, int w, int h, const uchar *bits, GLenum format)
@@ -418,6 +422,8 @@ void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_D3D11>()
 
 bool QAVWidget_OpenGLPrivate::initTextureInfo()
 {
+    if (textureInfoInited)
+        return true;
     switch (currentFrame.format()) {
         case AV_PIX_FMT_BGR32:
             initTextureInfo<AV_PIX_FMT_BGR32>();
@@ -446,6 +452,7 @@ bool QAVWidget_OpenGLPrivate::initTextureInfo()
             qWarning() << "Pixel format is not supported:" << currentFrame.formatName() << "AVPixelFormat(" << currentFrame.format() << ")";
             return false;
     }
+    textureInfoInited = true;
     return true;
 }
 
@@ -474,6 +481,14 @@ bool QAVWidget_OpenGLPrivate::resetGL()
 
     currentFormat = currentFrame.format();
     return true;
+}
+
+void QAVWidget_OpenGLPrivate::update()
+{
+    if (QThread::currentThread() != q_ptr->thread())
+        QMetaObject::invokeMethod(q_ptr, "update");
+    else
+        q_ptr->update();
 }
 
 #ifdef DEBUG
@@ -626,8 +641,6 @@ void QAVWidget_OpenGL::paintGL()
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     d->program.release();
-    d->currentFrame = QAVVideoFrame();
-    d->videoBuffer.reset();
 }
 
 void QAVWidget_OpenGL::resizeGL(int width, int height)
