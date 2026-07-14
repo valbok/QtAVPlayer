@@ -404,7 +404,8 @@ template<>
 void QAVWidget_OpenGLPrivate::initTextureInfo<AV_PIX_FMT_D3D11>()
 {
     initTextureInfo<AV_PIX_FMT_NV12>();
-
+    if (currentFrame.handleType() == QAVVideoFrame::NoHandle)
+        return;
     QAVHWDevice_D3D11_GL device;
     videoBuffer.reset(device.videoBuffer(currentFrame));
 
