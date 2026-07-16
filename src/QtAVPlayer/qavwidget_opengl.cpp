@@ -264,6 +264,10 @@ void QAVWidget_OpenGL::setVideoFrame(const QAVVideoFrame &frame)
     Q_D(QAVWidget_OpenGL);
     {
         QMutexLocker lock(&d->mutex);
+        if (d->currentFrame && QThread::currentThread() != thread()) {
+            // Delete frame on gui thread
+            QMetaObject::invokeMethod(this, [f=d->currentFrame] {});
+        }
         d->currentFrame = frame;
         d->textureInfoInited = false;
     }
