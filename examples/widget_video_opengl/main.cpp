@@ -9,29 +9,43 @@
 #include <QtAVPlayer/qavplayer.h>
 #include <QtAVPlayer/qavaudiooutput.h>
 #include <QApplication>
+#include <QGridLayout>
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    QAVWidget_OpenGL w;
-    w.resize(1000, 800);
-    w.show();
+    QWidget mainWidget;
+    QGridLayout layout;
+    mainWidget.setLayout(&layout);
 
-    QAVPlayer p;
-    QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QString::fromLatin1("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
-    p.setSource(file);
+    int r = 0;
+    int c = 0;
+    for (int i = 1; i < argc; ++i, ++c) {
+        if (c > 2) {
+            ++r;
+            c = 0;
+        }
 
-    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
-        w.setVideoFrame(frame);
-    }, Qt::DirectConnection);
+        auto p = new QAVPlayer(&mainWidget);
+        p->setSource(QString::fromUtf8(argv[i]));
+        auto w = new QAVWidget_OpenGL(&mainWidget);
+        layout.addWidget(w, r, c);
+        QObject::connect(p, &QAVPlayer::videoFrame, w, [w](const QAVVideoFrame &frame) {
+            w->setVideoFrame(frame);
+        }, Qt::DirectConnection);
 
-    QAVAudioOutput audioOutput;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &audioOutput, [&audioOutput](const QAVAudioFrame &frame) {
-        audioOutput.play(frame);
-    }, Qt::DirectConnection);
+        if (argc == 2) {
+            auto audioOutput = new QAVAudioOutput(&mainWidget);
+            QObject::connect(p, &QAVPlayer::audioFrame, audioOutput, [audioOutput](const QAVAudioFrame &frame) {
+                audioOutput->play(frame);
+            }, Qt::DirectConnection);
+        }
 
-    p.play();
+        p->play();
+    }
 
+    mainWidget.resize(1280, 720);
+    mainWidget.show();
     return app.exec();
 }
