@@ -152,6 +152,11 @@ public:
     Qt::AspectRatioMode aspectRatioMode;
     QRectF videoGeometry;
 
+#if defined(QT_AVPLAYER_VDPAU)
+    QList<QAVVideoFrame> toDelete;
+    bool toDeleteSent = false;
+#endif
+
     void cleanupTextures();
     void bindTexture(int id, int w, int h, const uchar *bits, GLenum format);
 
@@ -264,10 +269,20 @@ void QAVWidget_OpenGL::setVideoFrame(const QAVVideoFrame &frame)
     Q_D(QAVWidget_OpenGL);
     {
         QMutexLocker lock(&d->mutex);
+#if defined(QT_AVPLAYER_VDPAU)
         if (d->currentFrame && QThread::currentThread() != thread()) {
             // Delete frame on gui thread
-            QMetaObject::invokeMethod(this, [f=d->currentFrame] {});
+            d->toDelete.push_back(d->currentFrame);
+            if (!d->toDeleteSent) {
+                QMetaObject::invokeMethod(this, [d] {
+                    QMutexLocker lock(&d->mutex);
+                    d->toDelete.clear();
+                    d->toDeleteSent = false;
+                });
+                d->toDeleteSent = true;
+            }
         }
+#endif
         d->currentFrame = frame;
         d->textureInfoInited = false;
     }
