@@ -44,7 +44,7 @@ public:
     QAVDemuxer();
     ~QAVDemuxer();
 
-    void abort(bool stop = true);
+    void abort();
     int load(const QString &url, QAVIODevice *dev = nullptr);
     void unload();
 

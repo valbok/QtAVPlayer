@@ -12,6 +12,12 @@ extern "C" {
 #include <libavformat/avformat.h>
 }
 
+static int decode_interrupt_cb(void *ctx)
+{
+    auto d = reinterpret_cast<QAVFormatContext *>(ctx);
+    return d ? d->isAborted() : 0;
+}
+
 QT_BEGIN_NAMESPACE
 
 QAVFormatContext::~QAVFormatContext()
@@ -27,6 +33,16 @@ AVFormatContext *&QAVFormatContext::ctx()
     return m_ctx;
 }
 
+void QAVFormatContext::abort()
+{
+    m_abort = true;
+}
+
+bool QAVFormatContext::isAborted() const
+{
+    return m_abort;
+}
+
 QSharedPointer<QAVFormatContext> QAVFormatContext::alloc(const QString &filename)
 {
     QSharedPointer<QAVFormatContext> ret(new QAVFormatContext);
@@ -39,6 +55,8 @@ QSharedPointer<QAVFormatContext> QAVFormatContext::alloc(const QString &filename
             return {};
         }
     }
+    ret->m_ctx->interrupt_callback.callback = decode_interrupt_cb;
+    ret->m_ctx->interrupt_callback.opaque = ret.get();
     return ret;
 }
 

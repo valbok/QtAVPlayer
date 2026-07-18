@@ -101,7 +101,6 @@ public:
     QSharedPointer<QAVFormatContext> ctx;
     AVBSFContext *bsf_ctx = nullptr;
 
-    std::atomic_bool abortRequest = false;
     mutable QMutex mutex;
 
     bool seekable = false;
@@ -165,12 +164,6 @@ static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
     }
 }
 
-static int decode_interrupt_cb(void *ctx)
-{
-    auto d = reinterpret_cast<QAVDemuxerPrivate *>(ctx);
-    return d ? int(d->abortRequest) : 0;
-}
-
 QAVDemuxer::QAVDemuxer()
     : d_ptr(new QAVDemuxerPrivate(this))
 {
@@ -188,14 +181,14 @@ QAVDemuxer::QAVDemuxer()
 
 QAVDemuxer::~QAVDemuxer()
 {
-    abort(false);
     unload();
 }
 
-void QAVDemuxer::abort(bool stop)
+void QAVDemuxer::abort()
 {
     Q_D(QAVDemuxer);
-    d->abortRequest = stop;
+    if (d->ctx)
+        d->ctx->abort();
 }
 
 static int setup_video_codec(const QString &inputVideoCodec, const QAVStream &stream, QAVVideoCodec &codec, AVDictionary **codecOpts)
@@ -401,8 +394,6 @@ int QAVDemuxer::load(const QString &url, QAVIODevice *dev)
     Q_ASSERT(!d->ctx);
     d->ctx = QAVFormatContext::alloc();
     d->ctx->ctx()->flags |= AVFMT_FLAG_GENPTS;
-    d->ctx->ctx()->interrupt_callback.callback = decode_interrupt_cb;
-    d->ctx->ctx()->interrupt_callback.opaque = d;
     if (dev) {
         d->ctx->ctx()->pb = dev->ctx();
         d->ctx->ctx()->flags |= AVFMT_FLAG_CUSTOM_IO;
@@ -689,7 +680,6 @@ void QAVDemuxer::unload()
     QMutexLocker locker(&d->mutex);
     d->ctx = nullptr;
     d->eof = false;
-    d->abortRequest = 0;
     d->currentVideoStreams.clear();
     d->currentAudioStreams.clear();
     d->currentSubtitleStreams.clear();

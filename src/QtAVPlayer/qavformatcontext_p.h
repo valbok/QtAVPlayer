@@ -30,12 +30,15 @@ class Q_AVPLAYER_EXPORT QAVFormatContext
 public:
     ~QAVFormatContext();
     AVFormatContext *&ctx();
+    void abort();
+    bool isAborted() const;
 
     static QSharedPointer<QAVFormatContext> alloc(const QString &filename = {});
 
 private:
     QAVFormatContext() = default;
     AVFormatContext *m_ctx = nullptr;
+    std::atomic_bool m_abort = false;
 };
 
 QT_END_NAMESPACE
