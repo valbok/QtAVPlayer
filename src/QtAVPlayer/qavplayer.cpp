@@ -340,7 +340,6 @@ void QAVPlayerPrivate::terminate()
     videoQueue.abort(false);
     audioQueue.abort(false);
     subtitleQueue.abort(false);
-    demuxer.abort(false);
     demuxer.unload();
     muxer.unload();
 
@@ -549,7 +548,6 @@ void QAVPlayerPrivate::resetMuxer()
 
 void QAVPlayerPrivate::doLoad()
 {
-    demuxer.abort(false);
     demuxer.unload();
     int ret = demuxer.load(url, dev.get());
     if (ret < 0) {
