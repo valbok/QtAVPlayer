@@ -99,7 +99,13 @@ size_t QAVMuxerFrames::size() const
 
 int QAVMuxerFrames::load(const QList<QAVStream> &streams, const QString &filename)
 {
+#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
+    QList<EncoderStream> newStreams;
+    std::copy(streams.begin(), streams.end(), std::back_inserter(newStreams));
+    return load(newStreams, filename);
+#else
     return load(QList<EncoderStream>(streams.begin(), streams.end()), filename);
+#endif
 }
 
 int QAVMuxerFrames::load(const QList<EncoderStream> &streams, const QString &filename)

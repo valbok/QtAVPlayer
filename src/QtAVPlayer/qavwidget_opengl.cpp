@@ -274,7 +274,7 @@ void QAVWidget_OpenGL::setVideoFrame(const QAVVideoFrame &frame)
             // Delete frame on gui thread
             d->toDelete.push_back(d->currentFrame);
             if (!d->toDeleteSent) {
-                QMetaObject::invokeMethod(this, [d] {
+                avplayerInvokeMethod(this, [d] {
                     QMutexLocker lock(&d->mutex);
                     d->toDelete.clear();
                     d->toDeleteSent = false;
@@ -506,7 +506,7 @@ bool QAVWidget_OpenGLPrivate::resetGL()
 void QAVWidget_OpenGLPrivate::update()
 {
     if (QThread::currentThread() != q_ptr->thread())
-        QMetaObject::invokeMethod(q_ptr, "update");
+        avplayerInvokeMethod(q_ptr, "update");
     else
         q_ptr->update();
 }
