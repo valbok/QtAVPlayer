@@ -396,6 +396,11 @@ jobs:
           mb2 build-init
           mb2 build-shell qmake
           mb2 build-shell make CXXFLAGS='-std=c++17' VERBOSE=1
+          mb2 build-shell ./tst_qavdemuxer -platform offscreen
+          cd ../qavplayer
+          mb2 build-init
+          mb2 build-shell qmake
+          mb2 build-shell make CXXFLAGS='-std=c++17' VERBOSE=1
           mb2 build-shell ./tst_qavplayer --platform minimal -maxwarnings 100000
       
       - name: QMake Examples
