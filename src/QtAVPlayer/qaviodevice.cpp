@@ -72,7 +72,7 @@ public:
         d->wakeRead = false;
         locker.unlock();
         // Reading is done on thread where the object is created
-        avplayerInvokeMethod(d->q_ptr, [d]() -> void { d->readData(); });
+        qtavplayer_invokeMethod(d->q_ptr, [d]() -> void { d->readData(); });
         locker.relock();
         // Blocks until data is available
         if (!d->wakeRead)
@@ -93,7 +93,7 @@ public:
         int64_t pos = 0;
         bool wake = false;
         locker.unlock();
-        avplayerInvokeMethod(d->q_ptr, [&]() -> void {
+        qtavplayer_invokeMethod(d->q_ptr, [&]() -> void {
             QMutexLocker locker(&d->mutex);
             if (whence == AVSEEK_SIZE) {
                 pos = d->device->size() > 0 ? d->device->size() : 0;

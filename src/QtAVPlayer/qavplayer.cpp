@@ -296,7 +296,7 @@ double QAVPlayerPrivate::pts() const
 template <class T>
 void QAVPlayerPrivate::dispatch(T fn)
 {
-    avplayerInvokeMethod(q_ptr, fn);
+    qtavplayer_invokeMethod(q_ptr, fn);
 }
 
 void QAVPlayerPrivate::setError(QAVPlayer::Error err, const QString &str)

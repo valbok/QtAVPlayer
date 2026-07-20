@@ -39,7 +39,7 @@ Q_DECL_CONSTEXPR inline T* qGetPtrHelper(const std::unique_ptr<T, Deleter> &p) Q
 #endif
 
 template <typename Functor>
-Q_DECL_CONSTEXPR inline void avplayerInvokeMethod(QObject *context, Functor &&function) {
+Q_DECL_CONSTEXPR inline void qtavplayer_invokeMethod(QObject *context, Functor &&function) {
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
     QTimer::singleShot(0, context, function);
 #else
