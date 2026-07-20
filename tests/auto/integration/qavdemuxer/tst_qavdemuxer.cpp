@@ -70,7 +70,7 @@ void tst_QAVDemuxer::construction()
     QVERIFY(d.currentVideoStreams().isEmpty());
     QVERIFY(d.currentAudioStreams().isEmpty());
     QVERIFY(d.currentSubtitleStreams().isEmpty());
-    QCOMPARE(d.duration(), 0);
+    QCOMPARE(d.duration(), 0.0);
     QCOMPARE(d.seekable(), false);
     QCOMPARE(d.eof(), false);
     QAVPacket p;
@@ -79,7 +79,7 @@ void tst_QAVDemuxer::construction()
     QVERIFY(d.seek(0) < 0);
 
     QVERIFY(!p);
-    QCOMPARE(p.duration(), 0);
+    QCOMPARE(p.duration(), 0.0);
     QCOMPARE(p.packet()->size, 0);
     QVERIFY(p.packet()->stream_index < 0);
     QList<QAVFrame> fs;
