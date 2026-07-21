@@ -56,7 +56,7 @@ QSharedPointer<QAVFormatContext> QAVFormatContext::alloc(const QString &filename
         }
     }
     ret->m_ctx->interrupt_callback.callback = decode_interrupt_cb;
-    ret->m_ctx->interrupt_callback.opaque = ret.get();
+    ret->m_ctx->interrupt_callback.opaque = ret.data();
     return ret;
 }
 

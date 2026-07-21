@@ -296,7 +296,7 @@ double QAVPlayerPrivate::pts() const
 template <class T>
 void QAVPlayerPrivate::dispatch(T fn)
 {
-    QMetaObject::invokeMethod(q_ptr, fn);
+    qtavplayer_invokeMethod(q_ptr, fn);
 }
 
 void QAVPlayerPrivate::setError(QAVPlayer::Error err, const QString &str)
@@ -549,7 +549,7 @@ void QAVPlayerPrivate::resetMuxer()
 void QAVPlayerPrivate::doLoad()
 {
     demuxer.unload();
-    int ret = demuxer.load(url, dev.get());
+    int ret = demuxer.load(url, dev.data());
     if (ret < 0) {
         setError(QAVPlayer::ResourceError, err_str(ret));
         return;

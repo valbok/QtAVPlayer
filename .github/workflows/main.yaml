@@ -349,3 +349,41 @@ jobs:
           qmake
           mingw32-make
 
+  sailfish:
+    runs-on: ubuntu-latest
+    container: coderus/sailfishos-platform-sdk:5.0.0.43
+
+    env:
+      RELEASE: 5.0.0.43
+      ARCH: armv7hl
+
+    steps:
+      - name: Checkout
+        # can't use actions/checkout (no node.js)
+        run: |
+          git clone "https://github.com/$GITHUB_REPOSITORY.git" /home/mersdk/build
+          cd /home/mersdk/build
+          git fetch origin "$GITHUB_REF"
+          git checkout FETCH_HEAD
+
+      - name: Install dependencies & libQtAVPlayer
+        run: |
+          export HOME=/home/mersdk
+          cd $HOME/build
+          TARGET=SailfishOS-$RELEASE-$ARCH
+          alias mb2="mb2 -t $TARGET"
+
+          mkdir build
+          cd build
+          mb2 build-init
+          mb2 build-shell --maintain zypper install -y qt5-qtopengl-devel qt5-qtmultimedia-devel ffmpeg-devel
+          mb2 build-shell cmake ../src/QtAVPlayer -DCMAKE_INSTALL_PREFIX=../install -DQT_AVPLAYER_MULTIMEDIA=ON
+          mb2 build-shell make CXXFLAGS='-std=c++17' VERBOSE=1
+          mb2 build-shell make install
+          cd ../examples/qml_video
+          mkdir build
+          cd build
+          mb2 build-init
+          mb2 build-shell cmake ../ -DCMAKE_PREFIX_PATH="$PWD/../../../install/lib/cmake" -DQT_AVPLAYER_LIB=ON
+          mb2 build-shell make CXXFLAGS='-std=c++17' VERBOSE=1
+

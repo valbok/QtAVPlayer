@@ -90,7 +90,7 @@ int QAVMuxerSubtitleFrames::load(const QAVStream &stream)
 void QAVMuxerSubtitleFrames::unload()
 {
     Q_D(QAVMuxerSubtitleFrames);
-    d->ctx = nullptr;
+    d->ctx.clear();
     d->outputStream = {};
 }
 

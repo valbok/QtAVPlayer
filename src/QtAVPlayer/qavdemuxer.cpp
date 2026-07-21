@@ -193,11 +193,17 @@ void QAVDemuxer::abort()
 
 static int setup_video_codec(const QString &inputVideoCodec, const QAVStream &stream, QAVVideoCodec &codec, AVDictionary **codecOpts)
 {
+#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
+    using TitleString = QString;
+#else
+    using TitleString = QLatin1String;
+#endif
+
     bool ignoreHW = qEnvironmentVariableIsSet("QT_AVPLAYER_NO_HWDEVICE");
     const AVCodec *videoCodec = nullptr;
     auto streamInfo = stream.info();
     if (streamInfo.title.isEmpty())
-        streamInfo.title = QLatin1String("Stream %1").arg(QString::number(stream.index()));
+        streamInfo.title = TitleString("Stream %1").arg(QString::number(stream.index()));
     if (!inputVideoCodec.isEmpty()) {
         if (inputVideoCodec == QLatin1String("software")) {
             qDebug() << "[" << streamInfo.title << "] Ignoring hardware device context";
@@ -510,7 +516,7 @@ int QAVDemuxer::resetCodecs()
                 break;
             default:
                 // Adding default stream
-                d->availableStreams.push_back({ int(i), d->ctx, nullptr });
+                d->availableStreams.push_back({ int(i), d->ctx });
                 break;
         }
         auto &s = d->availableStreams[int(i)];
@@ -678,7 +684,7 @@ void QAVDemuxer::unload()
 {
     Q_D(QAVDemuxer);
     QMutexLocker locker(&d->mutex);
-    d->ctx = nullptr;
+    d->ctx.clear();
     d->eof = false;
     d->currentVideoStreams.clear();
     d->currentAudioStreams.clear();

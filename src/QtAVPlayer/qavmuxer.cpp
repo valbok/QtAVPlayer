@@ -64,7 +64,7 @@ void QAVMuxer::reset(Locker &locker)
     close(locker);
     if (d->ctx && d->ctx->ctx() && !(d->ctx->ctx()->oformat->flags & AVFMT_NOFILE))
         avio_closep(&d->ctx->ctx()->pb);
-    d->ctx = nullptr;
+    d->ctx.clear();
     d->outputStreams.clear();
     d->filename.clear();
 }

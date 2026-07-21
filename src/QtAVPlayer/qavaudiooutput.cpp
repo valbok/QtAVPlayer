@@ -319,7 +319,8 @@ bool QAVAudioOutput::play(const QAVAudioFrame &frame)
     if (reset) {
         d->device->stop();
         // Reset the output on QAVAudioOutput's thread
-        QMetaObject::invokeMethod(d, [frameFormat, d] {
+
+        qtavplayer_invokeMethod(d, [frameFormat, d] {
             d->resetIfNeeded(frameFormat, d->bufferSize, d->volume);
         });
         return false;
@@ -335,7 +336,7 @@ void QAVAudioOutput::stop()
     d->device->stop();
     QMutexLocker locker(&d->mutex);
     if (d->audioOutput) {
-        QMetaObject::invokeMethod(d, [audioOutput=d->audioOutput] {
+        qtavplayer_invokeMethod(d, [audioOutput=d->audioOutput] {
             audioOutput->reset();
         });
     }
@@ -353,7 +354,7 @@ void QAVAudioOutput::suspend()
     QMutexLocker locker(&d->mutex);
     // Invoke on audio thread
     if (d->audioOutput) {
-        QMetaObject::invokeMethod(d, [audioOutput=d->audioOutput] {
+        qtavplayer_invokeMethod(d, [audioOutput=d->audioOutput] {
             if (audioOutput->state() != QAudio::SuspendedState) {
                 audioOutput->suspend();
             }
@@ -367,7 +368,7 @@ void QAVAudioOutput::resume()
     QMutexLocker locker(&d->mutex);
     // Invoke on audio thread
     if (d->audioOutput) {
-        QMetaObject::invokeMethod(d, [audioOutput=d->audioOutput] {
+        qtavplayer_invokeMethod(d, [audioOutput=d->audioOutput] {
             if (audioOutput->state() == QAudio::SuspendedState) {
                 audioOutput->resume();
             }

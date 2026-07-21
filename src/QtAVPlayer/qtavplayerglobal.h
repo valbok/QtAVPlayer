@@ -9,6 +9,8 @@
 #define QTAVPLAYERGLOBAL_H
 
 #include <QtCore/qglobal.h>
+#include <memory>
+#include <QTimer>
 #if defined(QT_AVPLAYER_VA_DRM)
 #include <QtGui/private/qtgui-config_p.h>
 #endif
@@ -24,6 +26,26 @@ QT_BEGIN_NAMESPACE
 #else
 #    define Q_AVPLAYER_EXPORT
 #endif
+
+#if QT_VERSION < QT_VERSION_CHECK(5, 12, 0)
+template <typename T, typename Deleter>
+Q_DECL_CONSTEXPR inline T* qGetPtrHelper(const std::unique_ptr<T, Deleter> &p) Q_DECL_NOTHROW {
+    return p.get();
+}
+#endif
+
+#if QT_VERSION < QT_VERSION_CHECK(5, 8, 0)
+#    define QT_CONFIG(feature) QT_SUPPORTS(feature)
+#endif
+
+template <typename Functor>
+Q_DECL_CONSTEXPR inline void qtavplayer_invokeMethod(QObject *context, Functor &&function) {
+#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
+    QTimer::singleShot(0, context, function);
+#else
+    QMetaObject::invokeMethod(context, function);
+#endif
+}
 
 QT_END_NAMESPACE
 #endif
