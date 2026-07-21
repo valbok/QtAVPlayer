@@ -20,4 +20,5 @@ Special thanks for all the people who had helped this project:
 - Novacer <zhangjack27@gmail.com>
 - kimvnhung <kimvnhung@gmail.com>
 - leavelet <45084815+leavelet@users.noreply.github.com>
+- roundedrectangle <129410215+roundedrectangle@users.noreply.github.com>
 - xdcsystems <xdcsystems@gmail.com>

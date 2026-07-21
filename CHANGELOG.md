@@ -1,6 +1,19 @@
+2026-07
+-------
+
+- #670 - Added support for Qt 5.6 - roundedrectangle <129410215+roundedrectangle@users.noreply.github.com>
+- #669 - Moved interrupt_callback.callback to QAVFormatContext to prevent the crash
+- #667 - Added QGridLayout as example for QAVWidget_OpenGL
+- #664 - Fixed QAVWidget_OpenGL::setVideoFrame to delete current frame on gui thread
+- #661 - Fixed QAVWidget_OpenGL to call update() on GUI thread
+- #659 - Added 6.11.1 to CI
+
 2026-06
 -------
 
+- #656 - Introduced QAVMuxerFrames::EncoderStream to set encoding info
+- #654 - Moved creating of new stream to separate func in Muxer
+- #653 - Added test to mux hw scaled frames
 - #650 - Fixed tests to set codec before source
 - #649 - Introduced QAVMuxerFrames::outputVideoCodec
 - #647 - Added AV_PIX_FMT_D3D12 to isSoftwarePixelFormat
