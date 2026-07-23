@@ -100,7 +100,7 @@ void PlayerController::connectPlayerSignals()
 
     QObject::connect(&m_player, &QAVPlayer::subtitleFrame, this, [this](const QAVSubtitleFrame &frame) {
         QString text;
-        if (m_subtitleMuxer.parseText(frame, text) >= 0)
+        if (m_subtitleParser.parseText(frame, text) >= 0)
             emit subtitleTextChanged(text, frame.duration() * 1000);
 
         auto size = m_videoSink->videoSize();
@@ -358,8 +358,8 @@ void PlayerController::notifyStreams()
     emit subtitleTracksChanged();
     auto i = currentStream(m_player.availableSubtitleStreams(), m_player.currentSubtitleStreams());
     if (i.first >= 0) {
-        m_subtitleMuxer.unload();
-        m_subtitleMuxer.load(i.second);
+        m_subtitleParser.unload();
+        m_subtitleParser.load(i.second);
         emit subtitleTrackChanged(i.first);
 #if defined(QT_AVPLAYER_LIBASS)
         m_subtitleRenderer.unload();

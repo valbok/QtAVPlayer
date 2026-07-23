@@ -229,11 +229,11 @@ player.setFilter("subtitles=file.srt");
 - Subtitles could be parsed and extracted from `QAVSubtitleFrame`:
 
 ```cpp
-QAVMuxerSubtitleFrames subtitleMuxer;
-subtitleMuxer.load(player.currentSubtitleStreams().first());
+QAVSubtitleTextParser subtitleParser;
+subtitleParser.load(player.currentSubtitleStreams().first());
 QObject::connect(player, &QAVPlayer::subtitleFrame, player, [this](const QAVSubtitleFrame &frame) {
     QString text;
-    if (subtitleMuxer.parseText(frame, text) >= 0)
+    if (subtitleParser.parseText(frame, text) >= 0)
         emit subtitleTextChanged(text, frame.duration() * 1000);
 }
 ```

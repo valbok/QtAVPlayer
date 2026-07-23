@@ -50,7 +50,7 @@ PUBLIC_HEADERS += \
     $$PWD/qavmuxer.h \
     $$PWD/qavmuxerpackets.h \
     $$PWD/qavmuxerframes.h \
-    $$PWD/qavmuxersubtitleframes.h \
+    $$PWD/qavsubtitletextparser.h \
 
 SOURCES += \
     $$PWD/qavplayer.cpp \
@@ -63,7 +63,7 @@ SOURCES += \
     $$PWD/qavmuxer.cpp \
     $$PWD/qavmuxerpackets.cpp \
     $$PWD/qavmuxerframes.cpp \
-    $$PWD/qavmuxersubtitleframes.cpp \
+    $$PWD/qavsubtitletextparser.cpp \
     $$PWD/qavpacket.cpp \
     $$PWD/qavframe.cpp \
     $$PWD/qavstreamframe.cpp \

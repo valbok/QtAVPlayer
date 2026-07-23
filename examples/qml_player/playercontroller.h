@@ -10,7 +10,7 @@
 #include <QObject>
 #include <QtAVPlayer/qavplayer.h>
 #include <QtAVPlayer/qavaudiooutput.h>
-#include <QtAVPlayer/qavmuxersubtitleframes.h>
+#include <QtAVPlayer/qavsubtitletextparser.h>
 #if defined(QT_AVPLAYER_LIBASS)
 #include <QtAVPlayer/qavassrenderer.h>
 #endif
@@ -127,7 +127,7 @@ private:
 
     QAVAudioOutput m_audioOutput;
     QVideoSink *m_videoSink = nullptr;
-    QAVMuxerSubtitleFrames m_subtitleMuxer;
+    QAVSubtitleTextParser m_subtitleParser;
 #if defined(QT_AVPLAYER_LIBASS)
     QAVASSRenderer m_subtitleRenderer;
 #endif

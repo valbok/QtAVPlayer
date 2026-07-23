@@ -5,8 +5,8 @@
  * Free Qt Media Player based on FFmpeg.                       *
  ***************************************************************/
 
-#ifndef QAVMUXERSUBTITLEFRAMES_H
-#define QAVMUXERSUBTITLEFRAMES_H
+#ifndef QAVSUBTITLETEXTPARSER_H
+#define QAVSUBTITLEFTEXTPARSER_H
 
 #include <QtAVPlayer/qavstream.h>
 #include <QtAVPlayer/qavsubtitleframe.h>
@@ -15,12 +15,12 @@
 
 QT_BEGIN_NAMESPACE
 
-class QAVMuxerSubtitleFramesPrivate;
-class QAVMuxerSubtitleFrames
+class QAVSubtitleTextParserPrivate;
+class QAVSubtitleTextParser
 {
 public:
-    QAVMuxerSubtitleFrames();
-    ~QAVMuxerSubtitleFrames();
+    QAVSubtitleTextParser();
+    ~QAVSubtitleTextParser();
 
     int load(const QAVStream &stream);
     void unload();
@@ -28,9 +28,9 @@ public:
     int parseText(const QAVSubtitleFrame &frame, QString &out);
 
 private:
-    Q_DISABLE_COPY(QAVMuxerSubtitleFrames)
-    Q_DECLARE_PRIVATE(QAVMuxerSubtitleFrames)
-    std::unique_ptr<QAVMuxerSubtitleFramesPrivate> d_ptr;
+    Q_DISABLE_COPY(QAVSubtitleTextParser)
+    Q_DECLARE_PRIVATE(QAVSubtitleTextParser)
+    std::unique_ptr<QAVSubtitleTextParserPrivate> d_ptr;
 };
 
 QT_END_NAMESPACE

@@ -78,7 +78,7 @@ set(QtAVPlayer_PUBLIC_HEADERS
     ${QT_AVPLAYER_DIR}/qavmuxer.h
     ${QT_AVPLAYER_DIR}/qavmuxerpackets.h
     ${QT_AVPLAYER_DIR}/qavmuxerframes.h
-    ${QT_AVPLAYER_DIR}/qavmuxersubtitleframes.h
+    ${QT_AVPLAYER_DIR}/qavsubtitletextparser.h
 )
 
 set(QtAVPlayer_SOURCES
@@ -92,7 +92,7 @@ set(QtAVPlayer_SOURCES
     ${QT_AVPLAYER_DIR}/qavmuxer.cpp
     ${QT_AVPLAYER_DIR}/qavmuxerpackets.cpp
     ${QT_AVPLAYER_DIR}/qavmuxerframes.cpp
-    ${QT_AVPLAYER_DIR}/qavmuxersubtitleframes.cpp
+    ${QT_AVPLAYER_DIR}/qavsubtitletextparser.cpp
     ${QT_AVPLAYER_DIR}/qavpacket.cpp
     ${QT_AVPLAYER_DIR}/qavframe.cpp
     ${QT_AVPLAYER_DIR}/qavstreamframe.cpp

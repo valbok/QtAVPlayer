@@ -5,7 +5,7 @@
  * Free Qt Media Player based on FFmpeg.                       *
  ***************************************************************/
 
-#include "qavmuxersubtitleframes.h"
+#include "qavsubtitletextparser.h"
 #include "qavmuxer_p_p.h"
 #include "qavcodec_p.h"
 #include "qavsubtitlecodec_p.h"
@@ -21,33 +21,33 @@ extern "C" {
 
 QT_BEGIN_NAMESPACE
 
-class QAVMuxerSubtitleFramesPrivate
+class QAVSubtitleTextParserPrivate
 {
-    Q_DECLARE_PUBLIC(QAVMuxerSubtitleFrames)
+    Q_DECLARE_PUBLIC(QAVSubtitleTextParser)
 public:
-    QAVMuxerSubtitleFramesPrivate(QAVMuxerSubtitleFrames *q)
+    QAVSubtitleTextParserPrivate(QAVSubtitleTextParser *q)
         : q_ptr(q)
     {
     }
 
-    QAVMuxerSubtitleFrames *q_ptr = nullptr;
+    QAVSubtitleTextParser *q_ptr = nullptr;
     QAVStream outputStream;
     QSharedPointer<QAVFormatContext> ctx;
 };
 
-QAVMuxerSubtitleFrames::QAVMuxerSubtitleFrames()
-    : d_ptr(new QAVMuxerSubtitleFramesPrivate(this))
+QAVSubtitleTextParser::QAVSubtitleTextParser()
+    : d_ptr(new QAVSubtitleTextParserPrivate(this))
 {
 }
 
-QAVMuxerSubtitleFrames::~QAVMuxerSubtitleFrames()
+QAVSubtitleTextParser::~QAVSubtitleTextParser()
 {
     unload();
 }
 
-int QAVMuxerSubtitleFrames::load(const QAVStream &stream)
+int QAVSubtitleTextParser::load(const QAVStream &stream)
 {
-    Q_D(QAVMuxerSubtitleFrames);
+    Q_D(QAVSubtitleTextParser);
     auto encoder = avcodec_find_encoder(AV_CODEC_ID_SUBRIP);
     if (!encoder) {
         qWarning() << "Encoder not found";
@@ -87,16 +87,16 @@ int QAVMuxerSubtitleFrames::load(const QAVStream &stream)
     return 0;
 }
 
-void QAVMuxerSubtitleFrames::unload()
+void QAVSubtitleTextParser::unload()
 {
-    Q_D(QAVMuxerSubtitleFrames);
+    Q_D(QAVSubtitleTextParser);
     d->ctx.clear();
     d->outputStream = {};
 }
 
-int QAVMuxerSubtitleFrames::parseText(const QAVSubtitleFrame &f, QString &out)
+int QAVSubtitleTextParser::parseText(const QAVSubtitleFrame &f, QString &out)
 {
-    Q_D(QAVMuxerSubtitleFrames);
+    Q_D(QAVSubtitleTextParser);
     if (!d->outputStream || !f.stream())
         return 0;
     QAVSubtitleFrame frame = f;
