@@ -8,7 +8,7 @@
 #include "qavdemuxer_p.h"
 #include "qavmuxerpackets.h"
 #include "qavmuxerframes.h"
-#include "qavmuxersubtitleframes.h"
+#include "qavsubtitletextparser.h"
 #include "qavaudioframe.h"
 #include "qavvideoframe.h"
 #include "qaviodevice.h"
@@ -569,7 +569,7 @@ void tst_QAVDemuxer::muxerWriteSubtitlesText()
 {
     QFileInfo file(testData("colors_subtitles.mkv"));
     QAVDemuxer d;
-    QAVMuxerSubtitleFrames m;
+    QAVSubtitleTextParser m;
 
     d.setInputVideoCodec("software");
     QVERIFY(d.load(file.absoluteFilePath()) >= 0);
