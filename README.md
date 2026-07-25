@@ -15,19 +15,19 @@ QtAVPlayer lets you decode, play, filter, and mux video/audio/subtitle streams i
 - [Why QtAVPlayer?](#why-qtavplayer)
 - [Quick Start](#quick-start)
 - [Usage Examples](#usage-examples)
-  * [Opening a source](#1-opening-a-source)
-  * [Getting video, audio & subtitle frames](#2-getting-video-audio--subtitle-frames)
-  * [Hardware accelerated decoding](#3-hardware-accelerated-decoding)
-  * [Rendering](#4-rendering)
-    + [Video](#41-video)
-    + [Audio](#42-audio)
-    + [Subtitles](#43-subtitles)
-  * [FFmpeg filters](#5-ffmpeg-filters)
-  * [Multiple streams](#6-multiple-streams)
-  * [Muxing streams](#7-muxing-streams)
-  * [Accurate seeking](#8-accurate-seeking)
-  * [Stepping frame by frame](#9-stepping-frame-by-frame)
-  * [Listening to player signals](#10-listening-to-player-signals)
+  * [Opening a source](#opening-a-source)
+  * [Getting video, audio & subtitle frames](#getting-video-audio--subtitle-frames)
+  * [Hardware accelerated decoding](#hardware-accelerated-decoding)
+  * [Rendering](#rendering)
+    + [Video](#video)
+    + [Audio](#audio)
+    + [Subtitles](#subtitles)
+  * [FFmpeg filters](#ffmpeg-filters)
+  * [Multiple streams](#multiple-streams)
+  * [Muxing streams](#muxing-streams)
+  * [Accurate seeking](#accurate-seeking)
+  * [Stepping frame by frame](#stepping-frame-by-frame)
+  * [Listening to player signals](#listening-to-player-signals)
 - [Installation & Build Options](#installation--build-options)
   * [Build Flags](#build-flags)
   * [QMake](#qmake)
@@ -82,7 +82,7 @@ Check out the [examples folder](https://github.com/valbok/QtAVPlayer/blob/master
 
 ## Usage Examples
 
-### 1. Opening a source
+### Opening a source
 
 QAVPlayer can open a URL, a local file, a `QIODevice`, or a device/camera:
 
@@ -116,7 +116,7 @@ player.setVideoCodecOptions({{"fflags", "nobuffer"}, {"flags", "low_delay"}});
 player.setSource("subfile,,start,0,end,0,,:/root/Downloads/why-qtmm-must-die.mkv");
 ```
 
-### 2. Getting video, audio & subtitle frames
+### Getting video, audio & subtitle frames
 
 ```cpp
 QObject::connect(&player, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) {
@@ -155,10 +155,10 @@ Hardware decoding is automatically negotiated based on the platform:
 
 | Platform | Backend | Frame type |
 |----------|---------|------------|
-| Linux | VA-API / VDPAU | OpenGL textures |
-| macOS / iOS | Video Toolbox | Metal textures |
+| Linux | VA-API / VDPAU | OpenGL |
+| macOS / iOS | Video Toolbox | Metal |
 | Windows | D3D11 | D3D11Texture2D |
-| Android | MediaCodec | OpenGL textures |
+| Android | MediaCodec | OpenGL |
 
 Most platforms expose only a single device context, but enabling `CUDA` support adds more options to choose from. In that case, the platform's native device context is prioritized by default. If you want `CUDA` to be used instead, you can force a CUDA-based codec, which selects the CUDA device context:
 
@@ -173,9 +173,9 @@ Notes:
 - Not every FFmpeg decoder/filter supports hardware acceleration — QtAVPlayer falls back to software decoding automatically when needed.
 
 
-### 4. Rendering
+### Rendering
 
-#### 4.1. Video
+#### Video
 
 - The `QAVWidget_OpenGL` widget renders to OpenGL, also supports `D3D11Texture2D` textures in Windows — see [examples/widget_video_opengl](https://github.com/valbok/QtAVPlayer/blob/master/examples/widget_video_opengl).
 
@@ -203,7 +203,7 @@ QObject::connect(p, &QAVPlayer::videoFrame,
 }, Qt::DirectConnection);
 ```
 
-#### 4.2. Audio
+#### Audio
 
 The audio frames could be played using `QAVAudioOutput`:
 
@@ -214,7 +214,7 @@ QObject::connect(p, &QAVPlayer::audioFrame, audioOutput, [audioOutput](const QAV
 }, Qt::DirectConnection);
 ```
 
-#### 4.3. Subtitles
+#### Subtitles
 
 - Subtitles could be rendered directly to the video frames using `subtitles` filter, but requires to have software decoders:
 
@@ -253,7 +253,7 @@ QObject::connect(player, &QAVPlayer::subtitleFrame, player, [this](const QAVSubt
 See the [qml_player](https://github.com/valbok/QtAVPlayer/blob/master/examples/qml_player).
 
 
-### 5. FFmpeg filters
+### FFmpeg filters
 
 ```cpp
 player1.setFilter("crop=iw/2:ih:0:0,split[left][tmp];[tmp]hflip[right];[left][right] hstack");
@@ -281,7 +281,7 @@ player.setInputVideoCodec("h264_cuvid");
 player.setFilter("scale_cuda=1920:1080");
 ```
 
-### 6. Multiple streams
+### Multiple streams
 
 - `QAVPlayer::availableStreams()` returns all available streams in the source.
 - `QAVPlayer::setAudioStream()`, `QAVPlayer::setSubtitleStream()`, `QAVPlayer::setVideoStream()` can change current decoding streams.
@@ -298,7 +298,7 @@ for (const auto &stream : player.availableVideoStreams())
     qDebug() << stream << player.progress(stream);
 ```
 
-### 7. Muxing streams
+### Muxing streams
 
 - Mux all streams to a file without re-encoding. It will use the same codecs without decoding the frames.
 
@@ -328,7 +328,7 @@ p1.play();
 p2.play();
 ```
 
-### 8. Accurate seeking
+### Accurate seeking
 
 If a frame exists at the requested timestamp, it's returned first.
 
@@ -341,7 +341,7 @@ QTRY_COMPARE(seekPosition, 5000);
 QTRY_COMPARE(seekFrame.pts(), 5.0);
 ```
 
-### 9. Stepping frame by frame
+### Stepping frame by frame
 
 Stepping emits exactly one frame.
 
@@ -357,7 +357,7 @@ player.stepForward();  // Advances and emits exactly one frame
 player.stepBackward(); // Same, but backward
 ```
 
-### 10. Listening to player signals
+### Listening to player signals
 
 Every action is confirmed with a signal, delivered in the correct order:
 
