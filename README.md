@@ -68,12 +68,13 @@ The simplest possible playback example:
 QAVPlayer player;
 player.setSource(rtsp);
 
-QObject::connect(&player, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) {
-    QVideoFrame videoFrame = frame; // compatible with QVideoFrame
-    videoSink->setVideoFrame(videoFrame);
-}, Qt::DirectConnection);
+QObject::connect(&player, &QAVPlayer::videoFrame, &player,
+    [&](const QAVVideoFrame &frame) {
+        QVideoFrame videoFrame = frame; // compatible with QVideoFrame
+        videoSink->setVideoFrame(videoFrame);
+    }, Qt::DirectConnection);
 
-player.play();
+player->play();
 ```
 
 Check out the [examples folder](https://github.com/valbok/QtAVPlayer/blob/master/examples) for full QML and Widgets sample apps.
@@ -87,69 +88,72 @@ Check out the [examples folder](https://github.com/valbok/QtAVPlayer/blob/master
 QAVPlayer can open a URL, a local file, a `QIODevice`, or a device/camera:
 
 ```cpp
-player.setSource("~/Videos/Generative-Pre-trained-Transformers-and-WW3.mkv");
+player->setSource("~/Videos/Generative-Pre-trained-Transformers-and-WW3.mkv");
 
 // Adaptive streaming (DASH/HLS)
-player.setSource("https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8");
+player->setSource("https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8");
 
 // Playing from a Qt resource (qrc)
 QSharedPointer<QIODevice> file(new QFile(":/alarm.wav"));
 file->open(QIODevice::ReadOnly);
 QSharedPointer<QAVIODevice> dev(new QAVIODevice(file));
-player.setSource("alarm", dev);
+player->setSource("alarm", dev);
 
 // Camera input
-player.setSource("/dev/video0");                 // Linux
-player.setInputFormat("dshow");                  // Windows
-player.setSource("video=Integrated Camera");
-player.setInputFormat("avfoundation");            // macOS
-player.setSource("default");
-player.setInputFormat("android_camera");          // Android
-player.setSource("0:0");
+player->setSource("/dev/video0");                 // Linux
+player->setInputFormat("dshow");                  // Windows
+player->setSource("video=Integrated Camera");
+player->setInputFormat("avfoundation");            // macOS
+player->setSource("default");
+player->setInputFormat("android_camera");          // Android
+player->setSource("0:0");
 
 // These options will go to AVFormatContext
-player.setInputOptions({{"user_agent", "QAVPlayer"}});
+player->setInputOptions({{"user_agent", "QAVPlayer"}});
 // Options for AVCodecContext
-player.setVideoCodecOptions({{"fflags", "nobuffer"}, {"flags", "low_delay"}});
+player->setVideoCodecOptions({{"fflags", "nobuffer"}, {"flags", "low_delay"}});
 
 // Using FFmpeg protocols
-player.setSource("subfile,,start,0,end,0,,:/root/Downloads/why-qtmm-must-die.mkv");
+player->setSource("subfile,,start,0,end,0,,:/root/Downloads/why-qtmm-must-die.mkv");
 ```
 
 ### Getting video, audio & subtitle frames
 
 ```cpp
-QObject::connect(&player, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) {
-    QVideoFrame videoFrame = frame; // compatible with QVideoFrame
-
-    // Convert to a different pixel format if needed
-    auto convertedFrame = frame.convert(AV_PIX_FMT_YUV420P);
-
-    // Map the frame to access raw data (downloads from GPU if needed)
-    auto mapped = videoFrame.map();
-    qDebug() << mapped.format << mapped.size;
-
-    // Frames may carry OpenGL or Metal textures for copy-free rendering
-    qDebug() << frame.handleType() << frame.handle();
-}, Qt::DirectConnection);
+QObject::connect(player, &QAVPlayer::videoFrame, player,
+    [&](const QAVVideoFrame &frame) {
+        QVideoFrame videoFrame = frame; // compatible with QVideoFrame
+    
+        // Convert to a different pixel format if needed
+        auto convertedFrame = frame.convert(AV_PIX_FMT_YUV420P);
+    
+        // Map the frame to access raw data (downloads from GPU if needed)
+        auto mapped = videoFrame.map();
+        qDebug() << mapped.format << mapped.size;
+    
+        // Frames may carry OpenGL or Metal textures for copy-free rendering
+        qDebug() << frame.handleType() << frame.handle();
+    }, Qt::DirectConnection);
 
 // Audio
-QObject::connect(&player, &QAVPlayer::audioFrame, [&](const QAVAudioFrame &frame) {
-    qDebug() << frame.format() << frame.data().size();
-}, Qt::DirectConnection);
+QObject::connect(player, &QAVPlayer::audioFrame, player,
+    [&](const QAVAudioFrame &frame) {
+        qDebug() << frame.format() << frame.data().size();
+    }, Qt::DirectConnection);
 
 // Subtitles
-QObject::connect(&player, &QAVPlayer::subtitleFrame, &player, [](const QAVSubtitleFrame &frame) {
-    for (unsigned i = 0; i < frame.subtitle()->num_rects; ++i) {
-        if (frame.subtitle()->rects[i]->type == SUBTITLE_TEXT)
-            qDebug() << "text:" << frame.subtitle()->rects[i]->text;
-        else
-            qDebug() << "ass:" << frame.subtitle()->rects[i]->ass;
-    }
-}, Qt::DirectConnection);
+QObject::connect(player, &QAVPlayer::subtitleFrame, player,
+    [&](const QAVSubtitleFrame &frame) {
+        for (unsigned i = 0; i < frame.subtitle()->num_rects; ++i) {
+            if (frame.subtitle()->rects[i]->type == SUBTITLE_TEXT)
+                qDebug() << "text:" << frame.subtitle()->rects[i]->text;
+            else
+                qDebug() << "ass:" << frame.subtitle()->rects[i]->ass;
+        }
+    }, Qt::DirectConnection);
 ```
 
-### 3. Hardware accelerated decoding
+### Hardware accelerated decoding
 
 Hardware decoding is automatically negotiated based on the platform:
 
@@ -163,8 +167,8 @@ Hardware decoding is automatically negotiated based on the platform:
 Most platforms expose only a single device context, but enabling `CUDA` support adds more options to choose from. In that case, the platform's native device context is prioritized by default. If you want `CUDA` to be used instead, you can force a CUDA-based codec, which selects the CUDA device context:
 
 ```cpp
-p.setInputVideoCodec("h264_cuvid");
-p.setSource(file);
+player->setInputVideoCodec("h264_cuvid");
+player->setSource(file);
 ```
 
 Notes:
@@ -181,26 +185,27 @@ Notes:
 
 ```cpp
 auto w = new QAVWidget_OpenGL(mainWidget);
-QObject::connect(p, &QAVPlayer::videoFrame, w, [w](const QAVVideoFrame &frame) {
-    w->setVideoFrame(frame);
-}, Qt::DirectConnection);
+QObject::connect(player, &QAVPlayer::videoFrame, w,
+    [w](const QAVVideoFrame &frame) {
+        w->setVideoFrame(frame);
+    }, Qt::DirectConnection);
 ```
 
 - Since `QAVVideoFrame` is compatible with `QVideoFrame`, `QtMultimedia` can render frames directly to QML or Widgets — see the [examples](https://github.com/valbok/QtAVPlayer/blob/master/examples/qml_video).
 
 ```cpp
-QObject::connect(p, &QAVPlayer::videoFrame,
-                 this, [this](const QAVVideoFrame &frame) {
-    if (videoSink) {
-        // If the non-copy-free render is requested
-        // map the frame before converting to QVideoFrame.
-        // This will force rendering mapped data instead of texture handles.
-        if (!m_copyFreeRender)
-            frame.map();
-        QVideoFrame qframe = frame;  // Converts to QVideoFrame
-        videoSink->setVideoFrame(qframe);
-    }
-}, Qt::DirectConnection);
+QObject::connect(player, &QAVPlayer::videoFrame, this,
+    [this](const QAVVideoFrame &frame) {
+        if (videoSink) {
+            // If the non-copy-free render is requested
+            // map the frame before converting to QVideoFrame.
+            // This will force rendering mapped data instead of texture handles.
+            if (!m_copyFreeRender)
+                frame.map();
+            QVideoFrame qframe = frame;  // Converts to QVideoFrame
+            videoSink->setVideoFrame(qframe);
+        }
+    }, Qt::DirectConnection);
 ```
 
 #### Audio
@@ -209,9 +214,10 @@ The audio frames could be played using `QAVAudioOutput`:
 
 ```cpp
 auto audioOutput = new QAVAudioOutput(&mainWidget);
-QObject::connect(p, &QAVPlayer::audioFrame, audioOutput, [audioOutput](const QAVAudioFrame &frame) {
-    audioOutput->play(frame);
-}, Qt::DirectConnection);
+QObject::connect(player, &QAVPlayer::audioFrame, audioOutput,
+    [&](const QAVAudioFrame &frame) {
+        audioOutput->play(frame);
+    }, Qt::DirectConnection);
 ```
 
 #### Subtitles
@@ -220,10 +226,10 @@ QObject::connect(p, &QAVPlayer::audioFrame, audioOutput, [audioOutput](const QAV
 
 ```cpp
 // Render bundled subtitles (requires not using hw_device_ctx — this is a software filter)
-player.setFilter("subtitles=file.mkv");
+player->setFilter("subtitles=file.mkv");
 
 // Render subtitles from an external .srt file
-player.setFilter("subtitles=file.srt");
+player->setFilter("subtitles=file.srt");
 ```
 
 - Subtitles could be parsed and extracted from `QAVSubtitleFrame`:
@@ -231,11 +237,12 @@ player.setFilter("subtitles=file.srt");
 ```cpp
 QAVSubtitleTextParser subtitleParser;
 subtitleParser.load(player.currentSubtitleStreams().first());
-QObject::connect(player, &QAVPlayer::subtitleFrame, player, [this](const QAVSubtitleFrame &frame) {
-    QString text;
-    if (subtitleParser.parseText(frame, text) >= 0)
-        emit subtitleTextChanged(text, frame.duration() * 1000);
-}
+QObject::connect(player, &QAVPlayer::subtitleFrame, player,
+    [this](const QAVSubtitleFrame &frame) {
+        QString text;
+        if (subtitleParser.parseText(frame, text) >= 0)
+            emit subtitleTextChanged(text, frame.duration() * 1000);
+    }, Qt::DirectConnection);
 ```
 
 - Subtitles could be rendered to `QImage`:
@@ -243,11 +250,12 @@ QObject::connect(player, &QAVPlayer::subtitleFrame, player, [this](const QAVSubt
 ```cpp
 QAVASSRenderer subtitleRenderer;
 subtitleRenderer.load(player.currentSubtitleStreams().first());
-QObject::connect(player, &QAVPlayer::subtitleFrame, player, [this](const QAVSubtitleFrame &frame) {
-    auto img = subtitleRenderer.toImage(frame, size.width(), size.height());
-    if (!img.isNull())
-        emit subtitleImageChanged(img, frame.duration() * 1000);
-}
+QObject::connect(player, &QAVPlayer::subtitleFrame, player,
+    [this](const QAVSubtitleFrame &frame) {
+        auto img = subtitleRenderer.toImage(frame, size.width(), size.height());
+        if (!img.isNull())
+            emit subtitleImageChanged(img, frame.duration() * 1000);
+    }, Qt::DirectConnection);
 ```
 
 See the [qml_player](https://github.com/valbok/QtAVPlayer/blob/master/examples/qml_player).
@@ -256,46 +264,47 @@ See the [qml_player](https://github.com/valbok/QtAVPlayer/blob/master/examples/q
 ### FFmpeg filters
 
 ```cpp
-player1.setFilter("crop=iw/2:ih:0:0,split[left][tmp];[tmp]hflip[right];[left][right] hstack");
-player2.setFilter("scale=iw/2:-1");
+player1->setFilter("crop=iw/2:ih:0:0,split[left][tmp];[tmp]hflip[right];[left][right] hstack");
+player2->setFilter("scale=iw/2:-1");
 ```
 
 - Apply multiple filters at once, `QAVVideoFrame::filterName()` returns the filter name if any:
 
 ```cpp 
-player.setFilters({
+player->setFilters({
     "drawtext=text=%{pts\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[drawtext]",
     "negate[negate]",
     "[0:v]split=3[in1][in2][in3];[in1]boxblur[out1];[in2]negate[out2];[in3]drawtext=text=%{pts\\:hms}:x=(w-text_w)/2:y=(h-text_h)*(4/5):box=1:boxcolor=gray@0.5:fontsize=36[out3]"
 });
-QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
-    qDebug() << frame.pts() << frame.filterName();
-});
+QObject::connect(player, &QAVPlayer::videoFrame, player,
+    [&](const QAVVideoFrame &frame) {
+        qDebug() << frame.pts() << frame.filterName();
+    });
 ```
 
 - Some filters could be hardware accelerated, like `scale_cuda` or `scale_vaapi`:
 
 ```cpp
 // Requires to force cuda based codec
-player.setInputVideoCodec("h264_cuvid");
-player.setFilter("scale_cuda=1920:1080");
+player->setInputVideoCodec("h264_cuvid");
+player->setFilter("scale_cuda=1920:1080");
 ```
 
 ### Multiple streams
 
 - `QAVPlayer::availableStreams()` returns all available streams in the source.
-- `QAVPlayer::setAudioStream()`, `QAVPlayer::setSubtitleStream()`, `QAVPlayer::setVideoStream()` can change current decoding streams.
+- `QAVPlayer::setAudioStream()`, `QAVPlayer::setSubtitleStream()`, `QAVPlayer::setVideoStream()` can change current decoding streams on fly.
 
 ```cpp
-qDebug() << "Audio streams:" << player.availableAudioStreams().size();
-qDebug() << "Current stream:" << player.currentAudioStreams().first().index()
-         << player.currentAudioStreams().first().metadata();
+qDebug() << "Audio streams:" << player->availableAudioStreams().size();
+qDebug() << "Current stream:" << player->currentAudioStreams().first().index()
+         << player->currentAudioStreams().first().metadata();
 
-player.setAudioStreams(player.availableAudioStreams()); // Decode all available audio streams
+player->setAudioStreams(player->availableAudioStreams()); // Decode all available audio streams
 
 // Per-stream progress: pts, fps, frame rate, frame count, etc.
-for (const auto &stream : player.availableVideoStreams())
-    qDebug() << stream << player.progress(stream);
+for (const auto &stream : player->availableVideoStreams())
+    qDebug() << stream << player->progress(stream);
 ```
 
 ### Muxing streams
@@ -303,7 +312,7 @@ for (const auto &stream : player.availableVideoStreams())
 - Mux all streams to a file without re-encoding. It will use the same codecs without decoding the frames.
 
 ```cpp
-player.setOutput("output.mkv");
+player->setOutput("output.mkv");
 ```
 
 - Combine streams from multiple players into a single file. This will decode frames first and then encode using the same codecs:
@@ -319,10 +328,14 @@ QTRY_VERIFY(p2.mediaStatus() == QAVPlayer::LoadedMedia);
 auto streams = p1.availableStreams() + p2.availableStreams();
 muxer.load(streams, "output.mkv");
 
-QObject::connect(&p1, &QAVPlayer::videoFrame, &p1, [&](const QAVVideoFrame &f) { muxer.enqueue(f); }, Qt::DirectConnection);
-QObject::connect(&p1, &QAVPlayer::audioFrame, &p1, [&](const QAVAudioFrame &f) { muxer.enqueue(f); }, Qt::DirectConnection);
-QObject::connect(&p2, &QAVPlayer::videoFrame, &p2, [&](const QAVVideoFrame &f) { muxer.enqueue(f); }, Qt::DirectConnection);
-QObject::connect(&p2, &QAVPlayer::audioFrame, &p2, [&](const QAVAudioFrame &f) { muxer.enqueue(f); }, Qt::DirectConnection);
+QObject::connect(&p1, &QAVPlayer::videoFrame, &p1,
+    [&](const QAVVideoFrame &f) { muxer.enqueue(f); }, Qt::DirectConnection);
+QObject::connect(&p1, &QAVPlayer::audioFrame, &p1,
+    [&](const QAVAudioFrame &f) { muxer.enqueue(f); }, Qt::DirectConnection);
+QObject::connect(&p2, &QAVPlayer::videoFrame, &p2,
+    [&](const QAVVideoFrame &f) { muxer.enqueue(f); }, Qt::DirectConnection);
+QObject::connect(&p2, &QAVPlayer::audioFrame, &p2,
+    [&](const QAVAudioFrame &f) { muxer.enqueue(f); }, Qt::DirectConnection);
 
 p1.play();
 p2.play();
@@ -333,8 +346,10 @@ p2.play();
 If a frame exists at the requested timestamp, it's returned first.
 
 ```cpp
-QObject::connect(&player, &QAVPlayer::seeked, &player, [&](qint64 pos) { seekPosition = pos; });
-QObject::connect(&player, &QAVPlayer::videoFrame, [&](const QAVVideoFrame &frame) { seekFrame = frame; });
+QObject::connect(&player, &QAVPlayer::seeked, &player,
+    [&](qint64 pos) { seekPosition = pos; });
+QObject::connect(&player, &QAVPlayer::videoFrame,
+    [&](const QAVVideoFrame &frame) { seekFrame = frame; });
 
 player.seek(5000);
 QTRY_COMPARE(seekPosition, 5000);
@@ -363,23 +378,29 @@ Every action is confirmed with a signal, delivered in the correct order.
 If `play()`, `pause()`, and `seek()` is called, then `played()`, `paused()` and `seeked()` is emitted accordinally.
 
 ```cpp
-QObject::connect(p, &QAVPlayer::played, [&](qint64 pos) { qDebug() << "Playing started at" << pos; });
-QObject::connect(p, &QAVPlayer::paused, [&](qint64 pos) { qDebug() << "Paused at" << pos; });
-QObject::connect(p, &QAVPlayer::stopped, [&](qint64 pos) { qDebug() << "Stopped at" << pos; });
-QObject::connect(p, &QAVPlayer::seeked, [&](qint64 pos) { qDebug() << "Seeked to" << pos; });
-QObject::connect(p, &QAVPlayer::stepped, [&](qint64 pos) { qDebug() << "Stepped to" << pos; });
-QObject::connect(p, &QAVPlayer::mediaStatusChanged, [&](QAVPlayer::MediaStatus status) {
-    switch (status) {
-    case QAVPlayer::EndOfMedia:
-        qDebug() << "Playback finished, no frames left in queue";
-        break;
-    case QAVPlayer::NoMedia:
-        qDebug() << "Demuxer threads finished";
-        break;
-    default:
-        break;
-    }
-});
+QObject::connect(p, &QAVPlayer::played,
+    [&](qint64 pos) { qDebug() << "Playing started at" << pos; });
+QObject::connect(p, &QAVPlayer::paused,
+    [&](qint64 pos) { qDebug() << "Paused at" << pos; });
+QObject::connect(p, &QAVPlayer::stopped,
+    [&](qint64 pos) { qDebug() << "Stopped at" << pos; });
+QObject::connect(p, &QAVPlayer::seeked,
+    [&](qint64 pos) { qDebug() << "Seeked to" << pos; });
+QObject::connect(p, &QAVPlayer::stepped,
+    [&](qint64 pos) { qDebug() << "Stepped to" << pos; });
+QObject::connect(p, &QAVPlayer::mediaStatusChanged,
+    [&](QAVPlayer::MediaStatus status) {
+        switch (status) {
+        case QAVPlayer::EndOfMedia:
+            qDebug() << "Playback finished, no frames left in queue";
+            break;
+        case QAVPlayer::NoMedia:
+            qDebug() << "Demuxer threads finished";
+            break;
+        default:
+            break;
+        }
+    });
 ```
 
 ---
