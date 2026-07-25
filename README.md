@@ -360,7 +360,7 @@ player.stepBackward(); // Same, but backward
 ### Listening to player signals
 
 Every action is confirmed with a signal, delivered in the correct order.
-If `p->play();`, `p->pause();` and then `p->seek()` is called, then `played()`, `paused()` and `seeked()` is emitted.
+If `play()`, `pause()`, and `seek()` is called, then `played()`, `paused()` and `seeked()` is emitted accordinally.
 
 ```cpp
 QObject::connect(p, &QAVPlayer::played, [&](qint64 pos) { qDebug() << "Playing started at" << pos; });
