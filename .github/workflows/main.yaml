@@ -390,7 +390,7 @@ jobs:
   android:
     strategy:
       matrix:
-        qt_version: ["6.6.3"]
+        qt_version: ["5.15.2"]
         arch: ["armv7", "arm64"]
 
     runs-on: ubuntu-latest
