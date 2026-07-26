@@ -145,8 +145,6 @@ void PlayerController::connectPlayerSignals()
     });
 
     QObject::connect(&m_player, &QAVPlayer::seeked, this, [this](qint64 pos) {
-        m_position = pos;
-        emit positionChanged();
         m_audioOutput.setVolume(m_volume);
         m_posTimer.start();
     });
@@ -254,6 +252,8 @@ void PlayerController::seek(qint64 ms)
 {
     if (ms == m_position)
         return;
+    m_position = ms;
+    emit positionChanged();
     m_posTimer.stop();
     m_audioOutput.setVolume(0);
     m_audioOutput.clearQueue();
