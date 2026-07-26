@@ -398,7 +398,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Qt
+      - name: Install Qt Desktop
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ matrix.qt_version }}
+          target: 'desktop'
+          arch: 'gcc_64'
+
+      - name: Install Qt Android
         uses: jurplel/install-qt-action@v3
         with:
           version: ${{ matrix.qt_version }}
