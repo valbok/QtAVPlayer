@@ -404,6 +404,7 @@ jobs:
           version: ${{ matrix.qt_version }}
           target: 'desktop'
           arch: 'gcc_64'
+          modules: 'qtmultimedia'
 
       - name: Install Qt Android
         uses: jurplel/install-qt-action@v3
@@ -411,6 +412,7 @@ jobs:
           version: ${{ matrix.qt_version }}
           target: 'android'
           arch: ${{ format('android_{0}', matrix.arch) }}
+          modules: 'qtmultimedia'
 
       - name: Set up Android NDK
         uses: nttld/setup-ndk@v1
