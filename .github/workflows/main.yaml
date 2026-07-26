@@ -412,7 +412,6 @@ jobs:
           version: ${{ matrix.qt_version }}
           target: 'android'
           arch: ${{ format('android_{0}', matrix.arch) }}
-          modules: 'qtmultimedia'
 
       - name: Set up Android NDK
         uses: nttld/setup-ndk@v1
