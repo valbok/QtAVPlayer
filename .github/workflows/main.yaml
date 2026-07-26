@@ -425,22 +425,11 @@ jobs:
 
       - name: Build libQtAVPlayer for Android
         run: |
-          # Find and display Qt installation structure
-          echo "Searching for Qt6Config.cmake..."
-          find ${{ github.workspace }}/Qt -name "Qt6Config.cmake" -o -name "Qt5Config.cmake" 2>/dev/null | head -5
-           
-          # Find the Android Qt lib/cmake directory
-          QT_CMAKE=$(find ${{ github.workspace }}/Qt -type d -name "cmake" | grep android | head -1)
-          if [ -z "$QT_CMAKE" ]; then
-            QT_CMAKE=$(find ${{ github.workspace }}/Qt -type d -path "*/lib/cmake" | head -1)
-          fi
-          echo "Qt CMake directory: $QT_CMAKE"
-           
           mkdir build
           cd build
           cmake ../src/QtAVPlayer \
            -DCMAKE_INSTALL_PREFIX=../install \
-           -DCMAKE_PREFIX_PATH=$QT_CMAKE \
+           -DCMAKE_PREFIX_PATH=$Qt6_DIR/lib/cmake/Qt6 \
            -DQT_AVPLAYER_MULTIMEDIA=ON \
            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
            -DANDROID_ABI=${{ matrix.arch == 'armv7' && 'armeabi-v7a' || 'arm64-v8a' }} \
