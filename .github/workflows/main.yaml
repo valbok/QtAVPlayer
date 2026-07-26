@@ -424,14 +424,14 @@ jobs:
            libswscale-dev
 
       - name: Build libQtAVPlayer for Android
-        env:
-          QT_PATH: ${{ github.workspace }}/Qt/${{ matrix.qt_version }}/android
         run: |
+          # Find the Android Qt installation
+          QT_ANDROID=$(find ${{ github.workspace }}/Qt -type d -name "android" | head -1)
           mkdir build
           cd build
           cmake ../src/QtAVPlayer \
            -DCMAKE_INSTALL_PREFIX=../install \
-           -DCMAKE_PREFIX_PATH=$QT_PATH \
+           -DCMAKE_PREFIX_PATH=$QT_ANDROID \
            -DQT_AVPLAYER_MULTIMEDIA=ON \
            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
            -DANDROID_ABI=${{ matrix.arch == 'armv7' && 'armeabi-v7a' || 'arm64-v8a' }} \
