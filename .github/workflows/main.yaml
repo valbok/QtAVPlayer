@@ -429,7 +429,6 @@ jobs:
           cd build
           cmake ../src/QtAVPlayer \
            -DCMAKE_INSTALL_PREFIX=../install \
-           -DCMAKE_PREFIX_PATH=$Qt6_DIR/lib/cmake/Qt6 \
            -DQT_AVPLAYER_MULTIMEDIA=ON \
            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
            -DANDROID_ABI=${{ matrix.arch == 'armv7' && 'armeabi-v7a' || 'arm64-v8a' }} \
@@ -437,3 +436,8 @@ jobs:
           cmake --build . --verbose
           cmake --install .
 
+          cd ../examples/qml_player
+          mkdir build
+          cd build
+          cmake ../ -DCMAKE_PREFIX_PATH="$PWD/../../../install/lib/cmake" -DQT_AVPLAYER_LIB=ON
+          cmake --build . --verbose
