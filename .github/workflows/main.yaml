@@ -387,3 +387,53 @@ jobs:
           mb2 build-shell cmake ../ -DCMAKE_PREFIX_PATH="$PWD/../../../install/lib/cmake" -DQT_AVPLAYER_LIB=ON
           mb2 build-shell make CXXFLAGS='-std=c++17' VERBOSE=1
 
+  android:
+    strategy:
+      matrix:
+        qt_version: ["6.8.2"]
+        arch: ["armv7", "arm64"]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ matrix.qt_version }}
+          target: 'android'
+          arch: ${{ format('android_{0}', matrix.arch) }}
+          modules: 'qtmultimedia'
+
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27b
+          add-to-path: true
+
+      - name: Install FFmpeg libraries for Android
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+           libavcodec-dev \
+           libavformat-dev \
+           libavdevice-dev \
+           libavfilter-dev \
+           libavutil-dev \
+           libswresample-dev \
+           libswscale-dev
+
+      - name: Build libQtAVPlayer for Android
+        run: |
+          mkdir build
+          cd build
+          cmake ../src/QtAVPlayer \
+           -DCMAKE_INSTALL_PREFIX=../install \
+           -DQT_AVPLAYER_MULTIMEDIA=ON \
+           -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
+           -DANDROID_ABI=${{ matrix.arch == 'armv7' && 'armeabi-v7a' || 'arm64-v8a' }} \
+           -DANDROID_PLATFORM=android-21
+          cmake --build . --verbose
+          cmake --install .
+
