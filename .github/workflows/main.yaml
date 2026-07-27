@@ -423,7 +423,7 @@ jobs:
 
       - name: Set up Android build variables
         run: |
-          echo "ANDROID_ABI=${{ matrix.arch == 'armv7' && 'armeabi-v7a' || 'arm64-v8a' }}" >> $GITHUB_ENV
+          echo "ANDROID_ABI=armeabi-v7a" >> $GITHUB_ENV
           if [ -f "$Qt6_DIR/Qt6Config.cmake" ]; then
             QT6_CMAKE_DIR="$Qt6_DIR"
             QT_ANDROID_PATH="$(dirname "$(dirname "$(dirname "$QT6_CMAKE_DIR")")")"
