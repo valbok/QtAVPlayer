@@ -394,6 +394,8 @@ jobs:
         arch: ["armv7"]
 
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v3
@@ -450,20 +452,35 @@ jobs:
           API=21
           FFMPEG_INSTALL=$GITHUB_WORKSPACE/ffmpeg-android
 
+          if [ "$ANDROID_ABI" = "armeabi-v7a" ]; then
+            FFMPEG_ARCH=arm
+            FFMPEG_CPU=armv7-a
+            FFMPEG_CROSS_PREFIX=arm-linux-androideabi-
+            FFMPEG_CC=armv7a-linux-androideabi${API}-clang
+          elif [ "$ANDROID_ABI" = "arm64-v8a" ]; then
+            FFMPEG_ARCH=aarch64
+            FFMPEG_CPU=armv8-a
+            FFMPEG_CROSS_PREFIX=aarch64-linux-android-
+            FFMPEG_CC=aarch64-linux-android${API}-clang
+          else
+            echo "Unsupported Android ABI: $ANDROID_ABI"
+            exit 1
+          fi
+
           wget -q "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz"
           tar xf "ffmpeg-${FFMPEG_VERSION}.tar.gz"
           cd "ffmpeg-${FFMPEG_VERSION}"
 
           ./configure \
             --target-os=android \
-            --arch=arm \
-            --cpu=armv7-a \
+            --arch=$FFMPEG_ARCH \
+            --cpu=$FFMPEG_CPU \
             --enable-cross-compile \
-            --cross-prefix=$TOOLCHAIN/bin/arm-linux-androideabi- \
-            --cc=$TOOLCHAIN/bin/armv7a-linux-androideabi${API}-clang \
+            --cross-prefix=$TOOLCHAIN/bin/$FFMPEG_CROSS_PREFIX \
+            --cc=$TOOLCHAIN/bin/$FFMPEG_CC \
             --nm=$TOOLCHAIN/bin/llvm-nm \
             --ar=$TOOLCHAIN/bin/llvm-ar \
-            --as=$TOOLCHAIN/bin/armv7a-linux-androideabi${API}-clang \
+            --as=$TOOLCHAIN/bin/$FFMPEG_CC \
             --strip=$TOOLCHAIN/bin/llvm-strip \
             --ranlib=$TOOLCHAIN/bin/llvm-ranlib \
             --disable-asm \
