@@ -387,3 +387,161 @@ jobs:
           mb2 build-shell cmake ../ -DCMAKE_PREFIX_PATH="$PWD/../../../install/lib/cmake" -DQT_AVPLAYER_LIB=ON
           mb2 build-shell make CXXFLAGS='-std=c++17' VERBOSE=1
 
+  android:
+    strategy:
+      matrix:
+        qt_version: ["6.6.3"]
+        arch: ["armv7"]
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Qt host (desktop)
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ matrix.qt_version }}
+          target: 'desktop'
+          arch: 'gcc_64'
+          modules: 'qtmultimedia'
+
+      - name: Install Qt for Android
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ matrix.qt_version }}
+          target: 'android'
+          arch: ${{ format('android_{0}', matrix.arch) }}
+          modules: 'qtmultimedia'
+
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27b
+          add-to-path: true
+
+      - name: Set up Android build variables
+        run: |
+          echo "ANDROID_ABI=armeabi-v7a" >> $GITHUB_ENV
+          if [ -f "$Qt6_DIR/Qt6Config.cmake" ]; then
+            QT6_CMAKE_DIR="$Qt6_DIR"
+            QT_ANDROID_PATH="$(dirname "$(dirname "$(dirname "$QT6_CMAKE_DIR")")")"
+          elif [ -f "$Qt6_DIR/lib/cmake/Qt6/Qt6Config.cmake" ]; then
+            QT_ANDROID_PATH="$Qt6_DIR"
+            QT6_CMAKE_DIR="$Qt6_DIR/lib/cmake/Qt6"
+          else
+            echo "Qt6 config was not found under Qt6_DIR=$Qt6_DIR"
+            exit 1
+          fi
+
+          QT_HOST_PATH="$(dirname "$QT_ANDROID_PATH")/gcc_64"
+          if [ ! -d "$QT_HOST_PATH" ]; then
+            echo "Qt host path was not found: $QT_HOST_PATH"
+            exit 1
+          fi
+          QT_HOST_PATH_CMAKE_DIR="$QT_HOST_PATH/lib/cmake"
+          if [ ! -d "$QT_HOST_PATH_CMAKE_DIR" ]; then
+            echo "Qt host CMake path was not found: $QT_HOST_PATH_CMAKE_DIR"
+            exit 1
+          fi
+
+          echo "QT_ANDROID_PATH=$QT_ANDROID_PATH" >> $GITHUB_ENV
+          echo "QT6_CMAKE_DIR=$QT6_CMAKE_DIR" >> $GITHUB_ENV
+          echo "QT_HOST_PATH=$QT_HOST_PATH" >> $GITHUB_ENV
+
+      - name: Build FFmpeg for Android ${{ matrix.arch }}
+        run: |
+          FFMPEG_VERSION=7.1
+          TOOLCHAIN=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64
+          API=21
+          FFMPEG_INSTALL=$GITHUB_WORKSPACE/ffmpeg-android
+
+          if [ "$ANDROID_ABI" = "armeabi-v7a" ]; then
+            FFMPEG_ARCH=arm
+            FFMPEG_CPU=armv7-a
+            FFMPEG_CROSS_PREFIX=arm-linux-androideabi-
+            FFMPEG_CC=armv7a-linux-androideabi${API}-clang
+          elif [ "$ANDROID_ABI" = "arm64-v8a" ]; then
+            FFMPEG_ARCH=aarch64
+            FFMPEG_CPU=armv8-a
+            FFMPEG_CROSS_PREFIX=aarch64-linux-android-
+            FFMPEG_CC=aarch64-linux-android${API}-clang
+          else
+            echo "Unsupported Android ABI: $ANDROID_ABI (supported: armeabi-v7a, arm64-v8a)"
+            exit 1
+          fi
+
+          wget -q "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz"
+          tar xf "ffmpeg-${FFMPEG_VERSION}.tar.gz"
+          cd "ffmpeg-${FFMPEG_VERSION}"
+
+          ./configure \
+            --target-os=android \
+            --arch=$FFMPEG_ARCH \
+            --cpu=$FFMPEG_CPU \
+            --enable-cross-compile \
+            --cross-prefix=$TOOLCHAIN/bin/$FFMPEG_CROSS_PREFIX \
+            --cc=$TOOLCHAIN/bin/$FFMPEG_CC \
+            --nm=$TOOLCHAIN/bin/llvm-nm \
+            --ar=$TOOLCHAIN/bin/llvm-ar \
+            --as=$TOOLCHAIN/bin/$FFMPEG_CC \
+            --strip=$TOOLCHAIN/bin/llvm-strip \
+            --ranlib=$TOOLCHAIN/bin/llvm-ranlib \
+            --disable-asm \
+            --disable-doc \
+            --disable-programs \
+            --disable-everything \
+            --enable-shared \
+            --disable-static \
+            --prefix=$FFMPEG_INSTALL
+
+          make -j$(nproc)
+          make install
+          echo "FFMPEG_ANDROID=$FFMPEG_INSTALL" >> $GITHUB_ENV
+
+      - name: Build libQtAVPlayer for Android
+        run: |
+          mkdir build
+          cd build
+          # Include both Android target Qt and desktop host Qt CMake roots so Qt6 Quick host tools are found.
+          cmake ../src/QtAVPlayer \
+            -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON \
+            -DANDROID_STL="c++_shared" \
+            -DCMAKE_INSTALL_PREFIX=../install \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=$ANDROID_ABI \
+            -DANDROID_PLATFORM=android-23 \
+            -DCMAKE_PREFIX_PATH=$QT6_CMAKE_DIR \
+            -DQt6_DIR=$QT6_CMAKE_DIR \
+            -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
+            -DCMAKE_LIBRARY_PATH=$FFMPEG_ANDROID/lib \
+            -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=$FFMPEG_ANDROID/include \
+            -DQT_AVPLAYER_MULTIMEDIA=ON
+
+          cmake --build . --verbose
+          cmake --install .
+
+      - name: Build qml_video for Android
+        run: |
+          cd examples/qml_video
+          mkdir build
+          cd build
+          # Include both Android target Qt and desktop host Qt CMake roots so Qt6 Quick host tools are found.
+          cmake ../ \
+            -DANDROID_SDK_ROOT="$ANDROID_SDK_ROOT" \
+            -DANDROID_NDK="$ANDROID_NDK_ROOT" \
+            -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON \
+            -DANDROID_STL="c++_shared" \
+            -DQT_DEBUG_FIND_PACKAGE=ON \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=$ANDROID_ABI \
+            -DANDROID_PLATFORM=android-23 \
+            -DCMAKE_PREFIX_PATH="$PWD/../../../install/lib/cmake;$QT6_CMAKE_DIR" \
+            -DQt6_DIR=$QT6_CMAKE_DIR \
+            -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
+            -DCMAKE_LIBRARY_PATH=$FFMPEG_ANDROID/lib \
+            -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=$FFMPEG_ANDROID/include \
+            -DQT_AVPLAYER_LIB=ON -DQT_AVPLAYER_MULTIMEDIA=ON
+          cmake --build . --verbose
