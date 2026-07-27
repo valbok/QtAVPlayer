@@ -406,6 +406,7 @@ jobs:
           version: ${{ matrix.qt_version }}
           target: 'desktop'
           arch: 'gcc_64'
+          modules: 'qtdeclarative qtquickcontrols2 qtmultimedia'
 
       - name: Install Qt for Android
         uses: jurplel/install-qt-action@v3
@@ -413,7 +414,7 @@ jobs:
           version: ${{ matrix.qt_version }}
           target: 'android'
           arch: ${{ format('android_{0}', matrix.arch) }}
-          modules: 'qtmultimedia'
+          modules: 'qtdeclarative qtquickcontrols2 qtmultimedia'
 
       - name: Set up Android NDK
         uses: nttld/setup-ndk@v1
@@ -440,10 +441,16 @@ jobs:
             echo "Qt host path was not found: $QT_HOST_PATH"
             exit 1
           fi
+          QT_HOST_PATH_CMAKE_DIR="$QT_HOST_PATH/lib/cmake"
+          if [ ! -d "$QT_HOST_PATH_CMAKE_DIR" ]; then
+            echo "Qt host CMake path was not found: $QT_HOST_PATH_CMAKE_DIR"
+            exit 1
+          fi
 
           echo "QT_ANDROID_PATH=$QT_ANDROID_PATH" >> $GITHUB_ENV
           echo "QT6_CMAKE_DIR=$QT6_CMAKE_DIR" >> $GITHUB_ENV
           echo "QT_HOST_PATH=$QT_HOST_PATH" >> $GITHUB_ENV
+          echo "QT_HOST_PATH_CMAKE_DIR=$QT_HOST_PATH_CMAKE_DIR" >> $GITHUB_ENV
 
       - name: Build FFmpeg for Android ${{ matrix.arch }}
         run: |
@@ -505,7 +512,7 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=$ANDROID_ABI \
             -DANDROID_PLATFORM=android-21 \
-            -DCMAKE_PREFIX_PATH=$QT_ANDROID_PATH \
+            -DCMAKE_PREFIX_PATH="$QT_ANDROID_PATH;$QT_HOST_PATH_CMAKE_DIR" \
             -DQt6_DIR=$QT6_CMAKE_DIR \
             -DQT_HOST_PATH=$QT_HOST_PATH \
             -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
@@ -524,7 +531,7 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=$ANDROID_ABI \
             -DANDROID_PLATFORM=android-21 \
-            -DCMAKE_PREFIX_PATH=$QT_ANDROID_PATH \
+            -DCMAKE_PREFIX_PATH="$QT_ANDROID_PATH;$QT_HOST_PATH_CMAKE_DIR" \
             -DQt6_DIR=$QT6_CMAKE_DIR \
             -DQT_HOST_PATH=$QT_HOST_PATH \
             -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
