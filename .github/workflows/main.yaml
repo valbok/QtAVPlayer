@@ -412,6 +412,11 @@ jobs:
           ndk-version: r27b
           add-to-path: true
 
+      - name: Set up Android build variables
+        run: |
+          echo "ANDROID_ABI=${{ matrix.arch == 'armv7' && 'armeabi-v7a' || 'arm64-v8a' }}" >> $GITHUB_ENV
+          echo "QT_HOST_PATH=$(dirname $QT_ROOT_DIR)/gcc_64" >> $GITHUB_ENV
+
       - name: Build FFmpeg for Android ${{ matrix.arch }}
         run: |
           FFMPEG_VERSION=7.1
@@ -449,9 +454,6 @@ jobs:
 
       - name: Build libQtAVPlayer for Android
         run: |
-          ANDROID_ABI=${{ matrix.arch == 'armv7' && 'armeabi-v7a' || 'arm64-v8a' }}
-          QT_HOST_PATH=$(dirname $QT_ROOT_DIR)/gcc_64
-
           mkdir build
           cd build
           cmake ../src/QtAVPlayer \
@@ -471,9 +473,6 @@ jobs:
 
       - name: Build qml_player for Android
         run: |
-          ANDROID_ABI=${{ matrix.arch == 'armv7' && 'armeabi-v7a' || 'arm64-v8a' }}
-          QT_HOST_PATH=$(dirname $QT_ROOT_DIR)/gcc_64
-
           cd examples/qml_player
           mkdir build
           cd build
