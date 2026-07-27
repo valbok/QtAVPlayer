@@ -463,7 +463,7 @@ jobs:
             FFMPEG_CROSS_PREFIX=aarch64-linux-android-
             FFMPEG_CC=aarch64-linux-android${API}-clang
           else
-            echo "Unsupported Android ABI: $ANDROID_ABI"
+            echo "Unsupported Android ABI: $ANDROID_ABI (supported: armeabi-v7a, arm64-v8a)"
             exit 1
           fi
 
