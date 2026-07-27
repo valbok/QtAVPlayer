@@ -406,7 +406,7 @@ jobs:
           version: ${{ matrix.qt_version }}
           target: 'desktop'
           arch: 'gcc_64'
-          modules: 'qtdeclarative qtquickcontrols2 qtmultimedia'
+          modules: 'qtmultimedia'
 
       - name: Install Qt for Android
         uses: jurplel/install-qt-action@v3
@@ -414,7 +414,7 @@ jobs:
           version: ${{ matrix.qt_version }}
           target: 'android'
           arch: ${{ format('android_{0}', matrix.arch) }}
-          modules: 'qtdeclarative qtquickcontrols2 qtmultimedia'
+          modules: 'qtmultimedia'
 
       - name: Set up Android NDK
         uses: nttld/setup-ndk@v1
@@ -506,6 +506,7 @@ jobs:
         run: |
           mkdir build
           cd build
+          # Include both Android target Qt and desktop host Qt CMake roots so Qt6 Quick host tools are found.
           cmake ../src/QtAVPlayer \
             -DCMAKE_INSTALL_PREFIX=../install \
             -DQT_AVPLAYER_MULTIMEDIA=ON \
@@ -515,6 +516,7 @@ jobs:
             -DCMAKE_PREFIX_PATH="$QT_ANDROID_PATH;$QT_HOST_PATH_CMAKE_DIR" \
             -DQt6_DIR=$QT6_CMAKE_DIR \
             -DQT_HOST_PATH=$QT_HOST_PATH \
+            # Keep BOTH to allow cross-toolchain builds to resolve Qt+FFmpeg includes/libs from target and provided paths.
             -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
             -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH \
             -DCMAKE_LIBRARY_PATH=$FFMPEG_ANDROID/lib \
@@ -527,6 +529,7 @@ jobs:
           cd examples/qml_player
           mkdir build
           cd build
+          # Include both Android target Qt and desktop host Qt CMake roots so Qt6 Quick host tools are found.
           cmake ../ \
             -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=$ANDROID_ABI \
@@ -534,6 +537,7 @@ jobs:
             -DCMAKE_PREFIX_PATH="$QT_ANDROID_PATH;$QT_HOST_PATH_CMAKE_DIR" \
             -DQt6_DIR=$QT6_CMAKE_DIR \
             -DQT_HOST_PATH=$QT_HOST_PATH \
+            # Keep BOTH to allow cross-toolchain builds to resolve Qt+FFmpeg includes/libs from target and provided paths.
             -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
             -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH \
             -DCMAKE_LIBRARY_PATH=$FFMPEG_ANDROID/lib \
