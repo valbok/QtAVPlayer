@@ -450,7 +450,6 @@ jobs:
           echo "QT_ANDROID_PATH=$QT_ANDROID_PATH" >> $GITHUB_ENV
           echo "QT6_CMAKE_DIR=$QT6_CMAKE_DIR" >> $GITHUB_ENV
           echo "QT_HOST_PATH=$QT_HOST_PATH" >> $GITHUB_ENV
-          echo "QT_HOST_PATH_CMAKE_DIR=$QT_HOST_PATH_CMAKE_DIR" >> $GITHUB_ENV
 
       - name: Build FFmpeg for Android ${{ matrix.arch }}
         run: |
@@ -508,38 +507,41 @@ jobs:
           cd build
           # Include both Android target Qt and desktop host Qt CMake roots so Qt6 Quick host tools are found.
           cmake ../src/QtAVPlayer \
+            -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON \
+            -DANDROID_STL="c++_shared" \
             -DCMAKE_INSTALL_PREFIX=../install \
-            -DQT_AVPLAYER_MULTIMEDIA=ON \
             -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=$ANDROID_ABI \
-            -DANDROID_PLATFORM=android-21 \
-            -DCMAKE_PREFIX_PATH="$QT_ANDROID_PATH;$QT_HOST_PATH_CMAKE_DIR" \
+            -DANDROID_PLATFORM=android-23 \
+            -DCMAKE_PREFIX_PATH=$QT6_CMAKE_DIR \
             -DQt6_DIR=$QT6_CMAKE_DIR \
-            -DQT_HOST_PATH=$QT_HOST_PATH \
-            # Keep BOTH to allow cross-toolchain builds to resolve Qt+FFmpeg includes/libs from target and provided paths.
             -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
-            -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH \
             -DCMAKE_LIBRARY_PATH=$FFMPEG_ANDROID/lib \
-            -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=$FFMPEG_ANDROID/include
+            -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=$FFMPEG_ANDROID/include \
+            -DQT_AVPLAYER_MULTIMEDIA=ON
+
           cmake --build . --verbose
           cmake --install .
 
-      - name: Build qml_player for Android
+      - name: Build qml_video for Android
         run: |
-          cd examples/qml_player
+          cd examples/qml_video
           mkdir build
           cd build
           # Include both Android target Qt and desktop host Qt CMake roots so Qt6 Quick host tools are found.
           cmake ../ \
+            -DANDROID_SDK_ROOT="$ANDROID_SDK_ROOT" \
+            -DANDROID_NDK="$ANDROID_NDK_ROOT" \
+            -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON \
+            -DANDROID_STL="c++_shared" \
+            -DQT_DEBUG_FIND_PACKAGE=ON \
             -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=$ANDROID_ABI \
-            -DANDROID_PLATFORM=android-21 \
-            -DCMAKE_PREFIX_PATH="$QT_ANDROID_PATH;$QT_HOST_PATH_CMAKE_DIR" \
+            -DANDROID_PLATFORM=android-23 \
+            -DCMAKE_PREFIX_PATH="$PWD/../../../install/lib/cmake;$QT6_CMAKE_DIR" \
             -DQt6_DIR=$QT6_CMAKE_DIR \
-            -DQT_HOST_PATH=$QT_HOST_PATH \
-            # Keep BOTH to allow cross-toolchain builds to resolve Qt+FFmpeg includes/libs from target and provided paths.
             -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
-            -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH \
             -DCMAKE_LIBRARY_PATH=$FFMPEG_ANDROID/lib \
-            -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=$FFMPEG_ANDROID/include
+            -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=$FFMPEG_ANDROID/include \
+            -DQT_AVPLAYER_LIB=ON -DQT_AVPLAYER_MULTIMEDIA=ON
           cmake --build . --verbose
