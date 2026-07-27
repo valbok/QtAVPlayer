@@ -387,3 +387,104 @@ jobs:
           mb2 build-shell cmake ../ -DCMAKE_PREFIX_PATH="$PWD/../../../install/lib/cmake" -DQT_AVPLAYER_LIB=ON
           mb2 build-shell make CXXFLAGS='-std=c++17' VERBOSE=1
 
+  android:
+    strategy:
+      matrix:
+        qt_version: ["6.6.3"]
+        arch: ["armv7"]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Qt for Android
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ matrix.qt_version }}
+          target: 'android'
+          arch: ${{ format('android_{0}', matrix.arch) }}
+          modules: 'qtmultimedia'
+
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27b
+          add-to-path: true
+
+      - name: Build FFmpeg for Android ${{ matrix.arch }}
+        run: |
+          FFMPEG_VERSION=7.1
+          TOOLCHAIN=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64
+          API=21
+          FFMPEG_INSTALL=$GITHUB_WORKSPACE/ffmpeg-android
+
+          wget -q "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz"
+          tar xf "ffmpeg-${FFMPEG_VERSION}.tar.gz"
+          cd "ffmpeg-${FFMPEG_VERSION}"
+
+          ./configure \
+            --target-os=android \
+            --arch=arm \
+            --cpu=armv7-a \
+            --enable-cross-compile \
+            --cross-prefix=$TOOLCHAIN/bin/arm-linux-androideabi- \
+            --cc=$TOOLCHAIN/bin/armv7a-linux-androideabi${API}-clang \
+            --nm=$TOOLCHAIN/bin/llvm-nm \
+            --ar=$TOOLCHAIN/bin/llvm-ar \
+            --as=$TOOLCHAIN/bin/armv7a-linux-androideabi${API}-clang \
+            --strip=$TOOLCHAIN/bin/llvm-strip \
+            --ranlib=$TOOLCHAIN/bin/llvm-ranlib \
+            --disable-asm \
+            --disable-doc \
+            --disable-programs \
+            --disable-everything \
+            --enable-shared \
+            --disable-static \
+            --prefix=$FFMPEG_INSTALL
+
+          make -j$(nproc)
+          make install
+          echo "FFMPEG_ANDROID=$FFMPEG_INSTALL" >> $GITHUB_ENV
+
+      - name: Build libQtAVPlayer for Android
+        run: |
+          ANDROID_ABI=${{ matrix.arch == 'armv7' && 'armeabi-v7a' || 'arm64-v8a' }}
+          QT_HOST_PATH=$(dirname $QT_ROOT_DIR)/gcc_64
+
+          mkdir build
+          cd build
+          cmake ../src/QtAVPlayer \
+            -DCMAKE_INSTALL_PREFIX=../install \
+            -DQT_AVPLAYER_MULTIMEDIA=ON \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=$ANDROID_ABI \
+            -DANDROID_PLATFORM=android-21 \
+            -DCMAKE_PREFIX_PATH=$QT_ROOT_DIR \
+            -DQT_HOST_PATH=$QT_HOST_PATH \
+            -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
+            -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH \
+            -DCMAKE_LIBRARY_PATH=$FFMPEG_ANDROID/lib \
+            -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=$FFMPEG_ANDROID/include
+          cmake --build . --verbose
+          cmake --install .
+
+      - name: Build qml_player for Android
+        run: |
+          ANDROID_ABI=${{ matrix.arch == 'armv7' && 'armeabi-v7a' || 'arm64-v8a' }}
+          QT_HOST_PATH=$(dirname $QT_ROOT_DIR)/gcc_64
+
+          cd examples/qml_player
+          mkdir build
+          cd build
+          cmake ../ \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=$ANDROID_ABI \
+            -DANDROID_PLATFORM=android-21 \
+            -DCMAKE_PREFIX_PATH=$QT_ROOT_DIR \
+            -DQT_HOST_PATH=$QT_HOST_PATH \
+            -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
+            -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH \
+            -DCMAKE_LIBRARY_PATH=$FFMPEG_ANDROID/lib \
+            -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=$FFMPEG_ANDROID/include
+          cmake --build . --verbose
