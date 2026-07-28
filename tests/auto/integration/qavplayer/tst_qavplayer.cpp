@@ -3499,7 +3499,7 @@ void tst_QAVPlayer::outputFile()
     p.setOutput("output");
     p.play();
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::InvalidMedia);
-    QCOMPARE(err, QAVPlayer::MuxerError);
+    QTRY_COMPARE(err, QAVPlayer::MuxerError);
 
     // Set before the source
     p.setOutput({});
