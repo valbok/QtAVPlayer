@@ -595,12 +595,12 @@ void QAVPlayerPrivate::doLoad()
 
 void QAVPlayerPrivate::doDemux()
 {
-    const int maxQueueBytes = 15 * 1024 * 1024;
+    const int maxBytes = 15 * 1024 * 1024;
     QMutex waiterMutex;
     QWaitCondition waiter;
 
     while (!quit) {
-        if (videoQueue.bytes() + audioQueue.bytes() > maxQueueBytes
+        if (videoQueue.bytes() + audioQueue.bytes() + subtitleQueue.bytes() > maxBytes
             || (videoQueue.enough() && audioQueue.enough())
             || !startDemuxing)
         {
