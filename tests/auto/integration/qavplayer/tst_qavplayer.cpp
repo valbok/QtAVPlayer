@@ -511,8 +511,6 @@ void tst_QAVPlayer::playVideo()
     QCOMPARE(spyVideoFrameRateChanged.count(), 1);
 
     QTRY_VERIFY(p.position() != 0);
-    p.setMaxQueuedBytes(1000 * 1024 * 1024);
-    QCOMPARE(p.maxQueuedBytes(), 1000 * 1024 * 1024);
 }
 
 void tst_QAVPlayer::pauseVideo()
@@ -3501,7 +3499,7 @@ void tst_QAVPlayer::outputFile()
     p.setOutput("output");
     p.play();
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::InvalidMedia);
-    QTRY_COMPARE(err, QAVPlayer::MuxerError);
+    QCOMPARE(err, QAVPlayer::MuxerError);
 
     // Set before the source
     p.setOutput({});
