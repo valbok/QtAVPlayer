@@ -52,8 +52,10 @@ void QAVMuxerFramesPrivate::doWork()
             cond.wait(&mutex);
             if (!loaded)
                 continue;
-            if (quit || frames.isEmpty())
+            if (quit)
                 break;
+            if (frames.isEmpty())
+                continue;
         }
         auto frame = frames.takeFirst();
         if (!frame)
