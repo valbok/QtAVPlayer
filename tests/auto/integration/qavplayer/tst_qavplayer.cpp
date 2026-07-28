@@ -3493,10 +3493,13 @@ void tst_QAVPlayer::outputFile()
     p.play();
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia || p.mediaStatus() == QAVPlayer::EndOfMedia);
 
+    QAVPlayer::Error err;
+    QObject::connect(&p, &QAVPlayer::errorOccurred, &p, [&](auto error, auto) { err = error; });
     p.setSource(QFileInfo(testData("rotated_90.mp4")).absoluteFilePath());
     p.setOutput("output");
     p.play();
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::InvalidMedia);
+    QCOMPARE(err, QAVPlayer::MuxerError);
 
     // Set before the source
     p.setOutput({});
