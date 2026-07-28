@@ -394,6 +394,13 @@ ApplicationWindow {
                         // Open downward from the button
                         y: audioMenuButton.height
 
+                        function updateWidth() {
+                            var widest = 200
+                            for (var index = 0; index < count; ++index)
+                                widest = Math.max(widest, itemAt(index).implicitWidth)
+                            width = widest
+                        }
+
                         background: Rectangle {
                             color: root.bgPanel
                             border.color: root.accentColor
@@ -406,6 +413,7 @@ ApplicationWindow {
                             model: audioMenuModel
                             delegate: MenuItem {
                                 text: model.name
+                                implicitWidth: contentItem.implicitWidth + 24
                                 contentItem: Text {
                                     leftPadding: 12
                                     text: parent.text
@@ -423,8 +431,14 @@ ApplicationWindow {
                                 }
                             }
                             // Manually add/remove created objects to the Menu
-                            onObjectAdded: (index, object) => audioMenu.insertItem(index, object)
-                            onObjectRemoved: (index, object) => audioMenu.removeItem(object)
+                            onObjectAdded: (index, object) => {
+                                audioMenu.insertItem(index, object)
+                                Qt.callLater(audioMenu.updateWidth)
+                            }
+                            onObjectRemoved: (index, object) => {
+                                audioMenu.removeItem(object)
+                                Qt.callLater(audioMenu.updateWidth)
+                            }
                         }
                     }
                 }
@@ -444,6 +458,13 @@ ApplicationWindow {
                         id: videoMenu
                         // Open downward from the button
                         y: videoMenuButton.height
+
+                        function updateWidth() {
+                            var widest = 200
+                            for (var index = 0; index < count; ++index)
+                                widest = Math.max(widest, itemAt(index).implicitWidth)
+                            width = widest
+                        }
 
                         background: Rectangle {
                             color: root.bgPanel
@@ -513,6 +534,7 @@ ApplicationWindow {
                             model: videoMenuModel
                             delegate: MenuItem {
                                 text: model.name
+                                implicitWidth: contentItem.implicitWidth + 24
                                 contentItem: Text {
                                     leftPadding: 12
                                     text: parent.text
@@ -530,8 +552,14 @@ ApplicationWindow {
                                 }
                             }
                             // Manually add/remove created objects to the Menu
-                            onObjectAdded: (index, object) => videoMenu.insertItem(index, object)
-                            onObjectRemoved: (index, object) => videoMenu.removeItem(object)
+                            onObjectAdded: (index, object) => {
+                                videoMenu.insertItem(index, object)
+                                Qt.callLater(videoMenu.updateWidth)
+                            }
+                            onObjectRemoved: (index, object) => {
+                                videoMenu.removeItem(object)
+                                Qt.callLater(videoMenu.updateWidth)
+                            }
                         }
                     }
                 }
