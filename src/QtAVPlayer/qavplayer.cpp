@@ -542,7 +542,7 @@ void QAVPlayerPrivate::resetMuxer()
     int ret = muxer.load(demuxer.availableStreams(), filename);
     if (ret < 0) {
         muxer.unload();
-        setError(QAVPlayer::ResourceError, err_str(ret));
+        setError(QAVPlayer::MuxerError, err_str(ret));
     }
 }
 
@@ -1532,6 +1532,8 @@ QDebug operator<<(QDebug dbg, QAVPlayer::Error err)
             return dbg << "FilterError";
         case QAVPlayer::BitstreamFilterError:
             return dbg << "BitstreamFilterError";
+        case QAVPlayer::MuxerError:
+            return dbg << "MuxerError";
         default:
             return dbg << QString(QLatin1String("UserType(%1)" )).arg(int(err)).toLatin1().constData();
     }

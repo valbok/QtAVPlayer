@@ -49,7 +49,8 @@ public:
         NoError,
         ResourceError,
         FilterError,
-        BitstreamFilterError
+        BitstreamFilterError,
+        MuxerError
     };
 
     QAVPlayer(QObject *parent = nullptr);
