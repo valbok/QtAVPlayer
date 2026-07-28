@@ -1,5 +1,5 @@
 /***************************************************************
- * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
  *                                                             *
  * This file is part of QtAVPlayer.                            *
  * Free Qt Media Player based on FFmpeg.                       *
@@ -126,6 +126,19 @@ public:
     void setVideoCodecOptions(const QMap<QString, QString> &opts);
 
     QAVStream::Progress progress(const QAVStream &stream) const;
+
+    /**
+     * Returns the maximum number of bytes that can be buffered in the
+     * audio and video queues.
+     *
+     * If the combined size of the queues exceeds this limit, the demuxer
+     * thread pauses until the decoding threads consume enough packets,
+     * after which demuxing resumes.
+     *
+     * Default value is 15Mb.
+     */
+    int maxQueuedBytes() const;
+    void setMaxQueuedBytes(int size);
 
 public Q_SLOTS:
     void play();
