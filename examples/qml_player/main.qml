@@ -12,6 +12,14 @@ ApplicationWindow {
     height: 600
     visible: true
     color: "#0d0d0d"
+    readonly property bool isFullScreen: visibility === Window.FullScreen
+    readonly property bool menuBarVisible: !isFullScreen
+                                       || (windowHover.hovered && windowHover.point.position.y <= 40)
+                                       || fileMenu.visible || subtitleMenu.visible
+                                       || audioMenu.visible || videoMenu.visible
+    readonly property bool playbackControlsVisible: !isFullScreen
+                                                || (windowHover.hovered
+                                                    && windowHover.point.position.y >= height - 84)
 
     // Accessing it through `pc` with a fallback object ensures
     // no binding ever receives null and throws a TypeError.
@@ -199,14 +207,20 @@ ApplicationWindow {
         }
     }
 
-    ColumnLayout {
+    HoverHandler {
+        id: windowHover
+    }
+
+    Item {
         anchors.fill: parent
-        spacing: 0
 
         Rectangle {
-            Layout.fillWidth: true
+            id: menuBar
+            anchors { top: parent.top; left: parent.left; right: parent.right }
             height: 40
             color: root.bgPanel
+            visible: root.menuBarVisible
+            z: 1
 
             RowLayout {
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 12 }
@@ -525,8 +539,11 @@ ApplicationWindow {
         }
 
         Rectangle {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+            anchors {
+                fill: parent
+                topMargin: root.isFullScreen ? 0 : 40
+                bottomMargin: root.isFullScreen ? 0 : 84
+            }
             color: "black"
 
             // Placeholder when no media is loaded
@@ -616,9 +633,12 @@ ApplicationWindow {
         }
 
         Rectangle {
-            Layout.fillWidth: true
+            id: seekBarContainer
+            anchors { left: parent.left; right: parent.right; bottom: controlBar.top }
             height: 28
             color: root.bgPanel
+            visible: root.playbackControlsVisible
+            z: 1
 
             RowLayout {
                 anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
@@ -659,9 +679,11 @@ ApplicationWindow {
 
         Rectangle {
             id: controlBar
-            Layout.fillWidth: true
+            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
             height: 56
             color: root.bgPanel
+            visible: root.playbackControlsVisible
+            z: 1
 
             RowLayout {
                 anchors { fill: parent; leftMargin: 16; rightMargin: 16 }
