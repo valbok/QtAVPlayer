@@ -54,8 +54,7 @@ void QAVMuxerFramesPrivate::doWork()
                 continue;
             if (quit)
                 break;
-            if (frames.isEmpty())
-                continue;
+            continue;
         }
         auto frame = frames.takeFirst();
         if (!frame)
