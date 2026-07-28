@@ -1,5 +1,5 @@
 /***************************************************************
- * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
  *                                                             *
  * This file is part of QtAVPlayer.                            *
  * Free Qt Media Player based on FFmpeg.                       *
@@ -158,6 +158,7 @@ public:
     QWaitCondition waitCond;
     bool eof = false;
     std::atomic_bool startDemuxing{false};
+    std::atomic<int> maxQueuedBytes{15 * 1024 * 1024};
 
     QList<QString> filterDescs;
     QAVFilters filters;
@@ -595,12 +596,11 @@ void QAVPlayerPrivate::doLoad()
 
 void QAVPlayerPrivate::doDemux()
 {
-    const int maxQueueBytes = 15 * 1024 * 1024;
     QMutex waiterMutex;
     QWaitCondition waiter;
 
     while (!quit) {
-        if (videoQueue.bytes() + audioQueue.bytes() > maxQueueBytes
+        if (videoQueue.bytes() + audioQueue.bytes() > maxQueuedBytes
             || (videoQueue.enough() && audioQueue.enough())
             || !startDemuxing)
         {
@@ -1458,6 +1458,16 @@ void QAVPlayer::setLogsLevelBackend(int level)
 QAVStream::Progress QAVPlayer::progress(const QAVStream &s) const
 {
     return d_func()->demuxer.progress(s);
+}
+
+void QAVPlayer::setMaxQueuedBytes(int size)
+{
+    d_func()->maxQueuedBytes = size;
+}
+
+int QAVPlayer::maxQueuedBytes() const
+{
+    return d_func()->maxQueuedBytes;
 }
 
 #ifndef QT_NO_DEBUG_STREAM
