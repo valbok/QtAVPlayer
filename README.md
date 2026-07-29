@@ -174,6 +174,7 @@ player->setSource(file);
 Notes:
 - Set the `QT_AVPLAYER_NO_HWDEVICE` environment variable to force software decoding.
 - You can also call `player.setInputVideoCodec("software")` to force software decoding for a specific player.
+- Set the `QT_AVPLAYER_MAX_QUEUED_BYTES` or `QT_AVPLAYER_MAX_QUEUED_SEC` environment variables to limit the amount of data buffered in the audio and video queues while demuxing. Once the configured limit is reached, demuxing pauses until packets are consumed by the decoder.
 - Not every FFmpeg decoder/filter supports hardware acceleration — QtAVPlayer falls back to software decoding automatically when needed.
 
 

@@ -1,5 +1,5 @@
 /***************************************************************
- * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
  *                                                             *
  * This file is part of QtAVPlayer.                            *
  * Free Qt Media Player based on FFmpeg.                       *
@@ -595,13 +595,17 @@ void QAVPlayerPrivate::doLoad()
 
 void QAVPlayerPrivate::doDemux()
 {
-    const int maxBytes = 15 * 1024 * 1024;
+    const auto bytesEnv = qgetenv("QT_AVPLAYER_MAX_QUEUED_BYTES");
+    const auto maxBytes = !bytesEnv.isEmpty() ? bytesEnv.toInt() : 15728640;
+    const auto secEnv = qgetenv("QT_AVPLAYER_MAX_QUEUED_SEC");
+    const auto maxSec = !secEnv.isEmpty() ? secEnv.toDouble() : 1.0;
+
     QMutex waiterMutex;
     QWaitCondition waiter;
 
     while (!quit) {
         if (videoQueue.bytes() + audioQueue.bytes() + subtitleQueue.bytes() > maxBytes
-            || (videoQueue.enough() && audioQueue.enough())
+            || (videoQueue.duration() > maxSec && audioQueue.duration() > maxSec)
             || !startDemuxing)
         {
             QMutexLocker locker(&waiterMutex);
