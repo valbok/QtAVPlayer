@@ -1,9 +1,9 @@
-/*********************************************************
- * Copyright (C) 2020, Val Doroshchuk <valbok@gmail.com> *
- *                                                       *
- * This file is part of QtAVPlayer.                      *
- * Free Qt Media Player based on FFmpeg.                 *
- *********************************************************/
+/***************************************************************
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
+ *                                                             *
+ * This file is part of QtAVPlayer.                            *
+ * Free Qt Media Player based on FFmpeg.                       *
+ ***************************************************************/
 
 #ifndef QAVPACKETQUEUE_H
 #define QAVPACKETQUEUE_H
@@ -190,11 +190,16 @@ public:
         m_producerWaiter.wakeAll();
     }
 
-    bool enough() const
+    int size() const
     {
         QMutexLocker locker(&m_mutex);
-        const int minFrames = 15;
-        return m_packets.size() > minFrames && (!m_duration || m_duration > 1.0);
+        return m_packets.size();
+    }
+
+    double duration() const
+    {
+        QMutexLocker locker(&m_mutex);
+        return m_duration;
     }
 
     int bytes() const
@@ -263,7 +268,7 @@ private:
     bool m_wake = false;
 
     int m_bytes = 0;
-    int m_duration = 0;
+    double m_duration = 0;
 
 private:
     Q_DISABLE_COPY(QAVPacketQueue)
