@@ -71,6 +71,14 @@ PlayerController::PlayerController(QObject *parent)
     : QObject(parent)
 {
     connectPlayerSignals();
+    connect(&m_mediaDevices, &QMediaDevices::audioOutputsChanged, this, [this] {
+        if (!m_audioOutput.audioDevice().isNull()
+            && !QMediaDevices::audioOutputs().contains(m_audioOutput.audioDevice())) {
+            m_audioOutput.setAudioDevice({});
+        }
+        emit audioDevicesChanged();
+        emit audioDeviceChanged();
+    });
 #if defined(Q_OS_WIN)
     m_audioOutput.setBufferSize(96000);
 #endif
@@ -313,6 +321,21 @@ QStringList PlayerController::audioTracks() const
     return tracks(m_player.availableAudioStreams());
 }
 
+QStringList PlayerController::audioDevices() const
+{
+    QStringList devices;
+    for (const auto &device : QMediaDevices::audioOutputs())
+        devices.append(device.description());
+    return devices;
+}
+
+int PlayerController::audioDeviceIndex() const
+{
+    auto selectedDevice = m_audioOutput.audioDevice();
+    auto devices = QMediaDevices::audioOutputs();
+    return devices.indexOf(selectedDevice);
+}
+
 void PlayerController::setAudioTrack(int index)
 {
     auto streams = m_player.availableAudioStreams();
@@ -320,6 +343,18 @@ void PlayerController::setAudioTrack(int index)
         m_player.setAudioStream(streams[index]);
         emit audioTrackChanged(index);
     }
+}
+
+void PlayerController::setAudioDevice(int index)
+{
+    const auto devices = QMediaDevices::audioOutputs();
+    if (index < -1 || index >= devices.size()) {
+        qWarning() << "Invalid audio device index:" << index;
+        return;
+    }
+
+    m_audioOutput.setAudioDevice(index >= 0 ? devices.at(index) : QAudioDevice());
+    emit audioDeviceChanged();
 }
 
 QStringList PlayerController::videoTracks() const

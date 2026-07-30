@@ -1900,6 +1900,18 @@ void tst_QAVPlayer::audioOutput()
     QTest::qWait(100);
     out.setVolume(0.9);
     QCOMPARE(out.volume(), 0.9);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    auto audioDevices = QMediaDevices::audioOutputs();
+#else
+    auto audioDevices = QAudioDeviceInfo::availableDevices(QAudio::AudioOutput);
+#endif
+    if (!audioDevices.isEmpty()) {
+        out.setAudioDevice(audioDevices.first());
+        QCOMPARE(out.audioDevice(), audioDevices.first());
+    }
+    out.setAudioDevice({});
+    QVERIFY(out.audioDevice().isNull());
+
 #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
     out.setChannelConfig(QAudioFormat::channelConfig(QAudioFormat::FrontRight));
     QCOMPARE(out.channelConfig(), QAudioFormat::channelConfig(QAudioFormat::FrontRight));

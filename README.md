@@ -215,6 +215,9 @@ The audio frames could be played using `QAVAudioOutput`:
 
 ```cpp
 auto audioOutput = new QAVAudioOutput(&mainWidget);
+auto audioDevices = QMediaDevices::audioOutputs();
+if (!audioDevices.isEmpty())
+    audioOutput->setAudioDevice(audioDevices.first());
 QObject::connect(player, &QAVPlayer::audioFrame, audioOutput,
     [&](const QAVAudioFrame &frame) {
         audioOutput->play(frame);

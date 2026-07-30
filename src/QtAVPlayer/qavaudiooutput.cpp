@@ -13,12 +13,6 @@
 #include <QWaitCondition>
 #include <QCoreApplication>
 #include <QThreadPool>
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#include <QAudioOutput>
-#else
-#include <QAudioSink>
-#include <QMediaDevices>
-#endif
 
 extern "C" {
 #include "libavutil/time.h"
@@ -119,14 +113,6 @@ static QAVAudioFormat format(const QAudioFormat &from)
 class QAVAudioOutputPrivate : public QObject
 {
 public:
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    using AudioOutput = QAudioOutput;
-    using AudioDevice = QAudioDeviceInfo;
-#else
-    using AudioOutput = QAudioSink;
-    using AudioDevice = QAudioDevice;
-#endif
-
     QAVAudioOutputPrivate(QAVAudioOutput *q): q_ptr(q) {}
 
     QAVAudioOutput *q_ptr = nullptr;
@@ -139,7 +125,9 @@ public:
 
     std::unique_ptr<QAVAudioOutputDevice> device;
     std::unique_ptr<QThread> audioThread;
-    AudioDevice defaultAudioDevice;
+
+    AudioDevice requestedAudioDevice;
+    AudioDevice activeAudioDevice;
     // Format of AudioDevice
     QAudioFormat audioOutputFormat;
     // Format of input frames receiving from the player
@@ -154,11 +142,14 @@ public:
     void resetIfNeeded(const QAVAudioFormat &frameFormat, int bsize, qreal v)
     {
         QMutexLocker locker(&mutex);
+        auto audioDevice = requestedAudioDevice;
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-        auto audioDevice = QAudioDeviceInfo::defaultOutputDevice();
+        if (audioDevice.isNull())
+            audioDevice = QAudioDeviceInfo::defaultOutputDevice();
         auto deviceName = audioDevice.deviceName();
 #else
-        auto audioDevice = QMediaDevices::defaultAudioOutput();
+        if (audioDevice.isNull())
+            audioDevice = QMediaDevices::defaultAudioOutput();
         auto deviceName = audioDevice.description();
 #endif
         auto fmt = format(frameFormat);
@@ -169,7 +160,7 @@ public:
             || audioOutput->format() != fmt
             || frameInputFormat != frameFormat
             || audioOutput->state() == QAudio::StoppedState
-            || defaultAudioDevice != audioDevice)
+            || activeAudioDevice != audioDevice)
         {
             if (QThread::currentThread() != audioThread.get()) {
                 qWarning() << "QAVAudioOutput initialization must be on the audio thread";
@@ -199,7 +190,7 @@ public:
                 o->stop();
                 o->deleteLater();
             });
-            defaultAudioDevice = audioDevice;
+            activeAudioDevice = audioDevice;
             if (bsize > 0)
                 audioOutput->setBufferSize(bsize);
             audioOutput->setVolume(v);
@@ -270,6 +261,26 @@ int QAVAudioOutput::bufferSize() const
     Q_D(const QAVAudioOutput);
     QMutexLocker locker(&d->mutex);
     return d->bufferSize;
+}
+
+void QAVAudioOutput::setAudioDevice(const AudioDevice &device)
+{
+    Q_D(QAVAudioOutput);
+    {
+        QMutexLocker locker(&d->mutex);
+        if (d->requestedAudioDevice == device)
+            return;
+        d->requestedAudioDevice = device;
+        d->frameInputFormat = {};
+    }
+    d->device->stop();
+}
+
+AudioDevice QAVAudioOutput::audioDevice() const
+{
+    Q_D(const QAVAudioOutput);
+    QMutexLocker locker(&d->mutex);
+    return d->requestedAudioDevice;
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
