@@ -22,6 +22,7 @@
 #include <QQuickItem>
 #include <QTimer>
 #include <QMutex>
+#include <QMediaDevices>
 
 class SubtitleItem : public QQuickItem
 {
@@ -66,6 +67,8 @@ class PlayerController : public QObject
     Q_PROPERTY(QStringList subtitleTracks READ subtitleTracks NOTIFY subtitleTracksChanged)
     Q_PROPERTY(QStringList audioTracks READ audioTracks NOTIFY audioTracksChanged)
     Q_PROPERTY(QStringList videoTracks READ videoTracks NOTIFY videoTracksChanged)
+    Q_PROPERTY(QStringList audioDevices READ audioDevices NOTIFY audioDevicesChanged)
+    Q_PROPERTY(int audioDeviceIndex READ audioDeviceIndex NOTIFY audioDeviceChanged)
 
 public:
     explicit PlayerController(QObject *parent = nullptr);
@@ -80,6 +83,8 @@ public:
     QStringList subtitleTracks() const;
     QStringList audioTracks() const;
     QStringList videoTracks() const;
+    QStringList audioDevices() const;
+    int audioDeviceIndex() const;
     void setSubtitleItem(SubtitleItem *item);
 
     void setVolume(qreal v);
@@ -97,6 +102,7 @@ public slots:
     void stepBackward();
     void setSubtitleTrack(int index);
     void setAudioTrack(int index);
+    void setAudioDevice(int index);
     void setVideoTrack(int index);
     void setVideoCodec(const QString &codec);
     void setCopyFreeRender(bool copyfree);
@@ -114,6 +120,8 @@ signals:
     void subtitleImageChanged(const QImage &img, int duration);
     void audioTracksChanged();
     void audioTrackChanged(int index);
+    void audioDevicesChanged();
+    void audioDeviceChanged();
     void videoTracksChanged();
     void videoTrackChanged(int index);
     void hwDeviceChanged(bool hw);
@@ -126,6 +134,7 @@ private:
     void reset();
 
     QAVAudioOutput m_audioOutput;
+    QMediaDevices m_mediaDevices;
     QVideoSink *m_videoSink = nullptr;
     QAVSubtitleTextParser m_subtitleParser;
 #if defined(QT_AVPLAYER_LIBASS)

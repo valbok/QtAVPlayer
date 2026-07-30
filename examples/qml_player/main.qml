@@ -16,7 +16,7 @@ ApplicationWindow {
     readonly property bool menuBarVisible: !isFullScreen
                                        || (windowHover.hovered && windowHover.point.position.y <= 40)
                                        || fileMenu.visible || subtitleMenu.visible
-                                       || audioMenu.visible || videoMenu.visible
+                                       || audioMenu.visible || audioDeviceMenu.visible || videoMenu.visible
     readonly property bool playbackControlsVisible: !isFullScreen
                                                 || (windowHover.hovered
                                                     && windowHover.point.position.y >= height - 84)
@@ -25,7 +25,8 @@ ApplicationWindow {
     // no binding ever receives null and throws a TypeError.
     readonly property var pc: playerController ?? ({
         hasMedia: false, playing: false,
-        position: 0, duration: 0, volume: 1.0, errorString: "", subtitleTracks: [], audioTracks: [], videoTracks: []
+        position: 0, duration: 0, volume: 1.0, errorString: "", subtitleTracks: [], audioTracks: [], videoTracks: [],
+        audioDevices: [], audioDeviceIndex: -1
     })
 
     readonly property color accentColor:  "#e8c84a"   // warm amber
@@ -245,7 +246,6 @@ ApplicationWindow {
                             radius: root.radius
                             implicitWidth: 200
                         }
-
                         MenuItem {
                             text: "Open File"
                             onTriggered: fileDialog.open()
@@ -408,6 +408,19 @@ ApplicationWindow {
                             radius: root.radius
                             implicitWidth: 200
                         }
+                        delegate: MenuItem {
+                            implicitWidth: contentItem.implicitWidth + 36
+                            contentItem: Text {
+                                leftPadding: 12
+                                text: parent.text
+                                color: parent.highlighted ? root.accentColor : root.textPrimary
+                                font.pixelSize: 13
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle {
+                                color: parent.highlighted ? Qt.rgba(1,1,1,0.06) : "transparent"
+                            }
+                        }
 
                         Instantiator {
                             model: audioMenuModel
@@ -438,6 +451,80 @@ ApplicationWindow {
                             onObjectRemoved: (index, object) => {
                                 audioMenu.removeItem(object)
                                 Qt.callLater(audioMenu.updateWidth)
+                            }
+                        }
+
+                        Menu {
+                            id: audioDeviceMenu
+                            title: "Audio Device"
+
+                                function updateWidth() {
+                                    var widest = 200
+                                    for (var index = 0; index < count; ++index)
+                                        widest = Math.max(widest, itemAt(index).implicitWidth)
+                                    width = widest
+                                }
+
+                                background: Rectangle {
+                                    color: root.bgPanel
+                                    border.color: root.accentColor
+                                    border.width: 1
+                                    radius: root.radius
+                                    implicitWidth: 200
+                                }
+
+                                MenuItem {
+                                    text: "System Default"
+                                    implicitWidth: contentItem.implicitWidth + 24
+                                    contentItem: Text {
+                                        leftPadding: 12
+                                        text: parent.text
+                                        color: pc.audioDeviceIndex === -1 ? root.accentColor
+                                             : parent.highlighted          ? root.textPrimary
+                                             :                               root.textMuted
+                                        font.pixelSize: 13
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+                                    background: Rectangle {
+                                        color: parent.highlighted ? Qt.rgba(1,1,1,0.06) : "transparent"
+                                    }
+                                    onTriggered: pc.setAudioDevice(-1)
+                                }
+
+                                MenuSeparator {
+                                    contentItem: Rectangle {
+                                        implicitHeight: 1
+                                        color: "#333"
+                                    }
+                                }
+
+                                Instantiator {
+                                    model: pc.audioDevices
+                                    delegate: MenuItem {
+                                        text: modelData
+                                        implicitWidth: contentItem.implicitWidth + 24
+                                        contentItem: Text {
+                                            leftPadding: 12
+                                            text: parent.text
+                                            color: index === pc.audioDeviceIndex ? root.accentColor
+                                                 : parent.highlighted             ? root.textPrimary
+                                                 :                                  root.textMuted
+                                            font.pixelSize: 13
+                                            verticalAlignment: Text.AlignVCenter
+                                        }
+                                        background: Rectangle {
+                                            color: parent.highlighted ? Qt.rgba(1,1,1,0.06) : "transparent"
+                                        }
+                                        onTriggered: pc.setAudioDevice(index)
+                                    }
+                                    onObjectAdded: (index, object) => {
+                                        audioDeviceMenu.insertItem(index + 2, object)
+                                        Qt.callLater(audioDeviceMenu.updateWidth)
+                                    }
+                                    onObjectRemoved: (index, object) => {
+                                        audioDeviceMenu.removeItem(object)
+                                        Qt.callLater(audioDeviceMenu.updateWidth)
+                                }
                             }
                         }
                     }

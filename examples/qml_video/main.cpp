@@ -121,6 +121,17 @@ int main(int argc, char *argv[])
     //audioOutput.setChannelConfig(QAudioFormat::channelConfig(QAudioFormat::FrontLeft));
 #endif
 
+// Example how to set the audio device
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0) && defined(Q_OS_LINUX)
+    auto audioDevices = QAudioDeviceInfo::availableDevices(QAudio::AudioOutput);
+    for (auto &d : audioDevices) {
+        if (d.deviceName().endsWith(QString::fromLatin1("analog-stereo"))) {
+            audioOutput.setAudioDevice(d);
+            break;
+        }
+    }
+#endif
+
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&audioOutput](const QAVAudioFrame &frame) { audioOutput.play(frame); }, Qt::DirectConnection);
     QString file = argc > 1 ? QString::fromUtf8(argv[1]) : QString::fromLatin1("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
     QString filter = argc > 2 ? QString::fromUtf8(argv[2]) : QString();

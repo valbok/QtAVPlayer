@@ -13,6 +13,17 @@
 #include <QAudioFormat>
 #include <QObject>
 #include <memory>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <QAudioSink>
+#include <QAudioDevice>
+#include <QMediaDevices>
+using AudioOutput = QAudioSink;
+using AudioDevice = QAudioDevice;
+#else
+#include <QAudioOutput>
+using AudioOutput = QAudioOutput;
+using AudioDevice = QAudioDeviceInfo;
+#endif
 
 QT_BEGIN_NAMESPACE
 
@@ -28,6 +39,14 @@ public:
     qreal volume() const;
     void setBufferSize(int bytes);
     int bufferSize() const;
+
+    /**
+     * Sets the audio device used for playback. Pass a default-constructed
+     * AudioDevice to resume using the system default output device.
+     */
+    void setAudioDevice(const AudioDevice &device);
+    AudioDevice audioDevice() const;
+
 #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
     void setChannelConfig(QAudioFormat::ChannelConfig);
     QAudioFormat::ChannelConfig channelConfig() const;
