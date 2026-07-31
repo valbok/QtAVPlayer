@@ -252,8 +252,7 @@ void QAVAudioOutput::setBufferSize(int bytes)
     Q_D(QAVAudioOutput);
     QMutexLocker locker(&d->mutex);
     d->bufferSize = bytes;
-    if (d->bufferSize > 0 && d->audioOutput)
-        qWarning() << "QAVAudioOutput: Cannot set buffer size after audioOutput is started";
+    d->frameInputFormat = {};
 }
 
 int QAVAudioOutput::bufferSize() const

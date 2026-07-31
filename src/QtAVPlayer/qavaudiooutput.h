@@ -37,6 +37,7 @@ public:
 
     void setVolume(qreal v);
     qreal volume() const;
+    // Sets the audio buffer size to value in bytes
     void setBufferSize(int bytes);
     int bufferSize() const;
 
