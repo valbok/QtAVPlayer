@@ -720,14 +720,16 @@ ApplicationWindow {
                 anchors {
                     bottom: parent.bottom
                     horizontalCenter: parent.horizontalCenter
-                    bottomMargin: 18
+                    bottomMargin: root.isFullScreen ? subtitle.font.pixelSize + 28 + 18 : 18
                     left: parent.left
                     leftMargin: 32
                     rightMargin: 32
                 }
                 text: ""
                 color: "white"
-                font.pixelSize: 22
+                font.pixelSize: root.isFullScreen
+                                ? Math.max(32, Math.round(root.height * 0.035))
+                                : 26
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
                 style: Text.Outline
