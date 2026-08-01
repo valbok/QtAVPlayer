@@ -112,6 +112,7 @@ private slots:
     void framesAfterPlayerDestroyed();
     void scaleHW();
     void muxerScaleHW();
+    void muxerScaleHWSplit();
 };
 
 void tst_QAVPlayer::initTestCase()
@@ -3684,6 +3685,65 @@ void tst_QAVPlayer::muxerScaleHW()
     }
     for (auto &s : p.availableAudioStreams())
         encoderStreams.push_back(s);
+    QVERIFY(m.load(encoderStreams, "output.mkv") >= 0);
+
+    p.play();
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
+    m.unload();
+
+    QAVPlayer p2;
+    QAVVideoFrame vf;
+    QObject::connect(&p2, &QAVPlayer::videoFrame, &p2, [&](const QAVVideoFrame &f) {
+        vf = f;
+    });
+
+    p2.setSource("output.mkv");
+    QTRY_VERIFY(p2.mediaStatus() == QAVPlayer::LoadedMedia);
+    p2.pause();
+    QTRY_VERIFY(vf);
+    QCOMPARE(vf.size(), size);
+}
+
+void tst_QAVPlayer::muxerScaleHWSplit()
+{
+    QAVMuxerFrames m;
+    QAVPlayer p;
+    p.setSynced(false);
+    QSize size;
+    QString codec;
+#if defined(QT_AVPLAYER_CUDA)
+    p.setInputVideoCodec("h264_cuvid");
+    p.setFilter("[0:v]split=2[orig][toscale];[toscale]scale_cuda=160:120[scaled]");
+    size = {160, 120};
+    codec = "h264_nvenc";
+#endif
+    if (size.isEmpty())
+        return;
+    p.setSource(QFileInfo(testData("small.mp4")).absoluteFilePath());
+
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) {
+        if (f.filterName() == QLatin1String("orig")) {
+            QCOMPARE(f.size(), QSize(560, 320));
+            return;
+        }
+        QCOMPARE(f.filterName(), QLatin1String("scaled"));
+        QCOMPARE(f.size(), size);
+        m.enqueue(f);
+    }, Qt::DirectConnection);
+
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia);
+    auto videoStreams = p.availableVideoStreams();
+    QCOMPARE(videoStreams.size(), 1);
+    auto c = videoStreams[0].codec();
+    QVERIFY(c);
+    QCOMPARE(c->size(), QSize(560, 320));
+    QList<QAVMuxerFrames::EncoderStream> encoderStreams;
+    for (auto &s : videoStreams) {
+        QAVMuxerFrames::EncoderStream stream(s);
+        stream.size = size;
+        stream.codec = codec;
+        encoderStreams.push_back(stream);
+    }
     QVERIFY(m.load(encoderStreams, "output.mkv") >= 0);
 
     p.play();
