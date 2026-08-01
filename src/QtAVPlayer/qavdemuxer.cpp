@@ -254,14 +254,12 @@ static int setup_video_codec(const QString &inputVideoCodec, const QAVStream &st
     preferredDevices.push_back(AV_HWDEVICE_TYPE_MEDIACODEC);
     if (!ignoreHW && !codec.codec()) {
         // Dynamically find the appropriate mediacodec decoder for the stream's codec
-        const AVCodec *defaultDecoder = avcodec_find_decoder(stream.stream()->codecpar->codec_id);
+        auto defaultDecoder = avcodec_find_decoder(stream.stream()->codecpar->codec_id);
         if (defaultDecoder) {
-            const QByteArray mediacodecName = QByteArray(defaultDecoder->name) + "_mediacodec";
-            const AVCodec *mediacodecDecoder = avcodec_find_decoder_by_name(mediacodecName.constData());
-            if (mediacodecDecoder) {
-                qDebug() << "[" << streamInfo.title << "] Using mediacodec decoder:" << mediacodecName;
+            auto mediacodecName = QLatin1String(defaultDecoder->name) + "_mediacodec";
+            auto mediacodecDecoder = avcodec_find_decoder_by_name(mediacodecName.toLatin1().constData());
+            if (mediacodecDecoder)
                 codec.setCodec(mediacodecDecoder);
-            }
         }
     }
     auto vm = QtAndroidPrivate::javaVM();
