@@ -252,8 +252,18 @@ static int setup_video_codec(const QString &inputVideoCodec, const QAVStream &st
 #if defined(Q_OS_ANDROID)
     devices[AV_HWDEVICE_TYPE_MEDIACODEC].reset(new QAVHWDevice_MediaCodec);
     preferredDevices.push_back(AV_HWDEVICE_TYPE_MEDIACODEC);
-    if (!ignoreHW && !codec.codec())
-        codec.setCodec(avcodec_find_decoder_by_name("h264_mediacodec"));
+    if (!ignoreHW && !codec.codec()) {
+        // Dynamically find the appropriate mediacodec decoder for the stream's codec
+        const AVCodec *defaultDecoder = avcodec_find_decoder(stream.stream()->codecpar->codec_id);
+        if (defaultDecoder) {
+            const QByteArray mediacodecName = QByteArray(defaultDecoder->name) + "_mediacodec";
+            const AVCodec *mediacodecDecoder = avcodec_find_decoder_by_name(mediacodecName.constData());
+            if (mediacodecDecoder) {
+                qDebug() << "[" << streamInfo.title << "] Using mediacodec decoder:" << mediacodecName;
+                codec.setCodec(mediacodecDecoder);
+            }
+        }
+    }
     auto vm = QtAndroidPrivate::javaVM();
     av_jni_set_java_vm(vm, NULL);
 #endif
