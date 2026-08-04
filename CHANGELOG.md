@@ -1,5 +1,22 @@
-2026-07
--------
+- #693 - Fixed hardcoded h264_mediacodec for android
+- #692 - Added test to scale frames and return original ones
+- #691 - Fixed QAVAudioOutput::setBufferSize to allow new size after start of QAudioSink
+- #690 - Fixed qml_player to show subtitles in correct size
+- #689 - Introduced selection of audio device in QAVAudioOutput
+- #687 - Introduced max queued bytes and seconds to limit the demuxed packets
+- #686 - Fixed QAVAudioOutputDevice::readData to wait for more bytes if no more bytes available
+- #685 - Added subtitleQueue.bytes to total bytes in demuxer thread
+- #683 - Fixed tst_QAVPlayer::outputFile
+- #680 - Fixed qml_player to how full length streams in qml player
+- #679 - Introduced QAVPlayer::MuxerError to QAVPlayer
+- #678 - Fixed spurious wakeup in QAVMuxerFramesPrivate::doWork() causing muxerEnqueue failure on macOS
+- #677 - Fixed fullscreen player control in qml_player
+- #676 - Added android support to CI
+- #674 - Fixed position slider jumping on click in qml_player
+- #672 - Renamed QAVMuxerSubtitleFrames to QAVSubtitleTextParser
+
+v2026-07-21
+-----------
 
 - #670 - Added support for Qt 5.6 - roundedrectangle <129410215+roundedrectangle@users.noreply.github.com>
 - #669 - Moved interrupt_callback.callback to QAVFormatContext to prevent the crash
