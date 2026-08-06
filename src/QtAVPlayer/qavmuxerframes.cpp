@@ -12,6 +12,7 @@
 #include "qavsubtitlecodec_p.h"
 #include "qavvideoframe.h"
 #include "qavformatcontext_p.h"
+#include "qavfilters_p.h"
 
 #include <QThread>
 #include <QWaitCondition>
@@ -39,6 +40,8 @@ public:
     QList<QAVFrame> frames;
     QWaitCondition cond;
     bool quit = false;
+    QMap<int, QString> filterDescs;
+    QMap<int, QSharedPointer<QAVFilters>> filters;
 
     void doWork();
 };
@@ -62,7 +65,7 @@ void QAVMuxerFramesPrivate::doWork()
         // Ignore wrong frames
         if (index < 0)
             continue;
-        q->write(frame, index, locker);
+        q->writeFrame(frame, index, locker);
     }
 }
 
@@ -270,6 +273,120 @@ int QAVMuxerFrames::initStream(const EncoderStream &encoderStream, int index, AV
     return 0;
 }
 
+int QAVMuxerFrames::applyFilters(const QAVFrame &frame, int index, Locker &)
+{
+    Q_D(QAVMuxerFrames);
+    QAVStream videoStream;
+    QAVStream audioStream;
+    switch (frame.stream().stream()->codecpar->codec_type) {
+    case AVMEDIA_TYPE_VIDEO:
+        videoStream = frame.stream();
+        break;
+    default:
+        // For now only video filters are supported
+        qWarning() << "Unsupported codec type:" << frame.stream().stream()->codecpar->codec_type;
+        return AVERROR(ENOTSUP);
+    }
+    d->filters[index].reset(new QAVFilters);
+    int ret = d->filters[index]->createFilters(
+        {d->filterDescs[index]},
+        frame,
+        videoStream,
+        audioStream);
+    if (ret < 0) {
+        d->filterDescs.remove(index);
+        d->filters.remove(index);
+    }
+    return ret;
+}
+
+int QAVMuxerFrames::writeFilters(const QAVFrame &frame, int index, Locker &locker)
+{
+    Q_D(QAVMuxerFrames);
+    // No filters available
+    if (!d->filters.contains(index))
+        return write(frame, index, locker);
+    QList<QAVFrame> filteredFrames;
+    auto &encStream = d->encStreams[index];
+    auto enc_ctx = encStream.codec()->avctx();
+    int ret = 0;
+    // Try to re-apply filters on error
+    bool retried = false;
+    while (true) {
+        if (frame)
+            ret = d->filters[index]->write(enc_ctx->codec_type, frame);
+        // EAGAIN means write the next frame
+        if (ret >= 0 || ret == AVERROR(EAGAIN))
+            ret = d->filters[index]->read(enc_ctx->codec_type, frame, filteredFrames);
+        if (ret < 0 && ret != AVERROR(EAGAIN)) {
+            // Try filters again
+            filteredFrames.clear();
+            if (ret != AVERROR(ENOTSUP) || !frame || retried)
+                return ret;
+            ret = applyFilters(frame, index, locker);
+            if (ret < 0)
+                return ret;
+            retried = true;
+            continue;
+        }
+        break;
+    }
+    if (ret < 0)
+        return ret;
+    while (!filteredFrames.isEmpty()) {
+        auto &filteredFrame = filteredFrames.front();
+        ret = write(filteredFrame, index, locker);
+        if (ret < 0 && ret != AVERROR(EAGAIN))
+            break;
+        if (ret != AVERROR(EAGAIN))
+            filteredFrames.pop_front();
+    }
+    return ret;
+}
+
+static QString scaleFilter(AVPixelFormat fmt, const QSize &size)
+{
+    QString filter = QLatin1String("scale");
+    switch (fmt) {
+    case AV_PIX_FMT_CUDA:
+        filter = QLatin1String("scale_cuda");
+        break;
+    case AV_PIX_FMT_VAAPI:
+        filter = QLatin1String("scale_vaapi");
+        break;
+    case AV_PIX_FMT_D3D11:
+        filter = QLatin1String("scale_d3d11");
+        break;
+    default:
+        break;
+    }
+    return QString(QLatin1String("%1=%2:%3")).arg(filter).arg(size.width()).arg(size.height());
+}
+
+int QAVMuxerFrames::writeFrame(const QAVFrame &frame, int index, Locker &locker)
+{
+    Q_D(QAVMuxerFrames);
+    auto &encStream = d->encStreams[index];
+    auto enc_ctx = encStream.codec()->avctx();
+    // Check if the size is the same as encoder
+    if (frame && enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+        QSize frameSize(frame.frame()->width, frame.frame()->height);
+        QSize encSize(enc_ctx->width, enc_ctx->height);
+        // If the size of the frame differs to the encoder's
+        // then need to implicitly resize the frame using a filter.
+        if (!frameSize.isNull() && frameSize != encSize) {
+            if (!d->filterDescs.contains(index)) {
+                auto filter = scaleFilter(AVPixelFormat(frame.frame()->format), encSize);
+                d->filterDescs[index] = filter;
+                int ret = applyFilters(frame, index, locker);
+                if (ret < 0)
+                    return ret;
+            }
+        }
+    }
+    return writeFilters(frame, index, locker);
+}
+
 int QAVMuxerFrames::write(const QAVFrame &frame)
 {
     Q_D(QAVMuxerFrames);
@@ -279,7 +396,7 @@ int QAVMuxerFrames::write(const QAVFrame &frame)
     int index = d->outputStreamIndex(frame.stream(), locker);
     if (index < 0)
         return AVERROR(EINVAL);
-    return write(frame, index, locker);
+    return writeFrame(frame, index, locker);
 }
 
 int QAVMuxerFrames::write(const QAVSubtitleFrame &frame)
@@ -382,18 +499,22 @@ void QAVMuxerFrames::reset(Locker &locker)
     Q_D(QAVMuxerFrames);
     stop(locker);
     d->encStreams.clear();
+    d->filterDescs.clear();
+    d->filters.clear();
     QAVMuxer::reset(locker);
 }
 
 int QAVMuxerFrames::flushFrames(Locker &locker)
 {
     Q_D(QAVMuxerFrames);
+    for (auto &f : d->filters)
+        f->flush();
     for (auto &s : d->encStreams) {
         // no flushing for subtitles
         bool isSub = s.codec()->avctx()->codec_type == AVMEDIA_TYPE_SUBTITLE;
         if (isSub)
             continue;
-        int ret = write(QAVFrame(), s.index(), locker);
+        int ret = writeFrame(QAVFrame(), s.index(), locker);
         if (ret < 0 && ret != AVERROR_EOF) {
             qWarning() << d->filename << ": Could not flush:" << QAVMuxerPrivate::err2str(ret);
             return ret;

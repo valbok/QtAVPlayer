@@ -70,6 +70,12 @@ private:
     int initStreams(const QList<EncoderStream> &streams, Locker &);
     void init(Locker &);
     int initStream(const EncoderStream &stream, int index, AVStream *out_stream, Locker &);
+    // Applies requested filters
+    int applyFilters(const QAVFrame &frame, int index, Locker &);
+    // Writes the frame to the filters and then writes to muxer
+    int writeFilters(const QAVFrame &frame, int index, Locker &);
+    // Checks if filters should be applied
+    int writeFrame(const QAVFrame &frame, int index, Locker &);
     // Need to make a copy of frame
     // streamIndex is needed to flush empty frame
     int write(QAVFrame frame, int streamIndex, Locker &);
