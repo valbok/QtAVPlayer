@@ -293,6 +293,10 @@ int QAVMuxerFrames::applyFilters(const QAVFrame &frame, int index, Locker &)
         frame,
         videoStream,
         audioStream);
+    if (ret < 0) {
+        d->filterDescs.remove(index);
+        d->filters.remove(index);
+    }
     return ret;
 }
 
@@ -320,6 +324,8 @@ int QAVMuxerFrames::writeFilters(const QAVFrame &frame, int index, Locker &locke
             if (ret != AVERROR(ENOTSUP) || !frame || retried)
                 return ret;
             ret = applyFilters(frame, index, locker);
+            if (ret < 0)
+                return ret;
             retried = true;
             continue;
         }
@@ -373,11 +379,8 @@ int QAVMuxerFrames::writeFrame(const QAVFrame &frame, int index, Locker &locker)
                 auto filter = scaleFilter(AVPixelFormat(frame.frame()->format), encSize);
                 d->filterDescs[index] = filter;
                 int ret = applyFilters(frame, index, locker);
-                if (ret < 0) {
-                    d->filterDescs.remove(index);
-                    d->filters.remove(index);
+                if (ret < 0)
                     return ret;
-                }
             }
         }
     }
