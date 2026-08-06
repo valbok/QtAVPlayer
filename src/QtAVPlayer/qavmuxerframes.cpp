@@ -372,8 +372,10 @@ int QAVMuxerFrames::writeFrame(const QAVFrame &frame, int index, Locker &locker)
                 auto filter = scaleFilter(AVPixelFormat(frame.frame()->format), encSize);
                 d->filterDescs[index] = filter;
                 int ret = applyFilters(frame, index, locker);
-                if (ret < 0)
+                if (ret < 0) {
+                    d->filterDescs.clear();
                     return ret;
+                }
             }
         }
     }
