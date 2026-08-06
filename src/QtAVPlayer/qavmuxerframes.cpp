@@ -316,7 +316,7 @@ int QAVMuxerFrames::writeFilters(const QAVFrame &frame, int index, Locker &locke
         if (ret < 0 && ret != AVERROR(EAGAIN)) {
             // Try filters again
             filteredFrames.clear();
-            if (ret != AVERROR(ENOTSUP))
+            if (ret != AVERROR(ENOTSUP) || !frame)
                 return ret;
             ret = applyFilters(frame, index, locker);
             if (ret < 0)
@@ -362,7 +362,7 @@ int QAVMuxerFrames::writeFrame(const QAVFrame &frame, int index, Locker &locker)
     auto &encStream = d->encStreams[index];
     auto enc_ctx = encStream.codec()->avctx();
     // Check if the size is the same as encoder
-    if (enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+    if (frame && enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         QSize frameSize(frame.frame()->width, frame.frame()->height);
         QSize encSize(enc_ctx->width, enc_ctx->height);
         // If the size of the frame differs to the encoder's
@@ -494,6 +494,7 @@ void QAVMuxerFrames::reset(Locker &locker)
     Q_D(QAVMuxerFrames);
     stop(locker);
     d->encStreams.clear();
+    d->filterDescs.clear();
     d->filters.clear();
     QAVMuxer::reset(locker);
 }
