@@ -373,7 +373,8 @@ int QAVMuxerFrames::writeFrame(const QAVFrame &frame, int index, Locker &locker)
                 d->filterDescs[index] = filter;
                 int ret = applyFilters(frame, index, locker);
                 if (ret < 0) {
-                    d->filterDescs.clear();
+                    d->filterDescs.remove(index);
+                    d->filters.remove(index);
                     return ret;
                 }
             }
