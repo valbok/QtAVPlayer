@@ -1008,7 +1008,10 @@ void tst_QAVDemuxer::muxerFramesScale()
             QVERIFY(fs.size() == 1);
             auto &f = fs[0];
             QVERIFY(f);
-            m.write(f);
+            if (f.stream().stream()->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+                QVERIFY(m.write(f) >= 0);
+            else
+                QVERIFY(m.write(f) < 0);
         }
     }
     QTRY_VERIFY(m.size() == 0);
