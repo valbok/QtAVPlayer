@@ -492,6 +492,7 @@ void QAVMuxerFrames::reset(Locker &locker)
     Q_D(QAVMuxerFrames);
     stop(locker);
     d->encStreams.clear();
+    d->filters.clear();
     QAVMuxer::reset(locker);
 }
 
