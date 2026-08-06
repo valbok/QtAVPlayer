@@ -3820,7 +3820,7 @@ void tst_QAVPlayer::muxerScale()
     QAVVideoFrame vf;
     QObject::connect(&p2, &QAVPlayer::videoFrame, &p2, [&](const QAVVideoFrame &f) {
         vf = f;
-    });
+    }, Qt::QueuedConnection);
 
     p2.setSource("output.mkv");
     QTRY_VERIFY(p2.mediaStatus() == QAVPlayer::LoadedMedia);
