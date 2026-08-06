@@ -3691,6 +3691,8 @@ void tst_QAVPlayer::muxerScaleHW()
 
     p.play();
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
+    QTRY_VERIFY(m.size() == 0);
+    QVERIFY(m.flush() >= 0);
     m.unload();
 
     QAVPlayer p2;
@@ -3750,6 +3752,8 @@ void tst_QAVPlayer::muxerScaleHWSplit()
 
     p.play();
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
+    QTRY_VERIFY(m.size() == 0);
+    QVERIFY(m.flush() >= 0);
     m.unload();
 
     QAVPlayer p2;
@@ -3808,6 +3812,8 @@ void tst_QAVPlayer::muxerScale()
 
     p.play();
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
+    QTRY_VERIFY(m.size() == 0);
+    QVERIFY(m.flush() >= 0);
     m.unload();
 
     QAVPlayer p2;
