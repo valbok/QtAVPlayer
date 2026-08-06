@@ -316,7 +316,7 @@ int QAVMuxerFrames::writeFilters(const QAVFrame &frame, int index, Locker &locke
         if (ret < 0 && ret != AVERROR(EAGAIN)) {
             // Try filters again
             filteredFrames.clear();
-            if (ret != AVERROR(ENOTSUP) || !frame)
+            if (ret != AVERROR(ENOTSUP) || !frame || i == 1)
                 return ret;
             ret = applyFilters(frame, index, locker);
             if (ret < 0)
