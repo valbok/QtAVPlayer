@@ -307,24 +307,24 @@ int QAVMuxerFrames::writeFilters(const QAVFrame &frame, int index, Locker &locke
     auto enc_ctx = encStream.codec()->avctx();
     int ret = 0;
     // Try to re-apply filters on error
-    bool retry = false;
-    do {
+    bool retried = false;
+    while (true) {
         if (frame)
             ret = d->filters[index]->write(enc_ctx->codec_type, frame);
+        // EAGAIN means write the next frame
         if (ret >= 0 || ret == AVERROR(EAGAIN))
             ret = d->filters[index]->read(enc_ctx->codec_type, frame, filteredFrames);
         if (ret < 0 && ret != AVERROR(EAGAIN)) {
             // Try filters again
             filteredFrames.clear();
-            if (ret != AVERROR(ENOTSUP) || !frame || retry)
+            if (ret != AVERROR(ENOTSUP) || !frame || retried)
                 return ret;
             ret = applyFilters(frame, index, locker);
-            if (ret < 0) {
-                retry = true;
-                continue;
-            }
+            retried = true;
+            continue;
         }
-    } while (retry);
+        break;
+    }
     if (ret < 0)
         return ret;
     while (!filteredFrames.isEmpty()) {
