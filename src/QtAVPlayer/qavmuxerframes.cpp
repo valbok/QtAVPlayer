@@ -357,6 +357,9 @@ static QString scaleFilter(AVPixelFormat fmt, const QSize &size)
     case AV_PIX_FMT_D3D11:
         filter = QLatin1String("scale_d3d11");
         break;
+    case AV_PIX_FMT_VIDEOTOOLBOX:
+        filter = QLatin1String("scale_vt");
+        break;
     default:
         break;
     }
