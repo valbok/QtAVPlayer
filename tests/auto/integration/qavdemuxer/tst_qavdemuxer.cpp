@@ -866,9 +866,7 @@ void tst_QAVDemuxer::muxerFramesEncoderStreams()
     for (auto &s : d.availableVideoStreams()) {
         QVERIFY(s.codec());
         QCOMPARE(s.codec()->size(), QSize(160, 120));
-        QAVMuxerFrames::EncoderStream stream(s);
-        stream.size = size;
-        encoderStreams.push_back(stream);
+        encoderStreams.push_back({s, {}, size});
     }
     for (auto &s : d.availableAudioStreams()) {
         QVERIFY(s.codec());
@@ -919,9 +917,7 @@ void tst_QAVDemuxer::muxerFramesScaleHW()
     for (auto &s : d.availableVideoStreams()) {
         QVERIFY(s.codec());
         QCOMPARE(s.codec()->size(), QSize(560, 320));
-        QAVMuxerFrames::EncoderStream stream(s);
-        stream.size = size;
-        encoderStreams.push_back(stream);
+        encoderStreams.push_back({s, {}, size});
     }
     for (auto &s : d.availableAudioStreams())
         encoderStreams.push_back(s);
@@ -986,19 +982,12 @@ void tst_QAVDemuxer::muxerFramesScale()
     QVERIFY(codec);
     QVERIFY(!d.availableVideoStreams().isEmpty());
     QSize size(128, 96);
-    QList<QAVMuxerFrames::EncoderStream> encoderStreams;
-    for (auto &s : d.availableVideoStreams()) {
-        QVERIFY(s.codec());
-        QCOMPARE(s.codec()->size(), QSize(560, 320));
-        QAVMuxerFrames::EncoderStream stream(s);
-        // It should rescale
-        stream.size = size;
-        stream.codec = encoder;
-        encoderStreams.push_back(stream);
-    }
-
+    auto s = d.availableVideoStreams().first();
+    QVERIFY(s.codec());
+    QCOMPARE(s.codec()->size(), QSize(560, 320));
     QAVMuxerFrames m;
-    QVERIFY(m.load(encoderStreams, "small.mkv") >= 0);
+    // It should rescale
+    QVERIFY(m.load({{s, encoder, size}}, "small.mkv") >= 0);
 
     QAVPacket p;
     while (d.read(p) >= 0) {
