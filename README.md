@@ -292,6 +292,8 @@ QObject::connect(player, &QAVPlayer::videoFrame, player,
 // Requires to force cuda based codec
 player->setInputVideoCodec("h264_cuvid");
 player->setFilter("scale_cuda=1920:1080");
+// Applying the parallel filters returns the one original frame and the scaled one using `scale_cuda`
+player->setFilter("[0:v]split=2[orig][toscale];[toscale]scale_cuda=160:120[scaled]");
 ```
 
 ### Multiple streams
@@ -343,6 +345,12 @@ QObject::connect(&p2, &QAVPlayer::audioFrame, &p2,
 
 p1.play();
 p2.play();
+```
+
+- QAVMuxerFrames allows scaling input frames before muxing them into the output file:
+
+```cpp
+muxer.load({{videoStream, encoder, newSize}}, "output.mkv");
 ```
 
 ### Accurate seeking
