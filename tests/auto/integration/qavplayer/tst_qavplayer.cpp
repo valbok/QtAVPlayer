@@ -2608,7 +2608,7 @@ void tst_QAVPlayer::filesIOSequential()
 
     QFileInfo fileInfo(path);
     QFile file(fileInfo.absoluteFilePath());
-    file.open(QFile::ReadOnly);
+    QVERIFY(file.open(QFile::ReadOnly));
 
     QSharedPointer<BufferSequential> buffer(new BufferSequential);
     buffer->m_size = file.size();
@@ -3679,12 +3679,8 @@ void tst_QAVPlayer::muxerScaleHW()
     QVERIFY(c);
     QCOMPARE(c->size(), QSize(560, 320));
     QList<QAVMuxerFrames::EncoderStream> encoderStreams;
-    for (auto &s : videoStreams) {
-        QAVMuxerFrames::EncoderStream stream(s);
-        stream.size = size;
-        stream.codec = codec;
-        encoderStreams.push_back(stream);
-    }
+    for (auto &s : videoStreams)
+        encoderStreams.push_back({s, codec, size});
     for (auto &s : p.availableAudioStreams())
         encoderStreams.push_back(s);
     QVERIFY(m.load(encoderStreams, "output.mkv") >= 0);
@@ -3741,14 +3737,7 @@ void tst_QAVPlayer::muxerScaleHWSplit()
     auto c = videoStreams[0].codec();
     QVERIFY(c);
     QCOMPARE(c->size(), QSize(560, 320));
-    QList<QAVMuxerFrames::EncoderStream> encoderStreams;
-    for (auto &s : videoStreams) {
-        QAVMuxerFrames::EncoderStream stream(s);
-        stream.size = size;
-        stream.codec = codec;
-        encoderStreams.push_back(stream);
-    }
-    QVERIFY(m.load(encoderStreams, "output.mkv") >= 0);
+    QVERIFY(m.load({{videoStreams[0], codec, size}}, "output.mkv") >= 0);
 
     p.play();
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
@@ -3801,14 +3790,7 @@ void tst_QAVPlayer::muxerScale()
     auto c = videoStreams[0].codec();
     QVERIFY(c);
     QCOMPARE(c->size(), QSize(560, 320));
-    QList<QAVMuxerFrames::EncoderStream> encoderStreams;
-    for (auto &s : videoStreams) {
-        QAVMuxerFrames::EncoderStream stream(s);
-        stream.size = size;
-        stream.codec = encoder;
-        encoderStreams.push_back(stream);
-    }
-    QVERIFY(m.load(encoderStreams, "output.mkv") >= 0);
+    QVERIFY(m.load({{videoStreams[0], encoder, size}}, "output.mkv") >= 0);
 
     p.play();
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);

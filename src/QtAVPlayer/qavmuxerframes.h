@@ -26,7 +26,12 @@ public:
      */
     struct EncoderStream
     {
-        EncoderStream(const QAVStream &stream) : stream(stream) {}
+        EncoderStream(const QAVStream &stream,
+                      const QString &codec = {},
+                      const QSize &size = {})
+            : stream(stream)
+            , codec(codec)
+            , size(size) {}
 
         // Underlying stream with codec
         QAVStream stream;
