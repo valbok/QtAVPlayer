@@ -1,3 +1,6 @@
+- #697 - Fixed QAVMuxerFrames::EncoderStream to accept constructor params
+- #696 - Added missing scale_vt to support scaling in macOS in QAVMuxerFrames
+- #694 - Introduced scaling in QAVMuxerFrames, now it scales input frames before muxing
 - #693 - Fixed hardcoded h264_mediacodec for android
 - #692 - Added test to scale frames and return original ones
 - #691 - Fixed QAVAudioOutput::setBufferSize to allow new size after start of QAudioSink
