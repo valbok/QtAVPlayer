@@ -150,7 +150,7 @@ public:
             return;
         m_packets.append(packet);
         m_bytes += packet.packet()->size + sizeof(packet);
-        m_duration += packet.duration();
+        m_durations[packet.packet()->stream_index] += packet.duration();
         m_consumerWaiter.wakeAll();
         m_waitingForPackets = false;
     }
@@ -196,10 +196,13 @@ public:
         return m_packets.size();
     }
 
-    double duration() const
+    double duration(const QList<QAVStream> &streams) const
     {
         QMutexLocker locker(&m_mutex);
-        return m_duration;
+        double ret = 0.0;
+        for (const auto &s : streams)
+            ret += m_durations[s.index()];
+        return ret;
     }
 
     int bytes() const
@@ -244,7 +247,7 @@ private:
 
         auto packet = m_packets.takeFirst();
         m_bytes -= packet.packet()->size + sizeof(packet);
-        m_duration -= packet.duration();
+        m_durations[packet.packet()->stream_index] -= packet.duration();
         return packet;
     }
 
@@ -253,7 +256,7 @@ private:
         m_packets.clear();
         m_decodedFrames.clear();
         m_bytes = 0;
-        m_duration = 0;
+        m_durations.clear();
     }
 
     const AVMediaType m_mediaType = AVMEDIA_TYPE_UNKNOWN;
@@ -268,7 +271,7 @@ private:
     bool m_wake = false;
 
     int m_bytes = 0;
-    double m_duration = 0;
+    QMap<int, double> m_durations;
 
 private:
     Q_DISABLE_COPY(QAVPacketQueue)
