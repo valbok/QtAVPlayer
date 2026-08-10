@@ -161,13 +161,8 @@ public:
         QMutexLocker locker(&m_mutex);
         if (m_decodedFrames.isEmpty()) {
             auto pkt = dequeue();
-            if (m_demuxer.currentCodecType(pkt.packet()->stream_index) == m_mediaType) {
-                locker.unlock();
-                QList<T> frames;
-                QAVDemuxer::decode(pkt, frames);
-                locker.relock();
-                m_decodedFrames = frames;
-            }
+            if (m_demuxer.currentCodecType(pkt.packet()->stream_index) == m_mediaType)
+                QAVDemuxer::decode(pkt, m_decodedFrames);
         }
         if (m_decodedFrames.isEmpty())
             return false;
