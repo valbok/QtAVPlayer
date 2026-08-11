@@ -605,7 +605,9 @@ void QAVPlayerPrivate::doDemux()
 
     while (!quit) {
         if (videoQueue.bytes() + audioQueue.bytes() + subtitleQueue.bytes() > maxBytes
-            || (videoQueue.duration() > maxSec && audioQueue.duration() > maxSec)
+            || (maxSec > 0.0
+                && videoQueue.duration(demuxer.currentVideoStreams()) > maxSec
+                && audioQueue.duration(demuxer.currentAudioStreams()) > maxSec)
             || !startDemuxing)
         {
             QMutexLocker locker(&waiterMutex);
