@@ -118,6 +118,25 @@ private:
     const double refreshRate = 0.01;
 };
 
+/**
+ * Clock that synchronizes subtitles with ref pts
+ */
+class QAVQueueSubtitleClock
+{
+public:
+    // Returns false if the pts is not ready to render
+    bool wait(bool shouldSync, double pts, double master)
+    {
+        if (isnan(pts) || isnan(master) || master < 0
+            || master >= pts || !shouldSync)
+            return true;
+        double delaySec = pts - master;
+        double remaining_time = qMin(delaySec, 0.04);
+        av_usleep((int64_t)(remaining_time * 1000000.0));
+        return false;
+    }
+};
+
 template<class T>
 class QAVPacketQueue
 {

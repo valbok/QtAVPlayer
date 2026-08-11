@@ -98,7 +98,8 @@ public:
         bool &sync,
         const std::function<void(const QAVFrame &frame)> &cb);
     void doPlayStep(
-        QAVQueueClock &clock,
+        double refPts,
+        QAVQueueSubtitleClock &clock,
         QAVPacketQueue<QAVSubtitleFrame> &queue,
         bool &sync,
         const std::function<void(const QAVSubtitleFrame &frame)> &cb);
@@ -150,7 +151,7 @@ public:
 
     QFuture<void> subtitlePlayFuture;
     QAVPacketQueue<QAVSubtitleFrame> subtitleQueue;
-    QAVQueueClock subtitleClock;
+    QAVQueueSubtitleClock subtitleClock;
 
     bool quit = 0;
     bool isWaiting = false;
@@ -329,7 +330,6 @@ void QAVPlayerPrivate::terminate()
     audioClock.clear();
     subtitleQueue.clear();
     subtitleQueue.abort();
-    subtitleClock.clear();
     if (dev)
         dev->abort(true);
     demuxer.abort();
@@ -337,6 +337,7 @@ void QAVPlayerPrivate::terminate()
     loaderFuture.waitForFinished();
     videoPlayFuture.waitForFinished();
     audioPlayFuture.waitForFinished();
+    subtitlePlayFuture.waitForFinished();
     videoQueue.abort(false);
     audioQueue.abort(false);
     subtitleQueue.abort(false);
@@ -633,9 +634,7 @@ void QAVPlayerPrivate::doDemux()
                     qCDebug(lcAVPlayer) << "Waiting audio thread finished processing packets";
                     audioQueue.waitForEmpty();
                     audioClock.clear();
-                    qCDebug(lcAVPlayer) << "Waiting subtitle thread finished processing packets";
-                    subtitleQueue.waitForEmpty();
-                    subtitleClock.clear();
+                    subtitleQueue.clear();
                     qCDebug(lcAVPlayer) << "Flush codec buffers";
                     demuxer.flushCodecBuffers();
                     qCDebug(lcAVPlayer) << "Reset filters";
@@ -895,7 +894,8 @@ void QAVPlayerPrivate::doPlayAudio()
 }
 
 void QAVPlayerPrivate::doPlayStep(
-    QAVQueueClock &clock,
+    double refPts,
+    QAVQueueSubtitleClock &clock,
     QAVPacketQueue<QAVSubtitleFrame> &queue,
     bool &sync,
     const std::function<void(const QAVSubtitleFrame &frame)> &cb)
@@ -908,11 +908,11 @@ void QAVPlayerPrivate::doPlayStep(
         return;
 
     // 2. Sync decoded frame
+    auto pts = decodedFrame.pts() + decodedFrame.subtitle()->start_display_time / 1000.0;
     if (clock.wait(
             synced ? sync : synced,
-            decodedFrame.pts(),
-            q_ptr->speed(),
-            -1))
+            pts,
+            refPts))
     {
         sync = !skipFrame(false, decodedFrame, queue.isEmpty());
         if (sync && decodedFrame) {
@@ -928,6 +928,11 @@ void QAVPlayerPrivate::doPlaySubtitle()
     bool sync = true;
     while (!quit) {
         doPlayStep(
+            !demuxer.currentVideoStreams().isEmpty()
+            ? videoClock.pts()
+            : !demuxer.currentAudioStreams().isEmpty()
+              ? audioClock.pts()
+              : -1,
             subtitleClock,
             subtitleQueue,
             sync,
@@ -936,7 +941,6 @@ void QAVPlayerPrivate::doPlaySubtitle()
     }
 
     subtitleQueue.clear();
-    subtitleClock.clear();
     qCDebug(lcAVPlayer) << __FUNCTION__ << "finished";
 }
 
