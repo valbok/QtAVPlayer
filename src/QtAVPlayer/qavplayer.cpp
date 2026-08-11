@@ -48,9 +48,9 @@ class QAVPlayerPrivate
 public:
     QAVPlayerPrivate(QAVPlayer *q)
         : q_ptr(q)
-        , videoQueue(AVMEDIA_TYPE_VIDEO)
-        , audioQueue(AVMEDIA_TYPE_AUDIO)
-        , subtitleQueue(AVMEDIA_TYPE_SUBTITLE)
+        , videoQueue(AVMEDIA_TYPE_VIDEO, demuxer)
+        , audioQueue(AVMEDIA_TYPE_AUDIO, demuxer)
+        , subtitleQueue(AVMEDIA_TYPE_SUBTITLE, demuxer)
     {
         threadPool.setMaxThreadCount(4);
     }
@@ -655,18 +655,18 @@ void QAVPlayerPrivate::doDemux()
             muxer.write(packet);
             endOfFile(false);
             // Empty packet points to EOF and it needs to flush codecs
-            switch (demuxer.currentCodecType(packet.packet()->stream_index)) {
-                case AVMEDIA_TYPE_VIDEO:
-                    videoQueue.enqueue(packet);
-                    break;
-                case AVMEDIA_TYPE_AUDIO:
-                    audioQueue.enqueue(packet);
-                    break;
-                case AVMEDIA_TYPE_SUBTITLE:
-                    subtitleQueue.enqueue(packet);
-                    break;
-                default:
-                    break;
+            switch (packet.stream().stream()->codecpar->codec_type) {
+            case AVMEDIA_TYPE_VIDEO:
+                videoQueue.enqueue(packet);
+                break;
+            case AVMEDIA_TYPE_AUDIO:
+                audioQueue.enqueue(packet);
+                break;
+            case AVMEDIA_TYPE_SUBTITLE:
+                subtitleQueue.enqueue(packet);
+                break;
+            default:
+                break;
             }
         } else {
             if (ret < 0 && ret != AVERROR_EOF) {
@@ -764,6 +764,7 @@ void QAVPlayerPrivate::doPlayStep(
     // 1. Decode a frame
     QAVFrame decodedFrame;
     queue.frontFrame(decodedFrame);
+    // If no decoded frames, it still needs to drain filters by filters.read
     bool flushEvents = false;
     int ret = 0;
 

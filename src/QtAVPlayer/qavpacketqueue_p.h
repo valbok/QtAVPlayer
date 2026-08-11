@@ -122,8 +122,9 @@ template<class T>
 class QAVPacketQueue
 {
 public:
-    QAVPacketQueue(AVMediaType mediaType)
+    QAVPacketQueue(AVMediaType mediaType, QAVDemuxer &demuxer)
         : m_mediaType(mediaType)
+        , m_demuxer(demuxer)
     {
     }
 
@@ -158,8 +159,17 @@ public:
     bool frontFrame(T &frame)
     {
         QMutexLocker locker(&m_mutex);
-        if (m_decodedFrames.isEmpty())
-            QAVDemuxer::decode(dequeue(), m_decodedFrames);
+        if (m_decodedFrames.isEmpty()) {
+            auto pkt = dequeue();
+            if (pkt.packet()->stream_index != AVMEDIA_TYPE_UNKNOWN
+                && m_demuxer.currentCodecType(pkt.packet()->stream_index) == m_mediaType)
+            {
+                // Keep the lock during the decoding to prevent
+                // a race between clearPackets() and when the decoding is finished.
+                // Empty packet flushes the codes here.
+                QAVDemuxer::decode(pkt, m_decodedFrames);
+            }
+        }
         if (m_decodedFrames.isEmpty())
             return false;
         frame = m_decodedFrames.front();
@@ -257,6 +267,7 @@ private:
     }
 
     const AVMediaType m_mediaType = AVMEDIA_TYPE_UNKNOWN;
+    QAVDemuxer &m_demuxer;
     QList<QAVPacket> m_packets;
     // Tracks decoded frames to prevent EOF if not all frames are landed
     QList<T> m_decodedFrames;
