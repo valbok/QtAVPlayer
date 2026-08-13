@@ -79,6 +79,7 @@ set(QtAVPlayer_PUBLIC_HEADERS
     ${QT_AVPLAYER_DIR}/qavmuxerpackets.h
     ${QT_AVPLAYER_DIR}/qavmuxerframes.h
     ${QT_AVPLAYER_DIR}/qavsubtitletextparser.h
+    ${QT_AVPLAYER_DIR}/qavchapter.h
 )
 
 set(QtAVPlayer_SOURCES
@@ -116,6 +117,7 @@ set(QtAVPlayer_SOURCES
     ${QT_AVPLAYER_DIR}/qavaudioconverter.cpp
     ${QT_AVPLAYER_DIR}/qavformatcontext.cpp
     ${QT_AVPLAYER_DIR}/qavhwdevice_cuda.cpp
+    ${QT_AVPLAYER_DIR}/qavchapter.cpp
 )
 
 if(WIN32)

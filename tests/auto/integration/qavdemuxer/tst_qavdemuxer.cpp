@@ -64,6 +64,7 @@ private slots:
     void muxerFramesScaleHW();
     void muxerFramesScale_data();
     void muxerFramesScale();
+    void chapters();
 };
 
 void tst_QAVDemuxer::construction()
@@ -1013,6 +1014,32 @@ void tst_QAVDemuxer::muxerFramesScale()
         QVERIFY(s.codec());
         QCOMPARE(s.codec()->size(), size);
     }
+}
+
+void tst_QAVDemuxer::chapters()
+{
+    QFileInfo file(testData("chapters.mp4"));
+    QAVDemuxer d;
+    QVERIFY(d.load(file.absoluteFilePath()) >= 0);
+
+    auto chapters = d.chapters();
+    QCOMPARE(chapters.size(), 3);
+    QCOMPARE(chapters[0].id(), 0);
+    QCOMPARE(chapters[0].start(), 0);
+    QCOMPARE(chapters[0].end(), 10);
+    QCOMPARE(chapters[0].title(), QLatin1String("Chapter 1: Intro"));
+    QVERIFY(!chapters[0].metadata().isEmpty());
+    QCOMPARE(chapters[0].metadata()[QLatin1String("title")], QLatin1String("Chapter 1: Intro"));
+    QCOMPARE(chapters[1].id(), 1);
+    QCOMPARE(chapters[1].start(), 10);
+    QCOMPARE(chapters[1].end(), 20);
+    QCOMPARE(chapters[1].title(), QLatin1String("Chapter 2: Middle Section"));
+    QVERIFY(!chapters[1].metadata().isEmpty());
+    QCOMPARE(chapters[2].id(), 2);
+    QCOMPARE(chapters[2].start(), 20);
+    QCOMPARE(chapters[2].end(), 30);
+    QCOMPARE(chapters[2].title(), QLatin1String("Chapter 3: Outro"));
+    QVERIFY(!chapters[2].metadata().isEmpty());
 }
 
 QTEST_MAIN(tst_QAVDemuxer)

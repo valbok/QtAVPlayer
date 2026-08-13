@@ -51,6 +51,7 @@ PUBLIC_HEADERS += \
     $$PWD/qavmuxerpackets.h \
     $$PWD/qavmuxerframes.h \
     $$PWD/qavsubtitletextparser.h \
+    $$PWD/qavchapter.h \
 
 SOURCES += \
     $$PWD/qavplayer.cpp \
@@ -87,6 +88,7 @@ SOURCES += \
     $$PWD/qavaudioconverter.cpp \
     $$PWD/qavformatcontext.cpp \
     $$PWD/qavhwdevice_cuda.cpp \
+    $$PWD/qavchapter.cpp \
 
 contains(DEFINES, QT_AVPLAYER_MULTIMEDIA) {
     QT += multimedia
