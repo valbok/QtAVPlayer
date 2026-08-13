@@ -6,6 +6,7 @@
  ***************************************************************/
 
 #include "qavdemuxer_p.h"
+#include "qavchapter.h"
 #include "qavformatcontext_p.h"
 #include "qavvideocodec_p.h"
 #include "qavaudiocodec_p.h"
@@ -884,6 +885,28 @@ QMap<QString, QString> QAVDemuxer::metadata() const
     AVDictionaryEntry *tag = nullptr;
     while ((tag = av_dict_get(d->ctx->ctx()->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
         result[QString::fromUtf8(tag->key)] = QString::fromUtf8(tag->value);
+
+    return result;
+}
+
+QList<QAVChapter> QAVDemuxer::chapters() const
+{
+    Q_D(const QAVDemuxer);
+    QList<QAVChapter> result;
+    if (!d->ctx || !d->ctx->ctx())
+        return result;
+
+    for (unsigned int i = 0; i < d->ctx->ctx()->nb_chapters; ++i) {
+        AVChapter *ch = d->ctx->ctx()->chapters[i];
+        if (!ch)
+            continue;
+        AVDictionaryEntry *tag = nullptr;
+        QMap<QString, QString> metadata;
+        while ((tag = av_dict_get(ch->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
+            metadata[QString::fromUtf8(tag->key)] = QString::fromUtf8(tag->value);
+        const double tb = av_q2d(ch->time_base);
+        result.push_back({ch->id, ch->start * tb, ch->end * tb, metadata});
+    }
 
     return result;
 }

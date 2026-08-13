@@ -1471,6 +1471,11 @@ QAVStream::Progress QAVPlayer::progress(const QAVStream &s) const
     return d_func()->demuxer.progress(s);
 }
 
+QList<QAVChapter> QAVPlayer::chapters() const
+{
+    return d_func()->demuxer.chapters();
+}
+
 #ifndef QT_NO_DEBUG_STREAM
 QDebug operator<<(QDebug dbg, QAVPlayer::State state)
 {

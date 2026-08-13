@@ -12,6 +12,7 @@
 #include <QtAVPlayer/qavaudioframe.h>
 #include <QtAVPlayer/qavsubtitleframe.h>
 #include <QtAVPlayer/qavstream.h>
+#include <QtAVPlayer/qavchapter.h>
 #include <QtAVPlayer/qtavplayerglobal.h>
 #include <QString>
 #include <memory>
@@ -126,6 +127,12 @@ public:
     void setVideoCodecOptions(const QMap<QString, QString> &opts);
 
     QAVStream::Progress progress(const QAVStream &stream) const;
+
+    /**
+     * Returns available chapters in the source
+     * after it has been loaded.
+     */
+    QList<QAVChapter> chapters() const;
 
 public Q_SLOTS:
     void play();

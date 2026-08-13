@@ -23,6 +23,7 @@
 #include "qavstream.h"
 #include "qavframe.h"
 #include "qavsubtitleframe.h"
+#include "qavchapter.h"
 #include <QMap>
 #include <memory>
 
@@ -82,6 +83,7 @@ public:
     double videoFrameRate() const;
 
     QMap<QString, QString> metadata() const;
+    QList<QAVChapter> chapters() const;
 
     QString bitstreamFilter() const;
     int applyBitstreamFilter(const QString &bsfs);
