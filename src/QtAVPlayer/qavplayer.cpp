@@ -367,6 +367,10 @@ void QAVPlayerPrivate::step(bool hasFrame)
             hasFrame = false;
         auto status = pendingMediaStatuses.first();
         locker.unlock();
+        // Re-check after releasing stateMutex to cover concurrent setFilter()
+        // between unlock() and doStep().
+        if (resetFilters)
+            hasFrame = false;
         if (!doStep(status, hasFrame))
             break;
         locker.relock();
