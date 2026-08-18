@@ -363,6 +363,10 @@ void QAVPlayerPrivate::step(bool hasFrame)
     if (error == QAVPlayer::FilterError || resetFilters)
         hasFrame = false;
     while (!pendingMediaStatuses.isEmpty()) {
+        // Re-check after re-acquiring the lock: setFilter() or setFilters() may have set
+        // resetFilters between iterations while the mutex was temporarily released below.
+        if (error == QAVPlayer::FilterError || resetFilters)
+            hasFrame = false;
         auto status = pendingMediaStatuses.first();
         locker.unlock();
         if (!doStep(status, hasFrame))
