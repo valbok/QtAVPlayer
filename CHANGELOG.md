@@ -1,3 +1,9 @@
+v2026-08-18
+-----------
+
+- #702 - Introduced QAVChapter
+- #701 - Fixed subtitle clock to base on master pts
+- #699 - Moved filtering of streams from demuxer to decoder threads, helps to change streams immediately
 - #697 - Fixed QAVMuxerFrames::EncoderStream to accept constructor params
 - #696 - Added missing scale_vt to support scaling in macOS in QAVMuxerFrames
 - #694 - Introduced scaling in QAVMuxerFrames, now it scales input frames before muxing
