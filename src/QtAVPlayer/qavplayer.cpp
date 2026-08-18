@@ -359,12 +359,10 @@ void QAVPlayerPrivate::terminate()
 void QAVPlayerPrivate::step(bool hasFrame)
 {
     QMutexLocker locker(&stateMutex);
-    // Don't proceed frame if there is an error or pending filters
-    if (error == QAVPlayer::FilterError || resetFilters)
-        hasFrame = false;
     while (!pendingMediaStatuses.isEmpty()) {
-        // Re-check after re-acquiring the lock: setFilter() or setFilters() may have set
-        // resetFilters between iterations while the mutex was temporarily released below.
+        // Don't proceed frame if there is an error or pending filters.
+        // Re-check on every iteration: setFilter() may have set resetFilters
+        // while the mutex was temporarily released during the previous doStep().
         if (error == QAVPlayer::FilterError || resetFilters)
             hasFrame = false;
         auto status = pendingMediaStatuses.first();
