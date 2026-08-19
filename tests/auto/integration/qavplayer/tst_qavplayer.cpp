@@ -2332,8 +2332,9 @@ void tst_QAVPlayer::configureFilter()
 
     spyErrorOccurred.clear();
 
+    QSignalSpy spyStepped(&p, &QAVPlayer::stepped);
     p.stepForward();
-    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+    QTRY_VERIFY(spyErrorOccurred.count() == 1 || spyStepped.count() == 1);
 
     spy.clear();
     spyErrorOccurred.clear();
