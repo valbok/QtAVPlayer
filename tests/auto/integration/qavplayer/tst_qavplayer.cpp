@@ -2334,7 +2334,8 @@ void tst_QAVPlayer::configureFilter()
 
     QSignalSpy spyStepped(&p, &QAVPlayer::stepped);
     p.stepForward();
-    QTRY_VERIFY(spyErrorOccurred.count() == 1 || spyStepped.count() == 1);
+    QTRY_VERIFY2(spyErrorOccurred.count() == 1 || spyStepped.count() == 1,
+                 "Expected either filter error or stepped signal after stepForward()");
 
     spy.clear();
     spyErrorOccurred.clear();
