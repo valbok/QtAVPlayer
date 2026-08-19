@@ -674,8 +674,15 @@ void QAVPlayerPrivate::doDemux()
             }
         } else {
             if (ret < 0 && ret != AVERROR_EOF) {
-                setError(QAVPlayer::ResourceError, err_str(ret));
-                break;
+                if (!demuxer.bitstreamFilter().isEmpty()) {
+                    // BSF-induced error: report as BitstreamFilterError and pause
+                    // so that clearing the BSF and calling play() can recover.
+                    setError(QAVPlayer::BitstreamFilterError, err_str(ret));
+                    startDemuxing = false;
+                } else {
+                    setError(QAVPlayer::ResourceError, err_str(ret));
+                    break;
+                }
             }
             if (demuxer.eof()
                 && videoQueue.isEmpty()
@@ -1353,8 +1360,14 @@ void QAVPlayer::setBitstreamFilter(const QString &desc)
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << bsf << "->" << desc;
     int ret = d->demuxer.applyBitstreamFilter(desc);
     Q_EMIT bitstreamFilterChanged(desc);
-    if (ret < 0)
+    if (ret < 0) {
         d->setError(QAVPlayer::BitstreamFilterError, QLatin1String("Could not parse bitstream filter desc: ") + err_str(ret));
+    } else if (d->currentError() == QAVPlayer::BitstreamFilterError) {
+        // BSF was cleared/changed successfully after a BSF error.
+        // Transition back to LoadedMedia (which also clears the error field)
+        // so that a subsequent play() call can resume without a source reload.
+        d->setMediaStatus(QAVPlayer::LoadedMedia);
+    }
 }
 
 QString QAVPlayer::bitstreamFilter() const
