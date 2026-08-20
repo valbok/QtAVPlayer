@@ -359,10 +359,12 @@ void QAVPlayerPrivate::terminate()
 void QAVPlayerPrivate::step(bool hasFrame)
 {
     QMutexLocker locker(&stateMutex);
-    // Don't proceed frame if there is an error or pending filters
-    if (error == QAVPlayer::FilterError || resetFilters)
-        hasFrame = false;
     while (!pendingMediaStatuses.isEmpty()) {
+        // Don't proceed frame if there is an error.
+        // Re-check on every iteration: setFilter() may have set resetFilters
+        // while the mutex was temporarily released during the previous doStep().
+        if (error == QAVPlayer::FilterError)
+            hasFrame = false;
         auto status = pendingMediaStatuses.first();
         locker.unlock();
         if (!doStep(status, hasFrame))
@@ -386,7 +388,8 @@ void QAVPlayerPrivate::step(bool hasFrame)
 bool QAVPlayerPrivate::doStep(PendingMediaStatus status, bool hasFrame)
 {
     bool result = false;
-    const bool valid = hasFrame && !isSeeking() && q_ptr->mediaStatus() != QAVPlayer::NoMedia;
+    // Don't proceed frame if there are pending filters
+    const bool valid = !resetFilters && hasFrame && !isSeeking() && q_ptr->mediaStatus() != QAVPlayer::NoMedia;
     switch (status) {
         case PlayingMedia:
             if (valid) {
@@ -1350,8 +1353,14 @@ void QAVPlayer::setBitstreamFilter(const QString &desc)
     qCDebug(lcAVPlayer) << __FUNCTION__ << ":" << bsf << "->" << desc;
     int ret = d->demuxer.applyBitstreamFilter(desc);
     Q_EMIT bitstreamFilterChanged(desc);
-    if (ret < 0)
+    if (ret < 0) {
         d->setError(QAVPlayer::BitstreamFilterError, QLatin1String("Could not parse bitstream filter desc: ") + err_str(ret));
+    } else if (d->currentError() == QAVPlayer::BitstreamFilterError) {
+        // BSF was cleared/changed successfully after a BSF error.
+        // Transition back to LoadedMedia (which also clears the error field)
+        // so that a subsequent play() call can resume without a source reload.
+        d->setMediaStatus(QAVPlayer::LoadedMedia);
+    }
 }
 
 QString QAVPlayer::bitstreamFilter() const
