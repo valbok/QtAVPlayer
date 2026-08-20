@@ -674,15 +674,8 @@ void QAVPlayerPrivate::doDemux()
             }
         } else {
             if (ret < 0 && ret != AVERROR_EOF) {
-                if (!demuxer.bitstreamFilter().isEmpty()) {
-                    // BSF-induced error: report as BitstreamFilterError and pause
-                    // so that clearing the BSF and calling play() can recover.
-                    setError(QAVPlayer::BitstreamFilterError, err_str(ret));
-                    startDemuxing = false;
-                } else {
-                    setError(QAVPlayer::ResourceError, err_str(ret));
-                    break;
-                }
+                setError(QAVPlayer::ResourceError, err_str(ret));
+                break;
             }
             if (demuxer.eof()
                 && videoQueue.isEmpty()
