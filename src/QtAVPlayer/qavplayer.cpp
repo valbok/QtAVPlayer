@@ -689,7 +689,6 @@ void QAVPlayerPrivate::doDemux()
                 qCDebug(lcAVPlayer) << "EndOfMedia";
                 setPendingMediaStatus(EndOfMedia);
                 q_ptr->stop();
-                step(false);
                 wait(false);
                 muxer.flush();
             }
