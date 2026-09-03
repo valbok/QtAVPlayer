@@ -10,6 +10,7 @@
 
 #include <QtAVPlayer/qavframe.h>
 #include <QVariant>
+#include <QSize>
 #ifdef QT_AVPLAYER_MULTIMEDIA
 #include <QVideoFrame>
 #endif
@@ -64,7 +65,7 @@ public:
 #endif
     AVPixelFormat format() const;
     QString formatName() const;
-    QAVVideoFrame convertTo(AVPixelFormat fmt) const;
+    QAVVideoFrame convertTo(AVPixelFormat fmt, const QSize &requestedSize = {}) const;
 #ifdef QT_AVPLAYER_MULTIMEDIA
     operator QVideoFrame() const;
 #endif
