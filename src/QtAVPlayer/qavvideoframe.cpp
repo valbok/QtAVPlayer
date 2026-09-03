@@ -150,9 +150,10 @@ QString QAVVideoFrame::formatName() const
     return QLatin1String(av_pix_fmt_desc_get(QAVVideoFrame::format())->name);
 }
 
-QAVVideoFrame QAVVideoFrame::convertTo(AVPixelFormat fmt) const
+QAVVideoFrame QAVVideoFrame::convertTo(AVPixelFormat fmt, const QSize &size) const
 {
-    if (fmt == frame()->format)
+    const QSize outputSize = size.isEmpty() ? this->size() : size;
+    if (fmt == frame()->format && outputSize == this->size())
         return *this;
 
     auto mapData = map();
@@ -160,8 +161,8 @@ QAVVideoFrame QAVVideoFrame::convertTo(AVPixelFormat fmt) const
         qWarning() << __FUNCTION__ << "Could not map:" << formatName();
         return QAVVideoFrame();
     }
-    auto ctx = sws_getContext(size().width(), size().height(), mapData.format,
-                              size().width(), size().height(), fmt,
+    auto ctx = sws_getContext(this->size().width(), this->size().height(), mapData.format,
+                              outputSize.width(), outputSize.height(), fmt,
                               SWS_BICUBIC, NULL, NULL, NULL);
     if (ctx == nullptr) {
         qWarning() << __FUNCTION__ << ": Could not get sws context:" << formatName();
@@ -175,9 +176,9 @@ QAVVideoFrame QAVVideoFrame::convertTo(AVPixelFormat fmt) const
         return QAVVideoFrame();
     }
 
-    QAVVideoFrame result(size(), fmt);
+    QAVVideoFrame result(outputSize, fmt);
     result.d_ptr->stream = d_ptr->stream;
-    sws_scale(ctx, mapData.data, mapData.bytesPerLine, 0, result.size().height(), result.frame()->data, result.frame()->linesize);
+    sws_scale(ctx, mapData.data, mapData.bytesPerLine, 0, this->size().height(), result.frame()->data, result.frame()->linesize);
     sws_freeContext(ctx);
     reinterpret_cast<QAVFramePrivate *>(result.d_ptr.get())->frame->pts = reinterpret_cast<QAVFramePrivate *>(d_ptr.get())->frame->pts;
 

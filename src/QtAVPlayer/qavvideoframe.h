@@ -64,7 +64,7 @@ public:
 #endif
     AVPixelFormat format() const;
     QString formatName() const;
-    QAVVideoFrame convertTo(AVPixelFormat fmt) const;
+    QAVVideoFrame convertTo(AVPixelFormat fmt, const QSize &size = {}) const;
 #ifdef QT_AVPLAYER_MULTIMEDIA
     operator QVideoFrame() const;
 #endif
