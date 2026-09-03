@@ -1250,14 +1250,12 @@ void tst_QAVPlayer::files()
     p.stop();
     QTest::qWait(100);
 
-    if (duration > 40) {
-        p.pause();
-        p.stop();
-        p.pause();
-        p.play();
-        p.seek(duration * 0.9);
-        QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 18000);
-    }
+    p.pause();
+    p.stop();
+    p.pause();
+    p.play();
+    p.seek(duration * 0.9);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 18000);
     for (const auto &s : p.availableVideoStreams()) {
         auto progress = p.progress(s);
         QVERIFY(progress.pts() >= 0.0);
