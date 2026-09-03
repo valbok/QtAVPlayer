@@ -1414,6 +1414,8 @@ void tst_QAVPlayer::convert()
 
     const QSize size(128, 72);
     QAVVideoFrame convertedSize = videoFrame.convertTo(to, size);
+    QCOMPARE(convertedSize.format(), to);
+    QCOMPARE(convertedSize.pts(), videoFrame.pts());
     QCOMPARE(convertedSize.size(), size);
 }
 
