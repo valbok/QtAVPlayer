@@ -1242,6 +1242,8 @@ void tst_QAVPlayer::files()
         QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
 
     videoFrame = QAVVideoFrame();
+    bool eof = false;
+    QObject::connect(&p, &QAVPlayer::mediaStatusChanged, &p, [&](QAVPlayer::MediaStatus s) { if (!eof) eof = s == QAVPlayer::EndOfMedia; });
     p.play();
     if (hasVideo)
         QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
@@ -1255,7 +1257,7 @@ void tst_QAVPlayer::files()
     p.pause();
     p.play();
     p.seek(duration * 0.9);
-    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 18000);
+    QTRY_VERIFY(eof);
     for (const auto &s : p.availableVideoStreams()) {
         auto progress = p.progress(s);
         QVERIFY(progress.pts() >= 0.0);
