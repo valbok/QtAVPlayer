@@ -3150,11 +3150,11 @@ void tst_QAVPlayer::multipleFilters()
     p.play();
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
     QTRY_VERIFY(framesCount.contains("stats"));
-    QCOMPARE(framesCount["stats"], 250);
+    QTRY_COMPARE(framesCount["stats"], 250);
     QTRY_VERIFY(framesCount.contains("1:0"));
-    QCOMPARE(framesCount["1:0"], 101);
+    QTRY_COMPARE(framesCount["1:0"], 101);
     QTRY_VERIFY(framesCount.contains("thumbnails"));
-    QCOMPARE(framesCount["thumbnails"], 250);
+    QTRY_COMPARE(framesCount["thumbnails"], 250);
     //QTRY_VERIFY(framesCount.contains("panel_0"));
     //QCOMPARE(framesCount["panel_0"], 1);
     QTRY_VERIFY(framesCount.contains("panel_1"));
@@ -3196,10 +3196,10 @@ void tst_QAVPlayer::multipleAudioVideoFilters()
     p.play();
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
     QVERIFY(framesCount.contains("stats"));
-    QCOMPARE(framesCount["stats"], 125);
+    QTRY_COMPARE(framesCount["stats"], 125);
     QCOMPARE(videoFrame.pts(), 4.96);
     QVERIFY(framesCount.contains("audio"));
-    QCOMPARE(framesCount["audio"], 51);
+    QTRY_COMPARE(framesCount["audio"], 51);
     QVERIFY(audioFrame.pts() < 5.5);
 }
 
