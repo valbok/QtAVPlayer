@@ -1900,7 +1900,7 @@ void tst_QAVPlayer::audioOutput()
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&out, &frame](const QAVAudioFrame &f) {
         out.play(f);
         frame = f;
-    }, Qt::DirectConnection);
+    });
 
     auto outWithParent = new QAVAudioOutput(&p);
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&outWithParent](const QAVAudioFrame &f) {
@@ -1931,11 +1931,10 @@ void tst_QAVPlayer::audioOutput()
     p.setSource(file2.absoluteFilePath());
     p.play();
     QTRY_VERIFY(p.position() > 500);
-    const auto currentFrame = frame;
-    auto fmt = currentFrame.format();
-    auto af = QAVAudioFrame(fmt, currentFrame.data());
+    auto fmt = frame.format();
+    auto af = QAVAudioFrame(fmt, frame.data());
     QCOMPARE(af.format(), fmt);
-    QCOMPARE(af.data(), currentFrame.data());
+    QCOMPARE(af.data(), frame.data());
 }
 
 void tst_QAVPlayer::multiPlayers()
