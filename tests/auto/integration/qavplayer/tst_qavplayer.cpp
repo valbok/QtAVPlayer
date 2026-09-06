@@ -1900,7 +1900,7 @@ void tst_QAVPlayer::audioOutput()
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&out, &frame](const QAVAudioFrame &f) {
         out.play(f);
         frame = f;
-    }, Qt::DirectConnection);
+    });
 
     auto outWithParent = new QAVAudioOutput(&p);
     QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&outWithParent](const QAVAudioFrame &f) {
