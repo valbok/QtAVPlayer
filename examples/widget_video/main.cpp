@@ -120,8 +120,7 @@ int main(int argc, char *argv[])
     }, Qt::DirectConnection);
 #else
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
-        QVideoFrame videoFrame = frame;
-        w.videoSink()->setVideoFrame(videoFrame);
+        w.videoSink()->setVideoFrame(frame);
     }, Qt::DirectConnection);
 #endif
 

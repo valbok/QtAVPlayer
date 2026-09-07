@@ -1889,6 +1889,10 @@ void tst_QAVPlayer::cast2QVideoFrame()
     QVERIFY(q.bits(0) != nullptr);
     QVERIFY(q.bytesPerLine(0) > 0);
 #endif
+    q = frame.toQVideoFrame();
+    QVERIFY(q.isValid());
+    QVERIFY(!q.size().isEmpty());
+    QCOMPARE(q.size(), size);
 }
 
 void tst_QAVPlayer::audioOutput()
