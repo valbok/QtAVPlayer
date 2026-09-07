@@ -550,6 +550,12 @@ QAVVideoFrame::operator QVideoFrame() const
 #endif
 #endif
 }
+
+QVideoFrame QAVVideoFrame::toQVideoFrame() const
+{
+    return *this;
+}
+
 #endif // #ifdef QT_AVPLAYER_MULTIMEDIA
 
 QT_END_NAMESPACE

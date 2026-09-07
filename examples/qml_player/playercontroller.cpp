@@ -97,8 +97,7 @@ void PlayerController::connectPlayerSignals()
             // This will force rendering mapped data instead of texture handles.
             if (!m_copyFreeRender)
                 frame.map();
-            QVideoFrame qframe = frame;
-            m_videoSink->setVideoFrame(qframe);
+            m_videoSink->setVideoFrame(frame);
         }
     }, Qt::DirectConnection);
 

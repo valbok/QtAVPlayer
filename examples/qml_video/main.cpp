@@ -1,5 +1,5 @@
 /***************************************************************
- * Copyright (C) 2020, 2025, Val Doroshchuk <valbok@gmail.com> *
+ * Copyright (C) 2020, 2026, Val Doroshchuk <valbok@gmail.com> *
  *                                                             *
  * This file is part of QtAVPlayer.                            *
  * Free Qt Media Player based on FFmpeg.                       *
@@ -111,9 +111,7 @@ int main(int argc, char *argv[])
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
-        // Might download and convert data
-        QVideoFrame videoFrame = frame;
-        videoSurface->setVideoFrame(videoFrame);
+        videoSurface->setVideoFrame(frame);
     }, Qt::DirectConnection);
 #endif
 

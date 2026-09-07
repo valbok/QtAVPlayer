@@ -70,8 +70,7 @@ player.setSource(rtsp);
 
 QObject::connect(&player, &QAVPlayer::videoFrame, &player,
     [&](const QAVVideoFrame &frame) {
-        QVideoFrame videoFrame = frame; // compatible with QVideoFrame
-        videoSink->setVideoFrame(videoFrame);
+        videoSink->setVideoFrame(frame);
     }, Qt::DirectConnection);
 
 player->play();
@@ -122,10 +121,12 @@ player->setSource("subfile,,start,0,end,0,,:/root/Downloads/why-qtmm-must-die.mk
 ```cpp
 QObject::connect(player, &QAVPlayer::videoFrame, player,
     [&](const QAVVideoFrame &frame) {
-        QVideoFrame videoFrame = frame; // compatible with QVideoFrame
-    
-        // Convert to a different pixel format if needed
-        auto convertedFrame = frame.convert(AV_PIX_FMT_YUV420P);
+        // Compatible with QVideoFrame and copy-free for supported formats
+        QVideoFrame videoFrame = frame;
+        // or auto videoFrame = frame.toQVideoFrame();
+
+        // Convert to a different pixel format on CPU
+        auto convertedFrame = frame.convertTo(AV_PIX_FMT_YUV420P);
     
         // Map the frame to access raw data (downloads from GPU if needed)
         auto mapped = videoFrame.map();
@@ -151,6 +152,9 @@ QObject::connect(player, &QAVPlayer::subtitleFrame, player,
                 qDebug() << "ass:" << frame.subtitle()->rects[i]->ass;
         }
     }, Qt::DirectConnection);
+
+// Returns available list of AVChapter's after the source is loaded
+auto chapters = player->chapters();
 ```
 
 ### Hardware accelerated decoding
@@ -192,7 +196,7 @@ QObject::connect(player, &QAVPlayer::videoFrame, w,
     }, Qt::DirectConnection);
 ```
 
-- Since `QAVVideoFrame` is compatible with `QVideoFrame`, `QtMultimedia` can render frames directly to QML or Widgets — see the [examples](https://github.com/valbok/QtAVPlayer/blob/master/examples/qml_video).
+- Since `QAVVideoFrame` is compatible with `QVideoFrame`, `QtMultimedia` can render frames directly to QML or Widgets — see the [examples](https://github.com/valbok/QtAVPlayer/blob/master/examples/qml_video). Converting to `QVideoFrame` is copy-free for supported pixel formats.
 
 ```cpp
 QObject::connect(player, &QAVPlayer::videoFrame, this,
@@ -203,8 +207,7 @@ QObject::connect(player, &QAVPlayer::videoFrame, this,
             // This will force rendering mapped data instead of texture handles.
             if (!m_copyFreeRender)
                 frame.map();
-            QVideoFrame qframe = frame;  // Converts to QVideoFrame
-            videoSink->setVideoFrame(qframe);
+            videoSink->setVideoFrame(frame);
         }
     }, Qt::DirectConnection);
 ```
