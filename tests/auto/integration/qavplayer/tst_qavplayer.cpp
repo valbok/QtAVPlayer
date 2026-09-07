@@ -1187,7 +1187,7 @@ void tst_QAVPlayer::files()
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { videoFrame = f; if (f) ++vf; });
     int af = 0;
     QAVAudioFrame audioFrame;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { audioFrame = f; if (f) ++af; }, Qt::DirectConnection);
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { audioFrame = f; if (f) ++af; });
 
     p.pause();
     if (hasVideo) {
@@ -1308,7 +1308,7 @@ void tst_QAVPlayer::files_io()
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { videoFrame = f; if (f) ++vf; });
     int af = 0;
     QAVAudioFrame audioFrame;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { audioFrame = f; if (f) ++af; }, Qt::DirectConnection);
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { audioFrame = f; if (f) ++af; });
 
     p.pause();
     if (hasVideo) {
@@ -1363,6 +1363,8 @@ void tst_QAVPlayer::files_io()
         QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
 
     videoFrame = QAVVideoFrame();
+    bool eof = false;
+    QObject::connect(&p, &QAVPlayer::mediaStatusChanged, &p, [&](QAVPlayer::MediaStatus s) { if (!eof) eof = s == QAVPlayer::EndOfMedia; });
     p.play();
     if (hasVideo)
         QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
@@ -1376,7 +1378,7 @@ void tst_QAVPlayer::files_io()
     p.pause();
     p.play();
     p.seek(duration * 0.9);
-    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 18000);
+    QTRY_VERIFY(eof);
 }
 
 void tst_QAVPlayer::convert_data()
