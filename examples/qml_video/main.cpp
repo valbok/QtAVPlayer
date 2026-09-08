@@ -172,6 +172,7 @@ int main(int argc, char *argv[])
                 QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { muxer.enqueue(f); }, Qt::DirectConnection);
                 QObject::connect(&p, &QAVPlayer::subtitleFrame, &p, [&](const QAVSubtitleFrame &f) { muxer.write(f); }, Qt::DirectConnection);
             }
+            qDebug() << "Chapters:" << p.chapters();
             p.play();
         } else if (status == QAVPlayer::EndOfMedia) {
             for (const auto &s : p.availableVideoStreams())
