@@ -1242,7 +1242,7 @@ void tst_QAVPlayer::files()
         QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
 
     videoFrame = QAVVideoFrame();
-    bool eof = false;
+    bool eof = p.mediaStatus() == QAVPlayer::EndOfMedia;
     QObject::connect(&p, &QAVPlayer::mediaStatusChanged, &p, [&](QAVPlayer::MediaStatus s) { if (!eof) eof = s == QAVPlayer::EndOfMedia; });
     p.play();
     if (hasVideo)
@@ -1363,7 +1363,7 @@ void tst_QAVPlayer::files_io()
         QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
 
     videoFrame = QAVVideoFrame();
-    bool eof = false;
+    bool eof = p.mediaStatus() == QAVPlayer::EndOfMedia;
     QObject::connect(&p, &QAVPlayer::mediaStatusChanged, &p, [&](QAVPlayer::MediaStatus s) { if (!eof) eof = s == QAVPlayer::EndOfMedia; });
     p.play();
     if (hasVideo)
