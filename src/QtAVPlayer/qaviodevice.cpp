@@ -26,6 +26,15 @@ struct ReadRequest
     int maxSize = 0;
 };
 
+struct SeekRequest
+{
+    SeekRequest() = default;
+    SeekRequest(int64_t offset, int whence): offset(offset), whence(whence) { }
+    int64_t offset = 0;
+    int whence = 0;
+    int64_t pos = -1;
+};
+
 class QAVIODevicePrivate
 {
     Q_DECLARE_PUBLIC(QAVIODevice)
@@ -55,9 +64,35 @@ public:
         readRequest.wroteBytes = !device->atEnd() ? device->read((char *)readRequest.data, readRequest.maxSize) : AVERROR_EOF;
         // Unblock the decoder thread when there is available bytes
         if (readRequest.wroteBytes) {
-            waitCond.wakeAll();
             wakeRead = true;
+            waitCond.wakeAll();
         }
+    }
+
+    void seekData()
+    {
+        QMutexLocker locker(&mutex);
+        // if no request or it is being processed
+        if (wakeSeek)
+            return;
+
+        int64_t offset = seekRequest.offset;
+        const int whence = seekRequest.whence;
+        int64_t pos = 0;
+        if (whence == AVSEEK_SIZE) {
+            pos = device->size() > 0 ? device->size() : 0;
+        } else {
+            if (whence == SEEK_END)
+                offset = device->size() - offset;
+            else if (whence == SEEK_CUR)
+                offset = device->pos() + offset;
+
+            pos = device->seek(offset) ? device->pos() : -1;
+        }
+
+        seekRequest.pos = pos;
+        wakeSeek = true;
+        waitCond.wakeAll();
     }
 
     static int read(void *opaque, unsigned char *data, int maxSize)
@@ -74,9 +109,16 @@ public:
         // Reading is done on thread where the object is created
         qtavplayer_invokeMethod(d->q_ptr, [d]() -> void { d->readData(); });
         locker.relock();
-        // Blocks until data is available
-        if (!d->wakeRead)
+        // Blocks until data is available or aborted.
+        // Rechecking d->aborted here avoids a lost wakeup if abort()
+        // was called between unlocking above and waiting below.
+        while (!d->wakeRead && !d->aborted)
             d->waitCond.wait(&d->mutex);
+
+        if (d->aborted) {
+            d->readRequest = {};
+            return ECANCELED;
+        }
 
         int bytes = d->readRequest.wroteBytes;
         d->readRequest = {};
@@ -90,29 +132,24 @@ public:
         if (d->aborted)
             return ECANCELED;
 
-        int64_t pos = 0;
-        bool wake = false;
+        d->seekRequest = { offset, whence };
+        d->wakeSeek = false;
         locker.unlock();
-        qtavplayer_invokeMethod(d->q_ptr, [&]() -> void {
-            QMutexLocker locker(&d->mutex);
-            if (whence == AVSEEK_SIZE) {
-                pos = d->device->size() > 0 ? d->device->size() : 0;
-            } else {
-                if (whence == SEEK_END)
-                    offset = d->device->size() - offset;
-                else if (whence == SEEK_CUR)
-                    offset = d->device->pos() + offset;
-
-                pos = d->device->seek(offset) ? d->device->pos() : -1;
-            }
-            d->waitCond.wakeAll();
-            wake = true;
-        });
-
+        qtavplayer_invokeMethod(d->q_ptr, [d]() -> void { d->seekData(); });
         locker.relock();
-        if (!wake)
+        // Blocks until seeking is done or aborted.
+        // Rechecking d->aborted here avoids a lost wakeup if abort()
+        // was called between unlocking above and waiting below.
+        while (!d->wakeSeek && !d->aborted)
             d->waitCond.wait(&d->mutex);
 
+        if (d->aborted) {
+            d->seekRequest = {};
+            return ECANCELED;
+        }
+
+        int64_t pos = d->seekRequest.pos;
+        d->seekRequest = {};
         return pos;
     }
 
@@ -125,7 +162,9 @@ public:
     QWaitCondition waitCond;
     bool aborted = false;
     bool wakeRead = false;
+    bool wakeSeek = false;
     ReadRequest readRequest;
+    SeekRequest seekRequest;
 };
 
 QAVIODevice::QAVIODevice(const QSharedPointer<QIODevice> &device, QObject *parent)
