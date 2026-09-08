@@ -65,10 +65,8 @@ $ ./examples/qml_video :/valbok "if:you:like[cats];remove[this-sentence]"
 The simplest possible playback example:
 
 ```cpp
-QAVPlayer player;
-player.setSource(rtsp);
-
-QObject::connect(&player, &QAVPlayer::videoFrame, &player,
+player->setSource(rtsp);
+QObject::connect(player, &QAVPlayer::videoFrame, player,
     [&](const QAVVideoFrame &frame) {
         videoSink->setVideoFrame(frame);
     }, Qt::DirectConnection);
@@ -107,7 +105,7 @@ player->setSource("default");
 player->setInputFormat("android_camera");          // Android
 player->setSource("0:0");
 
-// These options will go to AVFormatContext
+// Options for AVFormatContext
 player->setInputOptions({{"user_agent", "QAVPlayer"}});
 // Options for AVCodecContext
 player->setVideoCodecOptions({{"fflags", "nobuffer"}, {"flags", "low_delay"}});
@@ -122,8 +120,7 @@ player->setSource("subfile,,start,0,end,0,,:/root/Downloads/why-qtmm-must-die.mk
 QObject::connect(player, &QAVPlayer::videoFrame, player,
     [&](const QAVVideoFrame &frame) {
         // Compatible with QVideoFrame and copy-free for supported formats
-        QVideoFrame videoFrame = frame;
-        // or auto videoFrame = frame.toQVideoFrame();
+        QVideoFrame videoFrame = frame; // or frame.toQVideoFrame();
 
         // Convert to a different pixel format on CPU
         auto convertedFrame = frame.convertTo(AV_PIX_FMT_YUV420P);
@@ -154,7 +151,7 @@ QObject::connect(player, &QAVPlayer::subtitleFrame, player,
     }, Qt::DirectConnection);
 
 // Returns available list of AVChapter's after the source is loaded
-auto chapters = player->chapters();
+qDebug() << player->chapters();
 ```
 
 ### Hardware accelerated decoding
