@@ -67,8 +67,9 @@ public:
     QString formatName() const;
     QAVVideoFrame convertTo(AVPixelFormat fmt, const QSize &requestedSize = {}) const;
 #ifdef QT_AVPLAYER_MULTIMEDIA
-    // Implicitly converts to QVideoFrame.
-    // Automatically converts to a supported pixel format if necessary.
+    // Implicitly converts to QVideoFrame with zero-copy.
+    // Returns an invalid QVideoFrame if the pixel format isn't supported by QtMultimedia.
+    // Use convertTo() if needed.
     operator QVideoFrame() const;
     QVideoFrame toQVideoFrame() const;
 #endif

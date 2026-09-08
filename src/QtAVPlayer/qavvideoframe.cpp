@@ -453,15 +453,11 @@ QAVVideoFrame::operator QVideoFrame() const
         case AV_PIX_FMT_YUV420P:
             format = VideoFrame::Format_YUV420P;
             break;
-        case AV_PIX_FMT_YUV444P:
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
         case AV_PIX_FMT_YUV422P:
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-            result = convertTo(AV_PIX_FMT_YUV420P);
-            format = VideoFrame::Format_YUV420P;
-#else
             format = VideoFrame::Format_YUV422P;
-#endif
             break;
+#endif
         case AV_PIX_FMT_VAAPI:
         case AV_PIX_FMT_VDPAU:
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -488,10 +484,8 @@ QAVVideoFrame::operator QVideoFrame() const
             break;
 #endif
         default:
-            // TODO: Add more supported formats instead of converting
-            result = convertTo(AV_PIX_FMT_YUV420P);
-            format = VideoFrame::Format_YUV420P;
-            break;
+            qWarning() << formatName() << "is not supported";
+            return {};
     }
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)

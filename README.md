@@ -118,7 +118,7 @@ player->setSource("subfile,,start,0,end,0,,:/root/Downloads/why-qtmm-must-die.mk
 ```cpp
 QObject::connect(player, &QAVPlayer::videoFrame, player,
     [&](const QAVVideoFrame &frame) {
-        // Compatible with QVideoFrame and copy-free for supported formats
+        // Compatible with QVideoFrame and copy-free
         QVideoFrame videoFrame = frame; // or frame.toQVideoFrame();
 
         // Convert to a different pixel format on CPU
@@ -192,7 +192,7 @@ QObject::connect(player, &QAVPlayer::videoFrame, w,
     }, Qt::DirectConnection);
 ```
 
-- Since `QAVVideoFrame` is compatible with `QVideoFrame`, `QtMultimedia` can render frames directly to QML or Widgets — see the [examples](https://github.com/valbok/QtAVPlayer/blob/master/examples/qml_video). Converting to `QVideoFrame` is copy-free for supported pixel formats.
+- Since `QAVVideoFrame` is compatible with `QVideoFrame`, `QtMultimedia` can render frames directly to QML or Widgets — see the [examples](https://github.com/valbok/QtAVPlayer/blob/master/examples/qml_video). Converting to `QVideoFrame` is copy-free.
 
 ```cpp
 QObject::connect(player, &QAVPlayer::videoFrame, this,

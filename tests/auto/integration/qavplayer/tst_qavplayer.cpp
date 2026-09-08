@@ -1855,7 +1855,7 @@ void tst_QAVPlayer::cast2QVideoFrame_data()
 
     QTest::newRow("colors.mp4") << testData("colors.mp4") << QSize(160, 120);
     QTest::newRow("dv_dsf_1_stype_1.dv") << testData("dv_dsf_1_stype_1.dv") << QSize(720, 576);
-    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QSize(720, 576);
+    //QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QSize(720, 576); -- "yuv411p" is not supported
     QTest::newRow("small.mp4") << testData("small.mp4") << QSize(560, 320);
     QTest::newRow("Earth_Zoom_In.mov") << testData("Earth_Zoom_In.mov") << QSize(1920, 1080);
 }
