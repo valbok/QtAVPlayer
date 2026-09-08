@@ -70,7 +70,6 @@ QObject::connect(player, &QAVPlayer::videoFrame, player,
     [&](const QAVVideoFrame &frame) {
         videoSink->setVideoFrame(frame);
     }, Qt::DirectConnection);
-
 player->play();
 ```
 
