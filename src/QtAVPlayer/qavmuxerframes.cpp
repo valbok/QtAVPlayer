@@ -360,6 +360,9 @@ static QString scaleFilter(AVPixelFormat fmt, const QSize &size)
     case AV_PIX_FMT_VIDEOTOOLBOX:
         filter = QLatin1String("scale_vt");
         break;
+    case AV_PIX_FMT_VULKAN:
+        filter = QLatin1String("scale_vulkan");
+        break;
     default:
         break;
     }

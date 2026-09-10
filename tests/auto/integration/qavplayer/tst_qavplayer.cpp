@@ -111,6 +111,7 @@ private slots:
     void muxerMultiSourceFrames();
     void framesAfterPlayerDestroyed();
     void scaleHW();
+    void muxerScaleHW_data();
     void muxerScaleHW();
     void muxerScaleHWSplit();
     void muxerScale_data();
@@ -3669,21 +3670,33 @@ void tst_QAVPlayer::scaleHW()
     QTRY_VERIFY(p.mediaStatus() == QAVPlayer::EndOfMedia);
 }
 
+void tst_QAVPlayer::muxerScaleHW_data()
+{
+    QTest::addColumn<QString>("decoder");
+    QTest::addColumn<QString>("encoder");
+    QTest::addColumn<QString>("filter");
+#if defined(QT_AVPLAYER_CUDA)
+    QTest::newRow("cuda") << "h264_cuvid" << "h264_nvenc" << "scale_cuda";
+#endif
+#if defined(QT_AVPLAYER_VULKAN)
+    QTest::newRow("vulkan") << "" << "h264_vulkan" << "scale_vulkan";
+#endif
+}
+
 void tst_QAVPlayer::muxerScaleHW()
 {
+    if (!QTest::currentDataTag())
+        QSKIP("No data");
+    QFETCH(QString, decoder);
+    QFETCH(QString, encoder);
+    QFETCH(QString, filter);
+
     QAVMuxerFrames m;
     QAVPlayer p;
     p.setSynced(false);
-    QSize size;
-    QString codec;
-#if defined(QT_AVPLAYER_CUDA)
-    p.setInputVideoCodec("h264_cuvid");
-    p.setFilter("scale_cuda=160:120");
-    size = {160, 120};
-    codec = "h264_nvenc";
-#endif
-    if (size.isEmpty())
-        return;
+    QSize size(160, 120);
+    p.setInputVideoCodec(decoder);
+    p.setFilter(filter + "=160:120");
     p.setSource(QFileInfo(testData("small.mp4")).absoluteFilePath());
 
     QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) {
@@ -3702,9 +3715,13 @@ void tst_QAVPlayer::muxerScaleHW()
     QCOMPARE(c->size(), QSize(560, 320));
     QList<QAVMuxerFrames::EncoderStream> encoderStreams;
     for (auto &s : videoStreams)
-        encoderStreams.push_back({s, codec, size});
+        encoderStreams.push_back({s, encoder, size});
     for (auto &s : p.availableAudioStreams())
         encoderStreams.push_back(s);
+    // Make sure that AVCodecContext::get_format() is called
+    QSignalSpy spyPaused(&p, &QAVPlayer::paused);
+    p.pause();
+    QTRY_COMPARE(spyPaused.count(), 1);
     QVERIFY(m.load(encoderStreams, "output.mkv") >= 0);
 
     p.play();
@@ -3788,6 +3805,9 @@ void tst_QAVPlayer::muxerScale_data()
 #if defined(QT_AVPLAYER_CUDA)
     QTest::newRow("cuda") << "h264_cuvid" << "h264_nvenc";
 #endif
+#if defined(QT_AVPLAYER_VULKAN)
+    QTest::newRow("vulkan") << "" << "h264_vulkan";
+#endif
 }
 
 void tst_QAVPlayer::muxerScale()
@@ -3812,6 +3832,10 @@ void tst_QAVPlayer::muxerScale()
     auto c = videoStreams[0].codec();
     QVERIFY(c);
     QCOMPARE(c->size(), QSize(560, 320));
+    // Make sure that AVCodecContext::get_format() is called
+    QSignalSpy spyPaused(&p, &QAVPlayer::paused);
+    p.pause();
+    QTRY_COMPARE(spyPaused.count(), 1);
     QVERIFY(m.load({{videoStreams[0], encoder, size}}, "output.mkv") >= 0);
 
     p.play();
