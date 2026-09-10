@@ -58,6 +58,7 @@ public:
     /**
      * Loads the encoder based on parsed streams and params from EncoderStream.
      * If params are not set, the stream's codec AVCodecContext is used instead.
+     * @note All codecs should be initialized before loading the muxer.
      */
     int load(const QList<EncoderStream> &streams, const QString &filename);
 
