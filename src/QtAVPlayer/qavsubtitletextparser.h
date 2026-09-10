@@ -6,7 +6,7 @@
  ***************************************************************/
 
 #ifndef QAVSUBTITLETEXTPARSER_H
-#define QAVSUBTITLEFTEXTPARSER_H
+#define QAVSUBTITLETEXTPARSER_H
 
 #include <QtAVPlayer/qavstream.h>
 #include <QtAVPlayer/qavsubtitleframe.h>
