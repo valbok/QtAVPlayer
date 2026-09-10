@@ -172,7 +172,9 @@ int main(int argc, char *argv[])
                 QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { muxer.enqueue(f); }, Qt::DirectConnection);
                 QObject::connect(&p, &QAVPlayer::subtitleFrame, &p, [&](const QAVSubtitleFrame &f) { muxer.write(f); }, Qt::DirectConnection);
             }
-            qDebug() << "Chapters:" << p.chapters();
+            auto chapters = p.chapters();
+            if (!chapters.isEmpty())
+                qDebug() << "Chapters:" << p.chapters();
             p.play();
         } else if (status == QAVPlayer::EndOfMedia) {
             for (const auto &s : p.availableVideoStreams())
@@ -201,10 +203,10 @@ int main(int argc, char *argv[])
         if (io->open(QIODevice::ReadOnly))
             qrc.reset(new QAVIODevice(io));
     }
+    // Force software decoding, should be set before setSource
+    //p.setInputVideoCodec(QString::fromLatin1("software"));
     p.setSource(file, qrc);
     p.setFilter(filter);
-    // Force software decoding
-    //p.setInputVideoCodec(QString::fromLatin1("software"));
     if (filter.isEmpty())
         p.setOutput(output);
     // Disable syncing frames using their pts
