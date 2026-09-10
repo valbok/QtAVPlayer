@@ -307,6 +307,6 @@ endif()
 
 if(QT_AVPLAYER_CUDA)
     message(STATUS "QT_AVPLAYER_CUDA is defined")
-    find_library(LIBASS_LIBRARY REQUIRED NAMES cuda)
+    find_library(LIBCUDA_LIBRARY REQUIRED NAMES cuda)
     add_definitions(-DQT_AVPLAYER_CUDA)
 endif()
