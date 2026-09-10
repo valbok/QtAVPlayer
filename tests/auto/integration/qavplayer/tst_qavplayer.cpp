@@ -3645,6 +3645,11 @@ void tst_QAVPlayer::scaleHW()
     p.setFilter("scale_cuda=1920:1080");
     size = {1920, 1080};
 #endif
+#if defined(QT_AVPLAYER_VULKAN)
+    p.setInputVideoCodec("");
+    p.setFilter("scale_vulkan=1920:1080");
+    size = {1920, 1080};
+#endif
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
     p.setFilter("scale_vt=1920:1080");
     //size = {1920, 1080}; // TODO: ci could fail to initialize videotoolbox_vld

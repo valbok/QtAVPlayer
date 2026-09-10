@@ -426,6 +426,7 @@ QtAVPlayer is meant to be bundled directly into your application. A few compile-
 |--------|---------|
 | `QT_AVPLAYER_MULTIMEDIA` | `QtMultimedia` support (requires `QtGUI`, `QtQuick`, etc.) |
 | `QT_AVPLAYER_CUDA` | CUDA support |
+| `QT_AVPLAYER_VULKAN` | Vulkan support |
 | `QT_AVPLAYER_VA_X11` | `libva-x11` hardware acceleration (Linux only) |
 | `QT_AVPLAYER_VA_DRM` | `libva-drm` hardware acceleration (Linux only) |
 | `QT_AVPLAYER_VDPAU` | `libvdpau` hardware acceleration (Linux only) |
