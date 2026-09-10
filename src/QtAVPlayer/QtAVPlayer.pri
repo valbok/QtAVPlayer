@@ -34,6 +34,7 @@ PRIVATE_HEADERS += \
     $$PWD/qavaudioconverter_p.h \
     $$PWD/qavformatcontext_p.h \
     $$PWD/qavhwdevice_cuda_p.h \
+    $$PWD/qavhwdevice_vulkan_p.h \
 
 PUBLIC_HEADERS += \
     $$PWD/qaviodevice.h \
@@ -89,6 +90,7 @@ SOURCES += \
     $$PWD/qavformatcontext.cpp \
     $$PWD/qavhwdevice_cuda.cpp \
     $$PWD/qavchapter.cpp \
+    $$PWD/qavhwdevice_vulkan.cpp \
 
 contains(DEFINES, QT_AVPLAYER_MULTIMEDIA) {
     QT += multimedia

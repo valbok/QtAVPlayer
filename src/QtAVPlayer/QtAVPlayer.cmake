@@ -9,6 +9,7 @@ option(QT_AVPLAYER_VDPAU "Enable vdpau" OFF)
 option(QT_AVPLAYER_WIDGET_OPENGL "Enable widget opengl" OFF)
 option(QT_AVPLAYER_LIBASS "Enable libass" OFF)
 option(QT_AVPLAYER_CUDA "Enable CUDA" OFF)
+option(QT_AVPLAYER_VULKAN "Enable Vulkan" OFF)
 
 find_library(AVDEVICE_LIBRARY REQUIRED NAMES avdevice)
 find_library(AVCODEC_LIBRARY REQUIRED NAMES avcodec)
@@ -61,6 +62,7 @@ set(QtAVPlayer_PRIVATE_HEADERS
     ${QT_AVPLAYER_DIR}/qavaudioconverter_p.h
     ${QT_AVPLAYER_DIR}/qavformatcontext_p.h
     ${QT_AVPLAYER_DIR}/qavhwdevice_cuda_p.h.h
+    ${QT_AVPLAYER_DIR}/qavhwdevice_vulkan_p.h.h
 )
 
 set(QtAVPlayer_PUBLIC_HEADERS
@@ -118,6 +120,7 @@ set(QtAVPlayer_SOURCES
     ${QT_AVPLAYER_DIR}/qavformatcontext.cpp
     ${QT_AVPLAYER_DIR}/qavhwdevice_cuda.cpp
     ${QT_AVPLAYER_DIR}/qavchapter.cpp
+    ${QT_AVPLAYER_DIR}/qavhwdevice_vulkan.cpp
 )
 
 if(WIN32)
@@ -309,4 +312,9 @@ if(QT_AVPLAYER_CUDA)
     message(STATUS "QT_AVPLAYER_CUDA is defined")
     find_library(LIBCUDA_LIBRARY REQUIRED NAMES cuda)
     add_definitions(-DQT_AVPLAYER_CUDA)
+endif()
+
+if(QT_AVPLAYER_VULKAN)
+    message(STATUS "QT_AVPLAYER_VULKAN is defined")
+    add_definitions(-DQT_AVPLAYER_VULKAN)
 endif()

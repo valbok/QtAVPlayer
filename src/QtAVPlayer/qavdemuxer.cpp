@@ -44,6 +44,7 @@ extern "C" {
 #endif
 
 #include "qavhwdevice_cuda_p.h"
+#include "qavhwdevice_vulkan_p.h"
 
 #include <QDir>
 #include <QSharedPointer>
@@ -229,6 +230,11 @@ static int setup_video_codec(const QString &inputVideoCodec, const QAVStream &st
     QAVDictionaryHolder opts;
     Q_UNUSED(opts);
 
+#if defined(QT_AVPLAYER_VULKAN)
+    devices[AV_HWDEVICE_TYPE_VULKAN].reset(new QAVHWDevice_Vulkan);
+    // Keep vulkan first in the list of preferred devices
+    preferredDevices.push_back(AV_HWDEVICE_TYPE_VULKAN);
+#endif
 #if defined(QT_AVPLAYER_VA_X11) && QT_CONFIG(opengl)
     devices[AV_HWDEVICE_TYPE_VAAPI].reset(new QAVHWDevice_VAAPI_X11_GLX);
     preferredDevices.push_back(AV_HWDEVICE_TYPE_VAAPI);
