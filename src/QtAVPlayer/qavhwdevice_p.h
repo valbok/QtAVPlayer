@@ -38,6 +38,11 @@ public:
     virtual ~QAVHWDevice() = default;
 
     virtual void init(AVCodecContext *) { }
+    // Creates the hardware device context which is used by the codecs
+    virtual int createDeviceContext(AVBufferRef **ctx, AVDictionary *opts)
+    {
+        return av_hwdevice_ctx_create(ctx, type(), nullptr, opts, 0);
+    }
     virtual AVPixelFormat format() const = 0;
     virtual AVHWDeviceType type() const = 0;
     virtual QAVVideoBuffer *videoBuffer(const QAVVideoFrame &frame) const = 0;

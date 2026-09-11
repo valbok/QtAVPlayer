@@ -26,6 +26,7 @@
 QT_BEGIN_NAMESPACE
 
 class QRhi;
+class QRhiTexture;
 class Q_AVPLAYER_EXPORT QAVVideoBuffer
 {
 public:
@@ -39,6 +40,10 @@ public:
     virtual bool isMapped() const = 0;
     virtual QAVVideoFrame::HandleType handleType() const { return QAVVideoFrame::NoHandle; }
     virtual QVariant handle(QRhi */*rhi*/ = nullptr) const { return {}; }
+    // Returns the textures of the planes of the frame, which can be rendered by rhi.
+    // The caller takes ownership of the textures and must destroy them in the rhi's thread.
+    // Returns an empty list if the frame cannot provide the textures for the given rhi.
+    virtual QList<QRhiTexture *> mapRhiTextures(QRhi */*rhi*/) { return {}; }
     // Returns the size of the frame from internal codec
     virtual QSize size() const { return m_frame.size(); }
 protected:
