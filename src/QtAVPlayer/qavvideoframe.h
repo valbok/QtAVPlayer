@@ -34,7 +34,8 @@ public:
         NoHandle,
         GLTextureHandle,
         MTLTextureHandle,
-        D3D11Texture2DHandle
+        D3D11Texture2DHandle,
+        VulkanTextureHandle
     };
 
     QAVVideoFrame();
