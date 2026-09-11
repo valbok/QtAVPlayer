@@ -60,6 +60,8 @@ public:
     bool isMapped() const;
     HandleType handleType() const;
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    // Returns a native texture handle for single-plane frames or a QList<quint64>
+    // with one native handle per plane for multi-plane hardware frames.
     QVariant handle(QRhi *rhi = nullptr) const;
 #else
     QVariant handle() const;
