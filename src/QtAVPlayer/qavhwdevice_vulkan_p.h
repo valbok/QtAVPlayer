@@ -31,6 +31,7 @@ public:
     ~QAVHWDevice_Vulkan() = default;
 
     void init(AVCodecContext *) override;
+    static QVariant textureHandles(const AVFrame *frame);
     AVPixelFormat format() const override;
     AVHWDeviceType type() const override;
     QAVVideoBuffer *videoBuffer(const QAVVideoFrame &frame) const override;

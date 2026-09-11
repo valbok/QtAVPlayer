@@ -10,6 +10,7 @@
 #include "qavaudiooutput.h"
 #include "qaviodevice.h"
 #include "qavcodec_p.h"
+#include "qavhwdevice_vulkan_p.h"
 
 #include <QDebug>
 #include <QtTest/QtTest>
@@ -1885,6 +1886,10 @@ void tst_QAVPlayer::cast2QVideoFrame()
     if (frame.format() == AV_PIX_FMT_VULKAN) {
         QCOMPARE(frame.handleType(), QAVVideoFrame::VulkanTextureHandle);
         QCOMPARE(q.handleType(), QVideoFrame::RhiTextureHandle);
+        const auto handles = QAVHWDevice_Vulkan::textureHandles(frame.frame()).toList();
+        QVERIFY(!handles.isEmpty());
+        for (const auto &handle : handles)
+            QVERIFY(handle.toULongLong() != 0);
     }
 #endif
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)

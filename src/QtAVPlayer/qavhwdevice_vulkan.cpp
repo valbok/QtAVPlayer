@@ -50,6 +50,42 @@ void QAVHWDevice_Vulkan::init(AVCodecContext *avctx)
     }
 }
 
+QVariant QAVHWDevice_Vulkan::textureHandles(const AVFrame *av_frame)
+{
+    if (!av_frame || av_frame->format != AV_PIX_FMT_VULKAN)
+        return {};
+
+    auto vk_frame = reinterpret_cast<AVVkFrame *>(av_frame->data[0]);
+    if (!vk_frame || !vk_frame->img[0])
+        return {};
+
+    auto frames_ctx = av_frame->hw_frames_ctx
+        ? reinterpret_cast<AVHWFramesContext *>(av_frame->hw_frames_ctx->data)
+        : nullptr;
+    const auto sw_format = frames_ctx
+        ? static_cast<AVPixelFormat>(frames_ctx->sw_format)
+        : AV_PIX_FMT_NONE;
+    const int planeCount = sw_format != AV_PIX_FMT_NONE
+        ? qMax(av_pix_fmt_count_planes(sw_format), 1)
+        : 1;
+    const int maxImages = int(sizeof(vk_frame->img) / sizeof(vk_frame->img[0]));
+    if (planeCount > maxImages) {
+        qWarning() << "Too many Vulkan planes:" << planeCount << ">" << maxImages;
+        return {};
+    }
+
+    QList<quint64> textures;
+    textures.reserve(planeCount);
+    for (int plane = 0; plane < planeCount; ++plane) {
+        if (!vk_frame->img[plane]) {
+            qWarning() << "Missing Vulkan image for plane" << plane << "of" << planeCount;
+            return {};
+        }
+        textures.push_back(quint64(vk_frame->img[plane]));
+    }
+    return QVariant::fromValue(textures);
+}
+
 AVPixelFormat QAVHWDevice_Vulkan::format() const
 {
     return AV_PIX_FMT_VULKAN;
@@ -81,34 +117,10 @@ public:
             return {};
         if (!frame() || frame().format() != AV_PIX_FMT_VULKAN)
             return {};
-
-        auto av_frame = frame().frame();
-        auto vk_frame = reinterpret_cast<AVVkFrame *>(av_frame->data[0]);
-        if (!vk_frame || !vk_frame->img[0]) {
-            qWarning() << "No Vulkan image in the frame" << frame().pts();
-            return {};
-        }
-
-        auto frames_ctx = av_frame->hw_frames_ctx
-            ? reinterpret_cast<AVHWFramesContext *>(av_frame->hw_frames_ctx->data)
-            : nullptr;
-        const auto sw_format = frames_ctx
-            ? static_cast<AVPixelFormat>(frames_ctx->sw_format)
-            : AV_PIX_FMT_NONE;
-        const int planeCount = sw_format != AV_PIX_FMT_NONE
-            ? qMax(av_pix_fmt_count_planes(sw_format), 1)
-            : 1;
-
-        QList<quint64> textures;
-        textures.reserve(planeCount);
-        for (int plane = 0; plane < planeCount; ++plane) {
-            if (!vk_frame->img[plane]) {
-                qWarning() << "Missing Vulkan image for plane" << plane << "of" << planeCount;
-                return {};
-            }
-            textures.push_back(quint64(vk_frame->img[plane]));
-        }
-        return QVariant::fromValue(textures);
+        auto handles = QAVHWDevice_Vulkan::textureHandles(frame().frame());
+        if (handles.isNull())
+            qWarning() << "No Vulkan image handles in the frame" << frame().pts();
+        return handles;
     }
 };
 
