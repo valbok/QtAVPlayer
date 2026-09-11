@@ -23,6 +23,7 @@ QT_BEGIN_NAMESPACE
 
 void QAVHWDevice_Vulkan::init(AVCodecContext *avctx)
 {
+    QAVHWDevice::init(avctx);
     int ret = avcodec_get_hw_frames_parameters(avctx,
                                                avctx->hw_device_ctx,
                                                AV_PIX_FMT_VULKAN,
@@ -89,9 +90,6 @@ public:
             ? static_cast<AVPixelFormat>(frames_ctx->sw_format)
             : AV_PIX_FMT_NONE;
         const int planeCount = sw_format != AV_PIX_FMT_NONE ? av_pix_fmt_count_planes(sw_format) : 1;
-
-        if (planeCount <= 1)
-            return quint64(vk_frame->img[0]);
 
         QList<quint64> textures;
         textures.reserve(planeCount);
