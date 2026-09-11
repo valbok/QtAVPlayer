@@ -17,6 +17,7 @@
 
 extern "C" {
 #include <libavcodec/avcodec.h>
+#include <libavutil/hwcontext.h>
 }
 
 #ifndef TEST_DATA_DIR
@@ -1890,6 +1891,12 @@ void tst_QAVPlayer::cast2QVideoFrame()
         QVERIFY(!handles.isEmpty());
         for (const auto &handle : handles)
             QVERIFY(handle.toULongLong() != 0);
+        auto framesCtx = frame.frame()->hw_frames_ctx
+            ? reinterpret_cast<AVHWFramesContext *>(frame.frame()->hw_frames_ctx->data)
+            : nullptr;
+        const int planeCount = framesCtx ? av_pix_fmt_count_planes(framesCtx->sw_format) : 0;
+        if (planeCount == 2 && handles.size() == 2)
+            QVERIFY(handles[0].toULongLong() != handles[1].toULongLong());
     }
 #endif
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)

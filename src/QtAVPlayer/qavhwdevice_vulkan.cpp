@@ -41,6 +41,13 @@ void QAVHWDevice_Vulkan::init(AVCodecContext *avctx)
 
     auto frames_ctx = reinterpret_cast<AVHWFramesContext *>(avctx->hw_frames_ctx->data);
     auto hwctx = reinterpret_cast<AVVulkanFramesContext *>(frames_ctx->hwctx);
+    const auto planeFormats = av_vkfmt_from_pixfmt(frames_ctx->sw_format);
+    const int planeCount = qMax(av_pix_fmt_count_planes(frames_ctx->sw_format), 0);
+
+    if (planeFormats && planeCount > 1) {
+        for (int plane = 0; plane < AV_NUM_DATA_POINTERS; ++plane)
+            hwctx->format[plane] = plane < planeCount ? planeFormats[plane] : VK_FORMAT_UNDEFINED;
+    }
     hwctx->flags = static_cast<AVVkFrameFlags>(hwctx->flags | AV_VK_FRAME_FLAG_DISABLE_MULTIPLANE);
 
     ret = av_hwframe_ctx_init(avctx->hw_frames_ctx);
@@ -77,10 +84,9 @@ QVariant QAVHWDevice_Vulkan::textureHandles(const AVFrame *av_frame)
     QList<quint64> textures;
     textures.reserve(planeCount);
     for (int plane = 0; plane < planeCount; ++plane) {
-        auto image = vk_frame->img[plane] ? vk_frame->img[plane] : vk_frame->img[0];
-        if (!image)
+        if (!vk_frame->img[plane])
             return {};
-        textures.push_back(quint64(image));
+        textures.push_back(quint64(vk_frame->img[plane]));
     }
     return QVariant::fromValue(textures);
 }
