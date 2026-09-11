@@ -10,12 +10,14 @@
 #include "qavaudiooutput.h"
 #include "qaviodevice.h"
 #include "qavcodec_p.h"
+#include "qavhwdevice_vulkan_p.h"
 
 #include <QDebug>
 #include <QtTest/QtTest>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
+#include <libavutil/hwcontext.h>
 }
 
 #ifndef TEST_DATA_DIR
@@ -1881,6 +1883,22 @@ void tst_QAVPlayer::cast2QVideoFrame()
     QVERIFY(q.isValid());
     QVERIFY(!q.size().isEmpty());
     QCOMPARE(q.size(), size);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    if (frame.format() == AV_PIX_FMT_VULKAN) {
+        QCOMPARE(frame.handleType(), QAVVideoFrame::VulkanTextureHandle);
+        QCOMPARE(q.handleType(), QVideoFrame::RhiTextureHandle);
+        const auto handles = QAVHWDevice_Vulkan::textureHandles(frame.frame()).toList();
+        QVERIFY(!handles.isEmpty());
+        for (const auto &handle : handles)
+            QVERIFY(handle.toULongLong() != 0);
+        auto framesCtx = frame.frame()->hw_frames_ctx
+            ? reinterpret_cast<AVHWFramesContext *>(frame.frame()->hw_frames_ctx->data)
+            : nullptr;
+        const int planeCount = framesCtx ? av_pix_fmt_count_planes(framesCtx->sw_format) : 0;
+        if (planeCount == 2 && handles.size() == 2)
+            QVERIFY(handles[0].toULongLong() != handles[1].toULongLong());
+    }
+#endif
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     q.map(QAbstractVideoBuffer::ReadOnly);
     QVERIFY(q.bits() != nullptr);
