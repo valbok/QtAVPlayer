@@ -1881,6 +1881,12 @@ void tst_QAVPlayer::cast2QVideoFrame()
     QVERIFY(q.isValid());
     QVERIFY(!q.size().isEmpty());
     QCOMPARE(q.size(), size);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    if (frame.format() == AV_PIX_FMT_VULKAN) {
+        QCOMPARE(frame.handleType(), QAVVideoFrame::VulkanTextureHandle);
+        QCOMPARE(q.handleType(), QVideoFrame::RhiTextureHandle);
+    }
+#endif
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     q.map(QAbstractVideoBuffer::ReadOnly);
     QVERIFY(q.bits() != nullptr);
