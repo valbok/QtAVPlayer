@@ -321,6 +321,8 @@ public:
         // Don't use video buffer if already mapped
         if (m_frame.isMapped())
             return 0;
+        if (m_disableTextureHandleFallback)
+            return 0;
         if (m_textures.isNull())
             const_cast<PlanarVideoBuffer *>(this)->m_textures = m_frame.handle(m_rhi);
         if (m_textures.canConvert<QList<QVariant>>()) {
@@ -369,9 +371,11 @@ public:
         {
             m_rhi = rhi;
             if (m_frame.handleType() == QAVVideoFrame::VulkanTextureHandle && m_rhi) {
+                m_disableTextureHandleFallback = false;
                 auto textures = createVulkanTextures(*m_rhi, m_frame, m_pixelFormat, m_frame.size());
                 if (textures)
                     return textures;
+                m_disableTextureHandleFallback = true;
             }
             if (m_textures.isNull())
                 m_textures = m_frame.handle(m_rhi);
@@ -382,9 +386,11 @@ public:
         {
             m_rhi = &rhi;
             if (m_frame.handleType() == QAVVideoFrame::VulkanTextureHandle) {
+                m_disableTextureHandleFallback = false;
                 auto textures = createVulkanTextures(rhi, m_frame, m_pixelFormat, m_frame.size());
                 if (textures)
                     return textures;
+                m_disableTextureHandleFallback = true;
             }
             if (m_textures.isNull())
                 m_textures = m_frame.handle(m_rhi);
@@ -486,6 +492,7 @@ private:
     QVideoFrameFormat m_videoFormat;
     QVideoFrame::MapMode m_mode = QVideoFrame::NotMapped;
     QVariant m_textures;
+    bool m_disableTextureHandleFallback = false;
 #if QT_VERSION < QT_VERSION_CHECK(6, 4, 0) || QT_VERSION > QT_VERSION_CHECK(6, 10, 0)
     QRhi *m_rhi = nullptr;
 #endif
