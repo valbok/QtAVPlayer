@@ -253,6 +253,8 @@ static std::unique_ptr<QVideoFrameTextures> createVulkanTextures(QRhi &rhi, cons
 {
     if (rhi.backend() != QRhi::Vulkan || frame.format() != AV_PIX_FMT_VULKAN)
         return nullptr;
+    if (!QAVHWDevice_Vulkan::sameDevice(&rhi, frame.frame()))
+        return nullptr;
 
     const auto handles = QAVHWDevice_Vulkan::textureHandles(frame.frame()).toList();
     if (handles.isEmpty())

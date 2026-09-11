@@ -11,6 +11,7 @@
 
 #if defined(QT_AVPLAYER_MULTIMEDIA) && QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <private/qrhi_p.h>
+#include <rhi/qrhi_platform.h>
 #endif
 
 extern "C" {
@@ -20,6 +21,32 @@ extern "C" {
 }
 
 QT_BEGIN_NAMESPACE
+
+#if defined(QT_AVPLAYER_MULTIMEDIA) && QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+bool QAVHWDevice_Vulkan::sameDevice(QRhi *rhi, const AVFrame *av_frame)
+{
+    if (!rhi || rhi->backend() != QRhi::Vulkan || !av_frame || !av_frame->hw_frames_ctx)
+        return false;
+
+    const auto *nativeHandles = static_cast<const QRhiVulkanNativeHandles *>(rhi->nativeHandles());
+    if (!nativeHandles || !nativeHandles->dev || !nativeHandles->physDev || !nativeHandles->inst)
+        return false;
+
+    auto framesCtx = reinterpret_cast<AVHWFramesContext *>(av_frame->hw_frames_ctx->data);
+    if (!framesCtx || !framesCtx->device_ctx || !framesCtx->device_ctx->hwctx)
+        return false;
+
+    auto deviceCtx = reinterpret_cast<AVVulkanDeviceContext *>(framesCtx->device_ctx->hwctx);
+    return nativeHandles->dev == deviceCtx->act_dev
+        && nativeHandles->physDev == deviceCtx->phys_dev
+        && nativeHandles->inst->vkInstance() == deviceCtx->inst;
+}
+#else
+bool QAVHWDevice_Vulkan::sameDevice(QRhi *, const AVFrame *)
+{
+    return false;
+}
+#endif
 
 void QAVHWDevice_Vulkan::init(AVCodecContext *avctx)
 {
@@ -121,6 +148,8 @@ public:
         if (!rhi || rhi->backend() != QRhi::Vulkan)
             return {};
         if (!frame() || frame().format() != AV_PIX_FMT_VULKAN)
+            return {};
+        if (!QAVHWDevice_Vulkan::sameDevice(rhi, frame().frame()))
             return {};
         auto handles = QAVHWDevice_Vulkan::textureHandles(frame().frame());
         if (handles.isNull())
