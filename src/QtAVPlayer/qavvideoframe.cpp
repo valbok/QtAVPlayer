@@ -15,11 +15,17 @@
     #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         #include <QAbstractVideoSurface>
     #else
+        #if defined(QT_AVPLAYER_VULKAN)
+            #include "qavhwdevice_vulkan_p.h"
+        #endif
         #if QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
             #include <QtMultimedia/private/qabstractvideobuffer_p.h>
         #else
             #include <QtMultimedia/private/qhwvideobuffer_p.h>
         #endif // #if QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
+        #if defined(QT_AVPLAYER_VULKAN)
+            #include <QtMultimedia/private/qvideoframetexturefromsource_p.h>
+        #endif
         #include <QtMultimedia/private/qvideotexturehelper_p.h>
     #endif // #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #endif // #ifdef QT_AVPLAYER_MULTIMEDIA
@@ -28,6 +34,9 @@
 extern "C" {
 #include <libswscale/swscale.h>
 #include <libavutil/pixdesc.h>
+#if defined(QT_AVPLAYER_VULKAN)
+#include <libavutil/hwcontext_vulkan.h>
+#endif
 #include "libavutil/imgutils.h"
 #include <libavutil/mastering_display_metadata.h>
 };
@@ -237,6 +246,49 @@ using AbstractVideoBuffer = QAbstractVideoBuffer;
 using AbstractVideoBuffer = QHwVideoBuffer;
 #endif
 
+#if defined(QT_AVPLAYER_VULKAN) && QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+static std::unique_ptr<QVideoFrameTextures> createVulkanTextures(QRhi &rhi, const QAVVideoFrame &frame,
+                                                                 QVideoFrameFormat::PixelFormat pixelFormat,
+                                                                 const QSize &size)
+{
+    if (rhi.backend() != QRhi::Vulkan || frame.format() != AV_PIX_FMT_VULKAN)
+        return nullptr;
+
+    const auto handles = QAVHWDevice_Vulkan::textureHandles(frame.frame()).toList();
+    if (handles.isEmpty())
+        return nullptr;
+
+    auto vkFrame = reinterpret_cast<AVVkFrame *>(frame.frame()->data[0]);
+    if (!vkFrame)
+        return nullptr;
+
+    const auto *texDesc = QVideoTextureHelper::textureDescription(pixelFormat);
+    if (!texDesc)
+        return nullptr;
+
+    QVideoTextureHelper::RhiTextureArray textures;
+    for (quint8 plane = 0; plane < texDesc->nplanes; ++plane) {
+        const auto handle = plane < handles.size() ? handles[plane].toULongLong() : 0;
+        if (!handle)
+            return nullptr;
+
+        const QSize planeSize = texDesc->rhiPlaneSize(size, plane, &rhi);
+        auto texture = std::unique_ptr<QRhiTexture>(
+            rhi.newTexture(texDesc->rhiTextureFormat(plane, &rhi), planeSize, 1, {}));
+        if (!texture)
+            return nullptr;
+
+        const int layoutIndex = vkFrame->layout[plane] ? plane : 0;
+        if (!texture->createFrom({handle, int(vkFrame->layout[layoutIndex])}))
+            return nullptr;
+
+        textures[plane] = std::move(texture);
+    }
+
+    return std::make_unique<QVideoTextureHelper::QVideoFrameTexturesFromRhiTextureArray>(std::move(textures));
+}
+#endif
+
 class PlanarVideoBuffer : public AbstractVideoBuffer
 {
 public:
@@ -314,6 +366,11 @@ public:
         std::unique_ptr<QVideoFrameTextures> mapTextures(QRhi *rhi) override
         {
             m_rhi = rhi;
+            if (m_frame.handleType() == QAVVideoFrame::VulkanTextureHandle && m_rhi) {
+                auto textures = createVulkanTextures(*m_rhi, m_frame, m_pixelFormat, m_frame.size());
+                if (textures)
+                    return textures;
+            }
             if (m_textures.isNull())
                 m_textures = m_frame.handle(m_rhi);
             return nullptr;
@@ -322,6 +379,11 @@ public:
         QVideoFrameTexturesUPtr mapTextures(QRhi &rhi, QVideoFrameTexturesUPtr &/*oldTextures*/) override
         {
             m_rhi = &rhi;
+            if (m_frame.handleType() == QAVVideoFrame::VulkanTextureHandle) {
+                auto textures = createVulkanTextures(rhi, m_frame, m_pixelFormat, m_frame.size());
+                if (textures)
+                    return textures;
+            }
             if (m_textures.isNull())
                 m_textures = m_frame.handle(m_rhi);
             return nullptr;

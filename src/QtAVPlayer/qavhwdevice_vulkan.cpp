@@ -77,11 +77,10 @@ QVariant QAVHWDevice_Vulkan::textureHandles(const AVFrame *av_frame)
     QList<quint64> textures;
     textures.reserve(planeCount);
     for (int plane = 0; plane < planeCount; ++plane) {
-        if (!vk_frame->img[plane]) {
-            qWarning() << "Missing Vulkan image for plane" << plane << "of" << planeCount;
+        auto image = vk_frame->img[plane] ? vk_frame->img[plane] : vk_frame->img[0];
+        if (!image)
             return {};
-        }
-        textures.push_back(quint64(vk_frame->img[plane]));
+        textures.push_back(quint64(image));
     }
     return QVariant::fromValue(textures);
 }
