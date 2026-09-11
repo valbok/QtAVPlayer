@@ -62,6 +62,7 @@ static bool isStreamCurrent(int index, const QList<QAVStream> &streams)
 
 int main(int argc, char *argv[])
 {
+    qputenv("QSG_RHI_BACKEND", "vulkan");
     QGuiApplication app(argc, argv);
 
     QQuickView viewer;
