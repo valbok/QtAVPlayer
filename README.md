@@ -163,6 +163,7 @@ Hardware decoding is automatically negotiated based on the platform:
 | macOS / iOS | Video Toolbox | Metal |
 | Windows | D3D11 | D3D11Texture2D |
 | Android | MediaCodec | OpenGL |
+| Any (`QT_AVPLAYER_VULKAN`) | Vulkan Video | VkImage |
 
 Most platforms expose only a single device context, but enabling `CUDA` support adds more options to choose from. In that case, the platform's native device context is prioritized by default. If you want `CUDA` to be used instead, you can force a CUDA-based codec, which selects the CUDA device context:
 
@@ -170,6 +171,27 @@ Most platforms expose only a single device context, but enabling `CUDA` support 
 player->setInputVideoCodec("h264_cuvid");
 player->setSource(file);
 ```
+
+Vulkan decoding is enabled with the `QT_AVPLAYER_VULKAN` build flag and is preferred over the platform backends. All decoders share one Vulkan device. To render the decoded frames without copying them to CPU memory, `QtQuick` must render using the same device, which is provided by the private header `qavhwdevice_vulkan_p.h`, see [examples/qml_video](https://github.com/valbok/QtAVPlayer/blob/master/examples/qml_video):
+
+```cpp
+QQuickWindow::setGraphicsApi(QSGRendererInterface::Vulkan);
+QGuiApplication app(argc, argv);
+
+QQuickView viewer;
+QVulkanInstance vulkanInstance;
+if (QAVHWDevice_Vulkan::setupInstance(&vulkanInstance) && vulkanInstance.create()) {
+    auto device = QAVHWDevice_Vulkan::renderDevice();
+    viewer.setVulkanInstance(&vulkanInstance);
+    viewer.setGraphicsDevice(QQuickGraphicsDevice::fromDeviceObjects(
+        static_cast<VkPhysicalDevice>(device.physicalDevice),
+        static_cast<VkDevice>(device.device),
+        device.queueFamilyIndex,
+        device.queueIndex));
+}
+```
+
+The planes of the decoded multiplane `VkImage` are copied on the GPU to the textures rendered by `QtQuick`. If `QtQuick` uses another device, the frames are downloaded to CPU memory instead.
 
 Notes:
 - Set the `QT_AVPLAYER_NO_HWDEVICE` environment variable to force software decoding.

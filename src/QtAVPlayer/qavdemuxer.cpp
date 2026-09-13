@@ -289,7 +289,7 @@ static int setup_video_codec(const QString &inputVideoCodec, const QAVStream &st
                 continue;
             auto device = *it;
             auto deviceName = av_hwdevice_get_type_name(device->type());
-            if (av_hwdevice_ctx_create(&hw_device_ctx, device->type(), nullptr, opts.dict, 0) >= 0) {
+            if (device->createDeviceContext(&hw_device_ctx, opts.dict) >= 0) {
                 qDebug() << "[" << streamInfo.title << "] Using" << deviceName << "hardware device context";
                 codec.avctx()->hw_device_ctx = hw_device_ctx;
                 codec.avctx()->pix_fmt = device->format();

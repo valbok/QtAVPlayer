@@ -32,6 +32,21 @@
 extern "C" {
 #include <libavcodec/avcodec.h>
 }
+
+// Render Vulkan frames without copying to CPU memory:
+// QtQuick must use the Vulkan device of the decoders.
+#if defined(QT_AVPLAYER_VULKAN) && QT_VERSION >= QT_VERSION_CHECK(6, 0, 0) && QT_CONFIG(vulkan)
+    #define QML_VIDEO_VULKAN
+    #if __has_include(<QtAVPlayer/private/qavhwdevice_vulkan_p.h>)
+        #include <QtAVPlayer/private/qavhwdevice_vulkan_p.h>
+    #else
+        #include <QtAVPlayer/qavhwdevice_vulkan_p.h>
+    #endif
+    #include <QVulkanInstance>
+    #include <QQuickGraphicsDevice>
+    #include <QQuickWindow>
+    #include <vulkan/vulkan.h>
+#endif
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
 class Source : public QObject
 {
@@ -62,9 +77,26 @@ static bool isStreamCurrent(int index, const QList<QAVStream> &streams)
 
 int main(int argc, char *argv[])
 {
+#if defined(QML_VIDEO_VULKAN)
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::Vulkan);
+#endif
     QGuiApplication app(argc, argv);
 
     QQuickView viewer;
+#if defined(QML_VIDEO_VULKAN)
+    QVulkanInstance vulkanInstance;
+    if (QAVHWDevice_Vulkan::setupInstance(&vulkanInstance) && vulkanInstance.create()) {
+        auto device = QAVHWDevice_Vulkan::renderDevice();
+        viewer.setVulkanInstance(&vulkanInstance);
+        viewer.setGraphicsDevice(QQuickGraphicsDevice::fromDeviceObjects(
+            static_cast<VkPhysicalDevice>(device.physicalDevice),
+            static_cast<VkDevice>(device.device),
+            device.queueFamilyIndex,
+            device.queueIndex));
+    } else {
+        qWarning() << "Could not share the Vulkan device with QtQuick, frames will be copied to CPU memory";
+    }
+#endif
     viewer.setSource(QUrl(QString::fromLatin1("qrc:///main.qml")));
     viewer.setResizeMode(QQuickView::SizeRootObjectToView);
     QObject::connect(viewer.engine(), SIGNAL(quit()), &viewer, SLOT(close()));

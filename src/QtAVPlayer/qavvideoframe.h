@@ -34,7 +34,10 @@ public:
         NoHandle,
         GLTextureHandle,
         MTLTextureHandle,
-        D3D11Texture2DHandle
+        D3D11Texture2DHandle,
+        // handle() returns QList<quint64> with VkImage of the frame.
+        // Multiplane pixel formats have one image with all planes.
+        VulkanTextureHandle
     };
 
     QAVVideoFrame();
@@ -65,6 +68,8 @@ public:
 #endif
     AVPixelFormat format() const;
     QString formatName() const;
+    // Returns the pixel format of the data in the hardware frame, or format() for software frames
+    AVPixelFormat swFormat() const;
     QAVVideoFrame convertTo(AVPixelFormat fmt, const QSize &requestedSize = {}) const;
 #ifdef QT_AVPLAYER_MULTIMEDIA
     // Implicitly converts to QVideoFrame with zero-copy.

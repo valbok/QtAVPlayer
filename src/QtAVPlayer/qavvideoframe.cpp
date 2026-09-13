@@ -150,6 +150,14 @@ QString QAVVideoFrame::formatName() const
     return QLatin1String(av_pix_fmt_desc_get(QAVVideoFrame::format())->name);
 }
 
+AVPixelFormat QAVVideoFrame::swFormat() const
+{
+    auto f = frame();
+    if (f->hw_frames_ctx)
+        return reinterpret_cast<AVHWFramesContext *>(f->hw_frames_ctx->data)->sw_format;
+    return static_cast<AVPixelFormat>(f->format);
+}
+
 QAVVideoFrame QAVVideoFrame::convertTo(AVPixelFormat fmt, const QSize &requestedSize) const
 {
     const QSize outputSize = !requestedSize.isEmpty() ? requestedSize : size();
@@ -237,13 +245,32 @@ using AbstractVideoBuffer = QAbstractVideoBuffer;
 using AbstractVideoBuffer = QHwVideoBuffer;
 #endif
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+// Owns the rhi textures created by QAVVideoBuffer::mapRhiTextures()
+class RhiTextures : public QVideoFrameTextures
+{
+public:
+    RhiTextures(const QList<QRhiTexture *> &textures) : m_textures(textures) { }
+    ~RhiTextures() { qDeleteAll(m_textures); }
+
+    QRhiTexture *texture(uint plane) const override
+    {
+        return int(plane) < m_textures.size() ? m_textures[plane] : nullptr;
+    }
+
+private:
+    QList<QRhiTexture *> m_textures;
+};
+#endif // #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+
 class PlanarVideoBuffer : public AbstractVideoBuffer
 {
 public:
-    PlanarVideoBuffer(const QAVVideoFrame &frame, QVideoFrameFormat::PixelFormat format
+    PlanarVideoBuffer(const QAVVideoFrame &frame, QAVVideoBuffer *buffer, QVideoFrameFormat::PixelFormat format
         , QVideoFrame::HandleType type = QVideoFrame::NoHandle, QVideoFrameFormat videoFormat = {})
         : AbstractVideoBuffer(type)
         , m_frame(frame)
+        , m_buffer(buffer)
         , m_pixelFormat(format)
         , m_videoFormat(videoFormat)
     {
@@ -266,6 +293,9 @@ public:
     {
         // Don't use video buffer if already mapped
         if (m_frame.isMapped())
+            return 0;
+        // Vulkan images are converted to rhi textures by mapTextures()
+        if (m_frame.handleType() == QAVVideoFrame::VulkanTextureHandle)
             return 0;
         if (m_textures.isNull())
             const_cast<PlanarVideoBuffer *>(this)->m_textures = m_frame.handle(m_rhi);
@@ -314,6 +344,8 @@ public:
         std::unique_ptr<QVideoFrameTextures> mapTextures(QRhi *rhi) override
         {
             m_rhi = rhi;
+            if (auto textures = mapRhiTextures(rhi))
+                return textures;
             if (m_textures.isNull())
                 m_textures = m_frame.handle(m_rhi);
             return nullptr;
@@ -322,11 +354,24 @@ public:
         QVideoFrameTexturesUPtr mapTextures(QRhi &rhi, QVideoFrameTexturesUPtr &/*oldTextures*/) override
         {
             m_rhi = &rhi;
+            if (auto textures = mapRhiTextures(&rhi))
+                return textures;
             if (m_textures.isNull())
                 m_textures = m_frame.handle(m_rhi);
             return nullptr;
         }
     #endif // QT_VERSION < QT_VERSION_CHECK(6, 8, 2)
+
+    // Returns the textures of the planes if the video buffer supports rhi textures directly
+    std::unique_ptr<QVideoFrameTextures> mapRhiTextures(QRhi *rhi)
+    {
+        if (!rhi || !m_buffer || m_frame.isMapped())
+            return nullptr;
+        auto textures = m_buffer->mapRhiTextures(rhi);
+        if (textures.isEmpty())
+            return nullptr;
+        return std::make_unique<RhiTextures>(textures);
+    }
 
     static QVideoFrameFormat::ColorSpace colorSpace(const AVFrame *frame)
     {
@@ -418,6 +463,7 @@ public:
 
 private:
     QAVVideoFrame m_frame;
+    QAVVideoBuffer *m_buffer = nullptr;
     QVideoFrameFormat::PixelFormat m_pixelFormat = QVideoFrameFormat::Format_Invalid;
     QVideoFrameFormat m_videoFormat;
     QVideoFrame::MapMode m_mode = QVideoFrame::NotMapped;
@@ -472,10 +518,24 @@ QAVVideoFrame::operator QVideoFrame() const
             if (result.isMapped())
                 format = VideoFrame::Format_NV12;
             break;
+        case AV_PIX_FMT_VULKAN:
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            switch (swFormat()) {
+            case AV_PIX_FMT_P010:
+                format = VideoFrame::Format_P010;
+                break;
+            case AV_PIX_FMT_P016:
+                format = VideoFrame::Format_P016;
+                break;
+            default:
+                format = VideoFrame::Format_NV12;
+                break;
+            }
+            break;
+#endif
         case AV_PIX_FMT_CUDA:
         case AV_PIX_FMT_D3D11:
         case AV_PIX_FMT_VIDEOTOOLBOX:
-        case AV_PIX_FMT_VULKAN:
         case AV_PIX_FMT_NV12:
             format = VideoFrame::Format_NV12;
             break;
@@ -506,6 +566,7 @@ QAVVideoFrame::operator QVideoFrame() const
             break;
         case MTLTextureHandle:
         case D3D11Texture2DHandle:
+        case VulkanTextureHandle:
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             type = HandleType::RhiTextureHandle;
 #endif
@@ -526,7 +587,8 @@ QAVVideoFrame::operator QVideoFrame() const
         static_cast<int>(frame()->height - frame()->crop_top - frame()->crop_bottom)
     );
     // Special case when the codec already cropped the frame and need to render only part of the frame
-    auto bufSize = reinterpret_cast<QAVVideoFramePrivate *>(result.d_ptr.get())->videoBuffer().size();
+    auto &buffer = reinterpret_cast<QAVVideoFramePrivate *>(result.d_ptr.get())->videoBuffer();
+    auto bufSize = buffer.size();
     if (handleType() == GLTextureHandle && bufSize.height() > size().height() && size().height() == viewport.height()) {
         auto diff = bufSize.height() - size().height();
         viewport.setHeight(viewport.height() - diff - 1);
@@ -539,9 +601,9 @@ QAVVideoFrame::operator QVideoFrame() const
     videoFormat.setMaxLuminance(PlanarVideoBuffer::maxNits(frame()));
 #endif // #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
 #if QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
-    return QVideoFrame(new PlanarVideoBuffer(result, format, type), videoFormat);
+    return QVideoFrame(new PlanarVideoBuffer(result, &buffer, format, type), videoFormat);
 #else
-    return QVideoFrame(std::make_unique<PlanarVideoBuffer>(result, format, type, videoFormat));
+    return QVideoFrame(std::make_unique<PlanarVideoBuffer>(result, &buffer, format, type, videoFormat));
 #endif
 #endif
 }
