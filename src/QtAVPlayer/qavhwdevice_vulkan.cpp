@@ -240,6 +240,8 @@ public:
             submitInfo.pSignalSemaphores = semaphores;
 
 #if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(60, 29, 100)
+            auto *deviceCtx = framesCtx->device_ctx;
+            auto *hwctx = reinterpret_cast<AVVulkanDeviceContext *>(deviceCtx->hwctx);
             hwctx->lock_queue(deviceCtx, nh->gfxQueueFamilyIdx, nh->gfxQueueIdx);
 #endif
             VkResult res = m_fn.QueueSubmit(nh->gfxQueue, 1, &submitInfo, m_fence);
