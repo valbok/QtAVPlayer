@@ -509,7 +509,9 @@ QAVVideoFrame::operator QVideoFrame() const
             break;
         case MTLTextureHandle:
         case D3D11Texture2DHandle:
+#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
         case VulkanTextureHandle:
+#endif
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             type = HandleType::RhiTextureHandle;
 #endif
