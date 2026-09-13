@@ -321,6 +321,9 @@ public:
     #else
         QVideoFrameTexturesUPtr mapTextures(QRhi &rhi, QVideoFrameTexturesUPtr &/*oldTextures*/) override
         {
+            auto &buf = reinterpret_cast<QAVVideoFramePrivate *>(m_frame.d_ptr.get())->videoBuffer();
+            if (auto textures = buf.mapTextures(rhi))
+                return QVideoFrameTexturesUPtr(textures);
             m_rhi = &rhi;
             if (m_textures.isNull())
                 m_textures = m_frame.handle(m_rhi);

@@ -77,6 +77,7 @@ public:
 
 protected:
     Q_DECLARE_PRIVATE(QAVVideoFrame)
+    friend class PlanarVideoBuffer;
 };
 
 Q_DECLARE_METATYPE(QAVVideoFrame)
