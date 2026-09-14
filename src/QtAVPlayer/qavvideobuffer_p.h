@@ -25,6 +25,7 @@
 
 QT_BEGIN_NAMESPACE
 
+class QVideoFrameTextures;
 class QRhi;
 class Q_AVPLAYER_EXPORT QAVVideoBuffer
 {
@@ -38,6 +39,7 @@ public:
     // Returns if the data is mapped to CPU memory
     virtual bool isMapped() const = 0;
     virtual QAVVideoFrame::HandleType handleType() const { return QAVVideoFrame::NoHandle; }
+    virtual QVideoFrameTextures *mapTextures(QRhi &) { return nullptr; }
     virtual QVariant handle(QRhi */*rhi*/ = nullptr) const { return {}; }
     // Returns the size of the frame from internal codec
     virtual QSize size() const { return m_frame.size(); }

@@ -34,7 +34,8 @@ public:
         NoHandle,
         GLTextureHandle,
         MTLTextureHandle,
-        D3D11Texture2DHandle
+        D3D11Texture2DHandle,
+        VulkanTextureHandle
     };
 
     QAVVideoFrame();
@@ -76,6 +77,7 @@ public:
 
 protected:
     Q_DECLARE_PRIVATE(QAVVideoFrame)
+    friend class PlanarVideoBuffer;
 };
 
 Q_DECLARE_METATYPE(QAVVideoFrame)
