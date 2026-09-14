@@ -367,8 +367,8 @@ public:
         for (quint8 plane = 0; plane < texDesc->nplanes; ++plane) {
             QSize planeSize = texDesc->rhiPlaneSize(frame().size(), plane, &rhi);
             auto texture = std::unique_ptr<QRhiTexture>(
-                rhi.newTexture(texDesc->rhiTextureFormat(plane, &rhi), planeSize, 1,
-                               QRhiTexture::UsedAsTransferDestination));
+                rhi.newTexture(texDesc->rhiTextureFormat(plane, &rhi), planeSize, 1));
+            if (!texture->create())
                 return nullptr;
             textures[plane] = std::move(texture);
         }
