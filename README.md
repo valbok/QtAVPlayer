@@ -171,6 +171,8 @@ player->setInputVideoCodec("h264_cuvid");
 player->setSource(file);
 ```
 
+If `QT_AVPLAYER_VULKAN` is set, then `Vulkan` is preferred for the device context which returns frames with `VkImage` texture handles.
+
 Notes:
 - Set the `QT_AVPLAYER_NO_HWDEVICE` environment variable to force software decoding.
 - You can also call `player.setInputVideoCodec("software")` to force software decoding for a specific player.
