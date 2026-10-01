@@ -197,6 +197,26 @@ void tst_QAVPlayer::playAudio()
     QTRY_COMPARE(p.state(), QAVPlayer::StoppedState);
 }
 
+void tst_QAVPlayer::playAudioOutput()
+{
+    QAVPlayer p;
+
+    QFileInfo file(testData("test.wav"));
+    p.setSource(file.absoluteFilePath());
+
+    QAVAudioFrame frame;
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { frame = f; }, Qt::DirectConnection);
+    p.play();
+
+    QTRY_VERIFY(p.position() != 0);
+    QTRY_VERIFY(frame);
+    QCOMPARE(frame.format().sampleFormat(), QAVAudioFormat::Int16);
+
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+    QTRY_COMPARE(p.state(), QAVPlayer::StoppedState);
+    QCOMPARE(p.position(), p.duration());
+}
+
 void tst_QAVPlayer::pauseAudio()
 {
     QAVPlayer p;
@@ -405,6 +425,208 @@ void tst_QAVPlayer::videoFrame()
     p.stop();
 }
 
+void tst_QAVPlayer::files_data()
+{
+    QTest::addColumn<QString>("path");
+    QTest::addColumn<int>("duration");
+    QTest::addColumn<bool>("hasVideo");
+    QTest::addColumn<bool>("hasAudio");
+
+    QTest::newRow("test.wav") << testData("test.wav") << 999 << false << true;
+    QTest::newRow("colors.mp4") << testData("colors.mp4") << 15019 << true << true;
+    QTest::newRow("shots0000.dv") << testData("shots0000.dv") << 40 << true << false;
+    QTest::newRow("dv_dsf_1_stype_1.dv") << testData("dv_dsf_1_stype_1.dv") << 600 << true << true;
+    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << 2000 << true << true;
+    QTest::newRow("small.mp4") << testData("small.mp4") << 5568 << true << true;
+    QTest::newRow("Earth_Zoom_In.mov") << testData("Earth_Zoom_In.mov") << 6840 << true << false;
+    QTest::newRow("star_trails.mpeg") << testData("star_trails.mpeg") << 1050 << true << true;
+}
+
+void tst_QAVPlayer::files()
+{
+    QFETCH(QString, path);
+    QFETCH(int, duration);
+    QFETCH(bool, hasVideo);
+    QFETCH(bool, hasAudio);
+
+    QAVPlayer p;
+
+    QFileInfo file(path);
+    p.setSource(file.absoluteFilePath());
+
+    int vf = 0;
+    QAVVideoFrame videoFrame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { videoFrame = f; if (f) ++vf; });
+    int af = 0;
+    QAVAudioFrame audioFrame;
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { audioFrame = f; if (f) ++af; });
+
+    p.pause();
+    if (hasVideo) {
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || vf == 1);
+    }
+    QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia || p.mediaStatus() == QAVPlayer::EndOfMedia);
+    QTRY_VERIFY(qAbs(p.duration() - duration) < 2);
+    QCOMPARE(!p.availableVideoStreams().isEmpty(), hasVideo);
+    QCOMPARE(!p.availableAudioStreams().isEmpty(), hasAudio);
+
+    af = 0;
+    vf = 0;
+    videoFrame = QAVVideoFrame();
+
+    p.pause();
+    p.play();
+    if (hasVideo) {
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || vf > 0);
+    }
+
+    if (hasAudio) {
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || audioFrame);
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || af > 0);
+    }
+
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 18000);
+
+    vf = 0;
+    af = 0;
+
+    p.pause();
+    p.play();
+    if (hasVideo) {
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || vf > 0);
+    }
+    if (hasAudio) {
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || audioFrame);
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || af > 0);
+    }
+
+    videoFrame = QAVVideoFrame();
+
+    p.pause();
+    if (hasVideo)
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
+
+    p.seek(duration * 0.8);
+    if (hasVideo)
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
+
+    videoFrame = QAVVideoFrame();
+    bool eof = p.mediaStatus() == QAVPlayer::EndOfMedia;
+    QObject::connect(&p, &QAVPlayer::mediaStatusChanged, &p, [&](QAVPlayer::MediaStatus s) { if (!eof) eof = s == QAVPlayer::EndOfMedia; });
+    p.play();
+    if (hasVideo)
+        QTRY_VERIFY(p.state() == QAVPlayer::StoppedState || videoFrame);
+
+    p.play();
+    p.stop();
+    QTest::qWait(100);
+
+    p.pause();
+    p.stop();
+    p.pause();
+    p.play();
+    p.seek(duration * 0.9);
+    QTRY_VERIFY(eof);
+    for (const auto &s : p.availableVideoStreams()) {
+        auto progress = p.progress(s);
+        QVERIFY(progress.pts() >= 0.0);
+        QVERIFY(progress.framesCount() > 0);
+        QVERIFY(progress.frameRate() > 0.0);
+        QVERIFY(progress.fps() > 0);
+    }
+}
+
+void tst_QAVPlayer::convert_data()
+{
+    QTest::addColumn<QString>("path");
+    QTest::addColumn<AVPixelFormat>("to");
+
+    QTest::newRow("colors.mp4") << testData("colors.mp4") << AV_PIX_FMT_NV12;
+    QTest::newRow("dv_dsf_1_stype_1.dv") << testData("dv_dsf_1_stype_1.dv") << AV_PIX_FMT_NV21;
+    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << AV_PIX_FMT_YUV420P;
+    QTest::newRow("small.mp4") << testData("small.mp4") << AV_PIX_FMT_YUV422P;
+    QTest::newRow("Earth_Zoom_In.mov") << testData("Earth_Zoom_In.mov") << AV_PIX_FMT_NV12;
+    QTest::newRow("1.dv") << testData("1.dv") << AV_PIX_FMT_YUV422P;
+}
+
+void tst_QAVPlayer::convert()
+{
+    QFETCH(QString, path);
+    QFETCH(AVPixelFormat, to);
+
+    QAVPlayer p;
+
+    QFileInfo file(path);
+    p.setSource(file.absoluteFilePath());
+
+    QAVVideoFrame videoFrame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { videoFrame = f; });
+
+    p.pause();
+    QTRY_VERIFY(videoFrame);
+
+    QAVVideoFrame converted = videoFrame.convertTo(to);
+    QVERIFY(converted);
+    QCOMPARE(converted.format(), to);
+    QCOMPARE(converted.pts(), videoFrame.pts());
+    QCOMPARE(converted.size(), videoFrame.size());
+
+    const QSize size(128, 72);
+    QAVVideoFrame convertedSize = videoFrame.convertTo(to, size);
+    QVERIFY(convertedSize);
+    QCOMPARE(convertedSize.format(), to);
+    QCOMPARE(convertedSize.pts(), videoFrame.pts());
+    QCOMPARE(convertedSize.size(), size);
+}
+
+void tst_QAVPlayer::map_data()
+{
+    QTest::addColumn<QString>("path");
+
+    QTest::newRow("colors.mp4") << testData("colors.mp4");
+    QTest::newRow("dv_dsf_1_stype_1.dv") << testData("dv_dsf_1_stype_1.dv");
+    QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv");
+    QTest::newRow("small.mp4") << testData("small.mp4");
+    QTest::newRow("Earth_Zoom_In.mov") << testData("Earth_Zoom_In.mov");
+}
+
+void tst_QAVPlayer::map()
+{
+    QFETCH(QString, path);
+
+    QAVPlayer p;
+
+    QFileInfo file(path);
+    p.setSource(file.absoluteFilePath());
+
+    QAVVideoFrame frame;
+    QVERIFY(!frame.isMapped());
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame](const QAVVideoFrame &f) { frame = f; });
+
+    p.play();
+    QTRY_VERIFY(frame);
+
+    auto mapData = frame.map();
+    QVERIFY(frame.isMapped());
+    QVERIFY(mapData.size > 0);
+    QVERIFY(mapData.bytesPerLine[0] > 0);
+    QVERIFY(mapData.bytesPerLine[1] > 0);
+    QVERIFY(mapData.data[0] != nullptr);
+    QVERIFY(mapData.data[1] != nullptr);
+    auto f = frame;
+    QVERIFY(f.isMapped());
+    auto md = f.map();
+    QVERIFY(md.format == mapData.format);
+    QVERIFY(md.size == mapData.size);
+    QVERIFY(md.bytesPerLine[0] == mapData.bytesPerLine[0]);
+    QVERIFY(md.bytesPerLine[1] == mapData.bytesPerLine[1]);
+    QVERIFY(md.data[0] == mapData.data[0]);
+    QVERIFY(md.data[1] == mapData.data[1]);
+}
+
 void tst_QAVPlayer::setEmptySource()
 {
     QAVPlayer p;
@@ -460,6 +682,67 @@ void tst_QAVPlayer::synced()
     QCOMPARE(spy.count(), 1);
     QCOMPARE(p.position(), p.duration());
     QTRY_VERIFY(framesCount > 200);
+}
+
+void tst_QAVPlayer::convertDirectConnection()
+{
+    QAVPlayer p;
+    QFileInfo file(testData("colors.mp4"));
+    p.setSource(file.absoluteFilePath());
+
+    int frameCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
+        QAVVideoFrame videoFrame = frame.convertTo(AVPixelFormat::AV_PIX_FMT_YUV420P);
+        ++frameCount;
+    }, Qt::DirectConnection);
+
+    p.play();
+    QTRY_VERIFY(frameCount > 3);
+}
+
+void tst_QAVPlayer::mapTwice()
+{
+    QAVPlayer p;
+    QFileInfo file(testData("colors.mp4"));
+    p.setSource(file.absoluteFilePath());
+    QAVVideoFrame::MapData md1;
+    QAVVideoFrame::MapData md2;
+    QAVVideoFrame::MapData md3;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
+        md1 = frame.map();
+        QVERIFY(frame.isMapped());
+        md2 = frame.map();
+        QVERIFY(frame.isMapped());
+    });
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
+        md3 = frame.map();
+        QVERIFY(frame.isMapped());
+        md3 = frame.map();
+        QVERIFY(frame.isMapped());
+    }, Qt::DirectConnection);
+
+    p.pause();
+    QTRY_VERIFY(md1.format != AV_PIX_FMT_NONE);
+    QVERIFY(md2.format != AV_PIX_FMT_NONE);
+    QCOMPARE(md1.format, md2.format);
+    QTRY_VERIFY(md3.format != AV_PIX_FMT_NONE);
+    QVERIFY(md3.format != AV_PIX_FMT_NONE);
+}
+
+void tst_QAVPlayer::changeFormat()
+{
+    QAVPlayer p;
+    QFileInfo file(testData("1.dv"));
+    p.setFilter("[0:v]split=2[in1][in2];[in1]boxblur[out1];[in2]negate[out2]");
+    p.setSource(file.absoluteFilePath());
+    QAVVideoFrame videoFrame;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &frame) {
+        videoFrame = frame;
+    });
+
+    p.play();
+    QTRY_VERIFY_WITH_TIMEOUT(videoFrame, 30000);
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
 }
 
 void tst_QAVPlayer::inputFormat()
