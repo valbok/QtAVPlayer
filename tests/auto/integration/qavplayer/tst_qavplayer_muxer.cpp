@@ -8,6 +8,7 @@
 #include "tst_qavplayer.h"
 #include "qavplayer.h"
 #include "qavmuxerframes.h"
+#include "qavcodec_p.h"
 
 #include <QtTest/QtTest>
 
