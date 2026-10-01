@@ -6,6 +6,10 @@
  ***************************************************************/
 
 #include "tst_qavplayer.h"
+#include "qavplayer.h"
+
+#include <QtTest/QtTest>
+#include <QDebug>
 
 void tst_QAVPlayer::bsf()
 {
@@ -269,4 +273,3 @@ void tst_QAVPlayer::flushCodecs()
     QCOMPARE(frame.stream().framesCount(), 309);
     QTRY_COMPARE(framesCount, 309);
 }
-

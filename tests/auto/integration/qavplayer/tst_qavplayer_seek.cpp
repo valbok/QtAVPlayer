@@ -6,6 +6,9 @@
  ***************************************************************/
 
 #include "tst_qavplayer.h"
+#include "qavplayer.h"
+
+#include <QtTest/QtTest>
 
 void tst_QAVPlayer::stepForward()
 {
@@ -560,4 +563,3 @@ void tst_QAVPlayer::lastFrame()
     QTRY_COMPARE(seekPosition, 5500);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
 }
-

@@ -6,6 +6,9 @@
  ***************************************************************/
 
 #include "tst_qavplayer.h"
+#include "qavplayer.h"
+
+#include <QtTest/QtTest>
 
 void tst_QAVPlayer::quitAudio()
 {
@@ -311,4 +314,3 @@ void tst_QAVPlayer::audioPositionWithCover()
     QTRY_VERIFY(frame);
     QVERIFY(pos > 0);
 }
-

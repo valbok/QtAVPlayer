@@ -6,6 +6,9 @@
  ***************************************************************/
 
 #include "tst_qavplayer.h"
+#include "qavplayer.h"
+
+#include <QtTest/QtTest>
 
 void tst_QAVPlayer::playVideo()
 {
@@ -694,4 +697,3 @@ void tst_QAVPlayer::pauseSeekVideo()
     seekPosition = -1;
     QCOMPARE(pausePosition, -1);
 }
-

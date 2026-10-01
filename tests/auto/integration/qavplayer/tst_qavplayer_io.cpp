@@ -6,6 +6,10 @@
  ***************************************************************/
 
 #include "tst_qavplayer.h"
+#include "qavplayer.h"
+#include "qaviodevice.h"
+
+#include <QtTest/QtTest>
 
 class Buffer: public QIODevice
 {
@@ -238,4 +242,3 @@ void tst_QAVPlayer::subtitles()
     QVERIFY(frame.subtitle() != nullptr);
     QVERIFY(frame.subtitle()->rects != nullptr);
 }
-

@@ -7,6 +7,9 @@
 
 #include "tst_qavplayer.h"
 
+#include <QtTest/QtTest>
+#include <QThreadPool>
+
 void tst_QAVPlayer::initTestCase()
 {
     QThreadPool::globalInstance()->setMaxThreadCount(20);

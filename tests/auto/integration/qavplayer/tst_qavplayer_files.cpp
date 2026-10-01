@@ -6,6 +6,10 @@
  ***************************************************************/
 
 #include "tst_qavplayer.h"
+#include "qavplayer.h"
+#include "qaviodevice.h"
+
+#include <QtTest/QtTest>
 
 void tst_QAVPlayer::files_data()
 {
@@ -234,4 +238,3 @@ void tst_QAVPlayer::files_io()
     p.seek(duration * 0.9);
     QTRY_VERIFY(eof);
 }
-

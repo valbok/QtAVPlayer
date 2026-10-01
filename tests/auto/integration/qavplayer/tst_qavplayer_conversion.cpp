@@ -6,6 +6,9 @@
  ***************************************************************/
 
 #include "tst_qavplayer.h"
+#include "qavplayer.h"
+
+#include <QtTest/QtTest>
 
 void tst_QAVPlayer::convert_data()
 {
@@ -155,4 +158,3 @@ void tst_QAVPlayer::changeFormat()
     QTRY_VERIFY_WITH_TIMEOUT(videoFrame, 30000);
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
 }
-

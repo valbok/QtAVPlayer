@@ -7,18 +7,9 @@
 
 #pragma once
 
-#include "qavplayer.h"
-#include "qavmuxerframes.h"
-#include "qavaudiooutput.h"
-#include "qaviodevice.h"
-#include "qavcodec_p.h"
-
-#include <QDebug>
-#include <QtTest/QtTest>
-
-extern "C" {
-#include <libavcodec/avcodec.h>
-}
+#include <QObject>
+#include <QString>
+#include <QtCore/QtGlobal>
 
 #ifndef TEST_DATA_DIR
 #define TEST_DATA_DIR "../testdata"
@@ -119,4 +110,3 @@ private slots:
     void muxerScale_data();
     void muxerScale();
 };
-

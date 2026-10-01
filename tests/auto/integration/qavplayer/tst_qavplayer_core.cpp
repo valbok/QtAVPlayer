@@ -6,6 +6,9 @@
  ***************************************************************/
 
 #include "tst_qavplayer.h"
+#include "qavplayer.h"
+
+#include <QtTest/QtTest>
 
 void tst_QAVPlayer::construction()
 {
@@ -44,4 +47,3 @@ void tst_QAVPlayer::speedChanged()
     QCOMPARE(spy.count(), 2);
     QCOMPARE(p.speed(), 2.0);
 }
-

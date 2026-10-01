@@ -6,6 +6,10 @@
  ***************************************************************/
 
 #include "tst_qavplayer.h"
+#include "qavplayer.h"
+#include "qavaudiooutput.h"
+
+#include <QtTest/QtTest>
 
 void tst_QAVPlayer::availableAudioStreams()
 {
@@ -367,4 +371,3 @@ void tst_QAVPlayer::switchingSource()
 
     QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
 }
-

@@ -6,6 +6,10 @@
  ***************************************************************/
 
 #include "tst_qavplayer.h"
+#include "qavplayer.h"
+
+#include <QtTest/QtTest>
+#include <QDebug>
 
 void tst_QAVPlayer::configureFilter()
 {
@@ -567,4 +571,3 @@ void tst_QAVPlayer::multiFilterInputs()
     QVERIFY(p.progress(s).frameRate() > 0.0);
     QVERIFY(p.progress(s).expectedFrameRate() > 0.0);
 }
-

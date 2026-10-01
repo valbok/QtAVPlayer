@@ -6,6 +6,10 @@
  ***************************************************************/
 
 #include "tst_qavplayer.h"
+#include "qavplayer.h"
+#include "qavmuxerframes.h"
+
+#include <QtTest/QtTest>
 
 void tst_QAVPlayer::outputFile()
 {
@@ -361,4 +365,3 @@ void tst_QAVPlayer::muxerScale()
     QTRY_VERIFY(vf);
     QCOMPARE(vf.size(), size);
 }
-
