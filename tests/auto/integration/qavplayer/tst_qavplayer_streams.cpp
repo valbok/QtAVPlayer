@@ -10,6 +10,10 @@
 
 #include <QtTest/QtTest>
 
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
+
 void tst_QAVPlayer::availableAudioStreams()
 {
     int framesCount = 0;
