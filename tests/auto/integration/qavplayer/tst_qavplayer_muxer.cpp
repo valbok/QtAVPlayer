@@ -115,36 +115,6 @@ void tst_QAVPlayer::muxerMultiSourceFrames()
     QCOMPARE(p.availableStreams().size(), 4);
 }
 
-void tst_QAVPlayer::framesAfterPlayerDestroyed()
-{
-    QFileInfo file(testData("small.mp4"));
-    auto p = std::make_unique<QAVPlayer>();
-
-    QAVVideoFrame videoFrame;
-    QObject::connect(p.get(), &QAVPlayer::videoFrame, p.get(), [&](const QAVVideoFrame &f) { videoFrame = f; });
-
-    p->setSource(file.absoluteFilePath());
-    p->pause();
-    QCOMPARE(p->state(), QAVPlayer::PausedState);
-    QTRY_COMPARE(p->mediaStatus(), QAVPlayer::LoadedMedia);
-    QTRY_VERIFY(videoFrame);
-    QVERIFY(videoFrame.pts() >= 0);
-    p->setSource({});
-    QTRY_COMPARE(p->mediaStatus(), QAVPlayer::NoMedia);
-    QVERIFY(videoFrame.pts() >= 0);
-
-    p = nullptr;
-    QVERIFY(videoFrame.pts() >= 0);
-
-    p = std::make_unique<QAVPlayer>();
-    QObject::connect(p.get(), &QAVPlayer::videoFrame, p.get(), [&](const QAVVideoFrame &f) { videoFrame = f; });
-    p->setSource(file.absoluteFilePath());
-    p->play();
-    QTRY_COMPARE(p->mediaStatus(), QAVPlayer::LoadedMedia);
-    // Destroy the player but the frame could be still active
-    p = nullptr;
-}
-
 void tst_QAVPlayer::scaleHW()
 {
     QAVPlayer p;

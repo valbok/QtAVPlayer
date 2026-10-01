@@ -272,6 +272,138 @@ void tst_QAVPlayer::filter()
     QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 10000);
 }
 
+void tst_QAVPlayer::bsf()
+{
+    QAVPlayer p;
+    QFileInfo file(testData("test.mov"));
+    p.setSource(file.absoluteFilePath());
+
+    QSignalSpy spy(&p, &QAVPlayer::bitstreamFilterChanged);
+
+    QAVVideoFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+
+    p.setBitstreamFilter("noise");
+    p.play();
+    QTRY_COMPARE(spy.count(), 1);
+    QTRY_VERIFY(framesCount > 0);
+    QVERIFY(frame);
+
+    spy.clear();
+    framesCount = 0;
+    frame = QAVVideoFrame();
+
+    p.setBitstreamFilter("noise");
+    QTRY_VERIFY(framesCount > 0);
+    QVERIFY(frame);
+
+    spy.clear();
+    framesCount = 0;
+    frame = QAVVideoFrame();
+
+    p.setBitstreamFilter("");
+    QTRY_COMPARE(spy.count(), 1);
+    p.setSource("");
+    p.setSource(file.absoluteFilePath());
+
+    spy.clear();
+
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QVERIFY(p.bitstreamFilter().isEmpty());
+
+    p.setBitstreamFilter("noise");
+    p.play();
+
+    QVERIFY(!p.bitstreamFilter().isEmpty());
+    QTRY_VERIFY(framesCount > 0);
+    QVERIFY(frame);
+
+    spy.clear();
+    framesCount = 0;
+    frame = QAVVideoFrame();
+
+    p.setBitstreamFilter("noise");
+    QTRY_VERIFY(framesCount > 0);
+    QVERIFY(frame);
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+}
+
+void tst_QAVPlayer::bsfInvalid()
+{
+    QAVPlayer p;
+    QFileInfo file(testData("test.mov"));
+    p.setSource(file.absoluteFilePath());
+
+    QSignalSpy spy(&p, &QAVPlayer::bitstreamFilterChanged);
+    QSignalSpy spyErrorOccurred(&p, &QAVPlayer::errorOccurred);
+
+    QAVVideoFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
+
+    p.setBitstreamFilter("obey=666");
+    p.play();
+
+    QTRY_COMPARE(spy.count(), 1);
+    QTRY_VERIFY(spyErrorOccurred.count() > 0);
+
+    QCOMPARE(framesCount, 0);
+    QVERIFY(!frame);
+
+    spy.clear();
+    spyErrorOccurred.clear();
+    framesCount = 0;
+    frame = QAVVideoFrame();
+
+    p.setBitstreamFilter("");
+    QTRY_COMPARE(spy.count(), 1);
+    p.setSource("");
+    p.setSource(file.absoluteFilePath());
+
+    spy.clear();
+    spyErrorOccurred.clear();
+
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    QVERIFY(p.bitstreamFilter().isEmpty());
+
+    p.setBitstreamFilter("makeluv=69");
+    p.play();
+
+    QVERIFY(!p.bitstreamFilter().isEmpty());
+    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+    QCOMPARE(framesCount, 0);
+    QVERIFY(!frame);
+
+    spyErrorOccurred.clear();
+
+    p.setBitstreamFilter("");
+    p.play();
+    QTRY_VERIFY(frame);
+    QVERIFY(framesCount > 0);
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+    QCOMPARE(spyErrorOccurred.count(), 0);
+
+    p.setBitstreamFilter("not=war");
+    p.play();
+
+    QTRY_COMPARE(spyErrorOccurred.count(), 1);
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::InvalidMedia);
+
+    spy.clear();
+    spyErrorOccurred.clear();
+    framesCount = 0;
+    frame = QAVVideoFrame();
+
+    p.setBitstreamFilter("noise");
+    p.play();
+
+    QTRY_VERIFY(frame);
+    QVERIFY(framesCount > 0);
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
+    QCOMPARE(spyErrorOccurred.count(), 0);
+}
+
 void tst_QAVPlayer::filterName()
 {
     QAVPlayer p;

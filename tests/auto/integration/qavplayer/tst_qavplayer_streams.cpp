@@ -7,7 +7,6 @@
 
 #include "tst_qavplayer.h"
 #include "qavplayer.h"
-#include "qavaudiooutput.h"
 
 #include <QtTest/QtTest>
 
@@ -80,190 +79,58 @@ void tst_QAVPlayer::availableAudioStreams()
     QCOMPARE(p.currentAudioStreams().first().index(), 1);
 }
 
-#ifdef QT_AVPLAYER_MULTIMEDIA
-void tst_QAVPlayer::cast2QVideoFrame_data()
+void tst_QAVPlayer::subtitles()
 {
-    QTest::addColumn<QString>("path");
-    QTest::addColumn<QSize>("size");
-
-    QTest::newRow("colors.mp4") << testData("colors.mp4") << QSize(160, 120);
-    QTest::newRow("dv_dsf_1_stype_1.dv") << testData("dv_dsf_1_stype_1.dv") << QSize(720, 576);
-    //QTest::newRow("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << testData("dv25_pal__411_4-3_2ch_32k_bars_sine.dv") << QSize(720, 576); -- "yuv411p" is not supported
-    QTest::newRow("small.mp4") << testData("small.mp4") << QSize(560, 320);
-    QTest::newRow("Earth_Zoom_In.mov") << testData("Earth_Zoom_In.mov") << QSize(1920, 1080);
-}
-
-void tst_QAVPlayer::cast2QVideoFrame()
-{
-    QFETCH(QString, path);
-    QFETCH(QSize, size);
-
     QAVPlayer p;
 
-    QFileInfo file(path);
+    QFileInfo file(testData("colors_subtitles.mp4"));
     p.setSource(file.absoluteFilePath());
 
-    QAVVideoFrame frame;
-    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&frame](const QAVVideoFrame &f) { frame = f; });
+    QSignalSpy spy(&p, &QAVPlayer::subtitleStreamsChanged);
 
-    p.pause();
+    QAVSubtitleFrame frame;
+    int framesCount = 0;
+    QObject::connect(&p, &QAVPlayer::subtitleFrame, &p, [&](const QAVSubtitleFrame &f) { frame = f; ++framesCount; });
+
+    p.play();
+
+    QTRY_VERIFY(!p.availableSubtitleStreams().isEmpty());
+    QCOMPARE(p.availableSubtitleStreams().size(), 2);
+    QCOMPARE(p.availableSubtitleStreams()[0].index(), 2);
+    QCOMPARE(p.availableSubtitleStreams()[1].index(), 3);
+    QVERIFY(!p.currentSubtitleStreams().isEmpty());
+    QCOMPARE(p.currentSubtitleStreams().size(), 1);
+    QCOMPARE(p.currentSubtitleStreams().first().index(), 2);
+    QVERIFY(p.currentSubtitleStreams().first().stream() != nullptr);
+    QCOMPARE(p.currentSubtitleStreams().first().duration(), 45.809);
+    QVERIFY(!p.currentSubtitleStreams().first().metadata().isEmpty());
+    QCOMPARE(p.currentSubtitleStreams().first().metadata()["language"], QStringLiteral("eng"));
+    QCOMPARE(p.currentSubtitleStreams().first().framesCount(), 9);
     QTRY_VERIFY(frame);
-
-    QVideoFrame q = frame;
-    QVERIFY(q.isValid());
-    QVERIFY(!q.size().isEmpty());
-    QCOMPARE(q.size(), size);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    q.map(QAbstractVideoBuffer::ReadOnly);
-    QVERIFY(q.bits() != nullptr);
-    QVERIFY(q.bytesPerLine() > 0);
-#else
-    q.map(QVideoFrame::ReadOnly);
-    QVERIFY(q.bits(0) != nullptr);
-    QVERIFY(q.bytesPerLine(0) > 0);
-#endif
-    q = frame.toQVideoFrame();
-    QVERIFY(q.isValid());
-    QVERIFY(!q.size().isEmpty());
-    QCOMPARE(q.size(), size);
-}
-
-void tst_QAVPlayer::audioOutput()
-{
-    QFileInfo file1(testData("guido.mp4"));
-    QFileInfo file2(testData("small.mp4"));
-
-    QAVAudioOutput out;
-    QAVAudioFrame frame;
-    QAVPlayer p;
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&out, &frame](const QAVAudioFrame &f) {
-        out.play(f);
-        frame = f;
-    });
-
-    auto outWithParent = new QAVAudioOutput(&p);
-    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&outWithParent](const QAVAudioFrame &f) {
-        outWithParent->play(f);
-    }, Qt::DirectConnection);
-
-    p.setSource(file1.absoluteFilePath());
-    p.play();
-    QTest::qWait(100);
-    out.setVolume(0.9);
-    QCOMPARE(out.volume(), 0.9);
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    auto audioDevices = QMediaDevices::audioOutputs();
-#else
-    auto audioDevices = QAudioDeviceInfo::availableDevices(QAudio::AudioOutput);
-#endif
-    if (!audioDevices.isEmpty()) {
-        out.setAudioDevice(audioDevices.first());
-        QCOMPARE(out.audioDevice(), audioDevices.first());
-    }
-    out.setAudioDevice({});
-    QVERIFY(out.audioDevice().isNull());
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
-    out.setChannelConfig(QAudioFormat::channelConfig(QAudioFormat::FrontRight));
-    QCOMPARE(out.channelConfig(), QAudioFormat::channelConfig(QAudioFormat::FrontRight));
-#endif
-    p.setSource(file2.absoluteFilePath());
-    p.play();
-    QTRY_VERIFY(p.position() > 500);
-    auto fmt = frame.format();
-    auto af = QAVAudioFrame(fmt, frame.data());
-    QCOMPARE(af.format(), fmt);
-    QCOMPARE(af.data(), frame.data());
-}
-
-void tst_QAVPlayer::multiPlayers()
-{
-    QFileInfo file(testData("av_sample.mkv"));
-    QAVAudioOutput o1;
-    QAVAudioOutput o2;
-    QAVPlayer p1;
-    QAVPlayer p2;
-    p1.setSource(file.absoluteFilePath());
-    p2.setSource(file.absoluteFilePath());
-    p1.setSynced(false);
-    p2.setSynced(false);
-    o1.setVolume(0);
-    o2.setVolume(0);
-    int framesCount1 = 0;
-    int framesCount2 = 0;
-    qint64 pos1 = 0;
-    qint64 pos2 = 0;
-    QObject::connect(&p1, &QAVPlayer::videoFrame, &p1, [&](const QAVVideoFrame &) { ++framesCount1; pos1 = p1.position(); }, Qt::DirectConnection);
-    QObject::connect(&p1, &QAVPlayer::audioFrame, &p1, [&](const QAVAudioFrame &f) { o1.play(f); }, Qt::DirectConnection);
-    QObject::connect(&p2, &QAVPlayer::videoFrame, &p2, [&](const QAVVideoFrame &) { ++framesCount2; pos2 = p2.position(); }, Qt::DirectConnection);
-    QObject::connect(&p2, &QAVPlayer::audioFrame, &p2, [&](const QAVAudioFrame &f) { o2.play(f); }, Qt::DirectConnection);
-    p1.play();
-    p2.play();
-    QTRY_COMPARE(p1.mediaStatus(), QAVPlayer::EndOfMedia);
-    QTRY_COMPARE(p2.mediaStatus(), QAVPlayer::EndOfMedia);
-    QVERIFY(pos1 > 0);
-    QVERIFY(pos2 > 0);
-    QVERIFY(framesCount1 > 0);
-    QVERIFY(framesCount2 > 0);
-}
-
-#endif // #ifndef QT_AVPLAYER_MULTIMEDIA
-
-void tst_QAVPlayer::setEmptySource()
-{
-    QAVPlayer p;
-
-    int framesCount = 0;
-    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &) { ++framesCount; });
-
-    bool noMediaReceived = false;
-    QObject::connect(&p, &QAVPlayer::mediaStatusChanged, &p, [&](QAVPlayer::MediaStatus s) {
-        if (!noMediaReceived)
-            noMediaReceived = s == QAVPlayer::NoMedia;
-    });
-
-    QFileInfo file(testData("small.mp4"));
-    p.setSource(file.absoluteFilePath());
-    p.play();
-
-    QTest::qWait(200);
-
-    p.setSource("");
-    QTRY_VERIFY(noMediaReceived);
-
-    framesCount = 0;
-    QTest::qWait(100);
-    QCOMPARE(framesCount, 0);
-}
-
-void tst_QAVPlayer::synced()
-{
-    QAVPlayer p;
-
-    QFileInfo file(testData("colors.mp4"));
-    p.setSource(file.absoluteFilePath());
-
-    QSignalSpy spy(&p, &QAVPlayer::syncedChanged);
-
-    QAVVideoFrame frame;
-    int framesCount = 0;
-    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frame = f; ++framesCount; });
-
-    QVERIFY(p.isSynced());
-    p.setSynced(true);
-
-    p.play();
-
-    QTRY_VERIFY(p.position() > 500);
+    QVERIFY(frame.subtitle() != nullptr);
+    QCOMPARE(frame.subtitle()->num_rects, 1u);
     QCOMPARE(spy.count(), 0);
+    QTRY_VERIFY_WITH_TIMEOUT(framesCount > 3, 20000);
 
-    p.setSynced(false);
+    frame = QAVSubtitleFrame();
 
-    QVERIFY(!p.isSynced());
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
-    QCOMPARE(spy.count(), 1);
-    QCOMPARE(p.position(), p.duration());
-    QTRY_VERIFY(framesCount > 200);
+    p.seek(0);
+    p.setSpeed(3);
+    p.setSubtitleStream({3});
+
+    QCOMPARE(p.currentSubtitleStreams().first().index(), 3);
+    QVERIFY(p.currentSubtitleStreams().first().stream() != nullptr);
+    QCOMPARE(p.currentSubtitleStreams().first().duration(), 45.809);
+    QVERIFY(!p.currentSubtitleStreams().first().metadata().isEmpty());
+    QCOMPARE(p.currentSubtitleStreams().first().metadata()["language"], QStringLiteral("nor"));
+
+    p.play();
+
+    QTRY_VERIFY(frame);
+    QTRY_COMPARE(spy.count(), 1);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 20000);
+    QVERIFY(frame.subtitle() != nullptr);
+    QVERIFY(frame.subtitle()->rects != nullptr);
 }
 
 void tst_QAVPlayer::multipleAudioStreams()
@@ -343,6 +210,65 @@ void tst_QAVPlayer::multipleVideoStreams()
         QTRY_COMPARE(framesCount[i], streamsFramesCount[i]);
 }
 
+void tst_QAVPlayer::emptyStreams()
+{
+    QAVPlayer p;
+
+    QFileInfo file(testData("guido.mp4"));
+
+    QSignalSpy spyAudio(&p, &QAVPlayer::audioStreamsChanged);
+    QSignalSpy spyVideo(&p, &QAVPlayer::videoStreamsChanged);
+
+    QAVAudioFrame frameAudio;
+    QAVVideoFrame frameVideo;
+    QSet<int> streamsAudio;
+    QSet<int> streamsVideo;
+    QObject::connect(&p, &QAVPlayer::audioFrame, &p, [&](const QAVAudioFrame &f) { frameAudio = f; streamsAudio.insert(f.stream().index()); }, Qt::DirectConnection);
+    QObject::connect(&p, &QAVPlayer::videoFrame, &p, [&](const QAVVideoFrame &f) { frameVideo = f; streamsVideo.insert(f.stream().index()); });
+
+    p.setSource(file.absoluteFilePath());
+
+    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::LoadedMedia);
+    p.setAudioStreams({});
+    p.setVideoStreams({});
+    p.play();
+
+    QTRY_COMPARE(spyAudio.count(), 1);
+    QTRY_COMPARE(spyVideo.count(), 1);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
+
+    streamsAudio.clear();
+    streamsVideo.clear();
+    p.play();
+
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
+    QCOMPARE(streamsAudio.size(), 0);
+    QCOMPARE(streamsVideo.size(), 0);
+
+    p.setAudioStream(p.availableAudioStreams().first());
+    frameAudio = QAVAudioFrame();
+    p.play();
+
+    QTRY_VERIFY(frameAudio.pts() > 0);
+    QCOMPARE(streamsAudio.size(), 1);
+    QVERIFY(streamsAudio.contains(p.availableAudioStreams().first().index()));
+    QCOMPARE(streamsVideo.size(), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(p.mediaStatus(), QAVPlayer::EndOfMedia, 15000);
+    QTRY_COMPARE_WITH_TIMEOUT(p.state(), QAVPlayer::StoppedState, 15000);
+
+    p.setAudioStreams({});
+    p.setVideoStreams(p.availableVideoStreams());
+    frameAudio = QAVAudioFrame();
+    frameVideo = QAVVideoFrame();
+    streamsAudio.clear();
+    streamsVideo.clear();
+    p.play();
+
+    QTRY_VERIFY(frameVideo.pts() > 0);
+    QCOMPARE(streamsVideo.size(), 1);
+    QVERIFY(streamsVideo.contains(p.availableVideoStreams().first().index()));
+}
+
 void tst_QAVPlayer::streamMetadataRotate()
 {
     QAVPlayer p;
@@ -355,19 +281,4 @@ void tst_QAVPlayer::streamMetadataRotate()
     QVERIFY(!p.currentVideoStreams()[0].metadata().isEmpty());
     QVERIFY(p.currentVideoStreams()[0].metadata().contains("rotate"));
     QCOMPARE(p.currentVideoStreams()[0].metadata()["rotate"], "90");
-}
-
-void tst_QAVPlayer::switchingSource()
-{
-    QAVPlayer p;
-    QList<QString> files = {"av_sample.mkv", "test.mkv", "small.mp4"};
-    p.setSynced(false);
-    for (const auto &f : files) {
-        QFileInfo file(testData(f));
-        p.setSource(file.absoluteFilePath());
-        p.play();
-        QTRY_VERIFY(p.mediaStatus() == QAVPlayer::LoadedMedia || p.mediaStatus() == QAVPlayer::EndOfMedia);
-    }
-
-    QTRY_COMPARE(p.mediaStatus(), QAVPlayer::EndOfMedia);
 }

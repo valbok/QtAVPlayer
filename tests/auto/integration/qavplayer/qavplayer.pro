@@ -11,13 +11,11 @@ HEADERS += \
 SOURCES += \
     tst_qavplayer.cpp \
     tst_qavplayer_audio.cpp \
-    tst_qavplayer_codecs.cpp \
     tst_qavplayer_conversion.cpp \
-    tst_qavplayer_core.cpp \
     tst_qavplayer_filters.cpp \
     tst_qavplayer_files.cpp \
     tst_qavplayer_io.cpp \
     tst_qavplayer_muxer.cpp \
+    tst_qavplayer_multimedia.cpp \
     tst_qavplayer_seek.cpp \
-    tst_qavplayer_streams.cpp \
-    tst_qavplayer_video.cpp
+    tst_qavplayer_streams.cpp
