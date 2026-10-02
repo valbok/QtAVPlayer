@@ -98,6 +98,7 @@ private slots:
     void multiFilterInputs_data();
     void multiFilterInputs();
     void streamMetadataRotate();
+    void klvStreamInfo();
     void switchingSource();
     void outputFile();
     void muxerFilters();
