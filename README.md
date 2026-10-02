@@ -89,6 +89,10 @@ player->setSource("~/Videos/Generative-Pre-trained-Transformers-and-WW3.mkv");
 // Adaptive streaming (DASH/HLS)
 player->setSource("https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8");
 
+// RTSP stream
+player->setInputOptions({{"rtsp_transport", "tcp"}});
+player->setSource("rtsp://example.com/stream");
+
 // Playing from a Qt resource (qrc)
 QSharedPointer<QIODevice> file(new QFile(":/alarm.wav"));
 file->open(QIODevice::ReadOnly);

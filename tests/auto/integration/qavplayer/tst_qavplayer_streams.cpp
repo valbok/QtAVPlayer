@@ -7,11 +7,13 @@
 
 #include "tst_qavplayer.h"
 #include "qavplayer.h"
+#include "qavformatcontext_p.h"
 
 #include <QtTest/QtTest>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
 }
 
 void tst_QAVPlayer::availableAudioStreams()
@@ -285,4 +287,19 @@ void tst_QAVPlayer::streamMetadataRotate()
     QVERIFY(!p.currentVideoStreams()[0].metadata().isEmpty());
     QVERIFY(p.currentVideoStreams()[0].metadata().contains("rotate"));
     QCOMPARE(p.currentVideoStreams()[0].metadata()["rotate"], "90");
+}
+
+void tst_QAVPlayer::klvStreamInfo()
+{
+    auto ctx = QAVFormatContext::alloc();
+    QVERIFY(ctx);
+    auto avStream = avformat_new_stream(ctx->ctx(), nullptr);
+    QVERIFY(avStream);
+    avStream->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+    avStream->codecpar->codec_id = AV_CODEC_ID_SMPTE_KLV;
+
+    QAVStream stream(0, ctx);
+    const auto info = stream.info();
+    QCOMPARE(info.mediaType, QStringLiteral("data"));
+    QCOMPARE(info.codecName, QStringLiteral("klv"));
 }

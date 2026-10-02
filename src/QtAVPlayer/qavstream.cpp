@@ -13,6 +13,8 @@
 
 extern "C" {
 #include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavutil/avutil.h>
 #include <libavutil/display.h>
 #include <libavutil/time.h>
 #include <libavcodec/version.h>
@@ -186,6 +188,13 @@ double QAVStream::frameRate() const
 QAVStream::Info QAVStream::info() const
 {
     Info ret;
+    auto s = stream();
+    if (s && s->codecpar) {
+        const char *mediaType = av_get_media_type_string(s->codecpar->codec_type);
+        if (mediaType)
+            ret.mediaType = QString::fromLatin1(mediaType);
+        ret.codecName = QString::fromLatin1(avcodec_get_name(s->codecpar->codec_id));
+    }
     auto md = metadata();
     auto it = md.find(QString::fromLatin1("title"));
     if (it != md.end())
