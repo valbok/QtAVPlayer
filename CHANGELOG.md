@@ -1,3 +1,23 @@
+v2026-10-04
+-----------
+
+- #727 - Fixed integration tests to split by functional area
+- #724 - Introduced VulkanTextureHandle
+- #723 - Added VULKAN to muxer
+- #720 - Introduced AV_HWDEVICE_TYPE_VULKAN
+- #719 - Fixed header in qavsubtitletextparser.h
+- #716 - Fixed files and files_io with eof tests
+- #713 - Fixed casting to QVideoFrame to avoid implicit converting
+- #711 - Refactored playback example in README.md
+- #710 - Introduced QAVVideoFrame::toQVideoFrame()
+- #709 - Fixed tst_qavplayer.cpp::files_io
+- #708 - Fixed macOS clang-9 audio output test race
+- #707 - Fixed tst_QAVPlayer::files test to respect early eof
+- #706 - Fixed flaky windows CI failure in tst_QAVPlayer::multipleFilters()
+- #705 - Introduced resizing in QAVVideoFrame::convertTo()
+- #704 - Disabled logging in CI
+- #703 - Fixed race condition in QAVPlayerPrivate::step() dropping resetFilters signal
+
 v2026-08-18
 -----------
 
