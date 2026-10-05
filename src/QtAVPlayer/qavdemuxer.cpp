@@ -175,6 +175,7 @@ QAVDemuxer::QAVDemuxer()
         av_register_all();
         avcodec_register_all();
 #endif
+        avformat_network_init();
         avdevice_register_all();
         av_log_set_callback(log_callback);
         loaded = true;

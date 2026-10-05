@@ -39,6 +39,8 @@ public:
     struct Info {
         QString title;
         QString language;
+        QString mediaType;
+        QString codecName;
     };
     Info info() const;
 
