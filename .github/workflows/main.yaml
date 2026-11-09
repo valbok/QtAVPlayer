@@ -346,7 +346,7 @@ jobs:
           mingw32-make
 
   sailfish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: coderus/sailfishos-platform-sdk:5.0.0.43
 
     env:
