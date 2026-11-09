@@ -99,7 +99,7 @@ QSize QAVCodec::size() const
 void QAVCodec::flushBuffers()
 {
      Q_D(QAVCodec);
-     if (!d->avctx)
+     if (!d->avctx || !avcodec_is_open(d->avctx))
         return;
     avcodec_flush_buffers(d->avctx);
 }
