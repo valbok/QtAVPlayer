@@ -20,7 +20,7 @@ jobs:
             qt_modules: "qtmultimedia"
             qt_packages: "libxkbcommon-dev libgstreamer-plugins-base1.0-0 libgstreamer-gl1.0-0"
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     env: ${{ matrix.env }}
 
@@ -346,8 +346,9 @@ jobs:
           mingw32-make
 
   sailfish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: coderus/sailfishos-platform-sdk:5.0.0.43
+    permissions: {}
 
     env:
       RELEASE: 5.0.0.43

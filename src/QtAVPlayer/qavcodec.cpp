@@ -65,6 +65,7 @@ bool QAVCodec::open(AVStream *stream, AVDictionary** opts)
     }
 
     d->avctx->codec_id = d->codec->id;
+    d->avctx->codec_type = d->codec->type;
     ret = avcodec_open2(d->avctx, d->codec, opts);
     if (ret < 0) {
         qWarning() << "Could not open the codec:" << d->codec->name << d->codec->id << ret;

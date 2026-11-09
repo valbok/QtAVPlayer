@@ -222,6 +222,9 @@ int QAVMuxerFrames::initStream(const EncoderStream &encoderStream, int index, AV
             qWarning() << stream.index() << ": Failed av_channel_layout_copy:" << QAVMuxerPrivate::err2str(ret);
             return ret;
         }
+#else
+        enc_ctx->channel_layout = dec_ctx->channel_layout;
+        enc_ctx->channels = dec_ctx->channels;
 #endif
         enc_ctx->sample_fmt = dec_ctx->sample_fmt;
         enc_ctx->time_base = in_stream->time_base;
