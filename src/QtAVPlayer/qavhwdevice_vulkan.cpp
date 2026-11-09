@@ -9,7 +9,7 @@
 #include "qavvideobuffer_gpu_p.h"
 #include <QDebug>
 
-#if defined(QT_AVPLAYER_MULTIMEDIA) && defined(QT_AVPLAYER_VULKAN) && QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+#if defined(QT_AVPLAYER_MULTIMEDIA) && defined(QT_AVPLAYER_VULKAN) && QT_VERSION >= QT_VERSION_CHECK(6, 8, 2) && __has_include(<QtMultimedia/private/qvideoframetexturefromsource_p.h>)
 #include <private/qrhi_p.h>
 #include <QtMultimedia/private/qvideoframetexturefromsource_p.h>
 #endif
@@ -17,7 +17,7 @@
 extern "C" {
 #include <libavutil/pixdesc.h>
 #include <libavcodec/avcodec.h>
-#if defined(QT_AVPLAYER_MULTIMEDIA) && defined(QT_AVPLAYER_VULKAN) && QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+#if defined(QT_AVPLAYER_MULTIMEDIA) && defined(QT_AVPLAYER_VULKAN) && QT_VERSION >= QT_VERSION_CHECK(6, 8, 2) && __has_include(<QtMultimedia/private/qvideoframetexturefromsource_p.h>)
 #include <libavutil/hwcontext_vulkan.h>
 #endif
 }
@@ -34,7 +34,7 @@ AVHWDeviceType QAVHWDevice_Vulkan::type() const
     return AV_HWDEVICE_TYPE_VULKAN;
 }
 
-#if defined(QT_AVPLAYER_MULTIMEDIA) && defined(QT_AVPLAYER_VULKAN) && QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+#if defined(QT_AVPLAYER_MULTIMEDIA) && defined(QT_AVPLAYER_VULKAN) && QT_VERSION >= QT_VERSION_CHECK(6, 8, 2) && __has_include(<QtMultimedia/private/qvideoframetexturefromsource_p.h>)
 
 class QVideoFrameTexturesFromRhiTextureArray : public QVideoFrameTextures
 {
@@ -387,7 +387,7 @@ QAVVideoBuffer *QAVHWDevice_Vulkan::videoBuffer(const QAVVideoFrame &frame) cons
     return new VideoBuffer_Vulkan(frame);
 }
 
-#else // #if defined(QT_AVPLAYER_MULTIMEDIA) && defined(QT_AVPLAYER_VULKAN) && QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
+#else // #if defined(QT_AVPLAYER_MULTIMEDIA) && defined(QT_AVPLAYER_VULKAN) && QT_VERSION >= QT_VERSION_CHECK(6, 8, 2) && __has_include(<QtMultimedia/private/qvideoframetexturefromsource_p.h>)
 
 QAVVideoBuffer *QAVHWDevice_Vulkan::videoBuffer(const QAVVideoFrame &frame) const
 {
